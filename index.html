@@ -89,7 +89,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <button class="ghost" id="expPack">Скачать .mcpack</button>
 </div>
 <p id="msg"></p>
-<p class="lbl">В .mcpack попадут только блоки, которые ты изменил. Проект сохраняется автоматически в память браузера на этом устройстве. Если очистить данные браузера, он пропадёт, поэтому скачивай результат.</p>
+<p class="lbl">Все блоки, которые ты правил, попадут в один .mcpack. Проект сохраняется автоматически в память браузера на этом устройстве. Если очистить данные браузера, он пропадёт, поэтому скачивай результат.</p>
 </div>
 </main>
 
@@ -108,11 +108,8 @@ keys.forEach(function(k){cv[k]=document.createElement('canvas')});
 function say(t){$('#msg').textContent=t||''}
 function clamp(v){return Math.max(0,Math.min(255,Math.round(v)))}
 function rnd(x,y,s){var h=Math.sin(x*127.1+y*311.7+s*74.7)*43758.5453;return h-Math.floor(h)}
-function placeholder(g,n){
-  for(var y=0;y<n;y++)for(var x=0;x<n;x++){
-    var v=Math.round(110+rnd(Math.floor(x*16/n),Math.floor(y*16/n),9)*60);
-    g.fillStyle='rgb('+v+','+v+','+v+')';g.fillRect(x,y,1,1);
-  }
+function placeholder(g,r){
+  for(var y=0;y<r;y++)for(var x=0;x<r;x++){var v=118+Math.round(rnd(Math.floor(x*16/r),Math.floor(y*16/r),5)*50);g.fillStyle='rgb('+v+','+v+','+v+')';g.fillRect(x,y,1,1)}
 }
 
 /* ---------- стартовые текстуры (блок травы) ---------- */
@@ -143,6 +140,7 @@ function rebuildTextures(){
   applySame();
 }
 keys.forEach(function(k){mats[k]=new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:THREE.DoubleSide})});
+var edgeMat=new THREE.LineBasicMaterial({color:0x9aa0a6});
 var group=new THREE.Group();group.rotation.set(.45,-.7,0);scene.add(group);
 
 function box(w,h,d,x,y,z){
@@ -155,7 +153,7 @@ function box(w,h,d,x,y,z){
     uv.setXY(i,u,v);
   }
   var m=new THREE.Mesh(g,[mats.side,mats.side,mats.top,mats.bottom,mats.side,mats.side]);
-  m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),new THREE.LineBasicMaterial({color:0x8a8f96})));
+  m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),edgeMat));
   m.position.set(x,y,z);return m;
 }
 function build(){
@@ -305,7 +303,7 @@ function applyEntry(e,done){
     if(!e.faces||!e.faces[k]){placeholder(ctxOf(k),res);fin();return}
     var img=new Image();
     img.onload=function(){var g=ctxOf(k);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res);fin()};
-    img.onerror=function(){placeholder(ctxOf(k),res);fin()};img.src=e.faces[k];
+    img.onerror=fin;img.src=e.faces[k];
   });
 }
 function load(){
@@ -328,9 +326,10 @@ function load(){
 }
 
 /* ---------- каталог блоков Bedrock ---------- */
-var RAW='https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/';
-var URLS_B=[RAW+'blocks.json','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/blocks.json'];
-var URLS_T=[RAW+'textures/terrain_texture.json','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/textures/terrain_texture.json'];
+var URLS_B=['https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/blocks.json','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/blocks.json'];
+var URLS_T=['https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/textures/terrain_texture.json','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/textures/terrain_texture.json'];
+var VAN1='https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/';
+var VAN2='https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/';
 var CAT_KEY='foundrykin.catalog.v1';
 var lastB=null,lastT=null;
 function parseLoose(t){
@@ -426,29 +425,28 @@ function renderList(){
   var f=document.createElement('button');f.textContent='✎ свободный режим';f.onclick=selectCustom;box.insertBefore(f,box.firstChild);
 }
 $('#q').addEventListener('input',renderList);
-function showInfo(id,m,entry,isBase){
+function showInfo(id,m,note){
   var g=catalog.members[catalog.sig[m]].filter(function(x){return x!==m});
   var files=[];catalog.b[m].forEach(function(p){if(files.indexOf(p)<0)files.push(p)});
   var t='Выбрано: '+id+'. ';
   if(id!==m)t+='У него нет своей текстуры, он берёт её у «'+m+'». ';
   t+='Файл(ы): '+files.join(', ')+'. ';
   if(g.length)t+='Вместе изменятся ещё '+g.length+': '+g.slice(0,8).join(', ')+(g.length>8?' и другие.':'.');
-  if(isBase)t+=entry.vanilla?' За основу взята оригинальная текстура игры.':' Оригинал не загрузился, поставлена серая заготовка: нарисуй или загрузи PNG.';
+  if(note==='base')t+=' За основу взята оригинальная текстура игры.';
+  if(note==='gray')t+=' Оригинал не загрузился, поставлена серая заготовка.';
   $('#info').textContent=t;
 }
-function loadImg(url){
-  return new Promise(function(ok){var im=new Image();im.crossOrigin='anonymous';im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=url});
-}
+function loadImg(u){return new Promise(function(ok){var im=new Image();im.crossOrigin='anonymous';im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=u})}
+function loadAny(p){return loadImg(VAN1+p+'.png').then(function(im){return im||loadImg(VAN2+p+'.png')})}
 function baseEntry(m){
   var p=catalog.b[m],uniq=[];
   p.forEach(function(x){if(uniq.indexOf(x)<0)uniq.push(x)});
-  return Promise.all(uniq.map(function(x){return loadImg(RAW+x+'.png')})).then(function(imgs){
+  return Promise.all(uniq.map(loadAny)).then(function(imgs){
     var map={};uniq.forEach(function(x,i){map[x]=imgs[i]});
-    var first=imgs.filter(Boolean)[0],r=(first&&first.width===32)?32:16;
-    var c=document.createElement('canvas'),faces={};c.width=c.height=r;
-    var g=c.getContext('2d');g.imageSmoothingEnabled=false;
+    var first=imgs.filter(Boolean)[0];
+    var r=(first&&first.width===32)?32:16,faces={},c=document.createElement('canvas');
     keys.forEach(function(k,i){
-      var im=map[p[i]];g.clearRect(0,0,r,r);
+      var im=map[p[i]];c.width=c.height=r;var g=c.getContext('2d');g.imageSmoothingEnabled=false;
       if(im)g.drawImage(im,0,0,im.width,im.width,0,0,r,r);else placeholder(g,r);
       faces[k]=c.toDataURL('image/png');
     });
@@ -460,14 +458,14 @@ function selectBlock(id){
   if(!catalog||!catalog.b[id])return;
   var m=catalog.mother[id],tok=++selTok;
   var sh=/_stairs$/.test(id)?'stairs':(/_slab$/.test(id)&&!/_double_slab$/.test(id)?'slab':'cube');
-  packCur();
-  $('#info').textContent='Загружаю «'+m+'»…';
-  var have=store[m]?Promise.resolve({e:store[m],base:false}):baseEntry(m).then(function(e){return {e:e,base:true}});
-  have.then(function(r){
+  function go(e,note){
     if(tok!==selTok)return;
-    cur=m;shape=sh;setShapeUi();
-    applyEntry(r.e,function(){build();syncName();showInfo(id,m,r.e,r.base);renderList();scheduleSave()});
-  });
+    packCur();cur=m;shape=sh;setShapeUi();
+    applyEntry(e,function(){build();syncName();showInfo(id,m,note);renderList();scheduleSave()});
+  }
+  if(store[m]){go(store[m],'');return}
+  $('#info').textContent='Загружаю оригинальную текстуру…';
+  baseEntry(m).then(function(e){go(e,e.vanilla?'base':'gray')});
 }
 function selectCustom(){
   selTok++;packCur();cur='custom';
@@ -508,10 +506,10 @@ function uuid(){return (window.crypto&&crypto.randomUUID)?crypto.randomUUID():'x
 $('#expPack').onclick=function(){
   if(typeof JSZip==='undefined'){say('Библиотека JSZip не загрузилась (нужен интернет при первом запуске).');return}
   packCur();
-  var ids=Object.keys(store).filter(function(id){return dirty[id]});
+  var ids=Object.keys(store).filter(function(id){return dirty[id]||id===cur});
   var z=new JSZip(),count=0,names=[];
   ids.forEach(function(id){filesFor(id,store[id]).forEach(function(x){z.file(x.path,x.data.split(',')[1],{base64:true});count++});names.push(id)});
-  if(!count){say('Нечего экспортировать: измени хотя бы одну текстуру.');return}
+  if(!count){say('Нечего экспортировать: нарисуй хотя бы одну текстуру.');return}
   z.file('manifest.json',JSON.stringify({
     format_version:2,
     header:{name:'FoundryKin pack',description:'Создано в FoundryKin',uuid:uuid(),version:[1,0,0],min_engine_version:[1,20,0]},
