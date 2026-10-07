@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FoundryKin — редактор текстур Bedrock</title>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff;--stage:#cfd8dc}
+@media (prefers-color-scheme:dark){:root{--bg:#16181b;--panel:#202327;--ink:#e8e6e1;--mute:#9a9ea5;--line:#33373d;--acc:#6fbf80;--accink:#10210f;--stage:#0f1113}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}
+main{max-width:460px;margin:0 auto;padding:14px 14px 28px}
+h1{font:700 26px "Pixelify Sans",ui-monospace,monospace;margin:4px 0 12px;letter-spacing:.5px}
+.stage{position:relative;background:var(--stage);border-radius:14px;overflow:hidden;aspect-ratio:1/1;touch-action:pan-y}
+.stage canvas{display:block;width:100%;height:100%}
+.hint{position:absolute;left:10px;bottom:8px;font-size:12px;color:var(--mute);pointer-events:none}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.seg button{flex:1}
+button{font:inherit;color:var(--ink);background:transparent;border:0;border-radius:8px;padding:9px 10px;min-height:40px;cursor:pointer}
+button.on{background:var(--acc);color:var(--accink);font-weight:600}
+button.ghost{background:var(--panel);border:1px solid var(--line)}
+button:disabled{opacity:.4}
+button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.sec{margin-top:16px}
+.lbl{font-size:13px;color:var(--mute);margin:0 0 6px}
+#ed{width:100%;aspect-ratio:1/1;display:block;image-rendering:pixelated;touch-action:none;border-radius:10px;border:1px solid var(--line);
+background:conic-gradient(#bbb 25%,#e6e6e6 0 50%,#bbb 0 75%,#e6e6e6 0) 0 0/24px 24px}
+.pal{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.sw{width:34px;height:34px;border-radius:8px;border:2px solid var(--line);padding:0;min-height:0}
+.sw.on{border-color:var(--ink)}
+input[type=color]{width:42px;height:34px;border:1px solid var(--line);border-radius:8px;background:none;padding:2px}
+input[type=text]{width:100%;min-height:40px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit}
+label.chk{display:flex;align-items:center;gap:8px;margin:10px 0}
+input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidden}
+.btn{display:inline-flex;align-items:center;border-radius:8px;padding:9px 10px;min-height:40px;cursor:pointer}
+#msg{font-size:13px;color:var(--mute);min-height:18px}
+</style>
+</head>
+<body>
+<main>
+<h1>FoundryKin</h1>
+<div class="stage" id="stage"><span class="hint">тяни, чтобы покрутить</span></div>
+
+<div class="row"><div class="seg" style="width:100%" id="shapes">
+<button data-s="cube" class="on">Куб</button><button data-s="slab">Плита</button><button data-s="stairs">Ступени</button></div></div>
+
+<label class="chk"><input type="checkbox" id="same" checked> Одна текстура на все грани</label>
+<div class="seg" id="slots">
+<button data-k="top">Верх</button><button data-k="side" class="on">Бок</button><button data-k="bottom">Низ</button></div>
+
+<div class="sec"><canvas id="ed"></canvas></div>
+
+<div class="sec">
+<div class="row" id="tools">
+<div class="seg" style="flex:1"><button data-t="pen" class="on">Кисть</button><button data-t="erase">Ластик</button><button data-t="fill">Заливка</button><button data-t="pick">Пипетка</button></div>
+</div>
+<div class="row">
+<div class="seg"><button data-r="16" class="on">16</button><button data-r="32">32</button></div>
+<button class="ghost" id="undo">↶ Отмена</button><button class="ghost" id="redo">↷ Повтор</button>
+</div>
+<div class="pal" id="pal"></div>
+<div class="row">
+<label class="ghost btn" for="file">Загрузить PNG</label>
+<button class="ghost" id="clr">Очистить грань</button>
+<input type="file" id="file" accept="image/png,image/*">
+</div>
+<p class="lbl">Загруженный PNG ляжет в выбранную грань. Прозрачные пиксели остаются прозрачными.</p>
+</div>
+
+<div class="sec">
+<p class="lbl">Имя блока (латиница, как в игре, например cherry_planks)</p>
+<input type="text" id="name" value="my_block" autocapitalize="off" autocomplete="off" spellcheck="false">
+<div class="row">
+<button class="ghost" id="expPng">Скачать PNG</button>
+<button class="ghost" id="expPack">Скачать .mcpack</button>
+</div>
+<p id="msg"></p>
+<p class="lbl">Проект сохраняется автоматически в память браузера на этом устройстве. Если очистить данные браузера, он пропадёт, поэтому скачивай результат.</p>
+</div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function(){
+var SAVE_KEY='foundrykin.project.v1';
+var res=16, shape='cube', slot='side', tool='pen', color='#c0392b';
+var keys=['top','side','bottom'], cv={}, tex={}, mats={};
+var undoS={top:[],side:[],bottom:[]}, redoS={top:[],side:[],bottom:[]};
+var $=function(s){return document.querySelector(s)};
+var ed=$('#ed'), ectx=ed.getContext('2d');
+keys.forEach(function(k){cv[k]=document.createElement('canvas')});
+
+function say(t){$('#msg').textContent=t||''}
+function clamp(v){return Math.max(0,Math.min(255,Math.round(v)))}
+function rnd(x,y,s){var h=Math.sin(x*127.1+y*311.7+s*74.7)*43758.5453;return h-Math.floor(h)}
+
+/* ---------- стартовые текстуры (блок травы) ---------- */
+function fillNoise(c,base,s,grass){
+  var n=c.width,g=c.getContext('2d');g.clearRect(0,0,n,n);
+  for(var y=0;y<n;y++)for(var x=0;x<n;x++){
+    var col=base;
+    if(grass&&y<Math.round(n*0.2*(0.8+0.5*rnd(x*16/n|0,0,s))))col=grass;
+    var v=(rnd(Math.floor(x*16/n),Math.floor(y*16/n),s)-.5)*34;
+    g.fillStyle='rgb('+clamp(col[0]+v)+','+clamp(col[1]+v)+','+clamp(col[2]+v)+')';g.fillRect(x,y,1,1);
+  }
+}
+function initTex(){
+  keys.forEach(function(k){cv[k].width=cv[k].height=res});
+  var G=[96,160,64],D=[134,96,67];
+  fillNoise(cv.top,G,1);fillNoise(cv.side,D,2,G);fillNoise(cv.bottom,D,3);
+}
+
+/* ---------- 3D ---------- */
+var stage=$('#stage'),W=stage.clientWidth||360;
+var renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(W,W);stage.insertBefore(renderer.domElement,stage.firstChild);
+var scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(35,1,.1,50);cam.position.set(0,0,4.4);
+scene.add(new THREE.AmbientLight(0xffffff,.75));var dl=new THREE.DirectionalLight(0xffffff,.55);dl.position.set(2,4,3);scene.add(dl);
+function makeTex(k){var t=new THREE.CanvasTexture(cv[k]);t.magFilter=t.minFilter=THREE.NearestFilter;t.generateMipmaps=false;return t}
+function rebuildTextures(){
+  keys.forEach(function(k){if(tex[k])tex[k].dispose();tex[k]=makeTex(k);mats[k].map=tex[k];mats[k].needsUpdate=true});
+  applySame();
+}
+keys.forEach(function(k){mats[k]=new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:THREE.DoubleSide})});
+var group=new THREE.Group();group.rotation.set(.45,-.7,0);scene.add(group);
+
+function box(w,h,d,x,y,z){
+  var g=new THREE.BoxGeometry(w,h,d),p=g.attributes.position,n=g.attributes.normal,uv=g.attributes.uv;
+  for(var i=0;i<p.count;i++){
+    var X=p.getX(i)+x,Y=p.getY(i)+y,Z=p.getZ(i)+z,nx=n.getX(i),ny=n.getY(i),nz=n.getZ(i),u,v;
+    if(Math.abs(nx)>.5){u=nx>0?.5-Z:Z+.5;v=Y+.5}
+    else if(Math.abs(nz)>.5){u=nz>0?X+.5:.5-X;v=Y+.5}
+    else{u=X+.5;v=ny>0?.5-Z:Z+.5}
+    uv.setXY(i,u,v);
+  }
+  var m=new THREE.Mesh(g,[mats.side,mats.side,mats.top,mats.bottom,mats.side,mats.side]);
+  m.position.set(x,y,z);return m;
+}
+function build(){
+  while(group.children.length)group.remove(group.children[0]);
+  var parts=shape==='cube'?[[1,1,1,0,0,0]]:shape==='slab'?[[1,.5,1,0,-.25,0]]:[[1,.5,1,0,-.25,0],[1,.5,.5,0,.25,-.25]];
+  parts.forEach(function(a){group.add(box.apply(null,a))});
+  if(shape==='slab')group.children.forEach(function(m){m.position.y+=.25});
+}
+function applySame(){
+  var same=$('#same').checked;
+  mats.side.map=tex.side;
+  mats.top.map=same?tex.side:tex.top;mats.bottom.map=same?tex.side:tex.bottom;
+  keys.forEach(function(k){mats[k].needsUpdate=true});
+  $('#slots').querySelectorAll('button').forEach(function(b){b.disabled=same&&b.dataset.k!=='side'});
+  if(same&&slot!=='side')setSlot('side');
+}
+var drag=null,idle=true,lastT=0;
+stage.addEventListener('pointerdown',function(e){drag={x:e.clientX,y:e.clientY};idle=false;stage.setPointerCapture(e.pointerId)});
+stage.addEventListener('pointermove',function(e){if(!drag)return;group.rotation.y+=(e.clientX-drag.x)*.01;group.rotation.x=Math.max(-1.4,Math.min(1.4,group.rotation.x+(e.clientY-drag.y)*.01));drag={x:e.clientX,y:e.clientY}});
+function endDrag(){drag=null;setTimeout(function(){if(!drag)idle=true},2500)}
+stage.addEventListener('pointerup',endDrag);stage.addEventListener('pointercancel',endDrag);
+var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function loop(t){requestAnimationFrame(loop);if(idle&&!reduce)group.rotation.y+=(t-lastT)*.0004;lastT=t;renderer.render(scene,cam)}
+addEventListener('resize',function(){var w=stage.clientWidth;renderer.setSize(w,w)});
+
+/* ---------- история ---------- */
+function ctxOf(k){return cv[k].getContext('2d')}
+function snap(k){return ctxOf(k).getImageData(0,0,res,res)}
+function pushUndo(){var s=undoS[slot];s.push(snap(slot));if(s.length>60)s.shift();redoS[slot]=[];updHist()}
+function doUndo(){var s=undoS[slot];if(!s.length)return;redoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
+function doRedo(){var s=redoS[slot];if(!s.length)return;undoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
+function updHist(){$('#undo').disabled=!undoS[slot].length;$('#redo').disabled=!redoS[slot].length}
+function resetHist(){keys.forEach(function(k){undoS[k]=[];redoS[k]=[]});updHist()}
+
+/* ---------- редактор ---------- */
+function drawEd(){ed.width=ed.height=res;ectx.clearRect(0,0,res,res);ectx.drawImage(cv[slot],0,0);updHist()}
+function touched(){tex[slot].needsUpdate=true;drawEd();scheduleSave()}
+function cell(e){
+  var r=ed.getBoundingClientRect();
+  return {x:Math.floor((e.clientX-r.left)/r.width*res),y:Math.floor((e.clientY-r.top)/r.height*res)};
+}
+function inb(p){return p.x>=0&&p.y>=0&&p.x<res&&p.y<res}
+function dot(g,x,y){if(x<0||y<0||x>=res||y>=res)return;if(tool==='erase')g.clearRect(x,y,1,1);else{g.fillStyle=color;g.fillRect(x,y,1,1)}}
+function line(g,a,b){
+  var x0=a.x,y0=a.y,x1=b.x,y1=b.y,dx=Math.abs(x1-x0),dy=-Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1,err=dx+dy;
+  for(var n=0;n<512;n++){dot(g,x0,y0);if(x0===x1&&y0===y1)break;var e2=2*err;if(e2>=dy){err+=dy;x0+=sx}if(e2<=dx){err+=dx;y0+=sy}}
+}
+function hexRgba(h){var n=parseInt(h.slice(1),16);return [n>>16&255,n>>8&255,n&255,255]}
+function floodFill(p){
+  var g=ctxOf(slot),img=g.getImageData(0,0,res,res),d=img.data,t=hexRgba(color);
+  function at(x,y){return (y*res+x)*4}
+  var i0=at(p.x,p.y),s=[d[i0],d[i0+1],d[i0+2],d[i0+3]];
+  if(s[0]===t[0]&&s[1]===t[1]&&s[2]===t[2]&&s[3]===t[3])return;
+  var st=[[p.x,p.y]];
+  while(st.length){
+    var q=st.pop(),x=q[0],y=q[1];if(x<0||y<0||x>=res||y>=res)continue;
+    var i=at(x,y);if(d[i]!==s[0]||d[i+1]!==s[1]||d[i+2]!==s[2]||d[i+3]!==s[3])continue;
+    d[i]=t[0];d[i+1]=t[1];d[i+2]=t[2];d[i+3]=t[3];
+    st.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+  }
+  g.putImageData(img,0,0);
+}
+function pickAt(p){
+  var d=ctxOf(slot).getImageData(p.x,p.y,1,1).data;if(!d[3])return;
+  var h='#'+[d[0],d[1],d[2]].map(function(v){return ('0'+v.toString(16)).slice(-2)}).join('');
+  pickColor(h,false);
+}
+var down=false,last=null;
+ed.addEventListener('pointerdown',function(e){
+  var p=cell(e);if(!inb(p))return;
+  e.preventDefault();ed.setPointerCapture(e.pointerId);
+  if(tool==='pick'){pickAt(p);return}
+  pushUndo();
+  if(tool==='fill'){floodFill(p);touched();return}
+  down=true;last=p;dot(ctxOf(slot),p.x,p.y);touched();
+});
+ed.addEventListener('pointermove',function(e){
+  if(!down)return;var p=cell(e);line(ctxOf(slot),last,p);last=p;touched();
+});
+function up(){down=false;last=null}
+ed.addEventListener('pointerup',up);ed.addEventListener('pointercancel',up);
+
+function setSlot(k){slot=k;$('#slots').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.k===k)});drawEd()}
+function seg(sel,attr,fn){$(sel).addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.disabled)return;
+  $(sel).querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});fn(b.dataset[attr])})}
+seg('#shapes','s',function(v){shape=v;build();scheduleSave()});
+seg('#slots','k',function(v){setSlot(v)});
+seg('#tools','t',function(v){tool=v});
+
+function setRes(n){
+  if(n===res)return;
+  var old={};keys.forEach(function(k){var c=document.createElement('canvas');c.width=c.height=res;c.getContext('2d').drawImage(cv[k],0,0);old[k]=c});
+  res=n;
+  keys.forEach(function(k){cv[k].width=cv[k].height=res;var g=cv[k].getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(old[k],0,0,res,res)});
+  resetHist();rebuildTextures();drawEd();scheduleSave();
+}
+document.querySelectorAll('[data-r]').forEach(function(b){b.addEventListener('click',function(){
+  document.querySelectorAll('[data-r]').forEach(function(x){x.classList.toggle('on',x===b)});setRes(+b.dataset.r)})});
+$('#same').addEventListener('change',function(){applySame();scheduleSave()});
+$('#undo').onclick=doUndo;$('#redo').onclick=doRedo;
+
+var pal=['#c0392b','#e67e22','#f1c40f','#3f7d4e','#2980b9','#8e44ad','#ffffff','#7f8c8d','#2c2c2c','#866043'];
+var pe=$('#pal');
+pal.forEach(function(c){var b=document.createElement('button');b.className='sw'+(c===color?' on':'');b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label',c);
+  b.onclick=function(){pickColor(c)};pe.appendChild(b)});
+var ci=document.createElement('input');ci.type='color';ci.value=color;ci.oninput=function(){pickColor(ci.value,true)};pe.appendChild(ci);
+function pickColor(c,fromInput){
+  color=c;if(tool==='pick'||tool==='erase'){tool='pen';$('#tools').querySelectorAll('[data-t]').forEach(function(b){b.classList.toggle('on',b.dataset.t==='pen')})}
+  pe.querySelectorAll('.sw').forEach(function(b){b.classList.toggle('on',b.dataset.c===c)});ci.value=c;
+}
+
+$('#file').onchange=function(e){
+  var inp=e.target,f=inp.files[0];if(!f)return;var fr=new FileReader();
+  fr.onload=function(){var img=new Image();
+    img.onload=function(){pushUndo();var g=ctxOf(slot);g.clearRect(0,0,res,res);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res);touched()};
+    img.src=fr.result};
+  fr.readAsDataURL(f);inp.value='';
+};
+$('#clr').onclick=function(){pushUndo();ctxOf(slot).clearRect(0,0,res,res);touched()};
+
+/* ---------- сохранение в браузере ---------- */
+var saveT=null;
+function scheduleSave(){clearTimeout(saveT);saveT=setTimeout(save,500)}
+function save(){
+  try{
+    var o={v:1,res:res,shape:shape,same:$('#same').checked,name:$('#name').value,faces:{}};
+    keys.forEach(function(k){o.faces[k]=cv[k].toDataURL('image/png')});
+    localStorage.setItem(SAVE_KEY,JSON.stringify(o));
+  }catch(err){say('Не удалось сохранить в браузере: '+err.message)}
+}
+function load(){
+  var raw;try{raw=localStorage.getItem(SAVE_KEY)}catch(err){return false}
+  if(!raw)return false;
+  var o;try{o=JSON.parse(raw)}catch(err){return false}
+  if(!o||o.v!==1||(o.res!==16&&o.res!==32))return false;
+  res=o.res;shape=o.shape||'cube';$('#same').checked=!!o.same;$('#name').value=o.name||'my_block';
+  document.querySelectorAll('[data-r]').forEach(function(x){x.classList.toggle('on',+x.dataset.r===res)});
+  $('#shapes').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.s===shape)});
+  var left=keys.length;
+  keys.forEach(function(k){
+    cv[k].width=cv[k].height=res;var img=new Image();
+    img.onload=function(){var g=ctxOf(k);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res);if(--left===0){rebuildTextures();build();drawEd()}};
+    img.onerror=function(){if(--left===0){rebuildTextures();build();drawEd()}};
+    img.src=o.faces[k];
+  });
+  return true;
+}
+
+/* ---------- экспорт ---------- */
+function cleanName(){
+  var n=$('#name').value.toLowerCase().replace(/[^a-z0-9_]/g,'_').replace(/^_+|_+$/g,'');
+  return n||'my_block';
+}
+function download(blob,fname){
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
+}
+function faceFiles(){
+  var n=cleanName(),same=$('#same').checked,o=[];
+  if(same)o.push({path:'textures/blocks/'+n+'.png',k:'side'});
+  else keys.forEach(function(k){o.push({path:'textures/blocks/'+n+'_'+k+'.png',k:k})});
+  return o;
+}
+$('#expPng').onclick=function(){
+  var f=faceFiles();
+  f.forEach(function(x,i){setTimeout(function(){cv[x.k].toBlob(function(b){download(b,x.path.split('/').pop())},'image/png')},i*300)});
+  say('PNG: '+f.length+' файл(а).');
+};
+function uuid(){return (crypto&&crypto.randomUUID)?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16)})}
+$('#expPack').onclick=function(){
+  if(typeof JSZip==='undefined'){say('Библиотека JSZip не загрузилась (нужен интернет при первом запуске).');return}
+  var n=cleanName(),z=new JSZip();
+  z.file('manifest.json',JSON.stringify({
+    format_version:2,
+    header:{name:'FoundryKin '+n,description:'Создано в FoundryKin',uuid:uuid(),version:[1,0,0],min_engine_version:[1,20,0]},
+    modules:[{type:'resources',uuid:uuid(),version:[1,0,0]}]
+  },null,2));
+  faceFiles().forEach(function(x){z.file(x.path,cv[x.k].toDataURL('image/png').split(',')[1],{base64:true})});
+  z.generateAsync({type:'blob'}).then(function(b){download(b,'FoundryKin_'+n+'.mcpack');say('Пак собран: '+n+'.mcpack')});
+};
+$('#name').addEventListener('input',scheduleSave);
+
+/* ---------- старт ---------- */
+keys.forEach(function(k){tex[k]=makeTex(k)});
+initTex();rebuildTextures();build();setSlot('side');resetHist();
+load();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
