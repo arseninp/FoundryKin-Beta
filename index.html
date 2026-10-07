@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FoundryKin v0.4.0 — редактор текстур Bedrock</title>
+<title>FoundryKin v0.5.0 — редактор текстур Bedrock</title>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff;--stage:#cfd8dc}
@@ -44,7 +44,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 </head>
 <body>
 <main>
-<h1>FoundryKin v0.4.0</h1>
+<h1>FoundryKin v0.5.0</h1>
 
 <div class="sec" style="margin-top:0">
 <p class="lbl">Блок из игры (ищи по-английски: oak, stairs, bookshelf)</p>
@@ -58,8 +58,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <p class="lbl" id="dbg">Запуск…</p>
 <div class="row"><button class="ghost" id="fbBtn">Переключить 2D / 3D</button></div>
 
-<div class="row" id="shapesRow"><div class="seg" style="width:100%" id="shapes">
-<button data-s="cube" class="on">Куб</button><button data-s="slab">Плита</button><button data-s="stairs">Ступени</button></div></div>
+<div class="row" id="shapesRow"><div class="seg" style="width:100%" id="shapes"></div></div>
 
 <label class="chk" id="sameLabel"><input type="checkbox" id="same" checked> Одна текстура на все грани</label>
 <div class="seg" id="slots"></div>
@@ -99,12 +98,25 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
-var VER='v0.4.0';
+var VER='v0.5.0';
 var res=16, shape='cube', tool='pen', color='#c0392b';
 var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={};
-var store={}, cur='custom', dirty={}, customName='my_block', customSame=true, catalog=null, existing=null, pendingCur=null;
+var store={}, cur='custom', dirty={}, customName='my_block', customSame=true, catalog=null, existing=null, pendingCur=null, shapeKeys=['cube'];
 var FACES=['up','down','north','south','east','west'];
 var FN={up:'верх',down:'низ',north:'север',south:'юг',east:'восток',west:'запад'};
+var SHAPES={
+  cube:{label:'Куб',parts:[[1,1,1,0,0,0]],shift:0},
+  slab:{label:'Плита',parts:[[1,.5,1,0,-.25,0]],shift:.25},
+  stairs:{label:'Ступени',parts:[[1,.5,1,0,-.25,0],[1,.5,.5,0,.25,-.25]],shift:0},
+  wall:{label:'Стена',parts:[[.5,1,.5,0,0,0],[1,.875,.25,0,-.0625,0]],shift:0},
+  fence:{label:'Забор',parts:[[.25,1,.25,0,0,0],[1,.1875,.125,0,-.03125,0],[1,.1875,.125,0,.34375,0]],shift:0},
+  gate:{label:'Калитка',parts:[[.125,.6875,.125,-.4375,.15625,0],[.125,.6875,.125,.4375,.15625,0],[.75,.1875,.125,0,-.03125,0],[.75,.1875,.125,0,.34375,0]],shift:0},
+  button:{label:'Кнопка',parts:[[.375,.125,.25,0,-.4375,0]],shift:.4},
+  plate:{label:'Нажимная плита',parts:[[.875,.0625,.875,0,-.46875,0]],shift:.45},
+  plant:{label:'Растение'},
+  azalea:{label:'Азалия'}
+};
+var ALL_SHAPES=['cube','slab','stairs','wall','fence','gate','button','plate'];
 var $=function(s){return document.querySelector(s)};
 var ed=$('#ed'), ectx=ed.getContext('2d');
 
@@ -129,6 +141,29 @@ function fillNoise(c,base,s,grass){
   }
 }
 function ctxOf(k){return cv[k].getContext('2d')}
+
+function shapeOfId(id){
+  if(/_double_slab$/.test(id))return 'cube';
+  if(/_slab$/.test(id))return 'slab';
+  if(/_stairs$/.test(id))return 'stairs';
+  if(/_wall$/.test(id))return 'wall';
+  if(/_fence_gate$/.test(id))return 'gate';
+  if(/_fence$/.test(id))return 'fence';
+  if(/_button$/.test(id))return 'button';
+  if(/_pressure_plate$/.test(id))return 'plate';
+  return 'cube';
+}
+function modelOf(m){
+  if(m==='azalea'||m==='flowering_azalea')return 'azalea';
+  return (catalog&&catalog.p&&catalog.p[m])?'plant':null;
+}
+function shapeKeysFor(m,grp){
+  var mo=modelOf(m);if(mo)return [mo,'cube'];
+  var ks=['cube'];
+  grp.forEach(function(x){var s=shapeOfId(x);if(s!=='cube'&&ks.indexOf(s)<0)ks.push(s)});
+  ks.sort(function(a,b){return ALL_SHAPES.indexOf(a)-ALL_SHAPES.indexOf(b)});
+  return ks;
+}
 
 /* ---------- 3D (WebGL) ---------- */
 var stage=$('#stage'),W=stage.clientWidth||360;
@@ -157,7 +192,7 @@ function refreshTex(id){
   tex[id]=makeTex(id);mats[id].map=tex[id];mats[id].needsUpdate=true;
 }
 function rebuildTextures(){slots.forEach(function(s){refreshTex(s.id)})}
-function box(w,h,d,x,y,z){
+function box(w,h,d,x,y,z,ids){
   var g=new THREE.BoxGeometry(w,h,d),p=g.attributes.position,n=g.attributes.normal,uv=g.attributes.uv;
   for(var i=0;i<p.count;i++){
     var X=p.getX(i)+x,Y=p.getY(i)+y,Z=p.getZ(i)+z,nx=n.getX(i),ny=n.getY(i),nz=n.getZ(i),u,v;
@@ -167,16 +202,29 @@ function box(w,h,d,x,y,z){
     uv.setXY(i,u,v);
   }
   var f=faceMap;
-  var m=new THREE.Mesh(g,[mats[f.east],mats[f.west],mats[f.up],mats[f.down],mats[f.south],mats[f.north]]);
+  ids=ids||[f.east,f.west,f.up,f.down,f.south,f.north];
+  var m=new THREE.Mesh(g,ids.map(function(k){return mats[k]}));
   m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),edgeMat));
   m.position.set(x,y,z);return m;
+}
+function plane(id,h,y,ry){
+  var m=new THREE.Mesh(new THREE.PlaneGeometry(Math.SQRT2,h),mats[id]);
+  m.position.y=y;m.rotation.y=ry;return m;
+}
+function buildPlant(){
+  var st=shape==='azalea'?faceMap.east:faceMap.up;
+  group.add(plane(st,1,0,Math.PI/4));group.add(plane(st,1,0,-Math.PI/4));
+  if(shape==='azalea'){var n=faceMap.north;group.add(box(1,.375,1,0,.3125,0,[n,n,faceMap.up,n,n,n]))}
 }
 function build(){
   if(gl){
     while(group.children.length)group.remove(group.children[0]);
-    var parts=shape==='cube'?[[1,1,1,0,0,0]]:shape==='slab'?[[1,.5,1,0,-.25,0]]:[[1,.5,1,0,-.25,0],[1,.5,.5,0,.25,-.25]];
-    parts.forEach(function(a){group.add(box.apply(null,a))});
-    if(shape==='slab')group.children.forEach(function(m){m.position.y+=.25});
+    if(shape==='plant'||shape==='azalea')buildPlant();
+    else{
+      var d=SHAPES[shape]||SHAPES.cube;
+      d.parts.forEach(function(a){group.add(box.apply(null,a))});
+      if(d.shift)group.children.forEach(function(m){m.position.y+=d.shift});
+    }
   }
   drawFb();
 }
@@ -208,9 +256,8 @@ function drawFb(){
   if(!fbOn||!slots.length)return;
   var c=$('#fb'),g=c.getContext('2d');
   g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,300,300);g.imageSmoothingEnabled=false;
-  var s=140,a=s*.866,b=s*.5,T0={x:150,y:12},R=res;
-  var topI=cv[faceMap.up],leftI=cv[faceMap.south],rightI=cv[faceMap.east];
-  if(!topI||!leftI||!rightI)return;
+  var s=140,a=s*.866,b=s*.5,T0={x:150,y:12},R=res,F=faceMap;
+  function im(k){return cv[F[k]]}
   function P(x,y,z){return {x:T0.x+x*a-y*a,y:T0.y+x*b+y*b+(1-z)*s}}
   function face(img,sx,sy,sw,sh,o,vx,vy,shade){
     g.save();g.setTransform(vx.x/sw,vx.y/sw,vy.x/sh,vy.y/sh,o.x,o.y);
@@ -218,14 +265,22 @@ function drawFb(){
     if(shade){g.fillStyle='rgba(0,0,0,'+shade+')';g.fillRect(0,0,sw,sh)}
     g.restore();
   }
-  function fbBox(x0,x1,y0,y1,z0,z1){
-    face(leftI,x0*R,(1-z1)*R,(x1-x0)*R,(z1-z0)*R,P(x0,y1,z1),{x:(x1-x0)*a,y:(x1-x0)*b},{x:0,y:(z1-z0)*s},.2);
-    face(rightI,(1-y1)*R,(1-z1)*R,(y1-y0)*R,(z1-z0)*R,P(x1,y1,z1),{x:(y1-y0)*a,y:-(y1-y0)*b},{x:0,y:(z1-z0)*s},.35);
-    face(topI,x0*R,y0*R,(x1-x0)*R,(y1-y0)*R,P(x0,y0,z1),{x:(x1-x0)*a,y:(x1-x0)*b},{x:-(y1-y0)*a,y:(y1-y0)*b},0);
+  function fbBox(x0,x1,y0,y1,z0,z1,I){
+    I=I||{left:im('south'),right:im('east'),top:im('up')};
+    if(!I.left||!I.right||!I.top)return;
+    face(I.left,x0*R,(1-z1)*R,(x1-x0)*R,(z1-z0)*R,P(x0,y1,z1),{x:(x1-x0)*a,y:(x1-x0)*b},{x:0,y:(z1-z0)*s},.2);
+    face(I.right,(1-y1)*R,(1-z1)*R,(y1-y0)*R,(z1-z0)*R,P(x1,y1,z1),{x:(y1-y0)*a,y:-(y1-y0)*b},{x:0,y:(z1-z0)*s},.35);
+    face(I.top,x0*R,y0*R,(x1-x0)*R,(y1-y0)*R,P(x0,y0,z1),{x:(x1-x0)*a,y:(x1-x0)*b},{x:-(y1-y0)*a,y:(y1-y0)*b},0);
   }
-  if(shape==='cube')fbBox(0,1,0,1,0,1);
-  else if(shape==='slab')fbBox(0,1,0,1,0,.5);
-  else{fbBox(0,1,0,1,0,.5);fbBox(0,1,0,.5,.5,1)}
+  function fbPlane(img){if(img)face(img,0,0,R,R,P(0,1,1),{x:2*a,y:0},{x:0,y:s},0)}
+  if(shape==='plant')fbPlane(im('up'));
+  else if(shape==='azalea'){fbPlane(im('east'));fbBox(0,1,0,1,.625,1,{left:im('north'),right:im('north'),top:im('up')})}
+  else{
+    var d=SHAPES[shape]||SHAPES.cube,sh=d.shift||0;
+    var list=d.parts.map(function(p){return [p[3]-p[0]/2+.5,p[3]+p[0]/2+.5,p[5]-p[2]/2+.5,p[5]+p[2]/2+.5,p[4]-p[1]/2+.5+sh,p[4]+p[1]/2+.5+sh]});
+    list.sort(function(A,B){return (A[0]+A[2]+A[4])-(B[0]+B[2]+B[4])});
+    list.forEach(function(q){fbBox(q[0],q[1],q[2],q[3],q[4],q[5])});
+  }
 }
 
 /* ---------- слоты (текстуры блока) ---------- */
@@ -335,11 +390,12 @@ function seg(sel,attr,fn){$(sel).addEventListener('click',function(e){var b=e.ta
 seg('#shapes','s',function(v){shape=v;build();scheduleSave()});
 seg('#tools','t',function(v){tool=v});
 function setShapeUi(){$('#shapes').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.s===shape)})}
-function updShapeUi(av){
-  var all=(av==='all'),show=all||av.slab||av.stairs;
-  $('#shapesRow').style.display=show?'flex':'none';
-  $('#shapes').querySelectorAll('button').forEach(function(b){var s=b.dataset.s;b.style.display=(s==='cube'||all||av[s])?'':'none'});
-  if(!show)shape='cube';else if(shape!=='cube'&&!all&&!av[shape])shape='cube';
+function updShapeUi(list){
+  shapeKeys=(list==='all')?ALL_SHAPES:list;
+  var bx=$('#shapes');bx.innerHTML='';
+  shapeKeys.forEach(function(k){var b=document.createElement('button');b.textContent=SHAPES[k].label;b.dataset.s=k;bx.appendChild(b)});
+  if(shapeKeys.indexOf(shape)<0)shape=shapeKeys[0]||'cube';
+  $('#shapesRow').style.display=shapeKeys.length>1?'flex':'none';
   setShapeUi();
 }
 function syncSame(){$('#sameLabel').style.display=cur==='custom'?'flex':'none';$('#same').checked=customSame}
@@ -431,7 +487,7 @@ var URLS_T=['https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resou
 var URLS_F=['https://data.jsdelivr.com/v1/package/gh/Mojang/bedrock-samples@main/flat','https://api.github.com/repos/Mojang/bedrock-samples/git/trees/main?recursive=1'];
 var VAN1='https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/';
 var VAN2='https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/';
-var CAT_KEY='foundrykin.catalog.v2',EX_KEY='foundrykin.exist.v1';
+var CAT_KEY='foundrykin.catalog.v3',EX_KEY='foundrykin.exist.v1';
 var lastB=null,lastT=null;
 function parseLoose(t){
   t=String(t).replace(/^\uFEFF/,'');
@@ -447,27 +503,35 @@ function fetchJson(urls,i,errs2){
     .catch(function(err){errs2.push((err&&err.message?err.message:String(err))+' ['+urls[i].split('/')[2]+']');return fetchJson(urls,i+1,errs2)});
 }
 var DER=/_(double_slab|slab|stairs|wall|fence_gate|fence|button|pressure_plate|carpet)$/;
+var BASE=/_(double_slab|slab|stairs|wall|fence_gate|fence|button|pressure_plate)$/;
 function buildCatalog(B,T){
   var td=(T&&T.texture_data)||{};
-  function path(k){
-    var e=td[k];if(!e)return 'textures/blocks/'+k;
+  function resolve(k){
+    var e=td[k];if(!e)return null;
     var t=e.textures;if(Array.isArray(t))t=t[0];if(t&&typeof t==='object')t=t.path;
-    return typeof t==='string'?t:'textures/blocks/'+k;
+    return typeof t==='string'?t:null;
   }
-  var b={};
+  var b={},p={},unres={};
   Object.keys(B).forEach(function(id){
     var e=B[id];if(!e||typeof e!=='object'||!e.textures)return;
-    var t=e.textures,s;
-    if(typeof t==='string')s=[t,t,t,t,t,t];
+    var t=e.textures,ks;
+    if(typeof t==='string')ks=[t,t,t,t,t,t];
     else{
       var any=t.side||t.up||t.down||t.north||t.south||t.east||t.west;
       var f=function(k){return t[k]||t.side||any};
-      s=[f('up'),f('down'),f('north'),f('south'),f('east'),f('west')];
+      ks=[f('up'),f('down'),f('north'),f('south'),f('east'),f('west')];
     }
-    for(var i=0;i<6;i++)if(!s[i])return;
-    b[id]=s.map(path);
+    for(var i=0;i<6;i++)if(!ks[i])return;
+    var miss=false,paths=ks.map(function(k){var r=resolve(k);if(r)return r;miss=true;return 'textures/blocks/'+k});
+    b[id]=paths;if(miss)unres[id]=1;
+    if(typeof t==='string'&&e.sound==='grass'&&!e.isotropic&&!e.carried_textures&&!e.ambient_occlusion_exponent)p[id]=1;
   });
-  return {b:b};
+  Object.keys(unres).forEach(function(id){
+    var m=BASE.exec(id);if(!m)return;
+    var pre=id.slice(0,m.index),cands=[pre,pre+'_block',pre+'_planks',pre+'_wool',pre+'_concrete',pre+'s',pre+'_bricks'];
+    for(var i=0;i<cands.length;i++){var c=cands[i];if(b[c]&&!unres[c]){b[id]=b[c];break}}
+  });
+  return {b:b,p:p};
 }
 function indexCatalog(c){
   var all=c.b,b={},filtered=false;
@@ -482,7 +546,7 @@ function indexCatalog(c){
     var m=g.filter(function(x){return !DER.test(x)})[0]||g[0];
     g.forEach(function(x){mother[x]=m});
   });
-  return {b:b,raw:all,sig:sig,members:members,mother:mother,ids:Object.keys(b).sort(),filtered:filtered,hidden:Object.keys(all).length-Object.keys(b).length};
+  return {b:b,p:c.p||{},sig:sig,members:members,mother:mother,ids:Object.keys(b).sort(),filtered:filtered,hidden:Object.keys(all).length-Object.keys(b).length};
 }
 function infoIsStatus(){return /^Каталог/.test($('#info').textContent)}
 function catText(){
@@ -493,7 +557,7 @@ function useCatalog(B,T){
   if(!lastB)return false;
   var c=buildCatalog(lastB,lastT);
   if(!Object.keys(c.b).length){$('#info').textContent='Каталог пустой: в файле нет блоков с текстурами.';return false}
-  try{localStorage.setItem(CAT_KEY,JSON.stringify({b:c.b}))}catch(err){}
+  try{localStorage.setItem(CAT_KEY,JSON.stringify({b:c.b,p:c.p}))}catch(err){}
   catalog=indexCatalog(c);
   if(infoIsStatus())$('#info').textContent=catText();
   renderList();
@@ -557,10 +621,7 @@ function renderList(){
   var f=document.createElement('button');f.textContent='✎ свободный режим';f.onclick=selectCustom;box.insertBefore(f,box.firstChild);
 }
 $('#q').addEventListener('input',renderList);
-function availShapes(grp){
-  return {slab:grp.some(function(x){return /_slab$/.test(x)&&!/_double_slab$/.test(x)}),stairs:grp.some(function(x){return /_stairs$/.test(x)})};
-}
-function showInfo(id,m,note){
+function showInfo(id,m,note,mo){
   var grp=catalog.members[catalog.sig[m]],g=grp.filter(function(x){return x!==m});
   var files=[];catalog.b[m].forEach(function(p){if(files.indexOf(p)<0)files.push(p)});
   var t='Выбрано: '+id+'. ';
@@ -570,7 +631,8 @@ function showInfo(id,m,note){
   if(note==='base')t+=' За основу взята оригинальная текстура игры.';
   if(note==='part')t+=' Часть оригинальных файлов не загрузилась, на их месте серая заготовка.';
   if(note==='gray')t+=' Оригинал не загрузился, поставлена серая заготовка.';
-  t+=' Превью показывает блок как куб: у растений и сложных блоков форма в игре другая.';
+  if(mo)t+=' Модель в превью приблизительная: плоскости крестом'+(mo==='azalea'?' и шапка сверху':'')+'.';
+  else t+=' Форма в превью приблизительная.';
   $('#info').textContent=t;
 }
 function loadImg(u){return new Promise(function(ok){var im=new Image();im.crossOrigin='anonymous';im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=u})}
@@ -592,14 +654,15 @@ function baseEntry(m){
 var selTok=0;
 function selectBlock(id){
   if(!catalog||!catalog.b[id])return;
-  var m=catalog.mother[id],tok=++selTok,grp=catalog.members[catalog.sig[m]],av=availShapes(grp);
-  var want=/_stairs$/.test(id)?'stairs':(/_slab$/.test(id)&&!/_double_slab$/.test(id)?'slab':'cube');
-  var sh=((want==='stairs'&&av.stairs)||(want==='slab'&&av.slab))?want:'cube';
+  var m=catalog.mother[id],tok=++selTok,grp=catalog.members[catalog.sig[m]];
+  var mo=modelOf(m),keysList=shapeKeysFor(m,grp);
+  var want=mo?mo:shapeOfId(id);
+  var sh=keysList.indexOf(want)>=0?want:keysList[0];
   function go(e,note){
     if(tok!==selTok)return;
     packCur();cur=m;shape=sh;
-    var so=slotsOf(catalog.b[m]);setupSlots(so.list,so.fm);updShapeUi(av);syncSame();
-    applyEntry(e,function(){build();syncName();showInfo(id,m,note);renderList();scheduleSave()});
+    var so=slotsOf(catalog.b[m]);setupSlots(so.list,so.fm);updShapeUi(keysList);syncSame();
+    applyEntry(e,function(){build();syncName();showInfo(id,m,note,mo);renderList();scheduleSave()});
   }
   if(store[m]&&store[m].slots){go(store[m],'');return}
   $('#info').textContent='Загружаю оригинальные текстуры…';
