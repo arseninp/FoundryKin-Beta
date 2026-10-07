@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FoundryKin v0.5.0 — редактор текстур Bedrock</title>
+<title>FoundryKin v0.5.1 — редактор текстур Bedrock</title>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff;--stage:#cfd8dc}
@@ -37,6 +37,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 .btn{display:inline-flex;align-items:center;border-radius:8px;padding:9px 10px;min-height:40px;cursor:pointer}
 .list{max-height:190px;overflow:auto;display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .list button{background:var(--panel);border:1px solid var(--line);padding:6px 9px;min-height:34px;font-size:13px}
+.list button.fam{border:2px solid var(--acc)}
 #info{margin-top:8px}
 #dbg{margin-top:6px}
 #msg{font-size:13px;color:var(--mute);min-height:18px}
@@ -44,10 +45,10 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 </head>
 <body>
 <main>
-<h1>FoundryKin v0.5.0</h1>
+<h1>FoundryKin v0.5.1</h1>
 
 <div class="sec" style="margin-top:0">
-<p class="lbl">Блок из игры (ищи по-английски: oak, stairs, bookshelf)</p>
+<p class="lbl">Блок из игры (ищи по-английски: oak, stairs, bookshelf). Зелёная рамка: семья выбранного блока. Точка: есть правки.</p>
 <input type="text" id="q" placeholder="поиск блока" autocapitalize="off" autocomplete="off" spellcheck="false">
 <div class="list" id="list"></div>
 <p class="lbl" id="info">Каталог блоков загружается… Пока работает свободный режим.</p>
@@ -90,7 +91,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <button class="ghost" id="expPack">Скачать .mcpack</button>
 </div>
 <p id="msg"></p>
-<p class="lbl">Все блоки, которые ты правил, попадут в один .mcpack. Проект сохраняется автоматически в память браузера на этом устройстве. Если очистить данные браузера, он пропадёт, поэтому скачивай результат.</p>
+<p class="lbl">Текстуры хранятся по файлам игры: если один файл используется в нескольких блоках (например, доски и книжная полка), правка видна везде. В один .mcpack попадают все файлы, которые ты правил. Проект сохраняется автоматически в память браузера на этом устройстве. Если очистить данные браузера, он пропадёт, поэтому скачивай результат.</p>
 </div>
 </main>
 
@@ -98,10 +99,10 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
-var VER='v0.5.0';
+var VER='v0.5.1';
 var res=16, shape='cube', tool='pen', color='#c0392b';
-var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={};
-var store={}, cur='custom', dirty={}, customName='my_block', customSame=true, catalog=null, existing=null, pendingCur=null, shapeKeys=['cube'];
+var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={};
+var files={}, cur='custom', dirty={}, customName='my_block', customSame=true, catalog=null, existing=null, pendingCur=null, shapeKeys=['cube'];
 var FACES=['up','down','north','south','east','west'];
 var FN={up:'верх',down:'низ',north:'север',south:'юг',east:'восток',west:'запад'};
 var SHAPES={
@@ -140,7 +141,14 @@ function fillNoise(c,base,s,grass){
     g.fillStyle='rgb('+clamp(col[0]+v)+','+clamp(col[1]+v)+','+clamp(col[2]+v)+')';g.fillRect(x,y,1,1);
   }
 }
+function starter(){
+  var G=[96,160,64],D=[134,96,67];
+  if(cv.side)fillNoise(cv.side,D,2,G);
+  if(cv.top)fillNoise(cv.top,G,1);
+  if(cv.bottom)fillNoise(cv.bottom,D,3);
+}
 function ctxOf(k){return cv[k].getContext('2d')}
+function fk(id){return cur==='custom'?'custom/'+id:id}
 
 function shapeOfId(id){
   if(/_double_slab$/.test(id))return 'cube';
@@ -304,7 +312,7 @@ function customFaceMap(){return customSame?{up:'side',down:'side',north:'side',s
 function setupSlots(list,fm){
   Object.keys(tex).forEach(function(k){if(tex[k])tex[k].dispose()});
   Object.keys(mats).forEach(function(k){if(mats[k])mats[k].dispose()});
-  tex={};mats={};cv={};undoS={};redoS={};
+  tex={};mats={};cv={};undoS={};redoS={};ph={};
   slots=list;faceMap=fm;
   list.forEach(function(s){
     cv[s.id]=document.createElement('canvas');cv[s.id].width=cv[s.id].height=res;
@@ -339,7 +347,12 @@ function resetHist(){slots.forEach(function(s){undoS[s.id]=[];redoS[s.id]=[]});u
 
 /* ---------- редактор ---------- */
 function drawEd(){ed.width=ed.height=res;ectx.clearRect(0,0,res,res);if(cv[slot])ectx.drawImage(cv[slot],0,0);updHist();drawFb()}
-function touched(){dirty[cur]=true;refreshTex(slot);drawEd();scheduleSave()}
+function touched(){
+  var k=fk(slot),fresh=!dirty[k];
+  dirty[k]=true;delete ph[slot];
+  refreshTex(slot);drawEd();scheduleSave();
+  if(fresh)renderList();
+}
 function cell(e){
   var r=ed.getBoundingClientRect();
   return {x:Math.floor((e.clientX-r.left)/r.width*res),y:Math.floor((e.clientY-r.top)/r.height*res)};
@@ -429,17 +442,23 @@ $('#file').onchange=function(e){
 };
 $('#clr').onclick=function(){pushUndo();ctxOf(slot).clearRect(0,0,res,res);touched()};
 
-/* ---------- состояние проекта и сохранение ---------- */
-var SAVE_KEY='foundrykin.project.v3';
-function curEntry(){
-  var f={};slots.forEach(function(s){f[s.id]=cv[s.id].toDataURL('image/png')});
-  return {res:res,slots:f};
+/* ---------- файлы текстур и сохранение ---------- */
+var SAVE_KEY='foundrykin.project.v4',OLD_KEY='foundrykin.project.v3';
+function packCur(){
+  slots.forEach(function(s){
+    if(ph[s.id])return;
+    files[fk(s.id)]={res:res,data:cv[s.id].toDataURL('image/png')};
+  });
 }
-function packCur(){if(slots.length)store[cur]=curEntry()}
+function entryFor(list){
+  var r=0,o={};
+  list.forEach(function(s){var f=files[fk(s.id)];if(f){o[s.id]=f.data;if(f.res>r)r=f.res}});
+  return {res:r||res,slots:o};
+}
 var saveT=null;
 function scheduleSave(){clearTimeout(saveT);saveT=setTimeout(save,500)}
 function save(){
-  try{packCur();localStorage.setItem(SAVE_KEY,JSON.stringify({v:3,cur:cur,shape:shape,name:customName,customSame:customSame,store:store,dirty:dirty}))}
+  try{packCur();localStorage.setItem(SAVE_KEY,JSON.stringify({v:4,cur:cur,shape:shape,name:customName,customSame:customSame,files:files,dirty:dirty}))}
   catch(err){say('Не удалось сохранить в браузере: '+err.message)}
 }
 function syncName(){
@@ -453,7 +472,7 @@ function applyEntry(e,done){
   slots.forEach(function(s){
     cv[s.id].width=cv[s.id].height=res;
     var src=e.slots&&e.slots[s.id];
-    if(!src){placeholder(ctxOf(s.id),res);fin();return}
+    if(!src){placeholder(ctxOf(s.id),res);ph[s.id]=true;fin();return}
     var img=new Image();
     img.onload=function(){var g=ctxOf(s.id);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res);fin()};
     img.onerror=fin;img.src=src;
@@ -462,22 +481,29 @@ function applyEntry(e,done){
 function startCustom(){
   customSame=true;cur='custom';
   setupSlots(customSlots(),customFaceMap());
-  var G=[96,160,64],D=[134,96,67];
-  fillNoise(cv.side,D,2,G);
+  starter();
   updShapeUi('all');syncSame();rebuildTextures();build();drawEd();syncName();
 }
 function load(){
   var raw=null,o=null;
   try{raw=localStorage.getItem(SAVE_KEY)}catch(err){return false}
   if(raw){try{o=JSON.parse(raw)}catch(err){o=null}}
-  if(!o||o.v!==3||!o.store)return false;
-  store=o.store;dirty=o.dirty||{};customName=o.name||'my_block';customSame=o.customSame!==false;
-  pendingCur=(o.cur&&o.cur!=='custom')?o.cur:null;
-  if(!pendingCur)shape=o.shape||'cube';
+  if(o&&o.v===4&&o.files){
+    files=o.files;dirty=o.dirty||{};customName=o.name||'my_block';customSame=o.customSame!==false;
+    pendingCur=(o.cur&&o.cur!=='custom')?o.cur:null;
+    if(!pendingCur)shape=o.shape||'cube';
+  }else{
+    var old=null;
+    try{old=JSON.parse(localStorage.getItem(OLD_KEY))}catch(err){}
+    if(!old||old.v!==3||!old.store||!old.store.custom||!old.store.custom.slots)return false;
+    customName=old.name||'my_block';customSame=old.customSame!==false;
+    Object.keys(old.store.custom.slots).forEach(function(k){files['custom/'+k]={res:old.store.custom.res||16,data:old.store.custom.slots[k]};dirty['custom/'+k]=true});
+  }
   cur='custom';
   setupSlots(customSlots(),customFaceMap());updShapeUi('all');syncSame();
-  var e=store.custom;
-  if(e&&e.slots){applyEntry(e,function(){build();syncName()})}else{fillNoise(cv.side,[134,96,67],2,[96,160,64]);rebuildTextures();build();drawEd();syncName()}
+  var e=entryFor(slots);
+  if(Object.keys(e.slots).length)applyEntry(e,function(){build();syncName()});
+  else{starter();rebuildTextures();build();drawEd();syncName()}
   return true;
 }
 
@@ -596,9 +622,9 @@ function loadCatalog(){
   });
 }
 $('#catfile').onchange=function(e){
-  var inp=e.target,files=[].slice.call(inp.files),left=files.length,B=null,T=null;
+  var inp=e.target,fl=[].slice.call(inp.files),left=fl.length,B=null,T=null;
   if(!left)return;
-  files.forEach(function(f){
+  fl.forEach(function(f){
     var fr=new FileReader();
     fr.onload=function(){
       try{var j=parseLoose(fr.result);if(j&&j.texture_data)T=j;else B=j}catch(err){say('Файл '+f.name+' не читается как JSON: '+err.message)}
@@ -609,13 +635,15 @@ $('#catfile').onchange=function(e){
   });
   inp.value='';
 };
+function isEdited(id){return catalog.b[id].some(function(p){return dirty[p]})}
 function renderList(){
   var q=$('#q').value.trim().toLowerCase().replace(/\s+/g,'_'),box=$('#list');box.innerHTML='';
   if(!catalog)return;
+  var cs=(cur!=='custom'&&catalog.sig[cur])||null;
   var ids=catalog.ids.filter(function(id){return !q||id.indexOf(q)>=0}).slice(0,60);
   ids.forEach(function(id){
-    var b=document.createElement('button');b.textContent=id;
-    if(dirty[catalog.mother[id]])b.style.borderColor='var(--acc)';
+    var b=document.createElement('button');b.textContent=id+(isEdited(id)?' ●':'');
+    if(cs&&catalog.sig[id]===cs)b.className='fam';
     b.onclick=function(){selectBlock(id)};box.appendChild(b);
   });
   var f=document.createElement('button');f.textContent='✎ свободный режим';f.onclick=selectCustom;box.insertBefore(f,box.firstChild);
@@ -623,10 +651,10 @@ function renderList(){
 $('#q').addEventListener('input',renderList);
 function showInfo(id,m,note,mo){
   var grp=catalog.members[catalog.sig[m]],g=grp.filter(function(x){return x!==m});
-  var files=[];catalog.b[m].forEach(function(p){if(files.indexOf(p)<0)files.push(p)});
+  var fl=[];catalog.b[m].forEach(function(p){if(fl.indexOf(p)<0)fl.push(p)});
   var t='Выбрано: '+id+'. ';
   if(id!==m)t+='У него нет своей текстуры, он берёт её у «'+m+'». ';
-  t+='Файлов текстур: '+files.length+' ('+files.join(', ')+'). ';
+  t+='Файлов текстур: '+fl.length+' ('+fl.join(', ')+'). ';
   if(g.length)t+='Вместе изменятся ещё '+g.length+': '+g.slice(0,8).join(', ')+(g.length>8?' и другие.':'.');
   if(note==='base')t+=' За основу взята оригинальная текстура игры.';
   if(note==='part')t+=' Часть оригинальных файлов не загрузилась, на их месте серая заготовка.';
@@ -637,18 +665,20 @@ function showInfo(id,m,note,mo){
 }
 function loadImg(u){return new Promise(function(ok){var im=new Image();im.crossOrigin='anonymous';im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=u})}
 function loadAny(p){return loadImg(VAN1+p+'.png').then(function(im){return im||loadImg(VAN2+p+'.png')})}
-function baseEntry(m){
-  var p=catalog.b[m],uniq=[];
-  p.forEach(function(x){if(uniq.indexOf(x)<0)uniq.push(x)});
-  return Promise.all(uniq.map(loadAny)).then(function(imgs){
-    var first=imgs.filter(Boolean)[0];
-    var r=(first&&first.width===32)?32:16,out={},c=document.createElement('canvas'),miss=0;
-    uniq.forEach(function(x,i){
-      var im=imgs[i];c.width=c.height=r;var g=c.getContext('2d');g.imageSmoothingEnabled=false;
-      if(im)g.drawImage(im,0,0,im.width,im.width,0,0,r,r);else{placeholder(g,r);miss++}
-      out[x]=c.toDataURL('image/png');
+function ensureFiles(m){
+  var p=catalog.b[m],need=[];
+  p.forEach(function(x){if(!files[x]&&need.indexOf(x)<0)need.push(x)});
+  if(!need.length)return Promise.resolve({vanilla:true,missing:0,loaded:false});
+  return Promise.all(need.map(loadAny)).then(function(imgs){
+    var first=imgs.filter(Boolean)[0],r=(first&&first.width===32)?32:16,miss=0,c=document.createElement('canvas');
+    need.forEach(function(x,i){
+      var im=imgs[i];
+      if(!im){miss++;return}
+      c.width=c.height=r;var g=c.getContext('2d');g.imageSmoothingEnabled=false;
+      g.drawImage(im,0,0,im.width,im.width,0,0,r,r);
+      files[x]={res:r,data:c.toDataURL('image/png')};
     });
-    return {res:r,slots:out,vanilla:!!first,missing:miss};
+    return {vanilla:!!first,missing:miss,loaded:true};
   });
 }
 var selTok=0;
@@ -658,33 +688,34 @@ function selectBlock(id){
   var mo=modelOf(m),keysList=shapeKeysFor(m,grp);
   var want=mo?mo:shapeOfId(id);
   var sh=keysList.indexOf(want)>=0?want:keysList[0];
-  function go(e,note){
+  function go(note){
     if(tok!==selTok)return;
     packCur();cur=m;shape=sh;
     var so=slotsOf(catalog.b[m]);setupSlots(so.list,so.fm);updShapeUi(keysList);syncSame();
-    applyEntry(e,function(){build();syncName();showInfo(id,m,note,mo);renderList();scheduleSave()});
+    applyEntry(entryFor(so.list),function(){build();syncName();showInfo(id,m,note,mo);renderList();scheduleSave()});
   }
-  if(store[m]&&store[m].slots){go(store[m],'');return}
   $('#info').textContent='Загружаю оригинальные текстуры…';
-  baseEntry(m).then(function(e){go(e,!e.vanilla?'gray':(e.missing?'part':'base'))}).catch(function(err){
+  ensureFiles(m).then(function(r){go(!r.vanilla?'gray':(r.missing?'part':(r.loaded?'base':'')))}).catch(function(err){
     showErr('загрузка блока: '+err.message);
-    go({res:16,slots:null},'gray');
+    go('gray');
   });
 }
 function selectCustom(){
   selTok++;packCur();cur='custom';
   setupSlots(customSlots(),customFaceMap());updShapeUi('all');syncSame();
-  var e=store.custom||{res:res,slots:null};
-  applyEntry(e,function(){build();syncName();$('#info').textContent='Свободный режим: имя блока вводится вручную.';scheduleSave()});
+  var e=entryFor(slots),after=function(){build();syncName();renderList();$('#info').textContent='Свободный режим: имя блока вводится вручную.';scheduleSave()};
+  if(Object.keys(e.slots).length)applyEntry(e,after);
+  else{starter();rebuildTextures();drawEd();after()}
 }
 $('#same').addEventListener('change',function(){
   if(cur!=='custom')return;
   var on=this.checked;if(on===customSame)return;
   packCur();
-  var s=(store.custom&&store.custom.slots)||{};
-  var ne={res:res,slots:on?{side:s.side}:{top:s.top||s.side,side:s.side,bottom:s.bottom||s.side}};
+  var g=function(k){var f=files['custom/'+k];return f&&f.data};
+  var ns={side:g('side')};
+  if(!on){ns.top=g('top')||g('side');ns.bottom=g('bottom')||g('side')}
   customSame=on;setupSlots(customSlots(),customFaceMap());
-  applyEntry(ne,function(){build();scheduleSave()});
+  applyEntry({res:res,slots:ns},function(){build();scheduleSave()});
 });
 
 /* ---------- экспорт ---------- */
@@ -699,37 +730,48 @@ function dataToBlob(d){
   var bin=atob(d.split(',')[1]),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
   return new Blob([u],{type:'image/png'});
 }
-function filesFor(id,e){
-  var out=[],seen={},s=(e&&e.slots)||{};
-  function add(p,d){if(seen[p]||!d)return;seen[p]=1;out.push({path:p+'.png',data:d})}
-  if(id==='custom'){
-    var n=cleanName(customName);
-    if(customSame)add('textures/blocks/'+n,s.side);
-    else{add('textures/blocks/'+n+'_top',s.top);add('textures/blocks/'+n+'_side',s.side);add('textures/blocks/'+n+'_bottom',s.bottom)}
-  }else{
-    Object.keys(s).forEach(function(p){add(p,s[p])});
-  }
+function customPath(id){var n=cleanName(customName);return customSame?'textures/blocks/'+n:'textures/blocks/'+n+'_'+id}
+function curFiles(){
+  packCur();
+  var out=[],seen={};
+  slots.forEach(function(s){
+    var f=files[fk(s.id)];if(!f)return;
+    var p=cur==='custom'?customPath(s.id):s.id;
+    if(!seen[p]){seen[p]=1;out.push({path:p+'.png',data:f.data})}
+  });
+  return out;
+}
+function dirtyFiles(){
+  var out=[],seen={};
+  Object.keys(dirty).forEach(function(k){
+    var f=files[k];if(!f)return;
+    var p;
+    if(k.indexOf('custom/')===0){var id=k.slice(7);if(customSame&&id!=='side')return;p=customPath(id)}
+    else p=k;
+    if(!seen[p]){seen[p]=1;out.push({path:p+'.png',data:f.data})}
+  });
   return out;
 }
 $('#expPng').onclick=function(){
-  packCur();var f=filesFor(cur,store[cur]);
+  var f=curFiles();
   f.forEach(function(x,i){setTimeout(function(){download(dataToBlob(x.data),x.path.split('/').pop())},i*300)});
   say('PNG: '+f.length+' файл(а).');
 };
 function uuid(){return (window.crypto&&crypto.randomUUID)?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16)})}
 $('#expPack').onclick=function(){
   if(typeof JSZip==='undefined'){say('Библиотека JSZip не загрузилась (нужен интернет при первом запуске).');return}
-  packCur();
-  var ids=Object.keys(store).filter(function(id){return dirty[id]||id===cur});
-  var z=new JSZip(),count=0,names=[];
-  ids.forEach(function(id){filesFor(id,store[id]).forEach(function(x){z.file(x.path,x.data.split(',')[1],{base64:true});count++});names.push(id)});
-  if(!count){say('Нечего экспортировать: нарисуй хотя бы одну текстуру.');return}
+  var all=dirtyFiles(),seen={};
+  all.forEach(function(x){seen[x.path]=1});
+  curFiles().forEach(function(x){if(!seen[x.path]){seen[x.path]=1;all.push(x)}});
+  if(!all.length){say('Нечего экспортировать: нарисуй хотя бы одну текстуру.');return}
+  var z=new JSZip();
+  all.forEach(function(x){z.file(x.path,x.data.split(',')[1],{base64:true})});
   z.file('manifest.json',JSON.stringify({
     format_version:2,
     header:{name:'FoundryKin pack',description:'Создано в FoundryKin',uuid:uuid(),version:[1,0,0],min_engine_version:[1,20,0]},
     modules:[{type:'resources',uuid:uuid(),version:[1,0,0]}]
   },null,2));
-  z.generateAsync({type:'blob'}).then(function(b){download(b,'FoundryKin_pack.mcpack');say('Пак собран: файлов — '+count+', блоков — '+names.length+'.')});
+  z.generateAsync({type:'blob'}).then(function(b){download(b,'FoundryKin_pack.mcpack');say('Пак собран, файлов текстур: '+all.length+'.')});
 };
 $('#name').addEventListener('input',function(){if(cur==='custom'){customName=this.value;scheduleSave()}});
 
