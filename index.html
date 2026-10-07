@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FoundryKin v0.3.2 — редактор текстур Bedrock</title>
+<title>FoundryKin v0.3.3 — редактор текстур Bedrock</title>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff;--stage:#cfd8dc}
@@ -44,7 +44,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 </head>
 <body>
 <main>
-<h1>FoundryKin v0.3.2</h1>
+<h1>FoundryKin v0.3.3</h1>
 
 <div class="sec" style="margin-top:0">
 <p class="lbl">Блок из игры (ищи по-английски: oak, stairs, bookshelf)</p>
@@ -56,6 +56,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 
 <div class="stage" id="stage"><canvas id="fb" width="300" height="300" style="display:none"></canvas><span class="hint" id="hint">тяни, чтобы покрутить</span></div>
 <p class="lbl" id="dbg">Запуск…</p>
+<div class="row"><button class="ghost" id="fbBtn">Переключить 2D / 3D</button></div>
 
 <div class="row"><div class="seg" style="width:100%" id="shapes">
 <button data-s="cube" class="on">Куб</button><button data-s="slab">Плита</button><button data-s="stairs">Ступени</button></div></div>
@@ -99,7 +100,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
-var VER='v0.3.2';
+var VER='v0.3.3';
 var res=16, shape='cube', slot='side', tool='pen', color='#c0392b';
 var keys=['top','side','bottom'], cv={}, tex={}, mats={};
 var undoS={top:[],side:[],bottom:[]}, redoS={top:[],side:[],bottom:[]};
@@ -144,7 +145,7 @@ if(gl){
   try{
     renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
     renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(W,W);stage.insertBefore(renderer.domElement,stage.firstChild);
-    scene=new THREE.Scene();cam=new THREE.PerspectiveCamera(35,1,.1,50);cam.position.set(0,0,4.4);
+    scene=new THREE.Scene();cam=new THREE.PerspectiveCamera(35,1,.1,50);cam.position.set(0,0,4.4);cam.lookAt(0,0,0);
     scene.add(new THREE.AmbientLight(0xffffff,.75));var dl=new THREE.DirectionalLight(0xffffff,.55);dl.position.set(2,4,3);scene.add(dl);
     keys.forEach(function(k){mats[k]=new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:THREE.DoubleSide})});
     edgeMat=new THREE.LineBasicMaterial({color:0x9aa0a6});
@@ -153,7 +154,16 @@ if(gl){
 }
 function makeTex(k){
   if(!gl)return null;
-  var t=new THREE.CanvasTexture(cv[k]);t.magFilter=t.minFilter=THREE.NearestFilter;t.generateMipmaps=false;return t;
+  var n=res,d=cv[k].getContext('2d').getImageData(0,0,n,n).data,buf=new Uint8Array(n*n*4);
+  for(var y=0;y<n;y++){var s=y*n*4,t=(n-1-y)*n*4;for(var x=0;x<n*4;x++)buf[t+x]=d[s+x]}
+  var tx=new THREE.DataTexture(buf,n,n,THREE.RGBAFormat);
+  tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;tx.needsUpdate=true;return tx;
+}
+function refreshTex(k){
+  if(!gl)return;
+  if(tex[k])tex[k].dispose();
+  tex[k]=makeTex(k);mats[k].map=tex[k];mats[k].needsUpdate=true;
+  applySame();
 }
 function rebuildTextures(){
   if(gl)keys.forEach(function(k){if(tex[k])tex[k].dispose();tex[k]=makeTex(k);mats[k].map=tex[k];mats[k].needsUpdate=true});
@@ -200,7 +210,9 @@ var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function loop(t){
   requestAnimationFrame(loop);
   if(!gl||fbOn)return;
-  if(idle&&!reduce)group.rotation.y+=(t-lastT)*.0004;lastT=t;
+  if(!isFinite(group.rotation.x)||!isFinite(group.rotation.y))group.rotation.set(.45,-.7,0);
+  if(idle&&!reduce&&isFinite(t))group.rotation.y+=Math.min(100,(t-lastT))*.0004;
+  if(isFinite(t))lastT=t;
   try{renderer.render(scene,cam);frames++}catch(err){showErr('рендер: '+err.message);setFb(true)}
 }
 addEventListener('resize',function(){if(!gl)return;var w=stage.clientWidth;if(w)renderer.setSize(w,w)});
@@ -209,9 +221,10 @@ addEventListener('resize',function(){if(!gl)return;var w=stage.clientWidth;if(w)
 function setFb(on){
   fbOn=on;$('#fb').style.display=on?'block':'none';
   if(renderer)renderer.domElement.style.display=on?'none':'block';
-  $('#hint').textContent=on?'упрощённый 2D-вид (3D недоступно)':'тяни, чтобы покрутить';
+  $('#hint').textContent=on?'упрощённый 2D-вид':'тяни, чтобы покрутить';
   if(on)drawFb();
 }
+$('#fbBtn').onclick=function(){if(!gl){say('3D недоступно на этом устройстве.');return}setFb(!fbOn)};
 function drawFb(){
   if(!fbOn)return;
   var c=$('#fb'),g=c.getContext('2d');
@@ -246,7 +259,7 @@ function resetHist(){keys.forEach(function(k){undoS[k]=[];redoS[k]=[]});updHist(
 
 /* ---------- редактор ---------- */
 function drawEd(){ed.width=ed.height=res;ectx.clearRect(0,0,res,res);ectx.drawImage(cv[slot],0,0);updHist();drawFb()}
-function touched(){dirty[cur]=true;if(tex[slot])tex[slot].needsUpdate=true;drawEd();scheduleSave()}
+function touched(){dirty[cur]=true;refreshTex(slot);drawEd();scheduleSave()}
 function cell(e){
   var r=ed.getBoundingClientRect();
   return {x:Math.floor((e.clientX-r.left)/r.width*res),y:Math.floor((e.clientY-r.top)/r.height*res)};
@@ -579,13 +592,17 @@ $('#expPack').onclick=function(){
 $('#name').addEventListener('input',function(){if(cur==='custom'){customName=this.value;scheduleSave()}});
 
 /* ---------- старт ---------- */
-keys.forEach(function(k){tex[k]=makeTex(k)});
+keys.forEach(function(k){tex[k]=null});
 initTex();rebuildTextures();build();setSlot('side');resetHist();
 if(!gl)setFb(true);
 load();syncName();loadCatalog();
 requestAnimationFrame(loop);
 setTimeout(function(){if(gl&&!fbOn&&frames<2){showErr('3D не отрисовался, включён запасной 2D-вид');setFb(true)}},2500);
-setInterval(function(){if(errs.length)return;$('#dbg').textContent=VER+' · '+(fbOn?'2D-вид':'3D')+' · кадров: '+frames+' · текстура '+res+'px'},1000);
+setInterval(function(){
+  if(errs.length)return;
+  var mp=(gl&&mats.side&&mats.side.map&&mats.side.map.image)?mats.side.map.image.width:0;
+  $('#dbg').textContent=VER+' · '+(fbOn?'2D-вид':'3D')+' · кадров: '+frames+' · объектов: '+(group?group.children.length:0)+' · угол '+(group?group.rotation.x.toFixed(2)+'/'+group.rotation.y.toFixed(2):'-')+' · карта '+mp+'px';
+},1000);
 })();
 </script>
 </body>
