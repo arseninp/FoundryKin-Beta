@@ -3,15 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FoundryKin v0.5.1 — редактор текстур Bedrock</title>
-<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<title>FoundryKin v0.5.2 — редактор текстур Bedrock</title>
 <style>
 :root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff;--stage:#cfd8dc}
 @media (prefers-color-scheme:dark){:root{--bg:#16181b;--panel:#202327;--ink:#e8e6e1;--mute:#9a9ea5;--line:#33373d;--acc:#6fbf80;--accink:#10210f;--stage:#0f1113}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}
 main{max-width:460px;margin:0 auto;padding:14px 14px 28px}
-h1{font:700 26px "Pixelify Sans",ui-monospace,monospace;margin:4px 0 12px;letter-spacing:.5px}
+h1{font:700 22px system-ui,-apple-system,"Segoe UI",sans-serif;margin:4px 0 12px}
 .stage{position:relative;background:var(--stage);border-radius:14px;overflow:hidden;aspect-ratio:1/1;touch-action:pan-y}
 .stage canvas{display:block;width:100%;height:100%}
 .hint{position:absolute;left:10px;bottom:8px;font-size:12px;color:var(--mute);pointer-events:none}
@@ -45,7 +44,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 </head>
 <body>
 <main>
-<h1>FoundryKin v0.5.1</h1>
+<h1>FoundryKin v0.5.2</h1>
 
 <div class="sec" style="margin-top:0">
 <p class="lbl">Блок из игры (ищи по-английски: oak, stairs, bookshelf). Зелёная рамка: семья выбранного блока. Точка: есть правки.</p>
@@ -99,7 +98,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
-var VER='v0.5.1';
+var VER='v0.5.2';
 var res=16, shape='cube', tool='pen', color='#c0392b';
 var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={};
 var files={}, cur='custom', dirty={}, customName='my_block', customSame=true, catalog=null, existing=null, pendingCur=null, shapeKeys=['cube'];
@@ -115,7 +114,8 @@ var SHAPES={
   button:{label:'Кнопка',parts:[[.375,.125,.25,0,-.4375,0]],shift:.4},
   plate:{label:'Нажимная плита',parts:[[.875,.0625,.875,0,-.46875,0]],shift:.45},
   plant:{label:'Растение'},
-  azalea:{label:'Азалия'}
+  azalea:{label:'Азалия'},
+  beacon:{label:'Маяк'}
 };
 var ALL_SHAPES=['cube','slab','stairs','wall','fence','gate','button','plate'];
 var $=function(s){return document.querySelector(s)};
@@ -162,6 +162,7 @@ function shapeOfId(id){
   return 'cube';
 }
 function modelOf(m){
+  if(m==='beacon')return 'beacon';
   if(m==='azalea'||m==='flowering_azalea')return 'azalea';
   return (catalog&&catalog.p&&catalog.p[m])?'plant':null;
 }
@@ -224,10 +225,17 @@ function buildPlant(){
   group.add(plane(st,1,0,Math.PI/4));group.add(plane(st,1,0,-Math.PI/4));
   if(shape==='azalea'){var n=faceMap.north;group.add(box(1,.375,1,0,.3125,0,[n,n,faceMap.up,n,n,n]))}
 }
+function buildBeacon(){
+  var f=faceMap,g=f.east,b=f.down,c=f.up;
+  group.add(box(.75,.1875,.75,0,-.40625,0,[b,b,b,b,b,b]));
+  group.add(box(.625,.625,.625,0,0,0,[c,c,c,c,c,c]));
+  group.add(box(1,1,1,0,0,0,[g,g,g,g,g,g]));
+}
 function build(){
   if(gl){
     while(group.children.length)group.remove(group.children[0]);
     if(shape==='plant'||shape==='azalea')buildPlant();
+    else if(shape==='beacon')buildBeacon();
     else{
       var d=SHAPES[shape]||SHAPES.cube;
       d.parts.forEach(function(a){group.add(box.apply(null,a))});
@@ -283,6 +291,12 @@ function drawFb(){
   function fbPlane(img){if(img)face(img,0,0,R,R,P(0,1,1),{x:2*a,y:0},{x:0,y:s},0)}
   if(shape==='plant')fbPlane(im('up'));
   else if(shape==='azalea'){fbPlane(im('east'));fbBox(0,1,0,1,.625,1,{left:im('north'),right:im('north'),top:im('up')})}
+  else if(shape==='beacon'){
+    var bd=im('down'),cr=im('up'),sh2=im('east');
+    fbBox(.125,.875,.125,.875,0,.1875,{left:bd,right:bd,top:bd});
+    fbBox(.1875,.8125,.1875,.8125,.1875,.8125,{left:cr,right:cr,top:cr});
+    fbBox(0,1,0,1,0,1,{left:sh2,right:sh2,top:sh2});
+  }
   else{
     var d=SHAPES[shape]||SHAPES.cube,sh=d.shift||0;
     var list=d.parts.map(function(p){return [p[3]-p[0]/2+.5,p[3]+p[0]/2+.5,p[5]-p[2]/2+.5,p[5]+p[2]/2+.5,p[4]-p[1]/2+.5+sh,p[4]+p[1]/2+.5+sh]});
@@ -659,7 +673,7 @@ function showInfo(id,m,note,mo){
   if(note==='base')t+=' За основу взята оригинальная текстура игры.';
   if(note==='part')t+=' Часть оригинальных файлов не загрузилась, на их месте серая заготовка.';
   if(note==='gray')t+=' Оригинал не загрузился, поставлена серая заготовка.';
-  if(mo)t+=' Модель в превью приблизительная: плоскости крестом'+(mo==='azalea'?' и шапка сверху':'')+'.';
+  if(mo)t+=' Модель в превью приблизительная: '+(mo==='beacon'?'стеклянная оболочка, ядро и основание внутри':'плоскости крестом'+(mo==='azalea'?' и шапка сверху':''))+'.';
   else t+=' Форма в превью приблизительная.';
   $('#info').textContent=t;
 }
