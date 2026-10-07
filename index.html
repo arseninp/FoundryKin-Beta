@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FoundryKin v0.5.2 — редактор текстур Bedrock</title>
+<title>FoundryKin v0.5.3 — редактор текстур Bedrock</title>
 <style>
 :root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff;--stage:#cfd8dc}
 @media (prefers-color-scheme:dark){:root{--bg:#16181b;--panel:#202327;--ink:#e8e6e1;--mute:#9a9ea5;--line:#33373d;--acc:#6fbf80;--accink:#10210f;--stage:#0f1113}}
@@ -44,7 +44,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 </head>
 <body>
 <main>
-<h1>FoundryKin v0.5.2</h1>
+<h1>FoundryKin v0.5.3</h1>
 
 <div class="sec" style="margin-top:0">
 <p class="lbl">Блок из игры (ищи по-английски: oak, stairs, bookshelf). Зелёная рамка: семья выбранного блока. Точка: есть правки.</p>
@@ -98,7 +98,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
-var VER='v0.5.2';
+var VER='v0.5.3';
 var res=16, shape='cube', tool='pen', color='#c0392b';
 var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={};
 var files={}, cur='custom', dirty={}, customName='my_block', customSame=true, catalog=null, existing=null, pendingCur=null, shapeKeys=['cube'];
@@ -211,7 +211,7 @@ function box(w,h,d,x,y,z,ids){
     uv.setXY(i,u,v);
   }
   var f=faceMap;
-  ids=ids||[f.east,f.west,f.up,f.down,f.south,f.north];
+  if(!ids)ids=(cur==='beacon'&&shape==='cube')?[f.east,f.east,f.east,f.east,f.east,f.east]:[f.east,f.west,f.up,f.down,f.south,f.north];
   var m=new THREE.Mesh(g,ids.map(function(k){return mats[k]}));
   m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),edgeMat));
   m.position.set(x,y,z);return m;
@@ -282,7 +282,7 @@ function drawFb(){
     g.restore();
   }
   function fbBox(x0,x1,y0,y1,z0,z1,I){
-    I=I||{left:im('south'),right:im('east'),top:im('up')};
+    I=I||((cur==='beacon'&&shape==='cube')?{left:im('east'),right:im('east'),top:im('east')}:{left:im('south'),right:im('east'),top:im('up')});
     if(!I.left||!I.right||!I.top)return;
     face(I.left,x0*R,(1-z1)*R,(x1-x0)*R,(z1-z0)*R,P(x0,y1,z1),{x:(x1-x0)*a,y:(x1-x0)*b},{x:0,y:(z1-z0)*s},.2);
     face(I.right,(1-y1)*R,(1-z1)*R,(y1-y0)*R,(z1-z0)*R,P(x1,y1,z1),{x:(y1-y0)*a,y:-(y1-y0)*b},{x:0,y:(z1-z0)*s},.35);
