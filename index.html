@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FoundryKin v0.3.3 — редактор текстур Bedrock</title>
+<title>FoundryKin v0.4.0 — редактор текстур Bedrock</title>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff;--stage:#cfd8dc}
@@ -16,7 +16,7 @@ h1{font:700 26px "Pixelify Sans",ui-monospace,monospace;margin:4px 0 12px;letter
 .stage canvas{display:block;width:100%;height:100%}
 .hint{position:absolute;left:10px;bottom:8px;font-size:12px;color:var(--mute);pointer-events:none}
 .row{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
-.seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;flex-wrap:wrap}
 .seg button{flex:1}
 button{font:inherit;color:var(--ink);background:transparent;border:0;border-radius:8px;padding:9px 10px;min-height:40px;cursor:pointer}
 button.on{background:var(--acc);color:var(--accink);font-weight:600}
@@ -44,7 +44,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 </head>
 <body>
 <main>
-<h1>FoundryKin v0.3.3</h1>
+<h1>FoundryKin v0.4.0</h1>
 
 <div class="sec" style="margin-top:0">
 <p class="lbl">Блок из игры (ищи по-английски: oak, stairs, bookshelf)</p>
@@ -58,12 +58,11 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <p class="lbl" id="dbg">Запуск…</p>
 <div class="row"><button class="ghost" id="fbBtn">Переключить 2D / 3D</button></div>
 
-<div class="row"><div class="seg" style="width:100%" id="shapes">
+<div class="row" id="shapesRow"><div class="seg" style="width:100%" id="shapes">
 <button data-s="cube" class="on">Куб</button><button data-s="slab">Плита</button><button data-s="stairs">Ступени</button></div></div>
 
-<label class="chk"><input type="checkbox" id="same" checked> Одна текстура на все грани</label>
-<div class="seg" id="slots">
-<button data-k="top">Верх</button><button data-k="side" class="on">Бок</button><button data-k="bottom">Низ</button></div>
+<label class="chk" id="sameLabel"><input type="checkbox" id="same" checked> Одна текстура на все грани</label>
+<div class="seg" id="slots"></div>
 
 <div class="sec"><canvas id="ed"></canvas></div>
 
@@ -81,7 +80,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <button class="ghost" id="clr">Очистить грань</button>
 <input type="file" id="file" accept="image/png,image/*">
 </div>
-<p class="lbl">Загруженный PNG ляжет в выбранную грань. Прозрачные пиксели остаются прозрачными.</p>
+<p class="lbl">Загруженный PNG ляжет в выбранную текстуру. Прозрачные пиксели остаются прозрачными.</p>
 </div>
 
 <div class="sec">
@@ -100,14 +99,14 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
-var VER='v0.3.3';
-var res=16, shape='cube', slot='side', tool='pen', color='#c0392b';
-var keys=['top','side','bottom'], cv={}, tex={}, mats={};
-var undoS={top:[],side:[],bottom:[]}, redoS={top:[],side:[],bottom:[]};
-var store={}, cur='custom', dirty={}, customName='my_block', catalog=null;
+var VER='v0.4.0';
+var res=16, shape='cube', tool='pen', color='#c0392b';
+var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={};
+var store={}, cur='custom', dirty={}, customName='my_block', customSame=true, catalog=null, existing=null, pendingCur=null;
+var FACES=['up','down','north','south','east','west'];
+var FN={up:'верх',down:'низ',north:'север',south:'юг',east:'восток',west:'запад'};
 var $=function(s){return document.querySelector(s)};
 var ed=$('#ed'), ectx=ed.getContext('2d');
-keys.forEach(function(k){cv[k]=document.createElement('canvas')});
 
 var errs=[];
 function showErr(t){errs.push(t);if(errs.length>3)errs.shift();$('#dbg').textContent=VER+' ошибка: '+errs.join(' | ')}
@@ -120,8 +119,6 @@ function rnd(x,y,s){var h=Math.sin(x*127.1+y*311.7+s*74.7)*43758.5453;return h-M
 function placeholder(g,r){
   for(var y=0;y<r;y++)for(var x=0;x<r;x++){var v=118+Math.round(rnd(Math.floor(x*16/r),Math.floor(y*16/r),5)*50);g.fillStyle='rgb('+v+','+v+','+v+')';g.fillRect(x,y,1,1)}
 }
-
-/* ---------- стартовые текстуры (блок травы) ---------- */
 function fillNoise(c,base,s,grass){
   var n=c.width,g=c.getContext('2d');g.clearRect(0,0,n,n);
   for(var y=0;y<n;y++)for(var x=0;x<n;x++){
@@ -131,11 +128,7 @@ function fillNoise(c,base,s,grass){
     g.fillStyle='rgb('+clamp(col[0]+v)+','+clamp(col[1]+v)+','+clamp(col[2]+v)+')';g.fillRect(x,y,1,1);
   }
 }
-function initTex(){
-  keys.forEach(function(k){cv[k].width=cv[k].height=res});
-  var G=[96,160,64],D=[134,96,67];
-  fillNoise(cv.top,G,1);fillNoise(cv.side,D,2,G);fillNoise(cv.bottom,D,3);
-}
+function ctxOf(k){return cv[k].getContext('2d')}
 
 /* ---------- 3D (WebGL) ---------- */
 var stage=$('#stage'),W=stage.clientWidth||360;
@@ -147,28 +140,23 @@ if(gl){
     renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(W,W);stage.insertBefore(renderer.domElement,stage.firstChild);
     scene=new THREE.Scene();cam=new THREE.PerspectiveCamera(35,1,.1,50);cam.position.set(0,0,4.4);cam.lookAt(0,0,0);
     scene.add(new THREE.AmbientLight(0xffffff,.75));var dl=new THREE.DirectionalLight(0xffffff,.55);dl.position.set(2,4,3);scene.add(dl);
-    keys.forEach(function(k){mats[k]=new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:THREE.DoubleSide})});
     edgeMat=new THREE.LineBasicMaterial({color:0x9aa0a6});
     group=new THREE.Group();group.rotation.set(.45,-.7,0);scene.add(group);
   }catch(err){gl=false;renderer=null;showErr('WebGL недоступен: '+err.message)}
 }
-function makeTex(k){
+function makeTex(id){
   if(!gl)return null;
-  var n=res,d=cv[k].getContext('2d').getImageData(0,0,n,n).data,buf=new Uint8Array(n*n*4);
+  var n=res,d=ctxOf(id).getImageData(0,0,n,n).data,buf=new Uint8Array(n*n*4);
   for(var y=0;y<n;y++){var s=y*n*4,t=(n-1-y)*n*4;for(var x=0;x<n*4;x++)buf[t+x]=d[s+x]}
   var tx=new THREE.DataTexture(buf,n,n,THREE.RGBAFormat);
   tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;tx.needsUpdate=true;return tx;
 }
-function refreshTex(k){
-  if(!gl)return;
-  if(tex[k])tex[k].dispose();
-  tex[k]=makeTex(k);mats[k].map=tex[k];mats[k].needsUpdate=true;
-  applySame();
+function refreshTex(id){
+  if(!gl||!cv[id])return;
+  if(tex[id])tex[id].dispose();
+  tex[id]=makeTex(id);mats[id].map=tex[id];mats[id].needsUpdate=true;
 }
-function rebuildTextures(){
-  if(gl)keys.forEach(function(k){if(tex[k])tex[k].dispose();tex[k]=makeTex(k);mats[k].map=tex[k];mats[k].needsUpdate=true});
-  applySame();
-}
+function rebuildTextures(){slots.forEach(function(s){refreshTex(s.id)})}
 function box(w,h,d,x,y,z){
   var g=new THREE.BoxGeometry(w,h,d),p=g.attributes.position,n=g.attributes.normal,uv=g.attributes.uv;
   for(var i=0;i<p.count;i++){
@@ -178,7 +166,8 @@ function box(w,h,d,x,y,z){
     else{u=X+.5;v=ny>0?.5-Z:Z+.5}
     uv.setXY(i,u,v);
   }
-  var m=new THREE.Mesh(g,[mats.side,mats.side,mats.top,mats.bottom,mats.side,mats.side]);
+  var f=faceMap;
+  var m=new THREE.Mesh(g,[mats[f.east],mats[f.west],mats[f.up],mats[f.down],mats[f.south],mats[f.north]]);
   m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),edgeMat));
   m.position.set(x,y,z);return m;
 }
@@ -190,16 +179,6 @@ function build(){
     if(shape==='slab')group.children.forEach(function(m){m.position.y+=.25});
   }
   drawFb();
-}
-function applySame(){
-  var same=$('#same').checked;
-  if(gl){
-    mats.side.map=tex.side;
-    mats.top.map=same?tex.side:tex.top;mats.bottom.map=same?tex.side:tex.bottom;
-    keys.forEach(function(k){mats[k].needsUpdate=true});
-  }
-  $('#slots').querySelectorAll('button').forEach(function(b){b.disabled=same&&b.dataset.k!=='side'});
-  if(same&&slot!=='side')setSlot('side');
 }
 var drag=null,idle=true,lastT=0;
 stage.addEventListener('pointerdown',function(e){if(!gl||fbOn)return;drag={x:e.clientX,y:e.clientY};idle=false;stage.setPointerCapture(e.pointerId)});
@@ -217,7 +196,7 @@ function loop(t){
 }
 addEventListener('resize',function(){if(!gl)return;var w=stage.clientWidth;if(w)renderer.setSize(w,w)});
 
-/* ---------- запасной 2D-вид (если WebGL не работает) ---------- */
+/* ---------- запасной 2D-вид ---------- */
 function setFb(on){
   fbOn=on;$('#fb').style.display=on?'block':'none';
   if(renderer)renderer.domElement.style.display=on?'none':'block';
@@ -226,11 +205,12 @@ function setFb(on){
 }
 $('#fbBtn').onclick=function(){if(!gl){say('3D недоступно на этом устройстве.');return}setFb(!fbOn)};
 function drawFb(){
-  if(!fbOn)return;
+  if(!fbOn||!slots.length)return;
   var c=$('#fb'),g=c.getContext('2d');
   g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,300,300);g.imageSmoothingEnabled=false;
   var s=140,a=s*.866,b=s*.5,T0={x:150,y:12},R=res;
-  var same=$('#same').checked,topI=same?cv.side:cv.top,sideI=cv.side;
+  var topI=cv[faceMap.up],leftI=cv[faceMap.south],rightI=cv[faceMap.east];
+  if(!topI||!leftI||!rightI)return;
   function P(x,y,z){return {x:T0.x+x*a-y*a,y:T0.y+x*b+y*b+(1-z)*s}}
   function face(img,sx,sy,sw,sh,o,vx,vy,shade){
     g.save();g.setTransform(vx.x/sw,vx.y/sw,vy.x/sh,vy.y/sh,o.x,o.y);
@@ -239,8 +219,8 @@ function drawFb(){
     g.restore();
   }
   function fbBox(x0,x1,y0,y1,z0,z1){
-    face(sideI,x0*R,(1-z1)*R,(x1-x0)*R,(z1-z0)*R,P(x0,y1,z1),{x:(x1-x0)*a,y:(x1-x0)*b},{x:0,y:(z1-z0)*s},.2);
-    face(sideI,(1-y1)*R,(1-z1)*R,(y1-y0)*R,(z1-z0)*R,P(x1,y1,z1),{x:(y1-y0)*a,y:-(y1-y0)*b},{x:0,y:(z1-z0)*s},.35);
+    face(leftI,x0*R,(1-z1)*R,(x1-x0)*R,(z1-z0)*R,P(x0,y1,z1),{x:(x1-x0)*a,y:(x1-x0)*b},{x:0,y:(z1-z0)*s},.2);
+    face(rightI,(1-y1)*R,(1-z1)*R,(y1-y0)*R,(z1-z0)*R,P(x1,y1,z1),{x:(y1-y0)*a,y:-(y1-y0)*b},{x:0,y:(z1-z0)*s},.35);
     face(topI,x0*R,y0*R,(x1-x0)*R,(y1-y0)*R,P(x0,y0,z1),{x:(x1-x0)*a,y:(x1-x0)*b},{x:-(y1-y0)*a,y:(y1-y0)*b},0);
   }
   if(shape==='cube')fbBox(0,1,0,1,0,1);
@@ -248,17 +228,62 @@ function drawFb(){
   else{fbBox(0,1,0,1,0,.5);fbBox(0,1,0,.5,.5,1)}
 }
 
+/* ---------- слоты (текстуры блока) ---------- */
+function slotsOf(p){
+  var order=[],map={};
+  FACES.forEach(function(f,i){var path=p[i];if(!map[path]){map[path]=[];order.push(path)}map[path].push(f)});
+  var list=order.map(function(path){
+    var fs=map[path],sides=['north','south','east','west'].filter(function(x){return fs.indexOf(x)>=0}),names=[];
+    var hasUp=fs.indexOf('up')>=0,hasDown=fs.indexOf('down')>=0;
+    if(hasUp&&hasDown&&sides.length===4)return {id:path,label:'все грани'};
+    if(hasUp)names.push('верх');
+    if(hasDown)names.push('низ');
+    if(sides.length===4)names.push('бок');else sides.forEach(function(s){names.push(FN[s])});
+    return {id:path,label:names.join(' + ')};
+  });
+  var fm={};FACES.forEach(function(f,i){fm[f]=p[i]});
+  return {list:list,fm:fm};
+}
+function customSlots(){return customSame?[{id:'side',label:'все грани'}]:[{id:'top',label:'верх'},{id:'side',label:'бок'},{id:'bottom',label:'низ'}]}
+function customFaceMap(){return customSame?{up:'side',down:'side',north:'side',south:'side',east:'side',west:'side'}:{up:'top',down:'bottom',north:'side',south:'side',east:'side',west:'side'}}
+function setupSlots(list,fm){
+  Object.keys(tex).forEach(function(k){if(tex[k])tex[k].dispose()});
+  Object.keys(mats).forEach(function(k){if(mats[k])mats[k].dispose()});
+  tex={};mats={};cv={};undoS={};redoS={};
+  slots=list;faceMap=fm;
+  list.forEach(function(s){
+    cv[s.id]=document.createElement('canvas');cv[s.id].width=cv[s.id].height=res;
+    undoS[s.id]=[];redoS[s.id]=[];
+    if(gl)mats[s.id]=new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:THREE.DoubleSide});
+  });
+  slot=list[0].id;
+  buildSlotUi();
+}
+function buildSlotUi(){
+  var boxEl=$('#slots');boxEl.innerHTML='';
+  slots.forEach(function(s){
+    var b=document.createElement('button');b.textContent=s.label;b.dataset.id=s.id;
+    if(s.id===slot)b.className='on';
+    b.onclick=function(){setSlot(s.id)};boxEl.appendChild(b);
+  });
+  boxEl.style.display=slots.length>1?'flex':'none';
+}
+function setSlot(id){
+  if(!cv[id])return;slot=id;
+  $('#slots').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.id===id)});
+  drawEd();
+}
+
 /* ---------- история ---------- */
-function ctxOf(k){return cv[k].getContext('2d')}
 function snap(k){return ctxOf(k).getImageData(0,0,res,res)}
 function pushUndo(){var s=undoS[slot];s.push(snap(slot));if(s.length>60)s.shift();redoS[slot]=[];updHist()}
-function doUndo(){var s=undoS[slot];if(!s.length)return;redoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
-function doRedo(){var s=redoS[slot];if(!s.length)return;undoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
-function updHist(){$('#undo').disabled=!undoS[slot].length;$('#redo').disabled=!redoS[slot].length}
-function resetHist(){keys.forEach(function(k){undoS[k]=[];redoS[k]=[]});updHist()}
+function doUndo(){var s=undoS[slot];if(!s||!s.length)return;redoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
+function doRedo(){var s=redoS[slot];if(!s||!s.length)return;undoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
+function updHist(){$('#undo').disabled=!(undoS[slot]&&undoS[slot].length);$('#redo').disabled=!(redoS[slot]&&redoS[slot].length)}
+function resetHist(){slots.forEach(function(s){undoS[s.id]=[];redoS[s.id]=[]});updHist()}
 
 /* ---------- редактор ---------- */
-function drawEd(){ed.width=ed.height=res;ectx.clearRect(0,0,res,res);ectx.drawImage(cv[slot],0,0);updHist();drawFb()}
+function drawEd(){ed.width=ed.height=res;ectx.clearRect(0,0,res,res);if(cv[slot])ectx.drawImage(cv[slot],0,0);updHist();drawFb()}
 function touched(){dirty[cur]=true;refreshTex(slot);drawEd();scheduleSave()}
 function cell(e){
   var r=ed.getBoundingClientRect();
@@ -292,7 +317,7 @@ function pickAt(p){
 }
 var down=false,last=null;
 ed.addEventListener('pointerdown',function(e){
-  var p=cell(e);if(!inb(p))return;
+  var p=cell(e);if(!inb(p)||!cv[slot])return;
   e.preventDefault();ed.setPointerCapture(e.pointerId);
   if(tool==='pick'){pickAt(p);return}
   pushUndo();
@@ -305,23 +330,29 @@ ed.addEventListener('pointermove',function(e){
 function up(){down=false;last=null}
 ed.addEventListener('pointerup',up);ed.addEventListener('pointercancel',up);
 
-function setSlot(k){slot=k;$('#slots').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.k===k)});drawEd()}
 function seg(sel,attr,fn){$(sel).addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.disabled)return;
   $(sel).querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});fn(b.dataset[attr])})}
 seg('#shapes','s',function(v){shape=v;build();scheduleSave()});
-seg('#slots','k',function(v){setSlot(v)});
 seg('#tools','t',function(v){tool=v});
+function setShapeUi(){$('#shapes').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.s===shape)})}
+function updShapeUi(av){
+  var all=(av==='all'),show=all||av.slab||av.stairs;
+  $('#shapesRow').style.display=show?'flex':'none';
+  $('#shapes').querySelectorAll('button').forEach(function(b){var s=b.dataset.s;b.style.display=(s==='cube'||all||av[s])?'':'none'});
+  if(!show)shape='cube';else if(shape!=='cube'&&!all&&!av[shape])shape='cube';
+  setShapeUi();
+}
+function syncSame(){$('#sameLabel').style.display=cur==='custom'?'flex':'none';$('#same').checked=customSame}
 
 function setRes(n){
   if(n===res)return;
-  var old={};keys.forEach(function(k){var c=document.createElement('canvas');c.width=c.height=res;c.getContext('2d').drawImage(cv[k],0,0);old[k]=c});
+  var old={};slots.forEach(function(s){var c=document.createElement('canvas');c.width=c.height=res;c.getContext('2d').drawImage(cv[s.id],0,0);old[s.id]=c});
   res=n;
-  keys.forEach(function(k){cv[k].width=cv[k].height=res;var g=cv[k].getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(old[k],0,0,res,res)});
+  slots.forEach(function(s){cv[s.id].width=cv[s.id].height=res;var g=ctxOf(s.id);g.imageSmoothingEnabled=false;g.drawImage(old[s.id],0,0,res,res)});
   resetHist();rebuildTextures();drawEd();scheduleSave();
 }
-document.querySelectorAll('[data-r]').forEach(function(b){b.addEventListener('click',function(){
-  document.querySelectorAll('[data-r]').forEach(function(x){x.classList.toggle('on',x===b)});setRes(+b.dataset.r)})});
-$('#same').addEventListener('change',function(){applySame();drawFb();scheduleSave()});
+function setResUi(){document.querySelectorAll('[data-r]').forEach(function(x){x.classList.toggle('on',+x.dataset.r===res)})}
+document.querySelectorAll('[data-r]').forEach(function(b){b.addEventListener('click',function(){setRes(+b.dataset.r);setResUi()})});
 $('#undo').onclick=doUndo;$('#redo').onclick=doRedo;
 
 var pal=['#c0392b','#e67e22','#f1c40f','#3f7d4e','#2980b9','#8e44ad','#ffffff','#7f8c8d','#2c2c2c','#866043'];
@@ -333,7 +364,6 @@ function pickColor(c,fromInput){
   color=c;if(tool==='pick'||tool==='erase'){tool='pen';$('#tools').querySelectorAll('[data-t]').forEach(function(b){b.classList.toggle('on',b.dataset.t==='pen')})}
   pe.querySelectorAll('.sw').forEach(function(b){b.classList.toggle('on',b.dataset.c===c)});ci.value=c;
 }
-
 $('#file').onchange=function(e){
   var inp=e.target,f=inp.files[0];if(!f)return;var fr=new FileReader();
   fr.onload=function(){var img=new Image();
@@ -344,62 +374,64 @@ $('#file').onchange=function(e){
 $('#clr').onclick=function(){pushUndo();ctxOf(slot).clearRect(0,0,res,res);touched()};
 
 /* ---------- состояние проекта и сохранение ---------- */
-var SAVE_KEY2='foundrykin.project.v2';
-function isSameFaces(p){return p&&p[0]===p[1]&&p[1]===p[2]}
+var SAVE_KEY='foundrykin.project.v3';
 function curEntry(){
-  var f={};keys.forEach(function(k){f[k]=cv[k].toDataURL('image/png')});
-  return {res:res,same:$('#same').checked,faces:f};
+  var f={};slots.forEach(function(s){f[s.id]=cv[s.id].toDataURL('image/png')});
+  return {res:res,slots:f};
 }
-function packCur(){store[cur]=curEntry()}
+function packCur(){if(slots.length)store[cur]=curEntry()}
 var saveT=null;
 function scheduleSave(){clearTimeout(saveT);saveT=setTimeout(save,500)}
 function save(){
-  try{packCur();localStorage.setItem(SAVE_KEY2,JSON.stringify({v:2,cur:cur,shape:shape,name:customName,store:store,dirty:dirty}))}
+  try{packCur();localStorage.setItem(SAVE_KEY,JSON.stringify({v:3,cur:cur,shape:shape,name:customName,customSame:customSame,store:store,dirty:dirty}))}
   catch(err){say('Не удалось сохранить в браузере: '+err.message)}
 }
-function setShapeUi(){$('#shapes').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.s===shape)})}
 function syncName(){
   var n=$('#name');
   if(cur==='custom'){n.disabled=false;n.value=customName}else{n.disabled=true;n.value=cur}
 }
 function applyEntry(e,done){
-  res=e.res||16;$('#same').checked=!!e.same;
-  document.querySelectorAll('[data-r]').forEach(function(x){x.classList.toggle('on',+x.dataset.r===res)});
-  var left=keys.length;
+  res=e.res||16;setResUi();
+  var left=slots.length;
   function fin(){if(--left===0){rebuildTextures();drawEd();resetHist();if(done)done()}}
-  keys.forEach(function(k){
-    cv[k].width=cv[k].height=res;
-    if(!e.faces||!e.faces[k]){placeholder(ctxOf(k),res);fin();return}
+  slots.forEach(function(s){
+    cv[s.id].width=cv[s.id].height=res;
+    var src=e.slots&&e.slots[s.id];
+    if(!src){placeholder(ctxOf(s.id),res);fin();return}
     var img=new Image();
-    img.onload=function(){var g=ctxOf(k);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res);fin()};
-    img.onerror=fin;img.src=e.faces[k];
+    img.onload=function(){var g=ctxOf(s.id);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res);fin()};
+    img.onerror=fin;img.src=src;
   });
+}
+function startCustom(){
+  customSame=true;cur='custom';
+  setupSlots(customSlots(),customFaceMap());
+  var G=[96,160,64],D=[134,96,67];
+  fillNoise(cv.side,D,2,G);
+  updShapeUi('all');syncSame();rebuildTextures();build();drawEd();syncName();
 }
 function load(){
   var raw=null,o=null;
-  try{raw=localStorage.getItem(SAVE_KEY2)}catch(err){return false}
+  try{raw=localStorage.getItem(SAVE_KEY)}catch(err){return false}
   if(raw){try{o=JSON.parse(raw)}catch(err){o=null}}
-  if(o&&o.v===2&&o.store){
-    store=o.store;dirty=o.dirty||{};customName=o.name||'my_block';
-    cur=(o.cur&&store[o.cur])?o.cur:'custom';shape=o.shape||'cube';setShapeUi();
-    applyEntry(store[cur]||{res:16,same:true,faces:null},function(){build();syncName()});
-    return true;
-  }
-  try{
-    var r1=localStorage.getItem('foundrykin.project.v1');
-    if(r1){var p=JSON.parse(r1);
-      if(p&&p.v===1){shape=p.shape||'cube';setShapeUi();customName=p.name||'my_block';syncName();
-        applyEntry({res:p.res,same:p.same,faces:p.faces},function(){build()});return true}}
-  }catch(err){}
-  return false;
+  if(!o||o.v!==3||!o.store)return false;
+  store=o.store;dirty=o.dirty||{};customName=o.name||'my_block';customSame=o.customSame!==false;
+  pendingCur=(o.cur&&o.cur!=='custom')?o.cur:null;
+  if(!pendingCur)shape=o.shape||'cube';
+  cur='custom';
+  setupSlots(customSlots(),customFaceMap());updShapeUi('all');syncSame();
+  var e=store.custom;
+  if(e&&e.slots){applyEntry(e,function(){build();syncName()})}else{fillNoise(cv.side,[134,96,67],2,[96,160,64]);rebuildTextures();build();drawEd();syncName()}
+  return true;
 }
 
 /* ---------- каталог блоков Bedrock ---------- */
 var URLS_B=['https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/blocks.json','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/blocks.json'];
 var URLS_T=['https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/textures/terrain_texture.json','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/textures/terrain_texture.json'];
+var URLS_F=['https://data.jsdelivr.com/v1/package/gh/Mojang/bedrock-samples@main/flat','https://api.github.com/repos/Mojang/bedrock-samples/git/trees/main?recursive=1'];
 var VAN1='https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/';
 var VAN2='https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/';
-var CAT_KEY='foundrykin.catalog.v1';
+var CAT_KEY='foundrykin.catalog.v2',EX_KEY='foundrykin.exist.v1';
 var lastB=null,lastT=null;
 function parseLoose(t){
   t=String(t).replace(/^\uFEFF/,'');
@@ -426,25 +458,36 @@ function buildCatalog(B,T){
   Object.keys(B).forEach(function(id){
     var e=B[id];if(!e||typeof e!=='object'||!e.textures)return;
     var t=e.textures,s;
-    if(typeof t==='string')s=[t,t,t];
-    else{var side=t.side||t.north||t.south||t.east||t.west||t.up||t.down;s=[t.up||side,side,t.down||side]}
-    if(!s[0]||!s[1]||!s[2])return;
+    if(typeof t==='string')s=[t,t,t,t,t,t];
+    else{
+      var any=t.side||t.up||t.down||t.north||t.south||t.east||t.west;
+      var f=function(k){return t[k]||t.side||any};
+      s=[f('up'),f('down'),f('north'),f('south'),f('east'),f('west')];
+    }
+    for(var i=0;i<6;i++)if(!s[i])return;
     b[id]=s.map(path);
   });
   return {b:b};
 }
 function indexCatalog(c){
+  var all=c.b,b={},filtered=false;
+  if(existing){
+    Object.keys(all).forEach(function(id){if(all[id].every(function(p){return existing[p]}))b[id]=all[id]});
+    if(Object.keys(b).length)filtered=true;else b=all;
+  }else b=all;
   var sig={},members={},mother={};
-  Object.keys(c.b).forEach(function(id){var sg=c.b[id].join('|');sig[id]=sg;(members[sg]=members[sg]||[]).push(id)});
+  Object.keys(b).forEach(function(id){var sg=b[id].join('|');sig[id]=sg;(members[sg]=members[sg]||[]).push(id)});
   Object.keys(members).forEach(function(sg){
     var g=members[sg].sort(function(a,z){return a.length-z.length||(a<z?-1:1)});
     var m=g.filter(function(x){return !DER.test(x)})[0]||g[0];
     g.forEach(function(x){mother[x]=m});
   });
-  c.sig=sig;c.members=members;c.mother=mother;c.ids=Object.keys(c.b).sort();
-  return c;
+  return {b:b,raw:all,sig:sig,members:members,mother:mother,ids:Object.keys(b).sort(),filtered:filtered,hidden:Object.keys(all).length-Object.keys(b).length};
 }
 function infoIsStatus(){return /^Каталог/.test($('#info').textContent)}
+function catText(){
+  return 'Каталог загружен, блоков: '+catalog.ids.length+(catalog.filtered?(catalog.hidden?'. Скрыто '+catalog.hidden+' без текстур в файлах игры.':'.'):'. Список файлов игры не получен, показаны все блоки.')+' Выбери блок из списка.';
+}
 function useCatalog(B,T){
   if(B)lastB=B;if(T)lastT=T;
   if(!lastB)return false;
@@ -452,17 +495,37 @@ function useCatalog(B,T){
   if(!Object.keys(c.b).length){$('#info').textContent='Каталог пустой: в файле нет блоков с текстурами.';return false}
   try{localStorage.setItem(CAT_KEY,JSON.stringify({b:c.b}))}catch(err){}
   catalog=indexCatalog(c);
-  if(infoIsStatus())$('#info').textContent='Каталог загружен, блоков: '+catalog.ids.length+(lastT?'. Выбери блок из списка.':'. Файла terrain_texture.json нет, пути к файлам приблизительные.');
-  renderList();return true;
+  if(infoIsStatus())$('#info').textContent=catText();
+  renderList();
+  if(pendingCur&&catalog.b[pendingCur]){var pc=pendingCur;pendingCur=null;selectBlock(pc)}
+  return true;
+}
+function fetchExisting(){
+  return fetchJson(URLS_F).then(function(j){
+    var s={},n=0;
+    (j.files||[]).forEach(function(f){var nm=f.name;if(/^\/resource_pack\/textures\/.+\.png$/.test(nm)){s[nm.slice(15,-4)]=1;n++}});
+    (j.tree||[]).forEach(function(f){var nm=f.path;if(/^resource_pack\/textures\/.+\.png$/.test(nm)){s[nm.slice(14,-4)]=1;n++}});
+    if(!n)throw new Error('пустой список файлов');
+    return s;
+  });
 }
 function loadCatalog(){
-  var cached=null;try{cached=JSON.parse(localStorage.getItem(CAT_KEY))}catch(err){}
-  if(cached&&cached.b){catalog=indexCatalog(cached);renderList();if(infoIsStatus())$('#info').textContent='Каталог из памяти устройства, блоков: '+catalog.ids.length+'. Обновляю из интернета…'}
-  var eB='',eT='';
+  var cached=null,cex=null;
+  try{cached=JSON.parse(localStorage.getItem(CAT_KEY))}catch(err){}
+  try{cex=JSON.parse(localStorage.getItem(EX_KEY))}catch(err){}
+  if(cex&&cex.length){existing={};cex.forEach(function(p){existing[p]=1})}
+  if(cached&&cached.b){catalog=indexCatalog(cached);renderList();if(infoIsStatus())$('#info').textContent='Каталог из памяти устройства, блоков: '+catalog.ids.length+'. Обновляю из интернета…';
+    if(pendingCur&&catalog.b[pendingCur]){var pc=pendingCur;pendingCur=null;selectBlock(pc)}}
+  var eB='',eT='',eF='';
   Promise.all([
     fetchJson(URLS_B).catch(function(e){eB=e.message;return null}),
-    fetchJson(URLS_T).catch(function(e){eT=e.message;return null})
+    fetchJson(URLS_T).catch(function(e){eT=e.message;return null}),
+    fetchExisting().catch(function(e){eF=e.message;return null})
   ]).then(function(r){
+    if(r[2]){
+      existing=r[2];
+      try{localStorage.setItem(EX_KEY,JSON.stringify(Object.keys(existing).filter(function(p){return p.indexOf('textures/blocks/')===0})))}catch(err){}
+    }else if(!existing)say('Список файлов игры не получен ('+eF+'): показаны все блоки.');
     if(!r[0]){if(!catalog)$('#info').textContent='Каталог не загрузился: '+eB+'. Нажми «Загрузить blocks.json» и выбери файл с телефона либо работай в свободном режиме.';else if(infoIsStatus())$('#info').textContent='Каталог из памяти устройства, блоков: '+catalog.ids.length+'. Обновить не удалось: '+eB;return}
     if(!r[1])say('terrain_texture.json не загрузился: '+eT);
     useCatalog(r[0],r[1]);
@@ -494,15 +557,20 @@ function renderList(){
   var f=document.createElement('button');f.textContent='✎ свободный режим';f.onclick=selectCustom;box.insertBefore(f,box.firstChild);
 }
 $('#q').addEventListener('input',renderList);
+function availShapes(grp){
+  return {slab:grp.some(function(x){return /_slab$/.test(x)&&!/_double_slab$/.test(x)}),stairs:grp.some(function(x){return /_stairs$/.test(x)})};
+}
 function showInfo(id,m,note){
-  var g=catalog.members[catalog.sig[m]].filter(function(x){return x!==m});
+  var grp=catalog.members[catalog.sig[m]],g=grp.filter(function(x){return x!==m});
   var files=[];catalog.b[m].forEach(function(p){if(files.indexOf(p)<0)files.push(p)});
   var t='Выбрано: '+id+'. ';
   if(id!==m)t+='У него нет своей текстуры, он берёт её у «'+m+'». ';
-  t+='Файл(ы): '+files.join(', ')+'. ';
+  t+='Файлов текстур: '+files.length+' ('+files.join(', ')+'). ';
   if(g.length)t+='Вместе изменятся ещё '+g.length+': '+g.slice(0,8).join(', ')+(g.length>8?' и другие.':'.');
   if(note==='base')t+=' За основу взята оригинальная текстура игры.';
+  if(note==='part')t+=' Часть оригинальных файлов не загрузилась, на их месте серая заготовка.';
   if(note==='gray')t+=' Оригинал не загрузился, поставлена серая заготовка.';
+  t+=' Превью показывает блок как куб: у растений и сложных блоков форма в игре другая.';
   $('#info').textContent=t;
 }
 function loadImg(u){return new Promise(function(ok){var im=new Image();im.crossOrigin='anonymous';im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=u})}
@@ -511,38 +579,50 @@ function baseEntry(m){
   var p=catalog.b[m],uniq=[];
   p.forEach(function(x){if(uniq.indexOf(x)<0)uniq.push(x)});
   return Promise.all(uniq.map(loadAny)).then(function(imgs){
-    var map={};uniq.forEach(function(x,i){map[x]=imgs[i]});
     var first=imgs.filter(Boolean)[0];
-    var r=(first&&first.width===32)?32:16,faces={},c=document.createElement('canvas');
-    keys.forEach(function(k,i){
-      var im=map[p[i]];c.width=c.height=r;var g=c.getContext('2d');g.imageSmoothingEnabled=false;
-      if(im)g.drawImage(im,0,0,im.width,im.width,0,0,r,r);else placeholder(g,r);
-      faces[k]=c.toDataURL('image/png');
+    var r=(first&&first.width===32)?32:16,out={},c=document.createElement('canvas'),miss=0;
+    uniq.forEach(function(x,i){
+      var im=imgs[i];c.width=c.height=r;var g=c.getContext('2d');g.imageSmoothingEnabled=false;
+      if(im)g.drawImage(im,0,0,im.width,im.width,0,0,r,r);else{placeholder(g,r);miss++}
+      out[x]=c.toDataURL('image/png');
     });
-    return {res:r,same:isSameFaces(p),faces:faces,vanilla:!!first};
+    return {res:r,slots:out,vanilla:!!first,missing:miss};
   });
 }
 var selTok=0;
 function selectBlock(id){
   if(!catalog||!catalog.b[id])return;
-  var m=catalog.mother[id],tok=++selTok;
-  var sh=/_stairs$/.test(id)?'stairs':(/_slab$/.test(id)&&!/_double_slab$/.test(id)?'slab':'cube');
+  var m=catalog.mother[id],tok=++selTok,grp=catalog.members[catalog.sig[m]],av=availShapes(grp);
+  var want=/_stairs$/.test(id)?'stairs':(/_slab$/.test(id)&&!/_double_slab$/.test(id)?'slab':'cube');
+  var sh=((want==='stairs'&&av.stairs)||(want==='slab'&&av.slab))?want:'cube';
   function go(e,note){
     if(tok!==selTok)return;
-    packCur();cur=m;shape=sh;setShapeUi();
+    packCur();cur=m;shape=sh;
+    var so=slotsOf(catalog.b[m]);setupSlots(so.list,so.fm);updShapeUi(av);syncSame();
     applyEntry(e,function(){build();syncName();showInfo(id,m,note);renderList();scheduleSave()});
   }
-  if(store[m]){go(store[m],'');return}
-  $('#info').textContent='Загружаю оригинальную текстуру…';
-  baseEntry(m).then(function(e){go(e,e.vanilla?'base':'gray')}).catch(function(err){
+  if(store[m]&&store[m].slots){go(store[m],'');return}
+  $('#info').textContent='Загружаю оригинальные текстуры…';
+  baseEntry(m).then(function(e){go(e,!e.vanilla?'gray':(e.missing?'part':'base'))}).catch(function(err){
     showErr('загрузка блока: '+err.message);
-    go({res:16,same:isSameFaces(catalog.b[m]),faces:null},'gray');
+    go({res:16,slots:null},'gray');
   });
 }
 function selectCustom(){
   selTok++;packCur();cur='custom';
-  applyEntry(store.custom||{res:res,same:true,faces:null},function(){build();syncName();$('#info').textContent='Свободный режим: имя блока вводится вручную.';scheduleSave()});
+  setupSlots(customSlots(),customFaceMap());updShapeUi('all');syncSame();
+  var e=store.custom||{res:res,slots:null};
+  applyEntry(e,function(){build();syncName();$('#info').textContent='Свободный режим: имя блока вводится вручную.';scheduleSave()});
 }
+$('#same').addEventListener('change',function(){
+  if(cur!=='custom')return;
+  var on=this.checked;if(on===customSame)return;
+  packCur();
+  var s=(store.custom&&store.custom.slots)||{};
+  var ne={res:res,slots:on?{side:s.side}:{top:s.top||s.side,side:s.side,bottom:s.bottom||s.side}};
+  customSame=on;setupSlots(customSlots(),customFaceMap());
+  applyEntry(ne,function(){build();scheduleSave()});
+});
 
 /* ---------- экспорт ---------- */
 function cleanName(n){
@@ -557,15 +637,14 @@ function dataToBlob(d){
   return new Blob([u],{type:'image/png'});
 }
 function filesFor(id,e){
-  var out=[],seen={};
+  var out=[],seen={},s=(e&&e.slots)||{};
   function add(p,d){if(seen[p]||!d)return;seen[p]=1;out.push({path:p+'.png',data:d})}
   if(id==='custom'){
     var n=cleanName(customName);
-    if(e.same)add('textures/blocks/'+n,e.faces.side);
-    else keys.forEach(function(k){add('textures/blocks/'+n+'_'+k,e.faces[k])});
-  }else if(catalog&&catalog.b[id]){
-    var p=catalog.b[id];
-    keys.forEach(function(k){var face=e.same?'side':k;var pi=k==='top'?0:(k==='side'?1:2);add(p[pi],e.faces[face])});
+    if(customSame)add('textures/blocks/'+n,s.side);
+    else{add('textures/blocks/'+n+'_top',s.top);add('textures/blocks/'+n+'_side',s.side);add('textures/blocks/'+n+'_bottom',s.bottom)}
+  }else{
+    Object.keys(s).forEach(function(p){add(p,s[p])});
   }
   return out;
 }
@@ -592,16 +671,15 @@ $('#expPack').onclick=function(){
 $('#name').addEventListener('input',function(){if(cur==='custom'){customName=this.value;scheduleSave()}});
 
 /* ---------- старт ---------- */
-keys.forEach(function(k){tex[k]=null});
-initTex();rebuildTextures();build();setSlot('side');resetHist();
-if(!gl)setFb(true);
-load();syncName();loadCatalog();
+startCustom();
+load();
+loadCatalog();
 requestAnimationFrame(loop);
 setTimeout(function(){if(gl&&!fbOn&&frames<2){showErr('3D не отрисовался, включён запасной 2D-вид');setFb(true)}},2500);
+if(!gl)setFb(true);
 setInterval(function(){
   if(errs.length)return;
-  var mp=(gl&&mats.side&&mats.side.map&&mats.side.map.image)?mats.side.map.image.width:0;
-  $('#dbg').textContent=VER+' · '+(fbOn?'2D-вид':'3D')+' · кадров: '+frames+' · объектов: '+(group?group.children.length:0)+' · угол '+(group?group.rotation.x.toFixed(2)+'/'+group.rotation.y.toFixed(2):'-')+' · карта '+mp+'px';
+  $('#dbg').textContent=VER+' · '+(fbOn?'2D-вид':'3D')+' · кадров: '+frames+' · текстур: '+slots.length+' · размер '+res+'px';
 },1000);
 })();
 </script>
