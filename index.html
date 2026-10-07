@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FoundryKin v0.5.3 — редактор текстур Bedrock</title>
+<title>FoundryKin v0.5.4 — редактор текстур Bedrock</title>
 <style>
 :root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff;--stage:#cfd8dc}
 @media (prefers-color-scheme:dark){:root{--bg:#16181b;--panel:#202327;--ink:#e8e6e1;--mute:#9a9ea5;--line:#33373d;--acc:#6fbf80;--accink:#10210f;--stage:#0f1113}}
@@ -44,7 +44,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 </head>
 <body>
 <main>
-<h1>FoundryKin v0.5.3</h1>
+<h1>FoundryKin v0.5.4</h1>
 
 <div class="sec" style="margin-top:0">
 <p class="lbl">Блок из игры (ищи по-английски: oak, stairs, bookshelf). Зелёная рамка: семья выбранного блока. Точка: есть правки.</p>
@@ -98,9 +98,9 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
-var VER='v0.5.3';
+var VER='v0.5.4';
 var res=16, shape='cube', tool='pen', color='#c0392b';
-var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={};
+var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={}, applyGen=0;
 var files={}, cur='custom', dirty={}, customName='my_block', customSame=true, catalog=null, existing=null, pendingCur=null, shapeKeys=['cube'];
 var FACES=['up','down','north','south','east','west'];
 var FN={up:'верх',down:'низ',north:'север',south:'юг',east:'восток',west:'запад'};
@@ -167,7 +167,7 @@ function modelOf(m){
   return (catalog&&catalog.p&&catalog.p[m])?'plant':null;
 }
 function shapeKeysFor(m,grp){
-  var mo=modelOf(m);if(mo)return [mo,'cube'];
+  var mo=modelOf(m);if(mo)return mo==='beacon'?['beacon']:[mo,'cube'];
   var ks=['cube'];
   grp.forEach(function(x){var s=shapeOfId(x);if(s!=='cube'&&ks.indexOf(s)<0)ks.push(s)});
   ks.sort(function(a,b){return ALL_SHAPES.indexOf(a)-ALL_SHAPES.indexOf(b)});
@@ -196,7 +196,7 @@ function makeTex(id){
   tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;tx.needsUpdate=true;return tx;
 }
 function refreshTex(id){
-  if(!gl||!cv[id])return;
+  if(!gl||!cv[id]||!mats[id])return;
   if(tex[id])tex[id].dispose();
   tex[id]=makeTex(id);mats[id].map=tex[id];mats[id].needsUpdate=true;
 }
@@ -211,7 +211,7 @@ function box(w,h,d,x,y,z,ids){
     uv.setXY(i,u,v);
   }
   var f=faceMap;
-  if(!ids)ids=(cur==='beacon'&&shape==='cube')?[f.east,f.east,f.east,f.east,f.east,f.east]:[f.east,f.west,f.up,f.down,f.south,f.north];
+  ids=ids||[f.east,f.west,f.up,f.down,f.south,f.north];
   var m=new THREE.Mesh(g,ids.map(function(k){return mats[k]}));
   m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),edgeMat));
   m.position.set(x,y,z);return m;
@@ -282,7 +282,7 @@ function drawFb(){
     g.restore();
   }
   function fbBox(x0,x1,y0,y1,z0,z1,I){
-    I=I||((cur==='beacon'&&shape==='cube')?{left:im('east'),right:im('east'),top:im('east')}:{left:im('south'),right:im('east'),top:im('up')});
+    I=I||{left:im('south'),right:im('east'),top:im('up')};
     if(!I.left||!I.right||!I.top)return;
     face(I.left,x0*R,(1-z1)*R,(x1-x0)*R,(z1-z0)*R,P(x0,y1,z1),{x:(x1-x0)*a,y:(x1-x0)*b},{x:0,y:(z1-z0)*s},.2);
     face(I.right,(1-y1)*R,(1-z1)*R,(y1-y0)*R,(z1-z0)*R,P(x1,y1,z1),{x:(y1-y0)*a,y:-(y1-y0)*b},{x:0,y:(z1-z0)*s},.35);
@@ -324,6 +324,7 @@ function slotsOf(p){
 function customSlots(){return customSame?[{id:'side',label:'все грани'}]:[{id:'top',label:'верх'},{id:'side',label:'бок'},{id:'bottom',label:'низ'}]}
 function customFaceMap(){return customSame?{up:'side',down:'side',north:'side',south:'side',east:'side',west:'side'}:{up:'top',down:'bottom',north:'side',south:'side',east:'side',west:'side'}}
 function setupSlots(list,fm){
+  applyGen++;
   Object.keys(tex).forEach(function(k){if(tex[k])tex[k].dispose()});
   Object.keys(mats).forEach(function(k){if(mats[k])mats[k].dispose()});
   tex={};mats={};cv={};undoS={};redoS={};ph={};
@@ -407,7 +408,7 @@ ed.addEventListener('pointerdown',function(e){
   down=true;last=p;dot(ctxOf(slot),p.x,p.y);touched();
 });
 ed.addEventListener('pointermove',function(e){
-  if(!down)return;var p=cell(e);line(ctxOf(slot),last,p);last=p;touched();
+  if(!down||!cv[slot])return;var p=cell(e);line(ctxOf(slot),last,p);last=p;touched();
 });
 function up(){down=false;last=null}
 ed.addEventListener('pointerup',up);ed.addEventListener('pointercancel',up);
@@ -450,17 +451,17 @@ function pickColor(c,fromInput){
 $('#file').onchange=function(e){
   var inp=e.target,f=inp.files[0];if(!f)return;var fr=new FileReader();
   fr.onload=function(){var img=new Image();
-    img.onload=function(){pushUndo();var g=ctxOf(slot);g.clearRect(0,0,res,res);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res);touched()};
+    img.onload=function(){if(!cv[slot])return;pushUndo();var g=ctxOf(slot);g.clearRect(0,0,res,res);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res);touched()};
     img.src=fr.result};
   fr.readAsDataURL(f);inp.value='';
 };
-$('#clr').onclick=function(){pushUndo();ctxOf(slot).clearRect(0,0,res,res);touched()};
+$('#clr').onclick=function(){if(!cv[slot])return;pushUndo();ctxOf(slot).clearRect(0,0,res,res);touched()};
 
 /* ---------- файлы текстур и сохранение ---------- */
 var SAVE_KEY='foundrykin.project.v4',OLD_KEY='foundrykin.project.v3';
 function packCur(){
   slots.forEach(function(s){
-    if(ph[s.id])return;
+    if(ph[s.id]||!cv[s.id])return;
     files[fk(s.id)]={res:res,data:cv[s.id].toDataURL('image/png')};
   });
 }
@@ -480,15 +481,21 @@ function syncName(){
   if(cur==='custom'){n.disabled=false;n.value=customName}else{n.disabled=true;n.value=cur}
 }
 function applyEntry(e,done){
+  var gen=++applyGen,list=slots,canv=cv,phNow=ph;
   res=e.res||16;setResUi();
-  var left=slots.length;
-  function fin(){if(--left===0){rebuildTextures();drawEd();resetHist();if(done)done()}}
-  slots.forEach(function(s){
-    cv[s.id].width=cv[s.id].height=res;
+  var left=list.length;
+  function fin(){
+    if(--left!==0)return;
+    if(gen!==applyGen)return;
+    rebuildTextures();drawEd();resetHist();if(done)done();
+  }
+  list.forEach(function(s){
+    var c=canv[s.id];
+    c.width=c.height=res;
     var src=e.slots&&e.slots[s.id];
-    if(!src){placeholder(ctxOf(s.id),res);ph[s.id]=true;fin();return}
+    if(!src){placeholder(c.getContext('2d'),res);phNow[s.id]=true;fin();return}
     var img=new Image();
-    img.onload=function(){var g=ctxOf(s.id);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res);fin()};
+    img.onload=function(){if(gen===applyGen){var g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res)}fin()};
     img.onerror=fin;img.src=src;
   });
 }
