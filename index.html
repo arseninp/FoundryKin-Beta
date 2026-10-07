@@ -35,12 +35,24 @@ input[type=text]{width:100%;min-height:40px;padding:8px 10px;border-radius:8px;b
 label.chk{display:flex;align-items:center;gap:8px;margin:10px 0}
 input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidden}
 .btn{display:inline-flex;align-items:center;border-radius:8px;padding:9px 10px;min-height:40px;cursor:pointer}
+.list{max-height:190px;overflow:auto;display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.list button{background:var(--panel);border:1px solid var(--line);padding:6px 9px;min-height:34px;font-size:13px}
+#info{margin-top:8px}
 #msg{font-size:13px;color:var(--mute);min-height:18px}
 </style>
 </head>
 <body>
 <main>
 <h1>FoundryKin</h1>
+
+<div class="sec" style="margin-top:0">
+<p class="lbl">Блок из игры (ищи по-английски: oak, stairs, bookshelf)</p>
+<input type="text" id="q" placeholder="поиск блока" autocapitalize="off" autocomplete="off" spellcheck="false">
+<div class="list" id="list"></div>
+<p class="lbl" id="info">Каталог блоков загружается… Пока работает свободный режим.</p>
+<div class="row"><label class="ghost btn" for="catfile">Загрузить blocks.json</label><input type="file" id="catfile" accept=".json,application/json,text/plain" multiple></div>
+</div>
+
 <div class="stage" id="stage"><span class="hint">тяни, чтобы покрутить</span></div>
 
 <div class="row"><div class="seg" style="width:100%" id="shapes">
@@ -70,14 +82,14 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 </div>
 
 <div class="sec">
-<p class="lbl">Имя блока (латиница, как в игре, например cherry_planks)</p>
+<p class="lbl">Имя блока (в свободном режиме вводится вручную, для блока из игры подставляется само)</p>
 <input type="text" id="name" value="my_block" autocapitalize="off" autocomplete="off" spellcheck="false">
 <div class="row">
 <button class="ghost" id="expPng">Скачать PNG</button>
 <button class="ghost" id="expPack">Скачать .mcpack</button>
 </div>
 <p id="msg"></p>
-<p class="lbl">Проект сохраняется автоматически в память браузера на этом устройстве. Если очистить данные браузера, он пропадёт, поэтому скачивай результат.</p>
+<p class="lbl">Все блоки, которые ты правил, попадут в один .mcpack. Проект сохраняется автоматически в память браузера на этом устройстве. Если очистить данные браузера, он пропадёт, поэтому скачивай результат.</p>
 </div>
 </main>
 
@@ -85,10 +97,10 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
-var SAVE_KEY='foundrykin.project.v1';
 var res=16, shape='cube', slot='side', tool='pen', color='#c0392b';
 var keys=['top','side','bottom'], cv={}, tex={}, mats={};
 var undoS={top:[],side:[],bottom:[]}, redoS={top:[],side:[],bottom:[]};
+var store={}, cur='custom', dirty={}, customName='my_block', catalog=null;
 var $=function(s){return document.querySelector(s)};
 var ed=$('#ed'), ectx=ed.getContext('2d');
 keys.forEach(function(k){cv[k]=document.createElement('canvas')});
@@ -173,7 +185,7 @@ function resetHist(){keys.forEach(function(k){undoS[k]=[];redoS[k]=[]});updHist(
 
 /* ---------- редактор ---------- */
 function drawEd(){ed.width=ed.height=res;ectx.clearRect(0,0,res,res);ectx.drawImage(cv[slot],0,0);updHist()}
-function touched(){tex[slot].needsUpdate=true;drawEd();scheduleSave()}
+function touched(){dirty[cur]=true;tex[slot].needsUpdate=true;drawEd();scheduleSave()}
 function cell(e){
   var r=ed.getBoundingClientRect();
   return {x:Math.floor((e.clientX-r.left)/r.width*res),y:Math.floor((e.clientY-r.top)/r.height*res)};
@@ -257,72 +269,229 @@ $('#file').onchange=function(e){
 };
 $('#clr').onclick=function(){pushUndo();ctxOf(slot).clearRect(0,0,res,res);touched()};
 
-/* ---------- сохранение в браузере ---------- */
+/* ---------- состояние проекта и сохранение ---------- */
+var SAVE_KEY2='foundrykin.project.v2';
+function isSameFaces(p){return p&&p[0]===p[1]&&p[1]===p[2]}
+function curEntry(){
+  var f={};keys.forEach(function(k){f[k]=cv[k].toDataURL('image/png')});
+  return {res:res,same:$('#same').checked,faces:f};
+}
+function packCur(){store[cur]=curEntry()}
 var saveT=null;
 function scheduleSave(){clearTimeout(saveT);saveT=setTimeout(save,500)}
 function save(){
-  try{
-    var o={v:1,res:res,shape:shape,same:$('#same').checked,name:$('#name').value,faces:{}};
-    keys.forEach(function(k){o.faces[k]=cv[k].toDataURL('image/png')});
-    localStorage.setItem(SAVE_KEY,JSON.stringify(o));
-  }catch(err){say('Не удалось сохранить в браузере: '+err.message)}
+  try{packCur();localStorage.setItem(SAVE_KEY2,JSON.stringify({v:2,cur:cur,shape:shape,name:customName,store:store,dirty:dirty}))}
+  catch(err){say('Не удалось сохранить в браузере: '+err.message)}
+}
+function setShapeUi(){$('#shapes').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.s===shape)})}
+function syncName(){
+  var n=$('#name');
+  if(cur==='custom'){n.disabled=false;n.value=customName}else{n.disabled=true;n.value=cur}
+}
+function applyEntry(e,done){
+  res=e.res||16;$('#same').checked=!!e.same;
+  document.querySelectorAll('[data-r]').forEach(function(x){x.classList.toggle('on',+x.dataset.r===res)});
+  var left=keys.length;
+  function fin(){if(--left===0){rebuildTextures();drawEd();resetHist();if(done)done()}}
+  keys.forEach(function(k){
+    cv[k].width=cv[k].height=res;
+    if(!e.faces||!e.faces[k]){fin();return}
+    var img=new Image();
+    img.onload=function(){var g=ctxOf(k);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res);fin()};
+    img.onerror=fin;img.src=e.faces[k];
+  });
 }
 function load(){
-  var raw;try{raw=localStorage.getItem(SAVE_KEY)}catch(err){return false}
-  if(!raw)return false;
-  var o;try{o=JSON.parse(raw)}catch(err){return false}
-  if(!o||o.v!==1||(o.res!==16&&o.res!==32))return false;
-  res=o.res;shape=o.shape||'cube';$('#same').checked=!!o.same;$('#name').value=o.name||'my_block';
-  document.querySelectorAll('[data-r]').forEach(function(x){x.classList.toggle('on',+x.dataset.r===res)});
-  $('#shapes').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.s===shape)});
-  var left=keys.length;
-  keys.forEach(function(k){
-    cv[k].width=cv[k].height=res;var img=new Image();
-    img.onload=function(){var g=ctxOf(k);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res);if(--left===0){rebuildTextures();build();drawEd()}};
-    img.onerror=function(){if(--left===0){rebuildTextures();build();drawEd()}};
-    img.src=o.faces[k];
+  var raw=null,o=null;
+  try{raw=localStorage.getItem(SAVE_KEY2)}catch(err){return false}
+  if(raw){try{o=JSON.parse(raw)}catch(err){o=null}}
+  if(o&&o.v===2&&o.store){
+    store=o.store;dirty=o.dirty||{};customName=o.name||'my_block';
+    cur=(o.cur&&store[o.cur])?o.cur:'custom';shape=o.shape||'cube';setShapeUi();
+    applyEntry(store[cur]||{res:16,same:true,faces:null},function(){build();syncName()});
+    return true;
+  }
+  try{
+    var r1=localStorage.getItem('foundrykin.project.v1');
+    if(r1){var p=JSON.parse(r1);
+      if(p&&p.v===1){shape=p.shape||'cube';setShapeUi();customName=p.name||'my_block';syncName();
+        applyEntry({res:p.res,same:p.same,faces:p.faces},function(){build()});return true}}
+  }catch(err){}
+  return false;
+}
+
+/* ---------- каталог блоков Bedrock ---------- */
+var URLS_B=['https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/blocks.json','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/blocks.json'];
+var URLS_T=['https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/textures/terrain_texture.json','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/textures/terrain_texture.json'];
+var CAT_KEY='foundrykin.catalog.v1';
+var lastB=null,lastT=null;
+function parseLoose(t){
+  t=String(t).replace(/^\uFEFF/,'');
+  try{return JSON.parse(t)}catch(e){}
+  t=t.replace(/("(?:\\.|[^"\\])*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g,function(m,s){return s||''});
+  t=t.replace(/,(\s*[}\]])/g,'$1');
+  return JSON.parse(t);
+}
+function fetchJson(urls,i,errs){
+  i=i||0;errs=errs||[];
+  if(i>=urls.length)return Promise.reject(new Error(errs.join('; ')||'нет ответа'));
+  return fetch(urls[i]).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}).then(parseLoose)
+    .catch(function(err){errs.push((err&&err.message?err.message:String(err))+' ['+urls[i].split('/')[2]+']');return fetchJson(urls,i+1,errs)});
+}
+var DER=/_(double_slab|slab|stairs|wall|fence_gate|fence|button|pressure_plate|carpet)$/;
+function buildCatalog(B,T){
+  var td=(T&&T.texture_data)||{};
+  function path(k){
+    var e=td[k];if(!e)return 'textures/blocks/'+k;
+    var t=e.textures;if(Array.isArray(t))t=t[0];if(t&&typeof t==='object')t=t.path;
+    return typeof t==='string'?t:'textures/blocks/'+k;
+  }
+  var b={};
+  Object.keys(B).forEach(function(id){
+    var e=B[id];if(!e||typeof e!=='object'||!e.textures)return;
+    var t=e.textures,s;
+    if(typeof t==='string')s=[t,t,t];
+    else{var side=t.side||t.north||t.south||t.east||t.west||t.up||t.down;s=[t.up||side,side,t.down||side]}
+    if(!s[0]||!s[1]||!s[2])return;
+    b[id]=s.map(path);
   });
-  return true;
+  return {b:b};
+}
+function indexCatalog(c){
+  var sig={},members={},mother={};
+  Object.keys(c.b).forEach(function(id){var sg=c.b[id].join('|');sig[id]=sg;(members[sg]=members[sg]||[]).push(id)});
+  Object.keys(members).forEach(function(sg){
+    var g=members[sg].sort(function(a,z){return a.length-z.length||(a<z?-1:1)});
+    var m=g.filter(function(x){return !DER.test(x)})[0]||g[0];
+    g.forEach(function(x){mother[x]=m});
+  });
+  c.sig=sig;c.members=members;c.mother=mother;c.ids=Object.keys(c.b).sort();
+  return c;
+}
+function infoIsStatus(){return /^Каталог/.test($('#info').textContent)}
+function useCatalog(B,T){
+  if(B)lastB=B;if(T)lastT=T;
+  if(!lastB)return false;
+  var c=buildCatalog(lastB,lastT);
+  if(!Object.keys(c.b).length){$('#info').textContent='Каталог пустой: в файле нет блоков с текстурами.';return false}
+  try{localStorage.setItem(CAT_KEY,JSON.stringify({b:c.b}))}catch(err){}
+  catalog=indexCatalog(c);
+  if(infoIsStatus())$('#info').textContent='Каталог загружен, блоков: '+catalog.ids.length+(lastT?'. Выбери блок из списка.':'. Файла terrain_texture.json нет, пути к файлам приблизительные.');
+  renderList();return true;
+}
+function loadCatalog(){
+  var cached=null;try{cached=JSON.parse(localStorage.getItem(CAT_KEY))}catch(err){}
+  if(cached&&cached.b){catalog=indexCatalog(cached);renderList();if(infoIsStatus())$('#info').textContent='Каталог из памяти устройства, блоков: '+catalog.ids.length+'. Обновляю из интернета…'}
+  var eB='',eT='';
+  Promise.all([
+    fetchJson(URLS_B).catch(function(e){eB=e.message;return null}),
+    fetchJson(URLS_T).catch(function(e){eT=e.message;return null})
+  ]).then(function(r){
+    if(!r[0]){if(!catalog)$('#info').textContent='Каталог не загрузился: '+eB+'. Нажми «Загрузить blocks.json» и выбери файл с телефона либо работай в свободном режиме.';else if(infoIsStatus())$('#info').textContent='Каталог из памяти устройства, блоков: '+catalog.ids.length+'. Обновить не удалось: '+eB;return}
+    if(!r[1])say('terrain_texture.json не загрузился: '+eT);
+    useCatalog(r[0],r[1]);
+  });
+}
+$('#catfile').onchange=function(e){
+  var inp=e.target,files=[].slice.call(inp.files),left=files.length,B=null,T=null;
+  if(!left)return;
+  files.forEach(function(f){
+    var fr=new FileReader();
+    fr.onload=function(){
+      try{var j=parseLoose(fr.result);if(j&&j.texture_data)T=j;else B=j}catch(err){say('Файл '+f.name+' не читается как JSON: '+err.message)}
+      if(--left===0){if(!useCatalog(B,T)&&!lastB)$('#info').textContent='Каталог не загрузился: в выбранных файлах нет blocks.json.'}
+    };
+    fr.onerror=function(){if(--left===0)say('Не удалось прочитать файл.')};
+    fr.readAsText(f);
+  });
+  inp.value='';
+};
+function renderList(){
+  var q=$('#q').value.trim().toLowerCase().replace(/\s+/g,'_'),box=$('#list');box.innerHTML='';
+  if(!catalog)return;
+  var ids=catalog.ids.filter(function(id){return !q||id.indexOf(q)>=0}).slice(0,60);
+  ids.forEach(function(id){
+    var b=document.createElement('button');b.textContent=id;
+    if(dirty[catalog.mother[id]])b.style.borderColor='var(--acc)';
+    b.onclick=function(){selectBlock(id)};box.appendChild(b);
+  });
+  var f=document.createElement('button');f.textContent='✎ свободный режим';f.onclick=selectCustom;box.insertBefore(f,box.firstChild);
+}
+$('#q').addEventListener('input',renderList);
+function showInfo(id,m){
+  var g=catalog.members[catalog.sig[m]].filter(function(x){return x!==m});
+  var files=[];catalog.b[m].forEach(function(p){if(files.indexOf(p)<0)files.push(p)});
+  var t='Выбрано: '+id+'. ';
+  if(id!==m)t+='У него нет своей текстуры, он берёт её у «'+m+'». ';
+  t+='Файл(ы): '+files.join(', ')+'. ';
+  if(g.length)t+='Вместе изменятся ещё '+g.length+': '+g.slice(0,8).join(', ')+(g.length>8?' и другие.':'.');
+  if(!store[m])t+=' Грани пока пустые: нарисуй или загрузи PNG.';
+  $('#info').textContent=t;
+}
+function selectBlock(id){
+  if(!catalog||!catalog.b[id])return;
+  var m=catalog.mother[id];
+  var sh=/_stairs$/.test(id)?'stairs':(/_slab$/.test(id)&&!/_double_slab$/.test(id)?'slab':'cube');
+  packCur();cur=m;shape=sh;setShapeUi();
+  var e=store[m]||{res:res,same:isSameFaces(catalog.b[m]),faces:null};
+  applyEntry(e,function(){build();syncName();showInfo(id,m);renderList();scheduleSave()});
+}
+function selectCustom(){
+  packCur();cur='custom';
+  applyEntry(store.custom||{res:res,same:true,faces:null},function(){build();syncName();$('#info').textContent='Свободный режим: имя блока вводится вручную.';scheduleSave()});
 }
 
 /* ---------- экспорт ---------- */
-function cleanName(){
-  var n=$('#name').value.toLowerCase().replace(/[^a-z0-9_]/g,'_').replace(/^_+|_+$/g,'');
-  return n||'my_block';
+function cleanName(n){
+  n=String(n||'').toLowerCase().replace(/[^a-z0-9_]/g,'_').replace(/^_+|_+$/g,'');return n||'my_block';
 }
 function download(blob,fname){
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();
   setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
 }
-function faceFiles(){
-  var n=cleanName(),same=$('#same').checked,o=[];
-  if(same)o.push({path:'textures/blocks/'+n+'.png',k:'side'});
-  else keys.forEach(function(k){o.push({path:'textures/blocks/'+n+'_'+k+'.png',k:k})});
-  return o;
+function dataToBlob(d){
+  var bin=atob(d.split(',')[1]),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+  return new Blob([u],{type:'image/png'});
+}
+function filesFor(id,e){
+  var out=[],seen={};
+  function add(p,d){if(seen[p]||!d)return;seen[p]=1;out.push({path:p+'.png',data:d})}
+  if(id==='custom'){
+    var n=cleanName(customName);
+    if(e.same)add('textures/blocks/'+n,e.faces.side);
+    else keys.forEach(function(k){add('textures/blocks/'+n+'_'+k,e.faces[k])});
+  }else if(catalog&&catalog.b[id]){
+    var p=catalog.b[id];
+    keys.forEach(function(k){var face=e.same?'side':k;var pi=k==='top'?0:(k==='side'?1:2);add(p[pi],e.faces[face])});
+  }
+  return out;
 }
 $('#expPng').onclick=function(){
-  var f=faceFiles();
-  f.forEach(function(x,i){setTimeout(function(){cv[x.k].toBlob(function(b){download(b,x.path.split('/').pop())},'image/png')},i*300)});
+  packCur();var f=filesFor(cur,store[cur]);
+  f.forEach(function(x,i){setTimeout(function(){download(dataToBlob(x.data),x.path.split('/').pop())},i*300)});
   say('PNG: '+f.length+' файл(а).');
 };
-function uuid(){return (crypto&&crypto.randomUUID)?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16)})}
+function uuid(){return (window.crypto&&crypto.randomUUID)?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16)})}
 $('#expPack').onclick=function(){
   if(typeof JSZip==='undefined'){say('Библиотека JSZip не загрузилась (нужен интернет при первом запуске).');return}
-  var n=cleanName(),z=new JSZip();
+  packCur();
+  var ids=Object.keys(store).filter(function(id){return dirty[id]||id===cur});
+  var z=new JSZip(),count=0,names=[];
+  ids.forEach(function(id){filesFor(id,store[id]).forEach(function(x){z.file(x.path,x.data.split(',')[1],{base64:true});count++});names.push(id)});
+  if(!count){say('Нечего экспортировать: нарисуй хотя бы одну текстуру.');return}
   z.file('manifest.json',JSON.stringify({
     format_version:2,
-    header:{name:'FoundryKin '+n,description:'Создано в FoundryKin',uuid:uuid(),version:[1,0,0],min_engine_version:[1,20,0]},
+    header:{name:'FoundryKin pack',description:'Создано в FoundryKin',uuid:uuid(),version:[1,0,0],min_engine_version:[1,20,0]},
     modules:[{type:'resources',uuid:uuid(),version:[1,0,0]}]
   },null,2));
-  faceFiles().forEach(function(x){z.file(x.path,cv[x.k].toDataURL('image/png').split(',')[1],{base64:true})});
-  z.generateAsync({type:'blob'}).then(function(b){download(b,'FoundryKin_'+n+'.mcpack');say('Пак собран: '+n+'.mcpack')});
+  z.generateAsync({type:'blob'}).then(function(b){download(b,'FoundryKin_pack.mcpack');say('Пак собран: файлов — '+count+', блоков — '+names.length+'.')});
 };
-$('#name').addEventListener('input',scheduleSave);
+$('#name').addEventListener('input',function(){if(cur==='custom'){customName=this.value;scheduleSave()}});
 
 /* ---------- старт ---------- */
 keys.forEach(function(k){tex[k]=makeTex(k)});
 initTex();rebuildTextures();build();setSlot('side');resetHist();
-load();
+load();syncName();loadCatalog();
 requestAnimationFrame(loop);
 })();
 </script>
