@@ -17,17 +17,25 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-app
 .screen{display:none;position:absolute;inset:0;overflow:auto;padding:12px 14px 90px;max-width:520px;margin:0 auto;width:100%}
 .screen.on{display:block}
 #s-add{padding:0;max-width:none}
-#s-add iframe{width:100%;height:100%;border:0;display:block}
+#s-add iframe{width:100%;height:100%;border:0;display:block;background:#fff}
+#addErr{display:none;position:absolute;left:12px;right:12px;top:12px;z-index:3;background:var(--panel);border:2px solid #c0392b;border-radius:10px;padding:12px}
 h2{font-size:16px;margin:14px 0 8px}
 .lbl{font-size:13px;color:var(--mute);margin:10px 0 4px}
-input[type=text],select{width:100%;min-height:40px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit}
+input[type=text],select,textarea{width:100%;min-height:40px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit}
+textarea{font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;min-height:150px}
 .btn{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 12px;min-height:40px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .btn.pri{background:var(--acc);color:var(--accink);border-color:var(--acc);font-weight:600}
 .big{display:flex;width:100%;min-height:72px;font-size:19px;margin:12px 0}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin:8px 0}
-.card b{display:block}
-.card.click{cursor:pointer}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:0;margin:8px 0;overflow:hidden}
+.pk{display:flex;gap:12px;align-items:center;padding:12px;cursor:pointer}
+.pk img,.ico{width:56px;height:56px;image-rendering:pixelated;border:1px solid var(--line);border-radius:8px;background:#bbb;flex:none;object-fit:cover}
+.pk .n{flex:1;min-width:0}
+.pk .n b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acts{display:flex;border-top:1px solid var(--line)}
+.acts button{flex:1;border:0;background:none;color:var(--ink);font:inherit;min-height:44px;cursor:pointer}
+.acts button+button{border-left:1px solid var(--line)}
+.tcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin:8px 0}
 .tx{display:flex;gap:10px;align-items:center}
 .tx img{width:56px;height:56px;image-rendering:pixelated;border:1px solid var(--line);border-radius:6px;background:#bbb;flex:none}
 .tx div{flex:1;min-width:0;word-break:break-all}
@@ -39,7 +47,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px}
 </style>
 </head>
 <body>
-<div id="top"><button class="btn" id="back" style="display:none">←</button><div class="t" id="title">FoundryKin<small>v0.7.0</small></div><button class="btn pri" id="ok" style="display:none" aria-label="Сохранить в пак">✓ В пак</button></div>
+<div id="top"><button class="btn" id="back" style="display:none">←</button><div class="t" id="title">FoundryKin<small>v0.7.0</small></div><button class="btn pri" id="ok" style="display:none">✓ В пак</button></div>
 <div id="screens">
 <section class="screen on" id="s-home">
 <button class="btn pri big" data-go="create">Create</button>
@@ -50,19 +58,34 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px}
 <div id="packList"></div>
 <h2>Новый пак</h2>
 <p class="lbl">Название (латиницей)</p><input type="text" id="cName" value="my_pack" autocapitalize="off" autocomplete="off" spellcheck="false">
-<p class="lbl">Описание</p><input type="text" id="cDesc" value="Текстуры FoundryKin">
-<p class="lbl">Версия</p><input type="text" id="cVer" value="1.0.0">
 <div class="row"><button class="btn pri" id="cGo">Создать пак</button></div>
 </section>
 <section class="screen" id="s-pack">
 <p class="lbl" id="pInfo"></p>
 <div id="texList"></div>
-<div class="row"><button class="btn" id="pZip">Скачать .mcpack</button><button class="btn" id="pDel">Удалить пак</button></div>
+<div class="row"><button class="btn" id="pDel">Удалить пак</button></div>
 </section>
-<section class="screen" id="s-add"><iframe id="editor" title="Редактор текстур" data-src="index.html"></iframe></section>
+<section class="screen" id="s-edit">
+<p class="lbl">Название</p><input type="text" id="eName" autocapitalize="off" autocomplete="off" spellcheck="false">
+<p class="lbl">Автор</p><input type="text" id="eAuthor" autocomplete="off">
+<p class="lbl">Описание</p><input type="text" id="eDesc">
+<p class="lbl">Версия пака</p><input type="text" id="eVer" placeholder="1.0.0">
+<p class="lbl">Версия игры (min_engine_version)</p><input type="text" id="eGame" placeholder="1.21.0">
+<p class="lbl">Иконка пака (PNG)</p>
+<div class="row" style="align-items:center"><img class="ico" id="eIco" alt=""><label class="btn" for="eIcoF">Выбрать PNG</label><input type="file" id="eIcoF" accept="image/png,image/*"><button class="btn" id="eIcoX">Убрать</button></div>
+<div class="row"><button class="btn pri" id="eSave">Сохранить</button></div>
+<p class="lbl">manifest.json (предпросмотр)</p>
+<textarea id="eJson" readonly></textarea>
+</section>
+<section class="screen" id="s-add"><div id="addErr"></div><iframe id="editor" title="Редактор текстур"></iframe></section>
 <section class="screen" id="s-settings">
 <h2>Тема</h2>
 <select id="sTheme"><option value="auto">Как в системе</option><option value="light">Светлая</option><option value="dark">Тёмная</option></select>
+<h2>Адрес редактора</h2>
+<p class="lbl">Файл со старым редактором. Если вкладка Add texture пустая, укажи здесь правильный адрес (например полный https://…/index.html).</p>
+<input type="text" id="sUrl" autocapitalize="off" autocomplete="off" spellcheck="false">
+<div class="row"><button class="btn" id="sUrlSave">Сохранить адрес</button></div>
+<h2>Данные</h2>
 <div class="row"><button class="btn" id="sExport">Скачать данные паков (.json)</button><button class="btn" id="sClear">Удалить все паки</button></div>
 </section>
 </div>
@@ -70,22 +93,27 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px}
 <div id="msg"></div>
 <script>
 (function(){
-var KEY='fk070_packs',SKEY='fk070_settings';
+var KEY='fk070_packs',SKEY='fk070_settings',DEF_URL='index.html';
 var $=function(s){return document.querySelector(s)};
 function load(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v||d}catch(e){return d}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){say('Не удалось сохранить: '+e.message);return false}}
 var data=load(KEY,{active:null,packs:[]});
-var settings=load(SKEY,{theme:'auto'});
-var stack=['home'],mt=null;
+var settings=load(SKEY,{theme:'auto',url:DEF_URL});
+if(!settings.url)settings.url=DEF_URL;
+data.packs.forEach(function(p){p.author=p.author||'';p.game=p.game||'1.21.0';p.icon=p.icon||'';p.desc=p.desc||'';p.version=p.version||'1.0.0';p.textures=p.textures||[]});
+var stack=['home'],mt=null,loadedUrl=null;
 function say(t){var m=$('#msg');m.textContent=t||'';m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},3500)}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-function active(){return data.packs.filter(function(p){return p.id===data.active})[0]||null}
+function byId(id){return data.packs.filter(function(p){return p.id===id})[0]||null}
+function active(){return byId(data.active)}
 function applyTheme(){var t=settings.theme;if(t==='auto')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}
 function uuid(){
   if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16)});
 }
-var TITLES={home:'FoundryKin<small>v0.7.0</small>',create:'Create',settings:'Настройки',add:'Add texture'};
+function ver(s){var v=String(s||'').split('.').map(function(n){return parseInt(n,10)||0});while(v.length<3)v.push(0);return v.slice(0,3)}
+var ICON='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"><rect width="56" height="56" fill="#8a8f98"/><rect x="14" y="14" width="28" height="28" fill="#3f7d4e"/></svg>');
+var TITLES={home:'FoundryKin<small>v0.7.0</small>',create:'Create',settings:'Настройки',add:'Add texture',edit:'Редактирование'};
 function render(){
   var name=stack[stack.length-1],p=active();
   document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('on',s.id==='s-'+name)});
@@ -95,7 +123,9 @@ function render(){
   $('#bar').classList.toggle('on',name==='pack');
   if(name==='create')renderPacks();
   if(name==='pack')renderTex();
-  if(name==='add'){var f=$('#editor');if(!f.getAttribute('src'))f.setAttribute('src',f.dataset.src)}
+  if(name==='edit')fillEdit();
+  if(name==='add')loadEditor();
+  if(name==='settings')$('#sUrl').value=settings.url;
   say('');
 }
 function go(n){stack.push(n);render()}
@@ -106,27 +136,32 @@ function renderPacks(){
   var box=$('#packList');
   if(!data.packs.length){box.innerHTML='<p class="lbl">Паков пока нет. Создай первый ниже.</p>';return}
   box.innerHTML=data.packs.map(function(p){
-    return '<div class="card click" data-id="'+p.id+'"><b>'+esc(p.name)+' <small>v'+esc(p.version)+'</small></b><span class="lbl">'+esc(p.desc)+' · текстур: '+p.textures.length+'</span></div>';
+    return '<div class="card"><div class="pk" data-a="open" data-id="'+p.id+'"><img src="'+(p.icon||ICON)+'" alt=""><div class="n"><b>'+esc(p.name)+'</b><span class="lbl">v'+esc(p.version)+' · текстур: '+p.textures.length+'</span></div></div>'+
+      '<div class="acts"><button data-a="exp" data-id="'+p.id+'">Экспорт</button><button data-a="edit" data-id="'+p.id+'">Править .json</button></div></div>';
   }).join('');
 }
 $('#packList').addEventListener('click',function(e){
-  var c=e.target.closest('.card');if(!c)return;
-  data.active=c.dataset.id;save(KEY,data);go('pack');
+  var el=e.target.closest('[data-a]');if(!el)return;
+  var id=el.dataset.id,a=el.dataset.a,p=byId(id);if(!p)return;
+  data.active=id;save(KEY,data);
+  if(a==='open')go('pack');
+  if(a==='edit')go('edit');
+  if(a==='exp')exportPack(p);
 });
 $('#cGo').onclick=function(){
   var name=$('#cName').value.trim().replace(/[^A-Za-z0-9_\- ]/g,'');
   if(!name){say('Введи название латиницей.');return}
-  var p={id:uuid(),name:name,desc:$('#cDesc').value.trim(),version:$('#cVer').value.trim()||'1.0.0',textures:[]};
+  var p={id:uuid(),name:name,desc:'',version:'1.0.0',game:'1.21.0',author:'',icon:'',textures:[]};
   data.packs.push(p);data.active=p.id;
   if(save(KEY,data))go('pack');
 };
 function renderTex(){
   var p=active(),box=$('#texList');
   if(!p){box.innerHTML='';return}
-  $('#pInfo').textContent=p.desc+' · v'+p.version+' · изменённых текстур: '+p.textures.length;
+  $('#pInfo').textContent='v'+p.version+' · изменённых текстур: '+p.textures.length;
   if(!p.textures.length){box.innerHTML='<p class="lbl">Пока пусто. Нажми «+ Add texture», выбери блок, измени текстуру и нажми «✓ В пак».</p>';return}
   box.innerHTML=p.textures.map(function(t,i){
-    return '<div class="card"><div class="tx"><img src="'+t.data+'" alt=""><div>'+esc(t.path)+'</div></div>'+
+    return '<div class="tcard"><div class="tx"><img src="'+t.data+'" alt=""><div>'+esc(t.path)+'</div></div>'+
       '<div class="row"><button class="btn" data-a="png" data-i="'+i+'">Экспорт PNG</button><label class="btn" for="rep'+i+'">Заменить</label><input type="file" id="rep'+i+'" accept="image/png" data-a="rep" data-i="'+i+'"><button class="btn" data-a="del" data-i="'+i+'">Удалить</button></div></div>';
   }).join('');
 }
@@ -144,26 +179,65 @@ $('#texList').addEventListener('change',function(e){
 });
 function dataBlob(u){var a=u.split(','),bin=atob(a[1]),n=bin.length,u8=new Uint8Array(n);while(n--)u8[n]=bin.charCodeAt(n);return new Blob([u8],{type:'image/png'})}
 function download(blob,name){var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)}
+function manifest(p,u1,u2){
+  var v=ver(p.version),h={name:p.name,description:p.desc,uuid:u1||p.id,version:v,min_engine_version:ver(p.game)};
+  var m={format_version:2,header:h,modules:[{type:'resources',uuid:u2||p.id.split('').reverse().join(''),version:v}]};
+  if(p.author)m.metadata={authors:[p.author]};
+  return m;
+}
+function exportPack(p){
+  if(typeof JSZip==='undefined'){say('JSZip недоступен офлайн.');return}
+  var z=new JSZip(),m=manifest(p,uuid(),uuid());
+  z.file('manifest.json',JSON.stringify(m,null,2));
+  if(p.icon)z.file('pack_icon.png',p.icon.split(',')[1],{base64:true});
+  p.textures.forEach(function(t){z.file('textures/'+t.path+'.png',t.data.split(',')[1],{base64:true})});
+  z.generateAsync({type:'blob'}).then(function(b){download(b,p.name+'.mcpack');say('Скачан '+p.name+'.mcpack')},function(e){say('Ошибка архива: '+e.message)});
+}
+function fillEdit(){
+  var p=active();if(!p)return;
+  $('#eName').value=p.name;$('#eAuthor').value=p.author;$('#eDesc').value=p.desc;$('#eVer').value=p.version;$('#eGame').value=p.game;
+  $('#eIco').src=p.icon||ICON;
+  $('#eJson').value=JSON.stringify(manifest(p),null,2);
+}
+$('#eIcoF').onchange=function(){
+  var p=active(),f=this.files[0];if(!p||!f)return;
+  var r=new FileReader();
+  r.onload=function(){p.icon=r.result;$('#eIco').src=p.icon;save(KEY,data);$('#eJson').value=JSON.stringify(manifest(p),null,2)};
+  r.readAsDataURL(f);
+};
+$('#eIcoX').onclick=function(){var p=active();if(!p)return;p.icon='';$('#eIco').src=ICON;save(KEY,data)};
+$('#eSave').onclick=function(){
+  var p=active();if(!p)return;
+  var n=$('#eName').value.trim().replace(/[^A-Za-z0-9_\- ]/g,'');
+  if(!n){say('Название: только латиница.');return}
+  p.name=n;p.author=$('#eAuthor').value.trim();p.desc=$('#eDesc').value.trim();
+  p.version=$('#eVer').value.trim()||'1.0.0';p.game=$('#eGame').value.trim()||'1.21.0';
+  if(save(KEY,data)){$('#eJson').value=JSON.stringify(manifest(p),null,2);say('Сохранено.')}
+};
+function loadEditor(){
+  var f=$('#editor'),err=$('#addErr'),url=settings.url||DEF_URL;
+  if(loadedUrl===url)return;
+  err.style.display='none';loadedUrl=url;
+  f.onload=function(){
+    var why='';
+    try{var d=f.contentDocument;if(!d||!d.querySelector('#ed'))why='страница по адресу «'+url+'» открылась, но это не редактор (возможно, 404 или другой файл).'}
+    catch(e){why='браузер не даёт прочитать «'+url+'» (другой домен).'}
+    if(why){err.innerHTML='<b>Редактор не загрузился</b><br>'+esc(why)+'<br>Открой Настройки → «Адрес редактора» и укажи рабочий адрес index.html. Файлы app-v0.7.html и index.html должны лежать на одном сайте.';err.style.display='block';loadedUrl=null}
+  };
+  f.src=url;
+}
+$('#sUrlSave').onclick=function(){settings.url=$('#sUrl').value.trim()||DEF_URL;save(SKEY,settings);loadedUrl=null;say('Адрес сохранён.')};
 $('#ok').onclick=function(){
   var p=active();if(!p){say('Нет активного пака.');return}
   try{
     var d=$('#editor').contentDocument,cv=d.querySelector('#ed'),nm=d.querySelector('#name');
-    if(!cv)throw new Error('редактор ещё не загрузился');
+    if(!cv)throw new Error('редактор не загружен');
     var n=((nm&&nm.value)||'texture').trim().replace(/[^A-Za-z0-9_\-]/g,'_')||'texture';
     var path='blocks/'+n;
     p.textures=p.textures.filter(function(t){return t.path!==path});
     p.textures.push({path:path,data:cv.toDataURL('image/png')});
     if(save(KEY,data))say('Сохранено в пак «'+p.name+'»: '+path);
   }catch(e){say('Не удалось взять текстуру из редактора: '+e.message)}
-};
-$('#pZip').onclick=function(){
-  var p=active();if(!p)return;
-  if(typeof JSZip==='undefined'){say('JSZip недоступен офлайн.');return}
-  var v=p.version.split('.').map(function(n){return parseInt(n,10)||0});while(v.length<3)v.push(0);v=v.slice(0,3);
-  var z=new JSZip();
-  z.file('manifest.json',JSON.stringify({format_version:2,header:{name:p.name,description:p.desc,uuid:uuid(),version:v,min_engine_version:[1,20,0]},modules:[{type:'resources',uuid:uuid(),version:v}]},null,2));
-  p.textures.forEach(function(t){z.file('textures/'+t.path+'.png',t.data.split(',')[1],{base64:true})});
-  z.generateAsync({type:'blob'}).then(function(b){download(b,p.name+'.mcpack');say('Скачан '+p.name+'.mcpack')},function(e){say('Ошибка архива: '+e.message)});
 };
 $('#pDel').onclick=function(){
   var p=active();if(!p||!confirm('Удалить пак «'+p.name+'»?'))return;
