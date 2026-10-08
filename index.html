@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FoundryKin v0.6.0 — редактор текстур Bedrock</title>
+<title>FoundryKin v0.6.1 — редактор текстур Bedrock</title>
 <style>
 :root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff;--stage:#cfd8dc}
 @media (prefers-color-scheme:dark){:root{--bg:#16181b;--panel:#202327;--ink:#e8e6e1;--mute:#9a9ea5;--line:#33373d;--acc:#6fbf80;--accink:#10210f;--stage:#0f1113}}
@@ -44,7 +44,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 </head>
 <body>
 <main>
-<h1>FoundryKin v0.6.0</h1>
+<h1>FoundryKin v0.6.1</h1>
 
 <div class="sec" style="margin-top:0">
 <p class="lbl">Блок из игры (ищи по-английски: oak, stairs, door, trapdoor). Зелёная рамка: семья выбранного блока. Точка: есть правки.</p>
@@ -98,7 +98,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
-var VER='v0.6.0';
+var VER='v0.6.1';
 var res=16, shape='cube', tool='pen', color='#c0392b';
 var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={}, applyGen=0;
 var files={}, cur='custom', dirty={}, customName='my_block', customSame=true, catalog=null, existing=null, pendingCur=null, shapeKeys=['cube'];
@@ -166,13 +166,14 @@ function shapeOfId(id){
   if(/_trapdoor$/.test(id))return 'trapdoor';
   return 'cube';
 }
+function isDoorBlock(m){return !!(catalog&&catalog.sp&&catalog.sp[m]&&catalog.sp[m].kind==='door')}
 function modelOf(m){
   if(m==='beacon')return 'beacon';
   if(m==='azalea'||m==='flowering_azalea')return 'azalea';
   return (catalog&&catalog.p&&catalog.p[m])?'plant':null;
 }
 function shapeKeysFor(m,grp){
-  if(catalog.sp&&catalog.sp[m])return ['door','dooropen'];
+  if(isDoorBlock(m))return ['door','dooropen'];
   var mo=modelOf(m);if(mo)return mo==='beacon'?['beacon']:[mo,'cube'];
   if(grp.every(function(x){return /_trapdoor$/.test(x)}))return ['trapdoor','trapdooropen'];
   var ks=['cube'];
@@ -197,15 +198,15 @@ if(gl){
 }
 function makeTex(id){
   if(!gl)return null;
-  var n=res,d=ctxOf(id).getImageData(0,0,n,n).data,buf=new Uint8Array(n*n*4);
-  for(var y=0;y<n;y++){var s=y*n*4,t=(n-1-y)*n*4;for(var x=0;x<n*4;x++)buf[t+x]=d[s+x]}
+  var n=res,d=ctxOf(id).getImageData(0,0,n,n).data,buf=new Uint8Array(n*n*4),semi=false;
+  for(var y=0;y<n;y++){var s=y*n*4,t=(n-1-y)*n*4;for(var x=0;x<n*4;x++){var v=d[s+x];buf[t+x]=v;if((x&3)===3&&v>8&&v<248)semi=true}}
   var tx=new THREE.DataTexture(buf,n,n,THREE.RGBAFormat);
-  tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;tx.needsUpdate=true;return tx;
+  tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;tx.needsUpdate=true;tx.userData={semi:semi};return tx;
 }
 function refreshTex(id){
   if(!gl||!cv[id]||!mats[id])return;
   if(tex[id])tex[id].dispose();
-  tex[id]=makeTex(id);mats[id].map=tex[id];mats[id].needsUpdate=true;
+  tex[id]=makeTex(id);mats[id].map=tex[id];mats[id].depthWrite=!tex[id].userData.semi;mats[id].needsUpdate=true;
 }
 function rebuildTextures(){slots.forEach(function(s){refreshTex(s.id)})}
 function box(w,h,d,x,y,z,ids,ys){
@@ -642,8 +643,12 @@ function indexCatalog(c){
     all[id]=[d.low,d.low,d.up,d.up,d.up,d.up];
     var list=[{id:d.up,label:'верх'},{id:d.low,label:'низ'}];
     if(d.icon)list.push({id:d.icon,label:'иконка'});
-    sp[id]={list:list,fm:{up:d.low,down:d.low,north:d.up,south:d.up,east:d.up,west:d.up}};
+    sp[id]={kind:'door',list:list,fm:{up:d.low,down:d.low,north:d.up,south:d.up,east:d.up,west:d.up}};
   });
+  if(all.beacon){
+    var bp=all.beacon;
+    sp.beacon={kind:'labels',list:[{id:bp[0],label:'ядро'},{id:bp[1],label:'низ'},{id:bp[4],label:'стороны'}],fm:{up:bp[0],down:bp[1],north:bp[2],south:bp[3],east:bp[4],west:bp[5]}};
+  }
   var b={},filtered=false;
   if(existing){
     Object.keys(all).forEach(function(id){if(all[id].every(function(p){return existing[p]}))b[id]=all[id]});
@@ -743,7 +748,7 @@ function showInfo(id,m,note,mo){
   if(note==='base')t+=' За основу взята оригинальная текстура игры.';
   if(note==='part')t+=' Часть оригинальных файлов не загрузилась, на их месте серая заготовка.';
   if(note==='gray')t+=' Оригинал не загрузился, поставлена серая заготовка.';
-  if(catalog.sp&&catalog.sp[m])t+=' Дверь состоит из верхней и нижней половин. Иконка видна только в инвентаре, в превью её нет.';
+  if(isDoorBlock(m))t+=' Дверь состоит из верхней и нижней половин. Иконка видна только в инвентаре, в превью её нет.';
   else if(mo)t+=' Модель в превью приблизительная: '+(mo==='beacon'?'стеклянная оболочка, ядро и основание внутри':'плоскости крестом'+(mo==='azalea'?' и шапка сверху':''))+'.';
   else t+=' Форма в превью приблизительная.';
   $('#info').textContent=t;
@@ -771,7 +776,7 @@ function selectBlock(id){
   if(!catalog||!catalog.b[id])return;
   var m=catalog.mother[id],tok=++selTok,grp=catalog.members[catalog.sig[m]];
   var mo=modelOf(m),keysList=shapeKeysFor(m,grp);
-  var want=(catalog.sp&&catalog.sp[m])?'door':(mo?mo:shapeOfId(id));
+  var want=isDoorBlock(m)?'door':(mo?mo:shapeOfId(id));
   var sh=keysList.indexOf(want)>=0?want:keysList[0];
   function go(note){
     if(tok!==selTok)return;
