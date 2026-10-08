@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FoundryKin v0.5.4 — редактор текстур Bedrock</title>
+<title>FoundryKin v0.6.0 — редактор текстур Bedrock</title>
 <style>
 :root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff;--stage:#cfd8dc}
 @media (prefers-color-scheme:dark){:root{--bg:#16181b;--panel:#202327;--ink:#e8e6e1;--mute:#9a9ea5;--line:#33373d;--acc:#6fbf80;--accink:#10210f;--stage:#0f1113}}
@@ -44,10 +44,10 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 </head>
 <body>
 <main>
-<h1>FoundryKin v0.5.4</h1>
+<h1>FoundryKin v0.6.0</h1>
 
 <div class="sec" style="margin-top:0">
-<p class="lbl">Блок из игры (ищи по-английски: oak, stairs, bookshelf). Зелёная рамка: семья выбранного блока. Точка: есть правки.</p>
+<p class="lbl">Блок из игры (ищи по-английски: oak, stairs, door, trapdoor). Зелёная рамка: семья выбранного блока. Точка: есть правки.</p>
 <input type="text" id="q" placeholder="поиск блока" autocapitalize="off" autocomplete="off" spellcheck="false">
 <div class="list" id="list"></div>
 <p class="lbl" id="info">Каталог блоков загружается… Пока работает свободный режим.</p>
@@ -98,7 +98,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
-var VER='v0.5.4';
+var VER='v0.6.0';
 var res=16, shape='cube', tool='pen', color='#c0392b';
 var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={}, applyGen=0;
 var files={}, cur='custom', dirty={}, customName='my_block', customSame=true, catalog=null, existing=null, pendingCur=null, shapeKeys=['cube'];
@@ -113,6 +113,10 @@ var SHAPES={
   gate:{label:'Калитка',parts:[[.125,.6875,.125,-.4375,.15625,0],[.125,.6875,.125,.4375,.15625,0],[.75,.1875,.125,0,-.03125,0],[.75,.1875,.125,0,.34375,0]],shift:0},
   button:{label:'Кнопка',parts:[[.375,.125,.25,0,-.4375,0]],shift:.4},
   plate:{label:'Нажимная плита',parts:[[.875,.0625,.875,0,-.46875,0]],shift:.45},
+  trapdoor:{label:'Люк',parts:[[1,.1875,1,0,-.40625,0]],shift:.4},
+  trapdooropen:{label:'Люк (открыт)',parts:[[1,1,.1875,0,0,-.40625]],shift:0},
+  door:{label:'Дверь'},
+  dooropen:{label:'Дверь (открыта)'},
   plant:{label:'Растение'},
   azalea:{label:'Азалия'},
   beacon:{label:'Маяк'}
@@ -159,6 +163,7 @@ function shapeOfId(id){
   if(/_fence$/.test(id))return 'fence';
   if(/_button$/.test(id))return 'button';
   if(/_pressure_plate$/.test(id))return 'plate';
+  if(/_trapdoor$/.test(id))return 'trapdoor';
   return 'cube';
 }
 function modelOf(m){
@@ -167,7 +172,9 @@ function modelOf(m){
   return (catalog&&catalog.p&&catalog.p[m])?'plant':null;
 }
 function shapeKeysFor(m,grp){
+  if(catalog.sp&&catalog.sp[m])return ['door','dooropen'];
   var mo=modelOf(m);if(mo)return mo==='beacon'?['beacon']:[mo,'cube'];
+  if(grp.every(function(x){return /_trapdoor$/.test(x)}))return ['trapdoor','trapdooropen'];
   var ks=['cube'];
   grp.forEach(function(x){var s=shapeOfId(x);if(s!=='cube'&&ks.indexOf(s)<0)ks.push(s)});
   ks.sort(function(a,b){return ALL_SHAPES.indexOf(a)-ALL_SHAPES.indexOf(b)});
@@ -201,12 +208,13 @@ function refreshTex(id){
   tex[id]=makeTex(id);mats[id].map=tex[id];mats[id].needsUpdate=true;
 }
 function rebuildTextures(){slots.forEach(function(s){refreshTex(s.id)})}
-function box(w,h,d,x,y,z,ids){
+function box(w,h,d,x,y,z,ids,ys){
   var g=new THREE.BoxGeometry(w,h,d),p=g.attributes.position,n=g.attributes.normal,uv=g.attributes.uv;
+  ys=ys||0;
   for(var i=0;i<p.count;i++){
     var X=p.getX(i)+x,Y=p.getY(i)+y,Z=p.getZ(i)+z,nx=n.getX(i),ny=n.getY(i),nz=n.getZ(i),u,v;
-    if(Math.abs(nx)>.5){u=nx>0?.5-Z:Z+.5;v=Y+.5}
-    else if(Math.abs(nz)>.5){u=nz>0?X+.5:.5-X;v=Y+.5}
+    if(Math.abs(nx)>.5){u=nx>0?.5-Z:Z+.5;v=Y+.5-ys}
+    else if(Math.abs(nz)>.5){u=nz>0?X+.5:.5-X;v=Y+.5-ys}
     else{u=X+.5;v=ny>0?.5-Z:Z+.5}
     uv.setXY(i,u,v);
   }
@@ -231,11 +239,22 @@ function buildBeacon(){
   group.add(box(.625,.625,.625,0,0,0,[c,c,c,c,c,c]));
   group.add(box(1,1,1,0,0,0,[g,g,g,g,g,g]));
 }
+function buildDoor(open){
+  var L=faceMap.down,U=faceMap.north,l6=[L,L,L,L,L,L],u6=[U,U,U,U,U,U];
+  if(!open){
+    group.add(box(1,1,.1875,0,-.5,-.40625,l6,-.5));
+    group.add(box(1,1,.1875,0,.5,-.40625,u6,.5));
+  }else{
+    group.add(box(.1875,1,1,-.40625,-.5,0,l6,-.5));
+    group.add(box(.1875,1,1,-.40625,.5,0,u6,.5));
+  }
+}
 function build(){
   if(gl){
     while(group.children.length)group.remove(group.children[0]);
     if(shape==='plant'||shape==='azalea')buildPlant();
     else if(shape==='beacon')buildBeacon();
+    else if(shape==='door'||shape==='dooropen')buildDoor(shape==='dooropen');
     else{
       var d=SHAPES[shape]||SHAPES.cube;
       d.parts.forEach(function(a){group.add(box.apply(null,a))});
@@ -272,7 +291,8 @@ function drawFb(){
   if(!fbOn||!slots.length)return;
   var c=$('#fb'),g=c.getContext('2d');
   g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,300,300);g.imageSmoothingEnabled=false;
-  var s=140,a=s*.866,b=s*.5,T0={x:150,y:12},R=res,F=faceMap;
+  var isDoor=(shape==='door'||shape==='dooropen');
+  var s=isDoor?95:140,a=s*.866,b=s*.5,T0={x:150,y:isDoor?12+s:12},R=res,F=faceMap;
   function im(k){return cv[F[k]]}
   function P(x,y,z){return {x:T0.x+x*a-y*a,y:T0.y+x*b+y*b+(1-z)*s}}
   function face(img,sx,sy,sw,sh,o,vx,vy,shade){
@@ -281,11 +301,12 @@ function drawFb(){
     if(shade){g.fillStyle='rgba(0,0,0,'+shade+')';g.fillRect(0,0,sw,sh)}
     g.restore();
   }
-  function fbBox(x0,x1,y0,y1,z0,z1,I){
+  function fbBox(x0,x1,y0,y1,z0,z1,I,zs0,zs1){
     I=I||{left:im('south'),right:im('east'),top:im('up')};
     if(!I.left||!I.right||!I.top)return;
-    face(I.left,x0*R,(1-z1)*R,(x1-x0)*R,(z1-z0)*R,P(x0,y1,z1),{x:(x1-x0)*a,y:(x1-x0)*b},{x:0,y:(z1-z0)*s},.2);
-    face(I.right,(1-y1)*R,(1-z1)*R,(y1-y0)*R,(z1-z0)*R,P(x1,y1,z1),{x:(y1-y0)*a,y:-(y1-y0)*b},{x:0,y:(z1-z0)*s},.35);
+    if(zs0===undefined){zs0=z0;zs1=z1}
+    face(I.left,x0*R,(1-zs1)*R,(x1-x0)*R,(zs1-zs0)*R,P(x0,y1,z1),{x:(x1-x0)*a,y:(x1-x0)*b},{x:0,y:(z1-z0)*s},.2);
+    face(I.right,(1-y1)*R,(1-zs1)*R,(y1-y0)*R,(zs1-zs0)*R,P(x1,y1,z1),{x:(y1-y0)*a,y:-(y1-y0)*b},{x:0,y:(z1-z0)*s},.35);
     face(I.top,x0*R,y0*R,(x1-x0)*R,(y1-y0)*R,P(x0,y0,z1),{x:(x1-x0)*a,y:(x1-x0)*b},{x:-(y1-y0)*a,y:(y1-y0)*b},0);
   }
   function fbPlane(img){if(img)face(img,0,0,R,R,P(0,1,1),{x:2*a,y:0},{x:0,y:s},0)}
@@ -296,6 +317,16 @@ function drawFb(){
     fbBox(.125,.875,.125,.875,0,.1875,{left:bd,right:bd,top:bd});
     fbBox(.1875,.8125,.1875,.8125,.1875,.8125,{left:cr,right:cr,top:cr});
     fbBox(0,1,0,1,0,1,{left:sh2,right:sh2,top:sh2});
+  }
+  else if(isDoor){
+    var L=im('down'),U=im('north');
+    if(shape==='door'){
+      fbBox(0,1,0,.1875,0,1,{left:L,right:L,top:L},0,1);
+      fbBox(0,1,0,.1875,1,2,{left:U,right:U,top:U},0,1);
+    }else{
+      fbBox(0,.1875,0,1,0,1,{left:L,right:L,top:L},0,1);
+      fbBox(0,.1875,0,1,1,2,{left:U,right:U,top:U},0,1);
+    }
   }
   else{
     var d=SHAPES[shape]||SHAPES.cube,sh=d.shift||0;
@@ -320,6 +351,14 @@ function slotsOf(p){
   });
   var fm={};FACES.forEach(function(f,i){fm[f]=p[i]});
   return {list:list,fm:fm};
+}
+function slotsFor(m){
+  if(catalog.sp&&catalog.sp[m])return {list:catalog.sp[m].list,fm:catalog.sp[m].fm};
+  return slotsOf(catalog.b[m]);
+}
+function pathsFor(m){
+  if(catalog.sp&&catalog.sp[m])return catalog.sp[m].list.map(function(s){return s.id});
+  var o=[];catalog.b[m].forEach(function(x){if(o.indexOf(x)<0)o.push(x)});return o;
 }
 function customSlots(){return customSame?[{id:'side',label:'все грани'}]:[{id:'top',label:'верх'},{id:'side',label:'бок'},{id:'bottom',label:'низ'}]}
 function customFaceMap(){return customSame?{up:'side',down:'side',north:'side',south:'side',east:'side',west:'side'}:{up:'top',down:'bottom',north:'side',south:'side',east:'side',west:'side'}}
@@ -534,7 +573,7 @@ var URLS_T=['https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resou
 var URLS_F=['https://data.jsdelivr.com/v1/package/gh/Mojang/bedrock-samples@main/flat','https://api.github.com/repos/Mojang/bedrock-samples/git/trees/main?recursive=1'];
 var VAN1='https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/';
 var VAN2='https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/';
-var CAT_KEY='foundrykin.catalog.v3',EX_KEY='foundrykin.exist.v1';
+var CAT_KEY='foundrykin.catalog.v3',EX_KEY='foundrykin.exist.v2';
 var lastB=null,lastT=null;
 function parseLoose(t){
   t=String(t).replace(/^\uFEFF/,'');
@@ -580,8 +619,32 @@ function buildCatalog(B,T){
   });
   return {b:b,p:p};
 }
+function doorPaths(id){
+  var N=(id==='wooden_door')?'wood':id.replace(/_door$/,'');
+  var pats=[['door_'+N+'_lower','door_'+N+'_upper'],[N+'_door_bottom',N+'_door_top'],[N+'_door_lower',N+'_door_upper']];
+  var low=null,upp=null,i,j;
+  for(i=0;i<pats.length;i++){
+    var l='textures/blocks/'+pats[i][0],u='textures/blocks/'+pats[i][1];
+    if(existing?(existing[l]&&existing[u]):i===0){low=l;upp=u;break}
+  }
+  if(!low)return null;
+  var icons=['textures/items/door_'+N,'textures/items/'+N+'_door'],ic=null;
+  for(j=0;j<icons.length;j++){if(existing?existing[icons[j]]:j===0){ic=icons[j];break}}
+  return {low:low,up:upp,icon:ic};
+}
 function indexCatalog(c){
-  var all=c.b,b={},filtered=false;
+  var raw=c.b,all={},sp={};
+  Object.keys(raw).forEach(function(id){all[id]=raw[id]});
+  Object.keys(raw).forEach(function(id){
+    if(!/_door$/.test(id))return;
+    var d=doorPaths(id);
+    if(!d){delete all[id];return}
+    all[id]=[d.low,d.low,d.up,d.up,d.up,d.up];
+    var list=[{id:d.up,label:'верх'},{id:d.low,label:'низ'}];
+    if(d.icon)list.push({id:d.icon,label:'иконка'});
+    sp[id]={list:list,fm:{up:d.low,down:d.low,north:d.up,south:d.up,east:d.up,west:d.up}};
+  });
+  var b={},filtered=false;
   if(existing){
     Object.keys(all).forEach(function(id){if(all[id].every(function(p){return existing[p]}))b[id]=all[id]});
     if(Object.keys(b).length)filtered=true;else b=all;
@@ -593,7 +656,7 @@ function indexCatalog(c){
     var m=g.filter(function(x){return !DER.test(x)})[0]||g[0];
     g.forEach(function(x){mother[x]=m});
   });
-  return {b:b,p:c.p||{},sig:sig,members:members,mother:mother,ids:Object.keys(b).sort(),filtered:filtered,hidden:Object.keys(all).length-Object.keys(b).length};
+  return {b:b,p:c.p||{},sp:sp,sig:sig,members:members,mother:mother,ids:Object.keys(b).sort(),filtered:filtered,hidden:Object.keys(raw).length-Object.keys(b).length};
 }
 function infoIsStatus(){return /^Каталог/.test($('#info').textContent)}
 function catText(){
@@ -635,7 +698,7 @@ function loadCatalog(){
   ]).then(function(r){
     if(r[2]){
       existing=r[2];
-      try{localStorage.setItem(EX_KEY,JSON.stringify(Object.keys(existing).filter(function(p){return p.indexOf('textures/blocks/')===0})))}catch(err){}
+      try{localStorage.setItem(EX_KEY,JSON.stringify(Object.keys(existing).filter(function(p){return p.indexOf('textures/blocks/')===0||p.indexOf('textures/items/')===0})))}catch(err){}
     }else if(!existing)say('Список файлов игры не получен ('+eF+'): показаны все блоки.');
     if(!r[0]){if(!catalog)$('#info').textContent='Каталог не загрузился: '+eB+'. Нажми «Загрузить blocks.json» и выбери файл с телефона либо работай в свободном режиме.';else if(infoIsStatus())$('#info').textContent='Каталог из памяти устройства, блоков: '+catalog.ids.length+'. Обновить не удалось: '+eB;return}
     if(!r[1])say('terrain_texture.json не загрузился: '+eT);
@@ -656,7 +719,7 @@ $('#catfile').onchange=function(e){
   });
   inp.value='';
 };
-function isEdited(id){return catalog.b[id].some(function(p){return dirty[p]})}
+function isEdited(id){return pathsFor(id).some(function(p){return dirty[p]})}
 function renderList(){
   var q=$('#q').value.trim().toLowerCase().replace(/\s+/g,'_'),box=$('#list');box.innerHTML='';
   if(!catalog)return;
@@ -672,7 +735,7 @@ function renderList(){
 $('#q').addEventListener('input',renderList);
 function showInfo(id,m,note,mo){
   var grp=catalog.members[catalog.sig[m]],g=grp.filter(function(x){return x!==m});
-  var fl=[];catalog.b[m].forEach(function(p){if(fl.indexOf(p)<0)fl.push(p)});
+  var fl=pathsFor(m);
   var t='Выбрано: '+id+'. ';
   if(id!==m)t+='У него нет своей текстуры, он берёт её у «'+m+'». ';
   t+='Файлов текстур: '+fl.length+' ('+fl.join(', ')+'). ';
@@ -680,14 +743,15 @@ function showInfo(id,m,note,mo){
   if(note==='base')t+=' За основу взята оригинальная текстура игры.';
   if(note==='part')t+=' Часть оригинальных файлов не загрузилась, на их месте серая заготовка.';
   if(note==='gray')t+=' Оригинал не загрузился, поставлена серая заготовка.';
-  if(mo)t+=' Модель в превью приблизительная: '+(mo==='beacon'?'стеклянная оболочка, ядро и основание внутри':'плоскости крестом'+(mo==='azalea'?' и шапка сверху':''))+'.';
+  if(catalog.sp&&catalog.sp[m])t+=' Дверь состоит из верхней и нижней половин. Иконка видна только в инвентаре, в превью её нет.';
+  else if(mo)t+=' Модель в превью приблизительная: '+(mo==='beacon'?'стеклянная оболочка, ядро и основание внутри':'плоскости крестом'+(mo==='azalea'?' и шапка сверху':''))+'.';
   else t+=' Форма в превью приблизительная.';
   $('#info').textContent=t;
 }
 function loadImg(u){return new Promise(function(ok){var im=new Image();im.crossOrigin='anonymous';im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=u})}
 function loadAny(p){return loadImg(VAN1+p+'.png').then(function(im){return im||loadImg(VAN2+p+'.png')})}
 function ensureFiles(m){
-  var p=catalog.b[m],need=[];
+  var p=pathsFor(m),need=[];
   p.forEach(function(x){if(!files[x]&&need.indexOf(x)<0)need.push(x)});
   if(!need.length)return Promise.resolve({vanilla:true,missing:0,loaded:false});
   return Promise.all(need.map(loadAny)).then(function(imgs){
@@ -707,12 +771,12 @@ function selectBlock(id){
   if(!catalog||!catalog.b[id])return;
   var m=catalog.mother[id],tok=++selTok,grp=catalog.members[catalog.sig[m]];
   var mo=modelOf(m),keysList=shapeKeysFor(m,grp);
-  var want=mo?mo:shapeOfId(id);
+  var want=(catalog.sp&&catalog.sp[m])?'door':(mo?mo:shapeOfId(id));
   var sh=keysList.indexOf(want)>=0?want:keysList[0];
   function go(note){
     if(tok!==selTok)return;
     packCur();cur=m;shape=sh;
-    var so=slotsOf(catalog.b[m]);setupSlots(so.list,so.fm);updShapeUi(keysList);syncSame();
+    var so=slotsFor(m);setupSlots(so.list,so.fm);updShapeUi(keysList);syncSame();
     applyEntry(entryFor(so.list),function(){build();syncName();showInfo(id,m,note,mo);renderList();scheduleSave()});
   }
   $('#info').textContent='Загружаю оригинальные текстуры…';
