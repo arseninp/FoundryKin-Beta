@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FoundryKin v0.7.0</title>
+<title>FoundryKin v0.7.1</title>
 <style>
 :root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff}
 :root[data-theme=dark]{--bg:#16181b;--panel:#202327;--ink:#e8e6e1;--mute:#9a9ea5;--line:#33373d;--acc:#6fbf80;--accink:#10210f}
@@ -47,7 +47,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px}
 </style>
 </head>
 <body>
-<div id="top"><button class="btn" id="back" style="display:none">←</button><div class="t" id="title">FoundryKin<small>v0.7.0</small></div><button class="btn pri" id="ok" style="display:none">✓ В пак</button></div>
+<div id="top"><button class="btn" id="back" style="display:none">←</button><div class="t" id="title">FoundryKin<small>v0.7.1</small></div><button class="btn pri" id="ok" style="display:none">✓ В пак</button></div>
 <div id="screens">
 <section class="screen on" id="s-home">
 <button class="btn pri big" data-go="create">Create</button>
@@ -112,7 +112,7 @@ function uuid(){
 }
 function ver(s){var v=String(s||'').split('.').map(function(n){return parseInt(n,10)||0});while(v.length<3)v.push(0);return v.slice(0,3)}
 var ICON='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"><rect width="56" height="56" fill="#8a8f98"/><rect x="14" y="14" width="28" height="28" fill="#3f7d4e"/></svg>');
-var TITLES={home:'FoundryKin<small>v0.7.0</small>',create:'Create',settings:'Настройки',add:'Add texture',edit:'Редактирование'};
+var TITLES={home:'FoundryKin<small>v0.7.1</small>',create:'Create',settings:'Настройки',add:'Add texture',edit:'Редактирование'};
 function render(){
   var name=stack[stack.length-1],p=active();
   document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('on',s.id==='s-'+name)});
@@ -236,6 +236,15 @@ function tidy(d){
     var nm=d.querySelector('#name');if(nm)nm.setAttribute('aria-label','Имя блока');
   }catch(e){}
 }
+var PATCHES=[["else{u=X+.5;v=ny>0?.5-Z:Z+.5}", "else if(vs!==1){var th=(w<d)?(X-x+w/2)/w:(Z-z+d/2)/d;u=(w<d)?Z+.5:X+.5;v=ny>0?1-.09375*th:.09375*th}\n    else{u=X+.5;v=ny>0?.5-Z:Z+.5}"], ["  var f=document.createElement('button');f.textContent='✎ свободный режим';f.onclick=selectCustom;box.insertBefore(f,box.firstChild);\n", ""], ["function syncSame(){$('#sameLabel').style.display=cur==='custom'?'flex':'none';$('#same').checked=customSame}", "function syncSame(){$('#same').checked=customSame}"], ["<label class=\"chk\" id=\"sameLabel\">", "<label class=\"chk\" id=\"sameLabel\" style=\"display:none\">"], ["if(cur==='custom'){n.disabled=false;n.value=customName}else{n.disabled=true;n.value=cur}", "if(cur==='custom'){n.disabled=true;n.value='';n.placeholder='выбери блок'}else{n.disabled=true;n.value=cur}"], ["Имя блока (в свободном режиме вводится вручную, для блока из игры подставляется само)", "Имя блока (подставляется из выбранного блока)"], ["Пока работает свободный режим.", "Выбери блок из списка, когда он загрузится."], [" либо работай в свободном режиме.", "."], ["  e.preventDefault();ed.setPointerCapture(e.pointerId);\n", "  if(cur==='custom'){say('Сначала выбери блок из списка.');return}\n  e.preventDefault();ed.setPointerCapture(e.pointerId);\n"], ["img.onload=function(){if(!cv[slot])return;pushUndo();", "img.onload=function(){if(!cv[slot]||cur==='custom')return;pushUndo();"], ["$('#clr').onclick=function(){if(!cv[slot])return;", "$('#clr').onclick=function(){if(!cv[slot]||cur==='custom')return;"], ["    var f=files[fk(s.id)];if(!f)return;\n    var p=cur==='custom'?customPath(s.id):s.id;", "    if(cur==='custom')return;\n    var f=files[fk(s.id)];if(!f)return;\n    var p=s.id;"], ["if(k.indexOf('custom/')===0){var id=k.slice(7);if(customSame&&id!=='side')return;p=customPath(id)}\n    else p=k;", "if(k.indexOf('custom/')===0)return;\n    p=k;"], ["Нечего экспортировать: нарисуй хотя бы одну текстуру.", "Нечего экспортировать: выбери блок и измени его текстуру."], ["/* ---------- старт ---------- */", "window.FKAPI={files:function(){return curFiles().filter(function(f){return dirty[f.path.replace(/\\.png$/,'')]})},cur:function(){return cur}};\n/* ---------- старт ---------- */"], ["v0.6.4", "v0.6.5"]];
+function applyPatches(h){
+  var failed=[];
+  PATCHES.forEach(function(p){
+    if(h.indexOf(p[0])<0){failed.push(p[0].slice(0,40));return}
+    h=h.split(p[0]).join(p[1]);
+  });
+  return {html:h,failed:failed};
+}
 function loadEditor(){
   var f=$('#editor'),err=$('#addErr'),url=settings.url||DEF_URL;
   if(loadedUrl===url)return;
@@ -247,19 +256,35 @@ function loadEditor(){
     if(!why)tidy(f.contentDocument);
     if(why){err.innerHTML='<b>Редактор не загрузился</b><br>'+esc(why)+'<br>Открой Настройки → «Адрес редактора» и укажи рабочий адрес index.html. Файлы app-v0.7.html и index.html должны лежать на одном сайте.';err.style.display='block';loadedUrl=null}
   };
-  f.src=url;
+  fetch(url).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}).then(function(h){
+    var res=applyPatches(h),base=new URL(url,location.href).href;
+    if(res.failed.length)say('Часть правок редактора не применилась: '+res.failed.length);
+    f.srcdoc=res.html.replace(/<head>/i,'<head><base href="'+base+'">');
+  }).catch(function(){f.src=url});
 }
 $('#sUrlSave').onclick=function(){settings.url=$('#sUrl').value.trim()||DEF_URL;save(SKEY,settings);loadedUrl=null;say('Адрес сохранён.')};
 $('#ok').onclick=function(){
   var p=active();if(!p){say('Нет активного пака.');return}
   try{
-    var d=$('#editor').contentDocument,cv=d.querySelector('#ed'),nm=d.querySelector('#name');
+    var d=$('#editor').contentDocument,api=d.defaultView&&d.defaultView.FKAPI;
+    if(api){
+      var fs=api.files();
+      if(!fs.length){say('Сначала выбери блок и измени его текстуру.');return}
+      fs.forEach(function(x){
+        var path=x.path.replace(/^textures\//,'').replace(/\.png$/,'');
+        p.textures=p.textures.filter(function(t){return t.path!==path});
+        p.textures.push({path:path,data:x.data});
+      });
+      if(save(KEY,data))say('В пак «'+p.name+'» добавлено текстур: '+fs.length);
+      return;
+    }
+    var cv=d.querySelector('#ed'),nm=d.querySelector('#name');
     if(!cv)throw new Error('редактор не загружен');
     var n=((nm&&nm.value)||'texture').trim().replace(/[^A-Za-z0-9_\-]/g,'_')||'texture';
-    var path='blocks/'+n;
-    p.textures=p.textures.filter(function(t){return t.path!==path});
-    p.textures.push({path:path,data:cv.toDataURL('image/png')});
-    if(save(KEY,data))say('Сохранено в пак «'+p.name+'»: '+path);
+    var path2='blocks/'+n;
+    p.textures=p.textures.filter(function(t){return t.path!==path2});
+    p.textures.push({path:path2,data:cv.toDataURL('image/png')});
+    if(save(KEY,data))say('Сохранено в пак «'+p.name+'»: '+path2);
   }catch(e){say('Не удалось взять текстуру из редактора: '+e.message)}
 };
 $('#sTheme').value=settings.theme;
