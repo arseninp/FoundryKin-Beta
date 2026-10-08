@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FoundryKin v0.6.1 — редактор текстур Bedrock</title>
+<title>FoundryKin v0.6.2 — редактор текстур Bedrock</title>
 <style>
 :root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff;--stage:#cfd8dc}
 @media (prefers-color-scheme:dark){:root{--bg:#16181b;--panel:#202327;--ink:#e8e6e1;--mute:#9a9ea5;--line:#33373d;--acc:#6fbf80;--accink:#10210f;--stage:#0f1113}}
@@ -44,7 +44,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 </head>
 <body>
 <main>
-<h1>FoundryKin v0.6.1</h1>
+<h1>FoundryKin v0.6.2</h1>
 
 <div class="sec" style="margin-top:0">
 <p class="lbl">Блок из игры (ищи по-английски: oak, stairs, door, trapdoor). Зелёная рамка: семья выбранного блока. Точка: есть правки.</p>
@@ -98,7 +98,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
-var VER='v0.6.1';
+var VER='v0.6.2';
 var res=16, shape='cube', tool='pen', color='#c0392b';
 var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={}, applyGen=0;
 var files={}, cur='custom', dirty={}, customName='my_block', customSame=true, catalog=null, existing=null, pendingCur=null, shapeKeys=['cube'];
@@ -174,7 +174,7 @@ function modelOf(m){
 }
 function shapeKeysFor(m,grp){
   if(isDoorBlock(m))return ['door','dooropen'];
-  var mo=modelOf(m);if(mo)return mo==='beacon'?['beacon']:[mo,'cube'];
+  var mo=modelOf(m);if(mo)return (mo==='beacon'||mo==='azalea')?[mo]:[mo,'cube'];
   if(grp.every(function(x){return /_trapdoor$/.test(x)}))return ['trapdoor','trapdooropen'];
   var ks=['cube'];
   grp.forEach(function(x){var s=shapeOfId(x);if(s!=='cube'&&ks.indexOf(s)<0)ks.push(s)});
@@ -209,7 +209,7 @@ function refreshTex(id){
   tex[id]=makeTex(id);mats[id].map=tex[id];mats[id].depthWrite=!tex[id].userData.semi;mats[id].needsUpdate=true;
 }
 function rebuildTextures(){slots.forEach(function(s){refreshTex(s.id)})}
-function box(w,h,d,x,y,z,ids,ys){
+function box(w,h,d,x,y,z,ids,ys,noEdge){
   var g=new THREE.BoxGeometry(w,h,d),p=g.attributes.position,n=g.attributes.normal,uv=g.attributes.uv;
   ys=ys||0;
   for(var i=0;i<p.count;i++){
@@ -222,7 +222,7 @@ function box(w,h,d,x,y,z,ids,ys){
   var f=faceMap;
   ids=ids||[f.east,f.west,f.up,f.down,f.south,f.north];
   var m=new THREE.Mesh(g,ids.map(function(k){return mats[k]}));
-  m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),edgeMat));
+  if(!noEdge)m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),edgeMat));
   m.position.set(x,y,z);return m;
 }
 function plane(id,h,y,ry){
@@ -230,9 +230,9 @@ function plane(id,h,y,ry){
   m.position.y=y;m.rotation.y=ry;return m;
 }
 function buildPlant(){
-  var st=shape==='azalea'?faceMap.east:faceMap.up;
+  var st=shape==='azalea'?faceMap.plant:faceMap.up;
   group.add(plane(st,1,0,Math.PI/4));group.add(plane(st,1,0,-Math.PI/4));
-  if(shape==='azalea'){var n=faceMap.north;group.add(box(1,.375,1,0,.3125,0,[n,n,faceMap.up,n,n,n]))}
+  if(shape==='azalea'){var t=faceMap.up,s=faceMap.north;group.add(box(1,1,1,0,0,0,[s,s,t,s,s,s]))}
 }
 function buildBeacon(){
   var f=faceMap,g=f.east,b=f.down,c=f.up;
@@ -241,14 +241,17 @@ function buildBeacon(){
   group.add(box(1,1,1,0,0,0,[g,g,g,g,g,g]));
 }
 function buildDoor(open){
-  var L=faceMap.down,U=faceMap.north,l6=[L,L,L,L,L,L],u6=[U,U,U,U,U,U];
+  var L=faceMap.down,U=faceMap.north,l6=[L,L,L,L,L,L],u6=[U,U,U,U,U,U],ol;
   if(!open){
-    group.add(box(1,1,.1875,0,-.5,-.40625,l6,-.5));
-    group.add(box(1,1,.1875,0,.5,-.40625,u6,.5));
+    group.add(box(1,1,.1875,0,-.5,-.40625,l6,-.5,true));
+    group.add(box(1,1,.1875,0,.5,-.40625,u6,.5,true));
+    ol=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,2,.1875)),edgeMat);ol.position.set(0,0,-.40625);
   }else{
-    group.add(box(.1875,1,1,-.40625,-.5,0,l6,-.5));
-    group.add(box(.1875,1,1,-.40625,.5,0,u6,.5));
+    group.add(box(.1875,1,1,-.40625,-.5,0,l6,-.5,true));
+    group.add(box(.1875,1,1,-.40625,.5,0,u6,.5,true));
+    ol=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(.1875,2,1)),edgeMat);ol.position.set(-.40625,0,0);
   }
+  group.add(ol);
 }
 function build(){
   if(gl){
@@ -312,7 +315,7 @@ function drawFb(){
   }
   function fbPlane(img){if(img)face(img,0,0,R,R,P(0,1,1),{x:2*a,y:0},{x:0,y:s},0)}
   if(shape==='plant')fbPlane(im('up'));
-  else if(shape==='azalea'){fbPlane(im('east'));fbBox(0,1,0,1,.625,1,{left:im('north'),right:im('north'),top:im('up')})}
+  else if(shape==='azalea'){fbPlane(im('plant'));fbBox(0,1,0,1,0,1,{left:im('north'),right:im('north'),top:im('up')});fbPlane(im('plant'))}
   else if(shape==='beacon'){
     var bd=im('down'),cr=im('up'),sh2=im('east');
     fbBox(.125,.875,.125,.875,0,.1875,{left:bd,right:bd,top:bd});
@@ -369,10 +372,11 @@ function setupSlots(list,fm){
   Object.keys(mats).forEach(function(k){if(mats[k])mats[k].dispose()});
   tex={};mats={};cv={};undoS={};redoS={};ph={};
   slots=list;faceMap=fm;
+  var dbl=(cur!=='custom')&&(/leaves/.test(cur)||modelOf(cur)==='plant'||modelOf(cur)==='azalea');
   list.forEach(function(s){
     cv[s.id]=document.createElement('canvas');cv[s.id].width=cv[s.id].height=res;
     undoS[s.id]=[];redoS[s.id]=[];
-    if(gl)mats[s.id]=new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:THREE.DoubleSide});
+    if(gl)mats[s.id]=new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:dbl?THREE.DoubleSide:THREE.FrontSide});
   });
   slot=list[0].id;
   buildSlotUi();
@@ -649,6 +653,11 @@ function indexCatalog(c){
     var bp=all.beacon;
     sp.beacon={kind:'labels',list:[{id:bp[0],label:'ядро'},{id:bp[1],label:'низ'},{id:bp[4],label:'стороны'}],fm:{up:bp[0],down:bp[1],north:bp[2],south:bp[3],east:bp[4],west:bp[5]}};
   }
+  ['azalea','flowering_azalea'].forEach(function(id){
+    if(!all[id])return;
+    var ap=all[id];
+    sp[id]={kind:'azalea',list:[{id:ap[0],label:'верх'},{id:ap[2],label:'бока'},{id:ap[4],label:'саженец'}],fm:{up:ap[0],down:ap[2],north:ap[2],south:ap[2],east:ap[2],west:ap[2],plant:ap[4]}};
+  });
   var b={},filtered=false;
   if(existing){
     Object.keys(all).forEach(function(id){if(all[id].every(function(p){return existing[p]}))b[id]=all[id]});
@@ -748,8 +757,8 @@ function showInfo(id,m,note,mo){
   if(note==='base')t+=' За основу взята оригинальная текстура игры.';
   if(note==='part')t+=' Часть оригинальных файлов не загрузилась, на их месте серая заготовка.';
   if(note==='gray')t+=' Оригинал не загрузился, поставлена серая заготовка.';
-  if(isDoorBlock(m))t+=' Дверь состоит из верхней и нижней половин. Иконка видна только в инвентаре, в превью её нет.';
-  else if(mo)t+=' Модель в превью приблизительная: '+(mo==='beacon'?'стеклянная оболочка, ядро и основание внутри':'плоскости крестом'+(mo==='azalea'?' и шапка сверху':''))+'.';
+  if(isDoorBlock(m))t+=' Дверь — единый объект высотой в два блока: нижняя и верхняя текстуры склеены без шва. Иконка видна только в инвентаре, в превью её нет.';
+  else if(mo)t+=' Модель в превью приблизительная: '+(mo==='beacon'?'стеклянная оболочка, ядро и основание внутри':(mo==='azalea'?'куб с саженцем-крестом внутри':'плоскости крестом'))+'.';
   else t+=' Форма в превью приблизительная.';
   $('#info').textContent=t;
 }
