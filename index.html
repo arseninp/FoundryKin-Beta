@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FoundryKin v0.6.2 — редактор текстур Bedrock</title>
+<title>FoundryKin v0.6.3 — редактор текстур Bedrock</title>
 <style>
 :root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff;--stage:#cfd8dc}
 @media (prefers-color-scheme:dark){:root{--bg:#16181b;--panel:#202327;--ink:#e8e6e1;--mute:#9a9ea5;--line:#33373d;--acc:#6fbf80;--accink:#10210f;--stage:#0f1113}}
@@ -44,7 +44,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 </head>
 <body>
 <main>
-<h1>FoundryKin v0.6.2</h1>
+<h1>FoundryKin v0.6.3</h1>
 
 <div class="sec" style="margin-top:0">
 <p class="lbl">Блок из игры (ищи по-английски: oak, stairs, door, trapdoor). Зелёная рамка: семья выбранного блока. Точка: есть правки.</p>
@@ -98,9 +98,9 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (function(){
-var VER='v0.6.2';
+var VER='v0.6.3';
 var res=16, shape='cube', tool='pen', color='#c0392b';
-var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={}, applyGen=0;
+var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={}, applyGen=0, hiddenMat=null;
 var files={}, cur='custom', dirty={}, customName='my_block', customSame=true, catalog=null, existing=null, pendingCur=null, shapeKeys=['cube'];
 var FACES=['up','down','north','south','east','west'];
 var FN={up:'верх',down:'низ',north:'север',south:'юг',east:'восток',west:'запад'};
@@ -193,35 +193,53 @@ if(gl){
     scene=new THREE.Scene();cam=new THREE.PerspectiveCamera(35,1,.1,50);cam.position.set(0,0,4.4);cam.lookAt(0,0,0);
     scene.add(new THREE.AmbientLight(0xffffff,.75));var dl=new THREE.DirectionalLight(0xffffff,.55);dl.position.set(2,4,3);scene.add(dl);
     edgeMat=new THREE.LineBasicMaterial({color:0x9aa0a6});
+    hiddenMat=new THREE.MeshBasicMaterial({visible:false});
     group=new THREE.Group();group.rotation.set(.45,-.7,0);scene.add(group);
   }catch(err){gl=false;renderer=null;showErr('WebGL недоступен: '+err.message)}
 }
-function makeTex(id){
-  if(!gl)return null;
+function texBuf(id){
   var n=res,d=ctxOf(id).getImageData(0,0,n,n).data,buf=new Uint8Array(n*n*4),semi=false;
   for(var y=0;y<n;y++){var s=y*n*4,t=(n-1-y)*n*4;for(var x=0;x<n*4;x++){var v=d[s+x];buf[t+x]=v;if((x&3)===3&&v>8&&v<248)semi=true}}
-  var tx=new THREE.DataTexture(buf,n,n,THREE.RGBAFormat);
-  tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;tx.needsUpdate=true;tx.userData={semi:semi};return tx;
+  return {buf:buf,semi:semi};
+}
+function makeTex(id){
+  if(!gl)return null;
+  var r=texBuf(id),n=res;
+  var tx=new THREE.DataTexture(r.buf,n,n,THREE.RGBAFormat);
+  tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;tx.needsUpdate=true;tx.userData={semi:r.semi};return tx;
+}
+function refreshDoor(){
+  if(!gl||!mats.__door)return;
+  if(shape!=='door'&&shape!=='dooropen')return;
+  var L=faceMap.down,U=faceMap.north;
+  if(!cv[L]||!cv[U])return;
+  var n=res,a=texBuf(L),b=texBuf(U),buf=new Uint8Array(n*n*8);
+  buf.set(a.buf,0);buf.set(b.buf,n*n*4);
+  if(tex.__door)tex.__door.dispose();
+  var tx=new THREE.DataTexture(buf,n,2*n,THREE.RGBAFormat);
+  tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;tx.needsUpdate=true;
+  tex.__door=tx;mats.__door.map=tx;mats.__door.depthWrite=!(a.semi||b.semi);mats.__door.needsUpdate=true;
 }
 function refreshTex(id){
   if(!gl||!cv[id]||!mats[id])return;
   if(tex[id])tex[id].dispose();
   tex[id]=makeTex(id);mats[id].map=tex[id];mats[id].depthWrite=!tex[id].userData.semi;mats[id].needsUpdate=true;
+  refreshDoor();
 }
-function rebuildTextures(){slots.forEach(function(s){refreshTex(s.id)})}
-function box(w,h,d,x,y,z,ids,ys,noEdge){
+function rebuildTextures(){slots.forEach(function(s){refreshTex(s.id)});refreshDoor()}
+function box(w,h,d,x,y,z,ids,ys,noEdge,vs){
   var g=new THREE.BoxGeometry(w,h,d),p=g.attributes.position,n=g.attributes.normal,uv=g.attributes.uv;
-  ys=ys||0;
+  ys=ys||0;vs=vs||1;
   for(var i=0;i<p.count;i++){
     var X=p.getX(i)+x,Y=p.getY(i)+y,Z=p.getZ(i)+z,nx=n.getX(i),ny=n.getY(i),nz=n.getZ(i),u,v;
-    if(Math.abs(nx)>.5){u=nx>0?.5-Z:Z+.5;v=Y+.5-ys}
-    else if(Math.abs(nz)>.5){u=nz>0?X+.5:.5-X;v=Y+.5-ys}
+    if(Math.abs(nx)>.5){u=nx>0?.5-Z:Z+.5;v=(Y+.5-ys)*vs}
+    else if(Math.abs(nz)>.5){u=nz>0?X+.5:.5-X;v=(Y+.5-ys)*vs}
     else{u=X+.5;v=ny>0?.5-Z:Z+.5}
     uv.setXY(i,u,v);
   }
   var f=faceMap;
   ids=ids||[f.east,f.west,f.up,f.down,f.south,f.north];
-  var m=new THREE.Mesh(g,ids.map(function(k){return mats[k]}));
+  var m=new THREE.Mesh(g,ids.map(function(k){return k===null?hiddenMat:mats[k]}));
   if(!noEdge)m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),edgeMat));
   m.position.set(x,y,z);return m;
 }
@@ -232,7 +250,7 @@ function plane(id,h,y,ry){
 function buildPlant(){
   var st=shape==='azalea'?faceMap.plant:faceMap.up;
   group.add(plane(st,1,0,Math.PI/4));group.add(plane(st,1,0,-Math.PI/4));
-  if(shape==='azalea'){var t=faceMap.up,s=faceMap.north;group.add(box(1,1,1,0,0,0,[s,s,t,s,s,s]))}
+  if(shape==='azalea'){var t=faceMap.up,s=faceMap.north;group.add(box(1,1,1,0,0,0,[s,s,t,null,s,s]))}
 }
 function buildBeacon(){
   var f=faceMap,g=f.east,b=f.down,c=f.up;
@@ -241,17 +259,10 @@ function buildBeacon(){
   group.add(box(1,1,1,0,0,0,[g,g,g,g,g,g]));
 }
 function buildDoor(open){
-  var L=faceMap.down,U=faceMap.north,l6=[L,L,L,L,L,L],u6=[U,U,U,U,U,U],ol;
-  if(!open){
-    group.add(box(1,1,.1875,0,-.5,-.40625,l6,-.5,true));
-    group.add(box(1,1,.1875,0,.5,-.40625,u6,.5,true));
-    ol=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,2,.1875)),edgeMat);ol.position.set(0,0,-.40625);
-  }else{
-    group.add(box(.1875,1,1,-.40625,-.5,0,l6,-.5,true));
-    group.add(box(.1875,1,1,-.40625,.5,0,u6,.5,true));
-    ol=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(.1875,2,1)),edgeMat);ol.position.set(-.40625,0,0);
-  }
-  group.add(ol);
+  var D='__door',d6=[D,D,D,D,D,D];
+  refreshDoor();
+  if(!open)group.add(box(1,2,.1875,0,0,-.40625,d6,-.5,false,.5));
+  else group.add(box(.1875,2,1,-.40625,0,0,d6,-.5,false,.5));
 }
 function build(){
   if(gl){
@@ -378,6 +389,7 @@ function setupSlots(list,fm){
     undoS[s.id]=[];redoS[s.id]=[];
     if(gl)mats[s.id]=new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:dbl?THREE.DoubleSide:THREE.FrontSide});
   });
+  if(gl)mats.__door=new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:THREE.FrontSide});
   slot=list[0].id;
   buildSlotUi();
 }
@@ -639,7 +651,7 @@ function doorPaths(id){
 }
 function indexCatalog(c){
   var raw=c.b,all={},sp={};
-  Object.keys(raw).forEach(function(id){all[id]=raw[id]});
+  Object.keys(raw).forEach(function(id){if(!/_double_slab$/.test(id))all[id]=raw[id]});
   Object.keys(raw).forEach(function(id){
     if(!/_door$/.test(id))return;
     var d=doorPaths(id);
@@ -758,7 +770,7 @@ function showInfo(id,m,note,mo){
   if(note==='part')t+=' Часть оригинальных файлов не загрузилась, на их месте серая заготовка.';
   if(note==='gray')t+=' Оригинал не загрузился, поставлена серая заготовка.';
   if(isDoorBlock(m))t+=' Дверь — единый объект высотой в два блока: нижняя и верхняя текстуры склеены без шва. Иконка видна только в инвентаре, в превью её нет.';
-  else if(mo)t+=' Модель в превью приблизительная: '+(mo==='beacon'?'стеклянная оболочка, ядро и основание внутри':(mo==='azalea'?'куб с саженцем-крестом внутри':'плоскости крестом'))+'.';
+  else if(mo)t+=' Модель в превью приблизительная: '+(mo==='beacon'?'стеклянная оболочка, ядро и основание внутри':(mo==='azalea'?'куб без нижней грани с саженцем-крестом внутри':'плоскости крестом'))+'.';
   else t+=' Форма в превью приблизительная.';
   $('#info').textContent=t;
 }
