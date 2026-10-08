@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FoundryKin v0.7.0</title>
+<style>
+:root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff}
+:root[data-theme=dark]{--bg:#16181b;--panel:#202327;--ink:#e8e6e1;--mute:#9a9ea5;--line:#33373d;--acc:#6fbf80;--accink:#10210f}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column}
+header{padding:calc(10px + env(safe-area-inset-top,0px)) 14px 8px;font-weight:700;font-size:18px}
+header small{color:var(--mute);font-weight:400;font-size:12px;margin-left:6px}
+#screens{flex:1;min-height:0;position:relative}
+.screen{display:none;position:absolute;inset:0;overflow:auto;padding:6px 14px 16px;max-width:520px;margin:0 auto;width:100%}
+.screen.on{display:block}
+#s-texture{padding:0;max-width:none}
+#s-texture iframe{width:100%;height:100%;border:0;display:block}
+nav{display:flex;background:var(--panel);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;font:inherit;font-size:12px;color:var(--mute);background:none;border:0;padding:10px 2px;min-height:48px;cursor:pointer}
+nav button.on{color:var(--acc);font-weight:700;box-shadow:inset 0 2px 0 var(--acc)}
+h2{font-size:18px;margin:10px 0}
+.lbl{font-size:13px;color:var(--mute);margin:10px 0 4px}
+input[type=text],textarea,select{width:100%;min-height:40px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit}
+.btn{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 12px;min-height:40px;cursor:pointer;display:inline-flex;align-items:center}
+.btn.pri{background:var(--acc);color:var(--accink);border-color:var(--acc);font-weight:600}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0}
+.card.on{border-color:var(--acc);border-width:2px}
+.card b{display:block}
+.thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.thumbs img{width:48px;height:48px;image-rendering:pixelated;border:1px solid var(--line);border-radius:6px;background:#bbb}
+input[type=file]{position:absolute;opacity:0;width:1px;height:1px}
+#msg{font-size:13px;color:var(--mute);min-height:18px;padding:0 14px}
+</style>
+</head>
+<body>
+<header>FoundryKin<small>v0.7.0</small></header>
+<div id="screens">
+<section class="screen on" id="s-create">
+<h2>Создать пак</h2>
+<p class="lbl">Название</p><input type="text" id="cName" value="my_pack" autocapitalize="off" autocomplete="off" spellcheck="false">
+<p class="lbl">Описание</p><input type="text" id="cDesc" value="Текстуры FoundryKin">
+<p class="lbl">Версия</p><input type="text" id="cVer" value="1.0.0">
+<div class="row"><button class="btn pri" id="cGo">Создать пак</button></div>
+</section>
+<section class="screen" id="s-pack">
+<h2>Паки</h2>
+<div id="packList"></div>
+</section>
+<section class="screen" id="s-texture">
+<iframe id="editor" title="Редактор текстур" data-src="index.html"></iframe>
+</section>
+<section class="screen" id="s-add">
+<h2>Добавить текстуру</h2>
+<p class="lbl" id="addPack">Активный пак: нет</p>
+<p class="lbl">Путь текстуры (например blocks/my_block)</p>
+<input type="text" id="aPath" value="blocks/my_block" autocapitalize="off" autocomplete="off" spellcheck="false">
+<div class="row">
+<label class="btn" for="aFile">Выбрать PNG</label><input type="file" id="aFile" accept="image/png">
+<button class="btn pri" id="aGo">Добавить в пак</button>
+</div>
+<p class="lbl" id="aInfo">Файл не выбран.</p>
+</section>
+<section class="screen" id="s-settings">
+<h2>Настройки</h2>
+<p class="lbl">Тема</p>
+<select id="sTheme"><option value="auto">Как в системе</option><option value="light">Светлая</option><option value="dark">Тёмная</option></select>
+<div class="row"><button class="btn" id="sExport">Скачать данные паков (.json)</button><button class="btn" id="sClear">Удалить все паки</button></div>
+<p class="lbl">Редактор текстур (index.html) подключён без изменений. Его данные хранятся отдельно и здесь не удаляются.</p>
+</section>
+</div>
+<p id="msg"></p>
+<nav id="nav">
+<button data-s="create" class="on">Create</button>
+<button data-s="pack">Pack</button>
+<button data-s="texture">Texture</button>
+<button data-s="add">Add texture</button>
+<button data-s="settings">Settings</button>
+</nav>
+<script>
+(function(){
+var KEY='fk070_packs',SKEY='fk070_settings';
+var $=function(s){return document.querySelector(s)};
+function load(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v||d}catch(e){return d}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){say('Не удалось сохранить: '+e.message);return false}}
+var data=load(KEY,{active:null,packs:[]});
+var settings=load(SKEY,{theme:'auto'});
+var pendingImg=null;
+function say(t){$('#msg').textContent=t||''}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function active(){return data.packs.filter(function(p){return p.id===data.active})[0]||null}
+function applyTheme(){
+  var r=document.documentElement,t=settings.theme;
+  if(t==='auto')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+  r.setAttribute('data-theme',t);
+}
+function show(name){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('on',s.id==='s-'+name)});
+  document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('on',b.dataset.s===name)});
+  if(name==='texture'){var f=$('#editor');if(!f.getAttribute('src'))f.setAttribute('src',f.dataset.src)}
+  if(name==='pack')renderPacks();
+  if(name==='add')renderAdd();
+  say('');
+}
+document.querySelectorAll('#nav button').forEach(function(b){b.onclick=function(){show(b.dataset.s)}});
+function renderPacks(){
+  var box=$('#packList');
+  if(!data.packs.length){box.innerHTML='<p class="lbl">Паков пока нет. Создай первый на экране Create.</p>';return}
+  box.innerHTML=data.packs.map(function(p){
+    var th=p.textures.map(function(t){return '<img src="'+t.data+'" alt="" title="'+esc(t.path)+'">'}).join('');
+    return '<div class="card'+(p.id===data.active?' on':'')+'"><b>'+esc(p.name)+' <small>v'+esc(p.version)+'</small></b>'+
+      '<span class="lbl">'+esc(p.desc)+' · текстур: '+p.textures.length+'</span><div class="thumbs">'+th+'</div>'+
+      '<div class="row"><button class="btn" data-a="sel" data-id="'+p.id+'">Выбрать</button>'+
+      '<button class="btn" data-a="zip" data-id="'+p.id+'">.mcpack</button>'+
+      '<button class="btn" data-a="del" data-id="'+p.id+'">Удалить</button></div></div>';
+  }).join('');
+}
+$('#packList').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  var id=b.dataset.id,a=b.dataset.a;
+  if(a==='sel'){data.active=id;save(KEY,data);renderPacks();say('Пак выбран.')}
+  if(a==='del'){data.packs=data.packs.filter(function(p){return p.id!==id});if(data.active===id)data.active=data.packs.length?data.packs[0].id:null;save(KEY,data);renderPacks()}
+  if(a==='zip')exportPack(id);
+});
+function uuid(){
+  if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16)});
+}
+$('#cGo').onclick=function(){
+  var name=$('#cName').value.trim().replace(/[^A-Za-z0-9_\- ]/g,'');
+  if(!name){say('Введи название латиницей.');return}
+  var p={id:uuid(),name:name,desc:$('#cDesc').value.trim(),version:$('#cVer').value.trim()||'1.0.0',textures:[]};
+  data.packs.push(p);data.active=p.id;
+  if(save(KEY,data)){show('pack');say('Пак «'+name+'» создан и выбран.')}
+};
+function renderAdd(){var p=active();$('#addPack').textContent='Активный пак: '+(p?p.name:'нет (создай на экране Create)')}
+$('#aFile').onchange=function(){
+  var f=this.files[0];pendingImg=null;
+  if(!f){$('#aInfo').textContent='Файл не выбран.';return}
+  var r=new FileReader();
+  r.onload=function(){pendingImg=r.result;$('#aInfo').textContent='Выбран: '+f.name};
+  r.onerror=function(){$('#aInfo').textContent='Не удалось прочитать файл.'};
+  r.readAsDataURL(f);
+};
+$('#aGo').onclick=function(){
+  var p=active();
+  if(!p){say('Сначала создай или выбери пак.');return}
+  if(!pendingImg){say('Сначала выбери PNG.');return}
+  var path=$('#aPath').value.trim().replace(/^\/+|\.png$/g,'');
+  if(!/^[a-z0-9_\/\-]+$/i.test(path)){say('Путь: только латиница, цифры, _ - /');return}
+  p.textures=p.textures.filter(function(t){return t.path!==path});
+  p.textures.push({path:path,data:pendingImg});
+  if(save(KEY,data)){say('Текстура добавлена: '+path);pendingImg=null;$('#aFile').value='';$('#aInfo').textContent='Файл не выбран.'}
+};
+function exportPack(id){
+  var p=data.packs.filter(function(x){return x.id===id})[0];if(!p)return;
+  if(typeof JSZip==='undefined'){say('JSZip недоступен офлайн. Используй .mcpack из редактора на экране Texture.');return}
+  var v=p.version.split('.').map(function(n){return parseInt(n,10)||0});while(v.length<3)v.push(0);
+  var z=new JSZip();
+  z.file('manifest.json',JSON.stringify({format_version:2,header:{name:p.name,description:p.desc,uuid:uuid(),version:v.slice(0,3),min_engine_version:[1,20,0]},modules:[{type:'resources',uuid:uuid(),version:v.slice(0,3)}]},null,2));
+  p.textures.forEach(function(t){z.file('textures/'+t.path+'.png',t.data.split(',')[1],{base64:true})});
+  z.generateAsync({type:'blob'}).then(function(b){download(b,p.name+'.mcpack');say('Скачан '+p.name+'.mcpack')},function(e){say('Ошибка архива: '+e.message)});
+}
+function download(blob,name){var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)}
+$('#sTheme').value=settings.theme;
+$('#sTheme').onchange=function(){settings.theme=this.value;save(SKEY,settings);applyTheme()};
+$('#sExport').onclick=function(){download(new Blob([JSON.stringify(data)],{type:'application/json'}),'foundrykin-packs.json')};
+$('#sClear').onclick=function(){if(confirm('Удалить все паки этого экрана?')){data={active:null,packs:[]};save(KEY,data);say('Паки удалены.')}};
+applyTheme();
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</body>
+</html>
