@@ -1,4 +1,4 @@
-var NEWPATCHES=[["<script src=\"https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js\"></script>\n", ""], ["var gl=(typeof THREE!=='undefined'),renderer=null,", "var gl=false,renderer=null,"], ["if(!gl)showErr('библиотека three.js не загрузилась');\n", ""], ["$('#hint').textContent=on?'упрощённый 2D-вид':'тяни, чтобы покрутить';", "$('#hint').textContent='';"], ["<div class=\"row\"><button class=\"ghost\" id=\"fbBtn\">", "<div class=\"row\" style=\"display:none\"><button class=\"ghost\" id=\"fbBtn\">"], ["requestAnimationFrame(loop);\nsetTimeout(function(){if(gl&&!fbOn", "setTimeout(function(){if(gl&&!fbOn"], ["function drawFb(){\n  if(!fbOn||!slots.length)return;\n  var c=$('#fb'),g=c.getContext('2d');\n  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,300,300);g.imageSmoothingEnabled=false;\n  var isDoor=(shape==='door'||shape==='dooropen');\n  var s=isDoor?95:140,a=s*.866,b=s*.5,T0={x:150,y:isDoor?12+s:12},R=res,F=faceMap;\n  function im(k){return cv[F[k]]}\n", "function drawFb(){\n  if(!fbOn||!slots.length)return;\n  drawBlock($('#fb'),shape,function(k){return cv[faceMap[k]]},res,300);\n}\nfunction drawBlock(c,shape,im,R,Z){\n  var g=c.getContext('2d'),q=Z/300;\n  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,Z,Z);g.imageSmoothingEnabled=false;\n  var isDoor=(shape==='door'||shape==='dooropen');\n  var s=(isDoor?95:140)*q,a=s*.866,b=s*.5,T0={x:150*q,y:isDoor?12*q+s:12*q};\n"], ["return hit}};\n/* ---------- старт ---------- */", "return hit},grid:function(){return {catalog:catalog,files:files,dirty:dirty,load:loadAny,select:selectBlock,edited:isEdited,drawBlock:drawBlock,shapeFor:function(id){var m=catalog.mother[id],mo=modelOf(m),k=shapeKeysFor(m,catalog.members[catalog.sig[m]]),w=isDoorBlock(m)?'door':(mo?mo:shapeOfId(id));return k.indexOf(w)>=0?w:k[0]}}}};\n/* ---------- старт ---------- */"]];
+var NEWPATCHES=[["function drawFb(){\n  if(!fbOn||!slots.length)return;\n  var c=$('#fb'),g=c.getContext('2d');\n  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,300,300);g.imageSmoothingEnabled=false;\n  var isDoor=(shape==='door'||shape==='dooropen');\n  var s=isDoor?95:140,a=s*.866,b=s*.5,T0={x:150,y:isDoor?12+s:12},R=res,F=faceMap;\n  function im(k){return cv[F[k]]}\n", "function drawFb(){\n  if(!slots.length)return;\n  drawBlock($('#fb'),shape,function(k){return cv[faceMap[k]]},res,300);\n}\nfunction drawBlock(c,shape,im,R,Z){\n  var g=c.getContext('2d'),q=Z/300;\n  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,Z,Z);g.imageSmoothingEnabled=false;\n  var isDoor=(shape==='door'||shape==='dooropen');\n  var s=(isDoor?95:140)*q,a=s*.866,b=s*.5,T0={x:150*q,y:isDoor?12*q+s:12*q};\n"], ["return hit}};\n/* ---------- старт ---------- */", "return hit},grid:function(){return {catalog:catalog,files:files,dirty:dirty,load:loadAny,select:selectBlock,edited:isEdited,drawBlock:drawBlock,shapeFor:function(id){var m=catalog.mother[id],mo=modelOf(m),k=shapeKeysFor(m,catalog.members[catalog.sig[m]]),w=isDoorBlock(m)?'door':(mo?mo:shapeOfId(id));return k.indexOf(w)>=0?w:k[0]}}}};\n/* ---------- старт ---------- */"]];
 (function(){
 var src='';try{src=String(document.currentScript.src||'')}catch(e){}
 var vm=/[?&]v=([\d.]+)/.exec(src),VERSION=vm?vm[1]:'?';
@@ -125,6 +125,7 @@ function attach(d){
     }catch(e){clearInterval(poll)}
   },700);
   render();
+  if(d.defaultView&&d.defaultView.frameElement)d.defaultView.frameElement.style.visibility='visible';
 }
 function watch(f){
   var n=0;
@@ -138,7 +139,7 @@ if(typeof PATCHES!=='undefined'){
   NEWPATCHES.forEach(function(p){PATCHES.push(p)});
 }
 if(typeof FKE!=='undefined'){
-  var oo=FKE.open;FKE.open=function(f,u,cb){var r=oo.call(FKE,f,u,cb);watch(f);return r};
+  var oo=FKE.open;FKE.open=function(f,u,cb){f.style.visibility='hidden';cb=cb||{};var oe=cb.onError;cb.onError=function(x){f.style.visibility='visible';if(oe)oe(x)};var r=oo.call(FKE,f,u,cb);watch(f);setTimeout(function(){if(f.style.visibility==='hidden')f.style.visibility='visible'},4000);return r};
   var oc=FKE.current;FKE.current=function(){if(pickName){if(FKE.busy())return pickName;pickName=''}return oc.call(FKE)};
   var os=FKE.setMode;
   FKE.setMode=function(m){
