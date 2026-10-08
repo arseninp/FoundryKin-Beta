@@ -63,7 +63,6 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px}
 <section class="screen" id="s-pack">
 <p class="lbl" id="pInfo"></p>
 <div id="texList"></div>
-<div class="row"><button class="btn" id="pDel">Удалить пак</button></div>
 </section>
 <section class="screen" id="s-edit">
 <p class="lbl">Название</p><input type="text" id="eName" autocapitalize="off" autocomplete="off" spellcheck="false">
@@ -137,7 +136,7 @@ function renderPacks(){
   if(!data.packs.length){box.innerHTML='<p class="lbl">Паков пока нет. Создай первый ниже.</p>';return}
   box.innerHTML=data.packs.map(function(p){
     return '<div class="card"><div class="pk" data-a="open" data-id="'+p.id+'"><img src="'+(p.icon||ICON)+'" alt=""><div class="n"><b>'+esc(p.name)+'</b><span class="lbl">v'+esc(p.version)+' · текстур: '+p.textures.length+'</span></div></div>'+
-      '<div class="acts"><button data-a="exp" data-id="'+p.id+'">Экспорт</button><button data-a="edit" data-id="'+p.id+'">Править .json</button></div></div>';
+      '<div class="acts"><button data-a="exp" data-id="'+p.id+'">Экспорт</button><button data-a="edit" data-id="'+p.id+'">Править .json</button><button data-a="del" data-id="'+p.id+'">Удалить</button></div></div>';
   }).join('');
 }
 $('#packList').addEventListener('click',function(e){
@@ -147,6 +146,7 @@ $('#packList').addEventListener('click',function(e){
   if(a==='open')go('pack');
   if(a==='edit')go('edit');
   if(a==='exp')exportPack(p);
+  if(a==='del'){if(confirm('Удалить пак «'+p.name+'»?')){data.packs=data.packs.filter(function(x){return x.id!==id});data.active=null;save(KEY,data);renderPacks()}}
 });
 $('#cGo').onclick=function(){
   var name=$('#cName').value.trim().replace(/[^A-Za-z0-9_\- ]/g,'');
@@ -214,6 +214,28 @@ $('#eSave').onclick=function(){
   p.version=$('#eVer').value.trim()||'1.0.0';p.game=$('#eGame').value.trim()||'1.21.0';
   if(save(KEY,data)){$('#eJson').value=JSON.stringify(manifest(p),null,2);say('Сохранено.')}
 };
+function tidy(d){
+  try{
+    if(!d||d.__fkTidy||!d.querySelector('#ed'))return;
+    var m=d.querySelector('main');if(!m)return;
+    d.__fkTidy=true;
+    var st=d.createElement('style');
+    st.textContent='#fkInfo{margin-top:20px;border-top:1px solid var(--line);padding-top:10px}#fkInfo summary{cursor:pointer;font-weight:600;min-height:40px;display:flex;align-items:center}#fkInfo .lbl{margin:8px 0}';
+    d.head.appendChild(st);
+    var box=d.createElement('details');box.id='fkInfo';box.open=true;
+    var sm=d.createElement('summary');sm.textContent='Справка и каталог';box.appendChild(sm);
+    var keys=['Блок из игры','Загруженный PNG','Имя блока'];
+    Array.prototype.slice.call(d.querySelectorAll('p.lbl')).forEach(function(p){
+      var t=p.textContent.trim();
+      if(keys.some(function(k){return t.indexOf(k)===0}))box.appendChild(p);
+    });
+    ['#dbg','#info'].forEach(function(q){var e=d.querySelector(q);if(e)box.appendChild(e)});
+    var cf=d.querySelector('label[for="catfile"]');
+    if(cf&&cf.parentNode)box.appendChild(cf.parentNode);
+    m.appendChild(box);
+    var nm=d.querySelector('#name');if(nm)nm.setAttribute('aria-label','Имя блока');
+  }catch(e){}
+}
 function loadEditor(){
   var f=$('#editor'),err=$('#addErr'),url=settings.url||DEF_URL;
   if(loadedUrl===url)return;
@@ -222,6 +244,7 @@ function loadEditor(){
     var why='';
     try{var d=f.contentDocument;if(!d||!d.querySelector('#ed'))why='страница по адресу «'+url+'» открылась, но это не редактор (возможно, 404 или другой файл).'}
     catch(e){why='браузер не даёт прочитать «'+url+'» (другой домен).'}
+    if(!why)tidy(f.contentDocument);
     if(why){err.innerHTML='<b>Редактор не загрузился</b><br>'+esc(why)+'<br>Открой Настройки → «Адрес редактора» и укажи рабочий адрес index.html. Файлы app-v0.7.html и index.html должны лежать на одном сайте.';err.style.display='block';loadedUrl=null}
   };
   f.src=url;
@@ -238,10 +261,6 @@ $('#ok').onclick=function(){
     p.textures.push({path:path,data:cv.toDataURL('image/png')});
     if(save(KEY,data))say('Сохранено в пак «'+p.name+'»: '+path);
   }catch(e){say('Не удалось взять текстуру из редактора: '+e.message)}
-};
-$('#pDel').onclick=function(){
-  var p=active();if(!p||!confirm('Удалить пак «'+p.name+'»?'))return;
-  data.packs=data.packs.filter(function(x){return x.id!==p.id});data.active=null;save(KEY,data);stack.pop();render();
 };
 $('#sTheme').value=settings.theme;
 $('#sTheme').onchange=function(){settings.theme=this.value;save(SKEY,settings);applyTheme()};
