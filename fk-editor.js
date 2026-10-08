@@ -1,4 +1,4 @@
-var PATCHES=[["else{u=X+.5;v=ny>0?.5-Z:Z+.5}", "else if(vs!==1){var th=(w<d)?(X-x+w/2)/w:(Z-z+d/2)/d;u=(w<d)?Z+.5:X+.5;v=ny>0?1-.09375*th:.09375*th}\n    else{u=X+.5;v=ny>0?.5-Z:Z+.5}"], ["  var f=document.createElement('button');f.textContent='✎ свободный режим';f.onclick=selectCustom;box.insertBefore(f,box.firstChild);\n", ""], ["function syncSame(){$('#sameLabel').style.display=cur==='custom'?'flex':'none';$('#same').checked=customSame}", "function syncSame(){$('#same').checked=customSame}"], ["<label class=\"chk\" id=\"sameLabel\">", "<label class=\"chk\" id=\"sameLabel\" style=\"display:none\">"], ["if(cur==='custom'){n.disabled=false;n.value=customName}else{n.disabled=true;n.value=cur}", "if(cur==='custom'){n.disabled=true;n.value='';n.placeholder='выбери блок'}else{n.disabled=true;n.value=cur}"], ["Имя блока (в свободном режиме вводится вручную, для блока из игры подставляется само)", "Имя блока (подставляется из выбранного блока)"], ["Пока работает свободный режим.", "Выбери блок из списка, когда он загрузится."], [" либо работай в свободном режиме.", "."], ["  e.preventDefault();ed.setPointerCapture(e.pointerId);\n", "  if(cur==='custom'){say('Сначала выбери блок из списка.');return}\n  e.preventDefault();ed.setPointerCapture(e.pointerId);\n"], ["img.onload=function(){if(!cv[slot])return;pushUndo();", "img.onload=function(){if(!cv[slot]||cur==='custom')return;pushUndo();"], ["$('#clr').onclick=function(){if(!cv[slot])return;", "$('#clr').onclick=function(){if(!cv[slot]||cur==='custom')return;"], ["    var f=files[fk(s.id)];if(!f)return;\n    var p=cur==='custom'?customPath(s.id):s.id;", "    if(cur==='custom')return;\n    var f=files[fk(s.id)];if(!f)return;\n    var p=s.id;"], ["if(k.indexOf('custom/')===0){var id=k.slice(7);if(customSame&&id!=='side')return;p=customPath(id)}\n    else p=k;", "if(k.indexOf('custom/')===0)return;\n    p=k;"], ["Нечего экспортировать: нарисуй хотя бы одну текстуру.", "Нечего экспортировать: выбери блок и измени его текстуру."], ["/* ---------- старт ---------- */", "window.FKAPI={files:function(){return curFiles().filter(function(f){return dirty[f.path.replace(/\\.png$/,'')]})},cur:function(){return cur}};\n/* ---------- старт ---------- */"], ["v0.6.4", "v0.6.5"], ["return !q||id.indexOf(q)>=0}).slice(0,60);", "return !q||id.indexOf(q)>=0}).slice(0,300);"]];
+var PATCHES=[["else{u=X+.5;v=ny>0?.5-Z:Z+.5}", "else if(vs!==1){var th=(w<d)?(X-x+w/2)/w:(Z-z+d/2)/d;u=(w<d)?Z+.5:X+.5;v=ny>0?1-.09375*th:.09375*th}\n    else{u=X+.5;v=ny>0?.5-Z:Z+.5}"], ["  var f=document.createElement('button');f.textContent='✎ свободный режим';f.onclick=selectCustom;box.insertBefore(f,box.firstChild);\n", ""], ["function syncSame(){$('#sameLabel').style.display=cur==='custom'?'flex':'none';$('#same').checked=customSame}", "function syncSame(){$('#same').checked=customSame}"], ["<label class=\"chk\" id=\"sameLabel\">", "<label class=\"chk\" id=\"sameLabel\" style=\"display:none\">"], ["if(cur==='custom'){n.disabled=false;n.value=customName}else{n.disabled=true;n.value=cur}", "if(cur==='custom'){n.disabled=true;n.value='';n.placeholder='выбери блок'}else{n.disabled=true;n.value=cur}"], ["Имя блока (в свободном режиме вводится вручную, для блока из игры подставляется само)", "Имя блока (подставляется из выбранного блока)"], ["Пока работает свободный режим.", "Выбери блок из списка, когда он загрузится."], [" либо работай в свободном режиме.", "."], ["  e.preventDefault();ed.setPointerCapture(e.pointerId);\n", "  if(cur==='custom'){say('Сначала выбери блок из списка.');return}\n  e.preventDefault();ed.setPointerCapture(e.pointerId);\n"], ["img.onload=function(){if(!cv[slot])return;pushUndo();", "img.onload=function(){if(!cv[slot]||cur==='custom')return;pushUndo();"], ["$('#clr').onclick=function(){if(!cv[slot])return;", "$('#clr').onclick=function(){if(!cv[slot]||cur==='custom')return;"], ["    var f=files[fk(s.id)];if(!f)return;\n    var p=cur==='custom'?customPath(s.id):s.id;", "    if(cur==='custom')return;\n    var f=files[fk(s.id)];if(!f)return;\n    var p=s.id;"], ["if(k.indexOf('custom/')===0){var id=k.slice(7);if(customSame&&id!=='side')return;p=customPath(id)}\n    else p=k;", "if(k.indexOf('custom/')===0)return;\n    p=k;"], ["Нечего экспортировать: нарисуй хотя бы одну текстуру.", "Нечего экспортировать: выбери блок и измени его текстуру."], ["dirty[k]=true;delete ph[slot];", "dirty[k]=true;delete ph[slot];if(window.FKAPI)window.FKAPI.edits++;"], ["/* ---------- старт ---------- */", "window.FKAPI={edits:0,files:function(){return curFiles().filter(function(f){return dirty[f.path.replace(/\\.png$/,'')]})},cur:function(){return cur},openTexture:function(path,data,res){var key='textures/'+path;if(!catalog)return null;var hit=null;for(var i=0;i<catalog.ids.length&&!hit;i++){if(pathsFor(catalog.ids[i]).indexOf(key)>=0)hit=catalog.ids[i]}if(!hit)return false;files[key]={res:res||16,data:data};dirty[key]=true;selectBlock(hit);return hit}};\n/* ---------- старт ---------- */"], ["v0.6.4", "v0.6.5"], ["return !q||id.indexOf(q)>=0}).slice(0,60);", "return !q||id.indexOf(q)>=0}).slice(0,300);"]];
 function applyPatches(h){
   var failed=[];
   PATCHES.forEach(function(p){
@@ -8,11 +8,12 @@ function applyPatches(h){
   return {html:h,failed:failed};
 }
 var FKE=(function(){
-var frame=null,mode='search',onMode=null,loaded=null;
+var frame=null,mode='search',onMode=null,loaded=null,wantEdit=false,base=0;
 function doc(){try{return (frame&&frame.contentDocument)||null}catch(e){return null}}
 function api(){try{var d=doc();return (d&&d.defaultView&&d.defaultView.FKAPI)||null}catch(e){return null}}
 function note(){if(onMode)onMode(mode)}
 function setMode(m){
+  if(m==='edit'&&mode!=='edit'){var a0=api();base=a0?(a0.edits||0):0}
   mode=m;
   var d=doc();
   if(d&&d.body){
@@ -77,19 +78,41 @@ function open(f,url,cb){
     try{d=f.contentDocument;if(!d||!d.querySelector('#ed'))why='страница по адресу «'+url+'» открылась, но это не редактор (возможно, 404 или другой файл).'}
     catch(e){why='браузер не даёт прочитать «'+url+'» (другой домен).'}
     if(why){loaded=null;if(cb.onError)cb.onError(why);return}
-    tidy(d);setMode('search');
+    tidy(d);setMode(wantEdit?'edit':'search');
   };
   fetch(url).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}).then(function(h){
-    var res=applyPatches(h),base=new URL(url,location.href).href;
+    var res=applyPatches(h),b=new URL(url,location.href).href;
     if(res.failed.length&&cb.onWarn)cb.onWarn('Часть правок редактора не применилась: '+res.failed.length);
-    f.srcdoc=res.html.replace(/<head>/i,'<head><base href="'+base+'">');
+    f.srcdoc=res.html.replace(/<head>/i,'<head><base href="'+b+'">');
   }).catch(function(){f.src=url});
 }
+function editTexture(path,data,cb){
+  cb=cb||{};wantEdit=true;
+  function start(res){
+    var tries=0;
+    (function poll(){
+      var a=api(),r=(a&&a.openTexture)?a.openTexture(path,data,res):null;
+      if(r){wantEdit=false;setMode('edit');setTimeout(note,800);if(cb.onDone)cb.onDone(r);return}
+      if(r===false||++tries>40){
+        wantEdit=false;setMode('search');
+        if(cb.onFail)cb.onFail(r===false?'Не нашёл блок для файла '+path:'Каталог блоков не загрузился');
+        return;
+      }
+      setTimeout(poll,500);
+    })();
+  }
+  var img=new Image();
+  img.onload=function(){start(img.width===32?32:16)};
+  img.onerror=function(){start(16)};
+  img.src=data;
+}
 return {
-  open:open,setMode:setMode,
+  open:open,setMode:setMode,editTexture:editTexture,
   getMode:function(){return mode},
   reset:function(){loaded=null},
   files:function(){var a=api();return a?a.files():null},
-  current:function(){var a=api();return a?a.cur():''}
+  current:function(){var a=api();return a?a.cur():''},
+  dirtyNow:function(){var a=api();return !!a&&mode==='edit'&&(a.edits||0)>base},
+  markSaved:function(){var a=api();base=a?(a.edits||0):0}
 };
 })();
