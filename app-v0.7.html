@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FoundryKin v0.7.1</title>
+<title>FoundryKin v0.7.2</title>
 <style>
 :root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff}
 :root[data-theme=dark]{--bg:#16181b;--panel:#202327;--ink:#e8e6e1;--mute:#9a9ea5;--line:#33373d;--acc:#6fbf80;--accink:#10210f}
@@ -47,7 +47,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px}
 </style>
 </head>
 <body>
-<div id="top"><button class="btn" id="back" style="display:none">←</button><div class="t" id="title">FoundryKin<small>v0.7.1</small></div><button class="btn pri" id="ok" style="display:none">✓ В пак</button></div>
+<div id="top"><button class="btn" id="back" style="display:none">←</button><div class="t" id="title">FoundryKin<small>v0.7.2</small></div><button class="btn pri" id="ok" style="display:none">✓ В пак</button></div>
 <div id="screens">
 <section class="screen on" id="s-home">
 <button class="btn pri big" data-go="create">Create</button>
@@ -90,6 +90,7 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px}
 </div>
 <div class="bar" id="bar"><button class="btn pri" id="addBtn">+ Add texture</button></div>
 <div id="msg"></div>
+<script src="fk-editor.js?v=0.7.2"></script>
 <script>
 (function(){
 var KEY='fk070_packs',SKEY='fk070_settings',DEF_URL='index.html';
@@ -100,7 +101,7 @@ var data=load(KEY,{active:null,packs:[]});
 var settings=load(SKEY,{theme:'auto',url:DEF_URL});
 if(!settings.url)settings.url=DEF_URL;
 data.packs.forEach(function(p){p.author=p.author||'';p.game=p.game||'1.21.0';p.icon=p.icon||'';p.desc=p.desc||'';p.version=p.version||'1.0.0';p.textures=p.textures||[]});
-var stack=['home'],mt=null,loadedUrl=null;
+var stack=['home'],mt=null;
 function say(t){var m=$('#msg');m.textContent=t||'';m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},3500)}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function byId(id){return data.packs.filter(function(p){return p.id===id})[0]||null}
@@ -112,13 +113,15 @@ function uuid(){
 }
 function ver(s){var v=String(s||'').split('.').map(function(n){return parseInt(n,10)||0});while(v.length<3)v.push(0);return v.slice(0,3)}
 var ICON='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"><rect width="56" height="56" fill="#8a8f98"/><rect x="14" y="14" width="28" height="28" fill="#3f7d4e"/></svg>');
-var TITLES={home:'FoundryKin<small>v0.7.1</small>',create:'Create',settings:'Настройки',add:'Add texture',edit:'Редактирование'};
+var TITLES={home:'FoundryKin<small>v0.7.2</small>',create:'Create',settings:'Настройки',add:'Add texture',edit:'Редактирование'};
+function top(){return stack[stack.length-1]}
+function hasFke(){return typeof FKE!=='undefined'}
 function render(){
-  var name=stack[stack.length-1],p=active();
+  var name=top(),p=active();
   document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('on',s.id==='s-'+name)});
   $('#title').innerHTML=name==='pack'?esc(p?p.name:'Пак'):TITLES[name];
   $('#back').style.display=stack.length>1?'inline-flex':'none';
-  $('#ok').style.display=name==='add'?'inline-flex':'none';
+  $('#ok').style.display='none';
   $('#bar').classList.toggle('on',name==='pack');
   if(name==='create')renderPacks();
   if(name==='pack')renderTex();
@@ -128,7 +131,10 @@ function render(){
   say('');
 }
 function go(n){stack.push(n);render()}
-$('#back').onclick=function(){if(stack.length>1){stack.pop();render()}};
+$('#back').onclick=function(){
+  if(top()==='add'&&hasFke()&&FKE.getMode()==='edit'){FKE.setMode('search');return}
+  if(stack.length>1){stack.pop();render()}
+};
 document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});
 $('#addBtn').onclick=function(){if(!active()){say('Сначала выбери пак.');return}go('add')};
 function renderPacks(){
@@ -159,7 +165,7 @@ function renderTex(){
   var p=active(),box=$('#texList');
   if(!p){box.innerHTML='';return}
   $('#pInfo').textContent='v'+p.version+' · изменённых текстур: '+p.textures.length;
-  if(!p.textures.length){box.innerHTML='<p class="lbl">Пока пусто. Нажми «+ Add texture», выбери блок, измени текстуру и нажми «✓ В пак».</p>';return}
+  if(!p.textures.length){box.innerHTML='<p class="lbl">Пока пусто. Нажми «+ Add texture», найди блок, измени текстуру и нажми «✓ В пак».</p>';return}
   box.innerHTML=p.textures.map(function(t,i){
     return '<div class="tcard"><div class="tx"><img src="'+t.data+'" alt=""><div>'+esc(t.path)+'</div></div>'+
       '<div class="row"><button class="btn" data-a="png" data-i="'+i+'">Экспорт PNG</button><label class="btn" for="rep'+i+'">Заменить</label><input type="file" id="rep'+i+'" accept="image/png" data-a="rep" data-i="'+i+'"><button class="btn" data-a="del" data-i="'+i+'">Удалить</button></div></div>';
@@ -214,78 +220,37 @@ $('#eSave').onclick=function(){
   p.version=$('#eVer').value.trim()||'1.0.0';p.game=$('#eGame').value.trim()||'1.21.0';
   if(save(KEY,data)){$('#eJson').value=JSON.stringify(manifest(p),null,2);say('Сохранено.')}
 };
-function tidy(d){
-  try{
-    if(!d||d.__fkTidy||!d.querySelector('#ed'))return;
-    var m=d.querySelector('main');if(!m)return;
-    d.__fkTidy=true;
-    var st=d.createElement('style');
-    st.textContent='#fkInfo{margin-top:20px;border-top:1px solid var(--line);padding-top:10px}#fkInfo summary{cursor:pointer;font-weight:600;min-height:40px;display:flex;align-items:center}#fkInfo .lbl{margin:8px 0}';
-    d.head.appendChild(st);
-    var box=d.createElement('details');box.id='fkInfo';box.open=true;
-    var sm=d.createElement('summary');sm.textContent='Справка и каталог';box.appendChild(sm);
-    var keys=['Блок из игры','Загруженный PNG','Имя блока'];
-    Array.prototype.slice.call(d.querySelectorAll('p.lbl')).forEach(function(p){
-      var t=p.textContent.trim();
-      if(keys.some(function(k){return t.indexOf(k)===0}))box.appendChild(p);
-    });
-    ['#dbg','#info'].forEach(function(q){var e=d.querySelector(q);if(e)box.appendChild(e)});
-    var cf=d.querySelector('label[for="catfile"]');
-    if(cf&&cf.parentNode)box.appendChild(cf.parentNode);
-    m.appendChild(box);
-    var nm=d.querySelector('#name');if(nm)nm.setAttribute('aria-label','Имя блока');
-  }catch(e){}
-}
-var PATCHES=[["else{u=X+.5;v=ny>0?.5-Z:Z+.5}", "else if(vs!==1){var th=(w<d)?(X-x+w/2)/w:(Z-z+d/2)/d;u=(w<d)?Z+.5:X+.5;v=ny>0?1-.09375*th:.09375*th}\n    else{u=X+.5;v=ny>0?.5-Z:Z+.5}"], ["  var f=document.createElement('button');f.textContent='✎ свободный режим';f.onclick=selectCustom;box.insertBefore(f,box.firstChild);\n", ""], ["function syncSame(){$('#sameLabel').style.display=cur==='custom'?'flex':'none';$('#same').checked=customSame}", "function syncSame(){$('#same').checked=customSame}"], ["<label class=\"chk\" id=\"sameLabel\">", "<label class=\"chk\" id=\"sameLabel\" style=\"display:none\">"], ["if(cur==='custom'){n.disabled=false;n.value=customName}else{n.disabled=true;n.value=cur}", "if(cur==='custom'){n.disabled=true;n.value='';n.placeholder='выбери блок'}else{n.disabled=true;n.value=cur}"], ["Имя блока (в свободном режиме вводится вручную, для блока из игры подставляется само)", "Имя блока (подставляется из выбранного блока)"], ["Пока работает свободный режим.", "Выбери блок из списка, когда он загрузится."], [" либо работай в свободном режиме.", "."], ["  e.preventDefault();ed.setPointerCapture(e.pointerId);\n", "  if(cur==='custom'){say('Сначала выбери блок из списка.');return}\n  e.preventDefault();ed.setPointerCapture(e.pointerId);\n"], ["img.onload=function(){if(!cv[slot])return;pushUndo();", "img.onload=function(){if(!cv[slot]||cur==='custom')return;pushUndo();"], ["$('#clr').onclick=function(){if(!cv[slot])return;", "$('#clr').onclick=function(){if(!cv[slot]||cur==='custom')return;"], ["    var f=files[fk(s.id)];if(!f)return;\n    var p=cur==='custom'?customPath(s.id):s.id;", "    if(cur==='custom')return;\n    var f=files[fk(s.id)];if(!f)return;\n    var p=s.id;"], ["if(k.indexOf('custom/')===0){var id=k.slice(7);if(customSame&&id!=='side')return;p=customPath(id)}\n    else p=k;", "if(k.indexOf('custom/')===0)return;\n    p=k;"], ["Нечего экспортировать: нарисуй хотя бы одну текстуру.", "Нечего экспортировать: выбери блок и измени его текстуру."], ["/* ---------- старт ---------- */", "window.FKAPI={files:function(){return curFiles().filter(function(f){return dirty[f.path.replace(/\\.png$/,'')]})},cur:function(){return cur}};\n/* ---------- старт ---------- */"], ["v0.6.4", "v0.6.5"]];
-function applyPatches(h){
-  var failed=[];
-  PATCHES.forEach(function(p){
-    if(h.indexOf(p[0])<0){failed.push(p[0].slice(0,40));return}
-    h=h.split(p[0]).join(p[1]);
-  });
-  return {html:h,failed:failed};
+function onMode(m){
+  if(top()!=='add')return;
+  $('#ok').style.display=m==='edit'?'inline-flex':'none';
+  var c=FKE.current();
+  $('#title').innerHTML=m==='edit'?esc(c&&c!=='custom'?c:'Редактор'):'Add texture';
 }
 function loadEditor(){
-  var f=$('#editor'),err=$('#addErr'),url=settings.url||DEF_URL;
-  if(loadedUrl===url)return;
-  err.style.display='none';loadedUrl=url;
-  f.onload=function(){
-    var why='';
-    try{var d=f.contentDocument;if(!d||!d.querySelector('#ed'))why='страница по адресу «'+url+'» открылась, но это не редактор (возможно, 404 или другой файл).'}
-    catch(e){why='браузер не даёт прочитать «'+url+'» (другой домен).'}
-    if(!why)tidy(f.contentDocument);
-    if(why){err.innerHTML='<b>Редактор не загрузился</b><br>'+esc(why)+'<br>Открой Настройки → «Адрес редактора» и укажи рабочий адрес index.html. Файлы app-v0.7.html и index.html должны лежать на одном сайте.';err.style.display='block';loadedUrl=null}
-  };
-  fetch(url).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}).then(function(h){
-    var res=applyPatches(h),base=new URL(url,location.href).href;
-    if(res.failed.length)say('Часть правок редактора не применилась: '+res.failed.length);
-    f.srcdoc=res.html.replace(/<head>/i,'<head><base href="'+base+'">');
-  }).catch(function(){f.src=url});
+  var err=$('#addErr');
+  err.style.display='none';
+  if(!hasFke()){err.innerHTML='<b>Не загрузился fk-editor.js</b><br>Файл должен лежать рядом с app-v0.7.html.';err.style.display='block';return}
+  FKE.open($('#editor'),settings.url||DEF_URL,{
+    onMode:onMode,
+    onWarn:say,
+    onError:function(why){
+      err.innerHTML='<b>Редактор не загрузился</b><br>'+esc(why)+'<br>Открой Настройки → «Адрес редактора» и укажи рабочий адрес index.html. Файлы app-v0.7.html и index.html должны лежать на одном сайте.';
+      err.style.display='block';
+    }
+  });
 }
-$('#sUrlSave').onclick=function(){settings.url=$('#sUrl').value.trim()||DEF_URL;save(SKEY,settings);loadedUrl=null;say('Адрес сохранён.')};
+$('#sUrlSave').onclick=function(){settings.url=$('#sUrl').value.trim()||DEF_URL;save(SKEY,settings);if(hasFke())FKE.reset();say('Адрес сохранён.')};
 $('#ok').onclick=function(){
   var p=active();if(!p){say('Нет активного пака.');return}
-  try{
-    var d=$('#editor').contentDocument,api=d.defaultView&&d.defaultView.FKAPI;
-    if(api){
-      var fs=api.files();
-      if(!fs.length){say('Сначала выбери блок и измени его текстуру.');return}
-      fs.forEach(function(x){
-        var path=x.path.replace(/^textures\//,'').replace(/\.png$/,'');
-        p.textures=p.textures.filter(function(t){return t.path!==path});
-        p.textures.push({path:path,data:x.data});
-      });
-      if(save(KEY,data))say('В пак «'+p.name+'» добавлено текстур: '+fs.length);
-      return;
-    }
-    var cv=d.querySelector('#ed'),nm=d.querySelector('#name');
-    if(!cv)throw new Error('редактор не загружен');
-    var n=((nm&&nm.value)||'texture').trim().replace(/[^A-Za-z0-9_\-]/g,'_')||'texture';
-    var path2='blocks/'+n;
-    p.textures=p.textures.filter(function(t){return t.path!==path2});
-    p.textures.push({path:path2,data:cv.toDataURL('image/png')});
-    if(save(KEY,data))say('Сохранено в пак «'+p.name+'»: '+path2);
-  }catch(e){say('Не удалось взять текстуру из редактора: '+e.message)}
+  var fs=hasFke()?FKE.files():null;
+  if(!fs){say('Редактор ещё не готов.');return}
+  if(!fs.length){say('Сначала измени текстуру блока.');return}
+  fs.forEach(function(x){
+    var path=x.path.replace(/^textures\//,'').replace(/\.png$/,'');
+    p.textures=p.textures.filter(function(t){return t.path!==path});
+    p.textures.push({path:path,data:x.data});
+  });
+  if(save(KEY,data))say('В пак «'+p.name+'» добавлено текстур: '+fs.length);
 };
 $('#sTheme').value=settings.theme;
 $('#sTheme').onchange=function(){settings.theme=this.value;save(SKEY,settings);applyTheme()};
