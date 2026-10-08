@@ -1,5 +1,6 @@
 (function(){
-var APP_V='0.7.6',V=window.FK_V||'?';
+var src='';try{src=String(document.currentScript.src||'')}catch(e){}
+var am=/[?&]v=([\d.]+)/.exec(src),APP_V=am?am[1]:'?',V=window.FK_V||'?';
 var KEY='fk070_packs',SKEY='fk070_settings',DEF_URL='index.html';
 var $=function(s){return document.querySelector(s)};
 function load(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v||d}catch(e){return d}}
@@ -188,15 +189,14 @@ $('#ok').onclick=function(){
 };
 function report(){
   var L=['FoundryKin — диагностика'];
-  function mark(a,b){return a===b?'':'  !! не совпадает с app.html ('+b+')'}
   L.push('app.html: v'+V);
-  L.push('fk-app.js: v'+APP_V+mark(APP_V,V));
+  L.push('fk-app.js: v'+APP_V);
   var cv='?';
-  try{cv=String(getComputedStyle(document.documentElement).getPropertyValue('--fkv')).replace(/['"\s]/g,'')||'?'}catch(e){}
-  L.push('fk-style.css: v'+cv+mark(cv,V));
+  try{var lk=document.querySelector('link[rel=stylesheet]'),cm=/[?&]v=([\d.]+)/.exec(String(lk&&lk.href||''));if(cm)cv=cm[1]}catch(e){}
+  L.push('fk-style.css: v'+cv);
   if(hasFke()){
     var i=FKE.info();
-    L.push('fk-editor.js: v'+i.version+mark(i.version,V));
+    L.push('fk-editor.js: v'+i.version);
     L.push('index.html: '+(i.indexLen?i.indexLen+' симв. (ожидалось '+i.expectedLen+')'+(i.indexLen===i.expectedLen?'':'  !! изменён'):'ещё не загружался'));
     L.push('правки редактора: '+(i.indexLen?'применено '+i.applied+' из '+i.total+(i.failed.length?', не применились: '+i.failed.join(' | '):''):'ещё не проверялись (открой Add texture)'));
     L.push('редактор готов: '+(i.ready?'да':'нет')+', режим: '+i.mode+', загрузка блока: '+(i.busy?'идёт':'нет'));
