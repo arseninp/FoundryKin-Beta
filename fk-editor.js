@@ -8,8 +8,8 @@ function applyPatches(h){
   return {html:h,failed:failed};
 }
 var FKE=(function(){
-var VERSION='0.7.5',EXPECTED_LEN=47239;
-var frame=null,mode='search',onMode=null,loaded=null,wantEdit=false,base=0,pending=false,lastLen=0,lastFailed=[];
+var VERSION='0.7.6',EXPECTED_LEN=47239;
+var frame=null,mode='search',onMode=null,loaded=null,wantEdit=false,base=0,pending=false,pendingName='',lastLen=0,lastFailed=[];
 function doc(){try{return (frame&&frame.contentDocument)||null}catch(e){return null}}
 function api(){try{var d=doc();return (d&&d.defaultView&&d.defaultView.FKAPI)||null}catch(e){return null}}
 function note(){if(onMode)onMode(mode)}
@@ -59,7 +59,9 @@ function tidy(d){
     if(a)a.onchange=function(){if(!a.busy)pending=false;note()};
     var list=d.querySelector('#list');
     if(list)list.addEventListener('click',function(e){
-      if(!e.target.closest('button'))return;
+      var b=e.target.closest('button');
+      if(!b)return;
+      pendingName=String(b.textContent||'').replace(/\s*●\s*$/,'').trim();
       pending=true;
       setMode('edit');
       setTimeout(function(){if(pending&&!(a&&a.busy)){pending=false;note()}},1500);
@@ -102,7 +104,7 @@ function editTexture(path,data,cb){
     var tries=0;
     (function poll(){
       var a=api(),r=(a&&a.openTexture)?a.openTexture(path,data,res):null;
-      if(r){wantEdit=false;setMode('edit');if(cb.onDone)cb.onDone(r);return}
+      if(r){wantEdit=false;pendingName=String(r);setMode('edit');if(cb.onDone)cb.onDone(r);return}
       if(r===false||++tries>40){
         wantEdit=false;setMode('search');
         if(cb.onFail)cb.onFail(r===false?'Не нашёл блок для файла '+path:'Каталог блоков не загрузился');
@@ -133,7 +135,7 @@ return {
   reset:function(){loaded=null},
   busy:busy,
   files:function(){var a=api();return (a&&!busy())?a.files():null},
-  current:function(){if(busy())return 'Загрузка…';var a=api();return a?a.cur():''},
+  current:function(){if(busy()&&pendingName)return pendingName;var a=api();return a?a.cur():''},
   dirtyNow:function(){var a=api();return !!a&&mode==='edit'&&(a.edits||0)>base},
   markSaved:function(){var a=api();base=a?(a.edits||0):0}
 };

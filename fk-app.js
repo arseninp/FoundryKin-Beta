@@ -1,5 +1,5 @@
 (function(){
-var APP_V='0.7.5',V=window.FK_V||'?';
+var APP_V='0.7.6',V=window.FK_V||'?';
 var KEY='fk070_packs',SKEY='fk070_settings',DEF_URL='index.html';
 var $=function(s){return document.querySelector(s)};
 function load(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v||d}catch(e){return d}}
@@ -154,9 +154,11 @@ $('#eSave').onclick=function(){
 };
 function onMode(m){
   if(top()!=='add')return;
-  $('#ok').style.display=m==='edit'?'inline-flex':'none';
+  var edit=m==='edit',busy=edit&&FKE.busy();
+  $('#ok').style.display=edit?'inline-flex':'none';
+  $('#ok').disabled=busy;
   var c=FKE.current();
-  $('#title').innerHTML=m==='edit'?esc(c&&c!=='custom'?c:'Редактор'):'Add texture';
+  $('#title').innerHTML=edit?esc(c&&c!=='custom'?c:'Редактор')+(busy?'<small>загрузка…</small>':''):'Add texture';
 }
 function loadEditor(){
   var err=$('#addErr');
@@ -196,7 +198,7 @@ function report(){
     var i=FKE.info();
     L.push('fk-editor.js: v'+i.version+mark(i.version,V));
     L.push('index.html: '+(i.indexLen?i.indexLen+' симв. (ожидалось '+i.expectedLen+')'+(i.indexLen===i.expectedLen?'':'  !! изменён'):'ещё не загружался'));
-    L.push('правки редактора: применено '+i.applied+' из '+i.total+(i.failed.length?', не применились: '+i.failed.join(' | '):''));
+    L.push('правки редактора: '+(i.indexLen?'применено '+i.applied+' из '+i.total+(i.failed.length?', не применились: '+i.failed.join(' | '):''):'ещё не проверялись (открой Add texture)'));
     L.push('редактор готов: '+(i.ready?'да':'нет')+', режим: '+i.mode+', загрузка блока: '+(i.busy?'идёт':'нет'));
     L.push('каталог: '+i.catalog);
   }else L.push('fk-editor.js: НЕ ЗАГРУЖЕН');
