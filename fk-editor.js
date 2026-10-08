@@ -8,7 +8,8 @@ function applyPatches(h){
   return {html:h,failed:failed};
 }
 var FKE=(function(){
-var frame=null,mode='search',onMode=null,loaded=null,wantEdit=false,base=0,pending=false;
+var VERSION='0.7.5',EXPECTED_LEN=47239;
+var frame=null,mode='search',onMode=null,loaded=null,wantEdit=false,base=0,pending=false,lastLen=0,lastFailed=[];
 function doc(){try{return (frame&&frame.contentDocument)||null}catch(e){return null}}
 function api(){try{var d=doc();return (d&&d.defaultView&&d.defaultView.FKAPI)||null}catch(e){return null}}
 function note(){if(onMode)onMode(mode)}
@@ -85,8 +86,13 @@ function open(f,url,cb){
     tidy(d);setMode(wantEdit?'edit':'search');
   };
   fetch(url).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}).then(function(h){
+    lastLen=h.length;
     var res=applyPatches(h),b=new URL(url,location.href).href;
-    if(res.failed.length&&cb.onWarn)cb.onWarn('Часть правок редактора не применилась: '+res.failed.length);
+    lastFailed=res.failed;
+    if(cb.onWarn){
+      if(res.failed.length)cb.onWarn('Часть правок редактора не применилась: '+res.failed.length);
+      else if(lastLen!==EXPECTED_LEN)cb.onWarn('index.html отличается от ожидаемого. Если что-то работает не так, открой Настройки → Диагностика.');
+    }
     f.srcdoc=res.html.replace(/<head>/i,'<head><base href="'+b+'">');
   }).catch(function(){f.src=url});
 }
@@ -110,8 +116,19 @@ function editTexture(path,data,cb){
   img.onerror=function(){start(16)};
   img.src=data;
 }
+function info(){
+  var d=doc(),inf=null;
+  try{inf=d&&d.querySelector('#info')}catch(e){}
+  return {
+    version:VERSION,indexLen:lastLen,expectedLen:EXPECTED_LEN,
+    total:PATCHES.length,failed:lastFailed.slice(),applied:PATCHES.length-lastFailed.length,
+    mode:mode,busy:busy(),ready:!!(d&&d.__fkTidy),
+    catalog:inf?String(inf.textContent).slice(0,160):'(редактор не загружен)'
+  };
+}
 return {
-  open:open,setMode:setMode,editTexture:editTexture,
+  version:VERSION,
+  open:open,setMode:setMode,editTexture:editTexture,info:info,
   getMode:function(){return mode},
   reset:function(){loaded=null},
   busy:busy,
