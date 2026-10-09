@@ -1,4 +1,4 @@
-var NEWPATCHES=[["function drawFb(){\n  if(!fbOn||!slots.length)return;\n  var c=$('#fb'),g=c.getContext('2d');\n  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,300,300);g.imageSmoothingEnabled=false;\n  var isDoor=(shape==='door'||shape==='dooropen');\n  var s=isDoor?95:140,a=s*.866,b=s*.5,T0={x:150,y:isDoor?12+s:12},R=res,F=faceMap;\n  function im(k){return cv[F[k]]}\n", "function drawFb(){\n  if(!slots.length)return;\n  drawBlock($('#fb'),shape,function(k){return cv[faceMap[k]]},res,300);\n}\nfunction drawBlock(c,shape,im,R,Z){\n  var g=c.getContext('2d'),q=Z/300;\n  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,Z,Z);g.imageSmoothingEnabled=false;\n  var isDoor=(shape==='door'||shape==='dooropen');\n  var s=(isDoor?95:140)*q,a=s*.866,b=s*.5,T0={x:150*q,y:isDoor?12*q+s:12*q};\n"], ["return hit}};\n/* ---------- старт ---------- */", "return hit},grid:function(){return {catalog:catalog,files:files,dirty:dirty,load:loadAny,select:selectBlock,edited:isEdited,drawBlock:drawBlock,shapeFor:function(id){var m=catalog.mother[id],mo=modelOf(m),k=shapeKeysFor(m,catalog.members[catalog.sig[m]]),w=isDoorBlock(m)?'door':(mo?mo:shapeOfId(id));return k.indexOf(w)>=0?w:k[0]}}}};\n/* ---------- старт ---------- */"]];
+var NEWPATCHES=[["function drawFb(){\n  if(!fbOn||!slots.length)return;\n  var c=$('#fb'),g=c.getContext('2d');\n  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,300,300);g.imageSmoothingEnabled=false;\n  var isDoor=(shape==='door'||shape==='dooropen');\n  var s=isDoor?95:140,a=s*.866,b=s*.5,T0={x:150,y:isDoor?12+s:12},R=res,F=faceMap;\n  function im(k){return cv[F[k]]}\n", "function drawFb(){\n  if(!slots.length)return;\n  drawBlock($('#fb'),shape,function(k){return cv[faceMap[k]]},res,300);\n}\nfunction drawBlock(c,shape,im,R,Z){\n  var g=c.getContext('2d'),q=Z/300;\n  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,Z,Z);g.imageSmoothingEnabled=false;\n  var isDoor=(shape==='door'||shape==='dooropen');\n  var s=(isDoor?95:140)*q,a=s*.866,b=s*.5,T0={x:150*q,y:isDoor?12*q+s:12*q};\n"], ["return hit}};\n/* ---------- старт ---------- */", "return hit},grid:function(){return {catalog:catalog,files:files,dirty:dirty,load:loadAny,select:selectBlock,edited:isEdited,drawBlock:drawBlock,obj:function(){return {id:cur==='custom'?null:cur,paths:slots.map(function(s){return s.id}),file:slot?String(slot).split('/').pop():''}},shapeFor:function(id){var m=catalog.mother[id],mo=modelOf(m),k=shapeKeysFor(m,catalog.members[catalog.sig[m]]),w=isDoorBlock(m)?'door':(mo?mo:shapeOfId(id));return k.indexOf(w)>=0?w:k[0]}}}};\n/* ---------- старт ---------- */"]];
 (function(){
 var src='';try{src=String(document.currentScript.src||'')}catch(e){}
 var vm=/[?&]v=([\d.]+)/.exec(src),VERSION=vm?vm[1]:'?';
@@ -60,7 +60,7 @@ function attach(d){
   var more=d.createElement('div');more.id='fkMore';
   list.parentNode.insertBefore(box,list.nextSibling);
   box.parentNode.insertBefore(more,box.nextSibling);
-  var w=d.defaultView,ids=[],shown=0,lastCat=null,lastSig='';
+  var w=d.defaultView,ids=[],shown=0,lastCat=null,lastSig='',migrated=null;
   var obs=new w.IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){obs.unobserve(e.target);paint(e.target)}})},{rootMargin:'250px'});
   var mobs=new w.IntersectionObserver(function(es){if(es[0].isIntersecting&&shown<ids.length){addPage();mobs.unobserve(more);mobs.observe(more)}},{rootMargin:'400px'});
   function paint(card){
@@ -91,6 +91,7 @@ function attach(d){
     var c=ctxNow(d);
     box.innerHTML='';mobs.unobserve(more);shown=0;
     if(!c||!c.catalog){var m0=d.createElement('div');m0.id='fkEmpty';m0.textContent='Каталог блоков загружается\u2026';box.appendChild(m0);ids=[];return}
+    if(migrated!==c.catalog){migrated=c.catalog;try{if(window.FKAPP)window.FKAPP.migrate(c)}catch(e){}}
     var qv=qi.value.trim().toLowerCase().replace(/\s+/g,'_');
     ids=c.catalog.ids.filter(function(id){return !qv||id.indexOf(qv)>=0});
     lastCat=c.catalog;lastSig=sig(c);
@@ -141,6 +142,7 @@ if(typeof PATCHES!=='undefined'){
 if(typeof FKE!=='undefined'){
   var oo=FKE.open;FKE.open=function(f,u,cb){f.style.visibility='hidden';cb=cb||{};var oe=cb.onError;cb.onError=function(x){f.style.visibility='visible';if(oe)oe(x)};var r=oo.call(FKE,f,u,cb);watch(f);setTimeout(function(){if(f.style.visibility==='hidden')f.style.visibility='visible'},4000);return r};
   var oc=FKE.current;FKE.current=function(){if(pickName){if(FKE.busy())return pickName;pickName=''}return oc.call(FKE)};
+  FKE.objInfo=function(){var d=curDoc;if(!d)return null;var c=ctxNow(d);return (c&&c.obj)?c.obj():null};
   var os=FKE.setMode;
   FKE.setMode=function(m){
     var d=curDoc,prev=FKE.getMode();

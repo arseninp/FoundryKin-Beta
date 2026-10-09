@@ -9,10 +9,11 @@ var data=load(KEY,{active:null,packs:[]});
 var settings=load(SKEY,{theme:'auto',url:DEF_URL});
 if(!settings.url)settings.url=DEF_URL;
 data.packs.forEach(function(p){p.author=p.author||'';p.game=p.game||'1.21.0';p.icon=p.icon||'';p.desc=p.desc||'';p.version=p.version||'1.0.0';p.textures=p.textures||[]});
-var stack=['home'],mt=null,editDirty=false;
+var stack=['home'],mt=null,editDirty=false,titleT=null,lastTitle='';
 document.title='FoundryKin v'+V;
 function say(t){var m=$('#msg');m.textContent=t||'';m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},3500)}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function nice(id){var s=String(id||'').replace(/_/g,' ').trim();return s.charAt(0).toUpperCase()+s.slice(1)}
 function byId(id){return data.packs.filter(function(p){return p.id===id})[0]||null}
 function active(){return byId(data.active)}
 function applyTheme(){var t=settings.theme;if(t==='auto')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}
@@ -29,9 +30,11 @@ function render(){
   var name=top(),p=active();
   document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('on',s.id==='s-'+name)});
   $('#title').innerHTML=name==='pack'?esc(p?p.name:'Пак'):TITLES[name];
+  $('#title').style.whiteSpace='nowrap';
   $('#back').style.display=stack.length>1?'inline-flex':'none';
   $('#ok').style.display='none';
   $('#bar').classList.toggle('on',name==='pack');
+  if(name!=='add'&&titleT){clearInterval(titleT);titleT=null}
   if(name==='create')renderPacks();
   if(name==='pack')renderTex();
   if(name==='edit')fillEdit();
@@ -81,14 +84,42 @@ $('#cGo').onclick=function(){
   data.packs.push(p);data.active=p.id;
   if(save(KEY,data))go('pack');
 };
+function groupsOf(p){
+  var gs=[],idx={};
+  p.textures.forEach(function(t,i){
+    var k=t.obj?'o:'+t.obj:'f:'+t.path;
+    if(!(k in idx)){idx[k]=gs.length;gs.push({obj:t.obj||null,all:t.all||null,items:[]})}
+    var g=gs[idx[k]];if(!g.all&&t.all)g.all=t.all;
+    g.items.push({t:t,i:i});
+  });
+  return gs;
+}
+function pickShown(g){
+  if(g.all)for(var a=0;a<g.all.length;a++){
+    for(var j=0;j<g.items.length;j++){if('textures/'+g.items[j].t.path===g.all[a])return g.items[j]}
+  }
+  return g.items[0];
+}
 function renderTex(){
   var p=active(),box=$('#texList');
   if(!p){box.innerHTML='';return}
+  var gs=groupsOf(p);
   $('#pInfo').textContent='v'+p.version+' · изменённых текстур: '+p.textures.length;
   if(!p.textures.length){box.innerHTML='<p class="lbl">Пока пусто. Нажми «+ Add texture», найди блок, измени текстуру и нажми «✓ В пак».</p>';return}
-  box.innerHTML=p.textures.map(function(t,i){
-    return '<div class="tcard"><div class="tx"><img src="'+t.data+'" alt=""><div>'+esc(t.path)+'</div></div>'+
-      '<div class="row"><button class="btn" data-a="edit" data-i="'+i+'">Изменить</button><label class="btn" for="rep'+i+'">Заменить</label><input type="file" id="rep'+i+'" accept="image/png" data-a="rep" data-i="'+i+'"><button class="btn" data-a="png" data-i="'+i+'">Экспорт PNG</button><button class="btn" data-a="del" data-i="'+i+'">Удалить</button></div></div>';
+  box.innerHTML=gs.map(function(g){
+    var shown=pickShown(g),title=g.obj?nice(g.obj):g.items[0].t.path;
+    var sub='';
+    if(g.obj&&g.all){
+      var have={};g.items.forEach(function(x){have['textures/'+x.t.path]=1});
+      var n=g.all.filter(function(a){return have[a]}).length;
+      sub='<span class="lbl">'+n+' из '+g.all.length+' отредактировано</span>';
+    }
+    var rows=g.items.map(function(x){
+      var i=x.i;
+      return '<div class="row"><span class="lbl" style="flex:1 1 100%;margin:0;word-break:break-all">'+esc(x.t.path)+'</span>'+
+        '<button class="btn" data-a="edit" data-i="'+i+'">Изменить</button><label class="btn" for="rep'+i+'">Заменить</label><input type="file" id="rep'+i+'" accept="image/png" data-a="rep" data-i="'+i+'"><button class="btn" data-a="png" data-i="'+i+'">Экспорт PNG</button><button class="btn" data-a="del" data-i="'+i+'">Удалить</button></div>';
+    }).join('');
+    return '<div class="tcard"><div class="tx"><img src="'+shown.t.data+'" alt=""><div><b>'+esc(title)+'</b><br>'+sub+'</div></div>'+rows+'</div>';
   }).join('');
 }
 $('#texList').addEventListener('click',function(e){
@@ -153,13 +184,31 @@ $('#eSave').onclick=function(){
   p.version=$('#eVer').value.trim()||'1.0.0';p.game=$('#eGame').value.trim()||'1.21.0';
   if(save(KEY,data)){editDirty=false;$('#eJson').value=JSON.stringify(manifest(p),null,2);say('Сохранено.')}
 };
+function editTitle(){
+  var c=FKE.current(),oi=FKE.objInfo?FKE.objInfo():null;
+  if(FKE.busy())return '<div>'+esc(c&&c!=='custom'?nice(c):'Редактор')+':</div><small style="display:block;margin:0">загрузка…</small>';
+  var nm=oi&&oi.id?nice(oi.id):(c&&c!=='custom'?nice(c):'Редактор');
+  return '<div>'+esc(nm)+':</div>'+(oi&&oi.file?'<small style="display:block;margin:0">'+esc(oi.file)+'</small>':'');
+}
+function refreshTitle(){
+  if(top()!=='add'||!hasFke()||FKE.getMode()!=='edit'){if(titleT){clearInterval(titleT);titleT=null}return}
+  $('#ok').disabled=FKE.busy();
+  var h=editTitle();
+  if(h!==lastTitle){lastTitle=h;$('#title').innerHTML=h}
+}
 function onMode(m){
   if(top()!=='add')return;
-  var edit=m==='edit',busy=edit&&FKE.busy();
+  var edit=m==='edit';
   $('#ok').style.display=edit?'inline-flex':'none';
-  $('#ok').disabled=busy;
-  var c=FKE.current();
-  $('#title').innerHTML=edit?esc(c&&c!=='custom'?c:'Редактор')+(busy?'<small>загрузка…</small>':''):'Add texture';
+  if(edit){
+    $('#title').style.whiteSpace='nowrap';
+    lastTitle='';refreshTitle();
+    if(!titleT)titleT=setInterval(refreshTitle,500);
+  }else{
+    if(titleT){clearInterval(titleT);titleT=null}
+    $('#ok').disabled=false;
+    $('#title').innerHTML='Add texture';
+  }
 }
 function loadEditor(){
   var err=$('#addErr');
@@ -180,13 +229,37 @@ $('#ok').onclick=function(){
   var fs=hasFke()?FKE.files():null;
   if(!fs){say('Редактор ещё не готов.');return}
   if(!fs.length){say('Сначала измени текстуру блока.');return}
+  var oi=FKE.objInfo?FKE.objInfo():null;
   fs.forEach(function(x){
     var path=x.path.replace(/^textures\//,'').replace(/\.png$/,'');
     p.textures=p.textures.filter(function(t){return t.path!==path});
-    p.textures.push({path:path,data:x.data});
+    var rec={path:path,data:x.data};
+    if(oi&&oi.id){rec.obj=oi.id;rec.all=oi.paths}
+    p.textures.push(rec);
   });
   if(save(KEY,data)){FKE.markSaved();say('В пак «'+p.name+'» добавлено текстур: '+fs.length)}
 };
+function migrate(c){
+  if(!c||!c.catalog)return;
+  var cat=c.catalog,map=null,changed=false;
+  function build(){
+    map={};
+    cat.ids.forEach(function(id){
+      var ps=(cat.sp&&cat.sp[id])?cat.sp[id].list.map(function(s){return s.id}):cat.b[id].filter(function(x,i,a){return a.indexOf(x)===i});
+      ps.forEach(function(pth){if(!map[pth])map[pth]={id:id,all:ps}});
+    });
+  }
+  data.packs.forEach(function(p){
+    p.textures.forEach(function(t){
+      if(t.obj)return;
+      if(!map)build();
+      var m=map['textures/'+t.path];
+      if(m){t.obj=m.id;t.all=m.all;changed=true}
+    });
+  });
+  if(changed){save(KEY,data);if(top()==='pack')renderTex()}
+}
+window.FKAPP={migrate:migrate};
 function report(){
   var L=['FoundryKin — диагностика'];
   L.push('app.html: v'+V);
