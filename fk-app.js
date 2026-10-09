@@ -1,7 +1,7 @@
 (function(){
 var src='';try{src=String(document.currentScript.src||'')}catch(e){}
 var am=/[?&]v=([\d.]+)/.exec(src),APP_V=am?am[1]:'?',V=window.FK_V||'?';
-var KEY='fk070_packs',SKEY='fk070_settings',DEF_URL='index.html';
+var KEY='fk070_packs',SKEY='fk070_settings',DEF_URL='index.html',MAXB=4000000;
 var $=function(s){return document.querySelector(s)};
 function load(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v||d}catch(e){return d}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){say('Не удалось сохранить: '+e.message);return false}}
@@ -11,7 +11,7 @@ if(!settings.url)settings.url=DEF_URL;
 data.packs.forEach(function(p){p.author=p.author||'';p.game=p.game||'1.21.0';p.icon=p.icon||'';p.desc=p.desc||'';p.version=p.version||'1.0.0';p.textures=p.textures||[]});
 var stack=['home'],mt=null,editDirty=false,titleT=null,lastTitle='';
 document.title='FoundryKin v'+V;
-function say(t){var m=$('#msg');m.textContent=t||'';m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},3500)}
+function say(t){var m=$('#msg');m.textContent=t||'';m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},t.length>90?7000:3500)}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function nice(id){var s=String(id||'').replace(/_/g,' ').trim();return s.charAt(0).toUpperCase()+s.slice(1)}
 function byId(id){return data.packs.filter(function(p){return p.id===id})[0]||null}
@@ -62,10 +62,10 @@ document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){
 $('#addBtn').onclick=function(){if(!active()){say('Сначала выбери пак.');return}go('add')};
 function renderPacks(){
   var box=$('#packList');
-  if(!data.packs.length){box.innerHTML='<p class="lbl">Паков пока нет. Создай первый ниже.</p>';return}
+  if(!data.packs.length){box.innerHTML='<p class="lbl">Паков пока нет. Создай первый ниже или импортируй .mcpack.</p>';return}
   box.innerHTML=data.packs.map(function(p){
     return '<div class="card"><div class="pk" data-a="open" data-id="'+p.id+'"><img src="'+(p.icon||ICON)+'" alt=""><div class="n"><b>'+esc(p.name)+'</b><span class="lbl">v'+esc(p.version)+' · текстур: '+p.textures.length+'</span></div></div>'+
-      '<div class="acts"><button data-a="exp" data-id="'+p.id+'">Экспорт</button><button data-a="edit" data-id="'+p.id+'">Править .json</button><button data-a="del" data-id="'+p.id+'">Удалить</button></div></div>';
+      '<div class="acts"><button data-a="exp" data-id="'+p.id+'">Экспорт</button><button data-a="mc" data-id="'+p.id+'">В Minecraft</button><button data-a="edit" data-id="'+p.id+'">Править .json</button><button data-a="del" data-id="'+p.id+'">Удалить</button></div></div>';
   }).join('');
 }
 $('#packList').addEventListener('click',function(e){
@@ -74,7 +74,8 @@ $('#packList').addEventListener('click',function(e){
   data.active=id;save(KEY,data);
   if(a==='open')go('pack');
   if(a==='edit')go('edit');
-  if(a==='exp')exportPack(p);
+  if(a==='exp')exportPack(p,false);
+  if(a==='mc')exportPack(p,true);
   if(a==='del'){if(confirm('Удалить пак «'+p.name+'» вместе со всеми текстурами в нём?')){data.packs=data.packs.filter(function(x){return x.id!==id});data.active=null;save(KEY,data);renderPacks()}}
 });
 $('#cGo').onclick=function(){
@@ -149,18 +150,70 @@ function dataBlob(u){var a=u.split(','),bin=atob(a[1]),n=bin.length,u8=new Uint8
 function download(blob,name){var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)}
 function manifest(p,u1,u2){
   var v=ver(p.version),h={name:p.name,description:p.desc,uuid:u1||p.id,version:v,min_engine_version:ver(p.game)};
-  var m={format_version:2,header:h,modules:[{type:'resources',uuid:u2||p.id.split('').reverse().join(''),version:v}]};
+  var m={format_version:2,header:h,modules:[{type:'resources',uuid:u2||p.mod||p.id.split('').reverse().join(''),version:v}]};
   if(p.author)m.metadata={authors:[p.author]};
   return m;
 }
-function exportPack(p){
-  if(typeof JSZip==='undefined'){say('JSZip недоступен офлайн.');return}
-  var z=new JSZip(),m=manifest(p,uuid(),uuid());
+function buildPack(p){
+  var z=new JSZip(),m=p.keep?manifest(p,p.id,p.mod):manifest(p,uuid(),uuid());
   z.file('manifest.json',JSON.stringify(m,null,2));
   if(p.icon)z.file('pack_icon.png',p.icon.split(',')[1],{base64:true});
   p.textures.forEach(function(t){z.file('textures/'+t.path+'.png',t.data.split(',')[1],{base64:true})});
-  z.generateAsync({type:'blob'}).then(function(b){download(b,p.name+'.mcpack');say('Скачан '+p.name+'.mcpack')},function(e){say('Ошибка архива: '+e.message)});
+  return z.generateAsync({type:'blob'});
 }
+function exportPack(p,share){
+  if(typeof JSZip==='undefined'){say('JSZip недоступен офлайн.');return}
+  buildPack(p).then(function(b){
+    var fn=p.name+'.mcpack';
+    if(share&&typeof File!=='undefined'&&navigator.canShare&&navigator.share){
+      var f=new File([b],fn,{type:'application/octet-stream'});
+      if(navigator.canShare({files:[f]})){
+        navigator.share({files:[f],title:p.name}).catch(function(e){if(e&&e.name==='AbortError')return;download(b,fn);say('Меню приложений не сработало: файл скачан, открой его, и Minecraft предложит импорт.')});
+        return;
+      }
+    }
+    download(b,fn);
+    say(share?'В этом браузере меню приложений недоступно: файл скачан, открой его, и Minecraft предложит импорт.':'Скачан '+fn);
+  },function(e){say('Ошибка архива: '+e.message)});
+}
+$('#impF').onchange=function(){
+  var f=this.files[0];this.value='';if(!f)return;
+  if(typeof JSZip==='undefined'){say('JSZip недоступен офлайн.');return}
+  JSZip.loadAsync(f).then(function(z){
+    var mp=Object.keys(z.files).filter(function(n){return /(^|\/)manifest\.json$/i.test(n)&&!z.files[n].dir}).sort(function(a,b){return a.length-b.length})[0];
+    if(!mp){say('В архиве нет manifest.json.');return}
+    var prefix=mp.slice(0,mp.length-'manifest.json'.length);
+    return z.file(mp).async('string').then(function(txt){
+      var m;try{m=JSON.parse(txt.replace(/^\uFEFF/,''))}catch(e){say('manifest.json не читается.');return}
+      var h=m.header||{},mods=m.modules||[];
+      var names=Object.keys(z.files).filter(function(n){return n.indexOf(prefix+'textures/')===0&&/\.png$/i.test(n)&&!z.files[n].dir});
+      var texs=[],total=0,i=0;
+      function next(){
+        if(i>=names.length)return Promise.resolve();
+        var n=names[i++];
+        return z.file(n).async('base64').then(function(b){
+          total+=b.length;
+          if(total>MAXB)throw new Error('big');
+          texs.push({path:n.slice((prefix+'textures/').length).replace(/\.png$/i,''),data:'data:image/png;base64,'+b});
+          return next();
+        });
+      }
+      return next().then(function(){
+        var icoF=z.file(prefix+'pack_icon.png');
+        return (icoF?icoF.async('base64'):Promise.resolve('')).then(function(ib){
+          var used=0;try{used=JSON.stringify(data).length}catch(e){}
+          if(used+total*1.4>5000000){say('Не хватает места в браузере: нужно примерно '+Math.round(total/1e5)/10+' МБ. Удали ненужные паки и повтори.');return}
+          var nm=String(h.name||f.name.replace(/\.[^.]+$/,'')).replace(/[^A-Za-z0-9_\- ]/g,'').trim()||'imported_pack';
+          var okId=typeof h.uuid==='string'&&/^[0-9a-f-]{36}$/i.test(h.uuid)&&!byId(h.uuid);
+          var p={id:okId?h.uuid:uuid(),keep:okId,mod:(mods[0]&&typeof mods[0].uuid==='string')?mods[0].uuid:'',name:nm,desc:String(h.description||''),version:Array.isArray(h.version)?h.version.join('.'):'1.0.0',game:Array.isArray(h.min_engine_version)?h.min_engine_version.join('.'):'1.21.0',author:(m.metadata&&m.metadata.authors&&m.metadata.authors[0])||'',icon:ib?'data:image/png;base64,'+ib:'',textures:texs};
+          data.packs.push(p);data.active=p.id;
+          if(save(KEY,data)){renderPacks();say('Импортирован пак «'+p.name+'», текстур: '+texs.length+'. Объекты сгруппируются после открытия Add texture.')}
+          else{data.packs.pop()}
+        });
+      });
+    });
+  }).catch(function(e){say(e&&e.message==='big'?'Пак слишком большой для хранилища браузера. Пока поддерживаются паки примерно до 2–3 МБ.':'Не удалось прочитать архив: '+(e&&e.message||e))});
+};
 function fillEdit(){
   var p=active();if(!p)return;
   $('#eName').value=p.name;$('#eAuthor').value=p.author;$('#eDesc').value=p.desc;$('#eVer').value=p.version;$('#eGame').value=p.game;
@@ -242,10 +295,13 @@ $('#ok').onclick=function(){
 function migrate(c){
   if(!c||!c.catalog)return;
   var cat=c.catalog,map=null,changed=false;
+  function pathsOf(id){
+    return (cat.sp&&cat.sp[id])?cat.sp[id].list.map(function(s){return s.id}):cat.b[id].filter(function(x,i,a){return a.indexOf(x)===i});
+  }
   function build(){
     map={};
     cat.ids.forEach(function(id){
-      var ps=(cat.sp&&cat.sp[id])?cat.sp[id].list.map(function(s){return s.id}):cat.b[id].filter(function(x,i,a){return a.indexOf(x)===i});
+      var ps=pathsOf(id);
       ps.forEach(function(pth){if(!map[pth])map[pth]={id:id,all:ps}});
     });
   }
@@ -254,8 +310,15 @@ function migrate(c){
       if(t.obj)return;
       if(!map)build();
       var m=map['textures/'+t.path];
+      if(!m){var base=t.path.split('/').pop();if(cat.b[base])m={id:base,all:pathsOf(base)}}
       if(m){t.obj=m.id;t.all=m.all;changed=true}
     });
+    var before=p.textures.length;
+    p.textures=p.textures.filter(function(t){
+      if(!t.obj||!t.all||t.all.indexOf('textures/'+t.path)>=0)return true;
+      return !p.textures.some(function(o){return o!==t&&o.obj===t.obj&&o.all&&o.all.indexOf('textures/'+o.path)>=0&&o.data===t.data});
+    });
+    if(p.textures.length!==before)changed=true;
   });
   if(changed){save(KEY,data);if(top()==='pack')renderTex()}
 }
@@ -280,6 +343,7 @@ function report(){
   var tex=0;data.packs.forEach(function(p){tex+=p.textures.length});
   var sz=0;try{sz=JSON.stringify(data).length}catch(e){}
   L.push('память браузера: '+ls+'; паков: '+data.packs.length+', текстур: '+tex+', данные ≈ '+Math.round(sz/1024)+' КБ');
+  L.push('меню приложений (Web Share с файлами): '+((navigator.canShare&&navigator.share)?'есть':'нет'));
   L.push('адрес редактора: '+settings.url);
   L.push('страница: '+location.href);
   L.push('браузер: '+String(navigator.userAgent).slice(0,140));
