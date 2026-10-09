@@ -1,9 +1,9 @@
-var NEWPATCHES=[["function drawFb(){\n  if(!fbOn||!slots.length)return;\n  var c=$('#fb'),g=c.getContext('2d');\n  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,300,300);g.imageSmoothingEnabled=false;\n  var isDoor=(shape==='door'||shape==='dooropen');\n  var s=isDoor?95:140,a=s*.866,b=s*.5,T0={x:150,y:isDoor?12+s:12},R=res,F=faceMap;\n  function im(k){return cv[F[k]]}\n", "function drawFb(){\n  if(!slots.length)return;\n  drawBlock($('#fb'),shape,function(k){return cv[faceMap[k]]},res,300);\n}\nfunction drawBlock(c,shape,im,R,Z){\n  var g=c.getContext('2d'),q=Z/300;\n  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,Z,Z);g.imageSmoothingEnabled=false;\n  var isDoor=(shape==='door'||shape==='dooropen');\n  var s=(isDoor?95:140)*q,a=s*.866,b=s*.5,T0={x:150*q,y:isDoor?12*q+s:12*q};\n"], ["return hit}};\n/* ---------- старт ---------- */", "return hit},grid:function(){return {catalog:catalog,files:files,dirty:dirty,load:loadAny,select:selectBlock,edited:isEdited,drawBlock:drawBlock,obj:function(){return {id:cur==='custom'?null:cur,paths:slots.map(function(s){return s.id}),file:slot?String(slot).split('/').pop():''}},shapeFor:function(id){var m=catalog.mother[id],mo=modelOf(m),k=shapeKeysFor(m,catalog.members[catalog.sig[m]]),w=isDoorBlock(m)?'door':(mo?mo:shapeOfId(id));return k.indexOf(w)>=0?w:k[0]}}}};\n/* ---------- старт ---------- */"]];
+var NEWPATCHES=[["function drawFb(){\n  if(!fbOn||!slots.length)return;\n  var c=$('#fb'),g=c.getContext('2d');\n  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,300,300);g.imageSmoothingEnabled=false;\n  var isDoor=(shape==='door'||shape==='dooropen');\n  var s=isDoor?95:140,a=s*.866,b=s*.5,T0={x:150,y:isDoor?12+s:12},R=res,F=faceMap;\n  function im(k){return cv[F[k]]}\n", "function drawFb(){\n  if(!slots.length)return;\n  drawBlock($('#fb'),shape,function(k){return cv[faceMap[k]]},res,300);\n}\nfunction drawBlock(c,shape,im,R,Z){\n  var g=c.getContext('2d'),q=Z/300;\n  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,Z,Z);g.imageSmoothingEnabled=false;\n  var isDoor=(shape==='door'||shape==='dooropen');\n  var s=(isDoor?95:140)*q,a=s*.866,b=s*.5,T0={x:150*q,y:isDoor?12*q+s:12*q};\n"], ["return hit}};\n/* ---------- старт ---------- */", "return hit},grid:function(){return {catalog:catalog,files:files,dirty:dirty,load:loadAny,select:selectBlock,edited:isEdited,drawBlock:drawBlock,obj:function(){return {id:cur==='custom'?null:cur,paths:slots.map(function(s){return s.id}),file:slot?String(slot).split('/').pop():''}},setPack:function(map){Object.keys(dirty).forEach(function(k){if(!(k in map)){delete dirty[k];delete files[k]}});Object.keys(map).forEach(function(k){var d=map[k],w=16;try{var b=atob(d.split(',')[1].slice(0,40));w=(b.charCodeAt(16)*16777216)+(b.charCodeAt(17)<<16)+(b.charCodeAt(18)<<8)+b.charCodeAt(19)}catch(e){}if(!(w>0&&w<=1024))w=16;files[k]={res:w,data:d};dirty[k]=true})},shapeFor:function(id){var m=catalog.mother[id],mo=modelOf(m),k=shapeKeysFor(m,catalog.members[catalog.sig[m]]),w=isDoorBlock(m)?'door':(mo?mo:shapeOfId(id));return k.indexOf(w)>=0?w:k[0]}}}};\n/* ---------- старт ---------- */"], ["function save(){\n  try{packCur();localStorage.setItem(SAVE_KEY,", "function save(){\n  return;\n  try{packCur();localStorage.setItem(SAVE_KEY,"], ["function load(){\n  var raw=null,o=null;", "function load(){\n  return false;\n  var raw=null,o=null;"]];
 (function(){
 var src='';try{src=String(document.currentScript.src||'')}catch(e){}
 var vm=/[?&]v=([\d.]+)/.exec(src),VERSION=vm?vm[1]:'?';
 var S=128,PAGE=60,MAX=6;
-var pv={},pickName='',curDoc=null,savedY=0,queue=[],active=0,imgCache={};
+var pv={},pickName='',curDoc=null,savedY=0,queue=[],active=0,imgCache={},lastPackSig=null;
 var CSS='#list{display:none!important}'+
 '#fkGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}'+
 '.fkc{position:relative;display:flex;flex-direction:column;padding:0;min-height:0;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--ink);cursor:pointer;text-align:center}'+
@@ -23,6 +23,11 @@ function need(shape){
   if(shape==='door')return ['down','north'];
   return ['up','south','east'];
 }
+function packData(){
+  try{var d=JSON.parse(localStorage.getItem('fk070_packs'));return (d&&d.packs&&d.packs.filter(function(x){return x.id===d.active})[0])||null}catch(e){return null}
+}
+function packMap(){var p=packData(),m={};if(p)p.textures.forEach(function(t){if(t.data)m['textures/'+t.path]=t.data});return m}
+function packSig(m){return Object.keys(m).sort().map(function(k){return k+':'+m[k].length}).join('|')}
 function getImg(d,ctx,path){
   var f=ctx.files&&ctx.files[path];
   if(f&&f.data)return new Promise(function(ok){var im=new d.defaultView.Image();im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=f.data});
@@ -50,11 +55,21 @@ function makePreview(d,ctx,id){
   });
 }
 function ctxNow(d){try{var a=d.defaultView.FKAPI;return (a&&a.grid)?a.grid():null}catch(e){return null}}
+function applyPack(d){
+  var c=ctxNow(d);if(!c||!c.setPack)return;
+  var m=packMap(),sg=packSig(m);
+  if(sg===lastPackSig)return;
+  lastPackSig=sg;
+  c.setPack(m);pv={};
+  if(d.__fkRender)d.__fkRender();
+}
+function showFrame(d){try{d.defaultView.frameElement.style.visibility='visible'}catch(e){}}
 function attach(d){
-  if(d.__fkGrid)return;
+  if(d.__fkGrid){showFrame(d);return}
   var list=d.querySelector('#list'),qi=d.querySelector('#q');
   if(!list||!qi)return;
   d.__fkGrid=true;curDoc=d;
+  try{localStorage.removeItem('foundrykin.project.v4');localStorage.removeItem('foundrykin.project.v3')}catch(e){}
   var st=d.createElement('style');st.textContent=CSS;d.head.appendChild(st);
   var box=d.createElement('div');box.id='fkGrid';
   var more=d.createElement('div');more.id='fkMore';
@@ -98,6 +113,7 @@ function attach(d){
     if(!ids.length){var m1=d.createElement('div');m1.id='fkEmpty';m1.textContent='Ничего не найдено';box.appendChild(m1);return}
     addPage();mobs.observe(more);
   }
+  d.__fkRender=render;
   function sig(c){return Object.keys(c.dirty||{}).length+'|'+(d.defaultView.FKAPI.edits||0)}
   function refresh(c){
     Array.prototype.forEach.call(box.querySelectorAll('.fkc'),function(k){
@@ -125,8 +141,9 @@ function attach(d){
       if(sig(c)!==lastSig){lastSig=sig(c);refresh(c)}
     }catch(e){clearInterval(poll)}
   },700);
+  applyPack(d);
   render();
-  if(d.defaultView&&d.defaultView.frameElement)d.defaultView.frameElement.style.visibility='visible';
+  showFrame(d);
 }
 function watch(f){
   var n=0;
@@ -140,9 +157,36 @@ if(typeof PATCHES!=='undefined'){
   NEWPATCHES.forEach(function(p){PATCHES.push(p)});
 }
 if(typeof FKE!=='undefined'){
-  var oo=FKE.open;FKE.open=function(f,u,cb){f.style.visibility='hidden';cb=cb||{};var oe=cb.onError;cb.onError=function(x){f.style.visibility='visible';if(oe)oe(x)};var r=oo.call(FKE,f,u,cb);watch(f);setTimeout(function(){if(f.style.visibility==='hidden')f.style.visibility='visible'},4000);return r};
+  var oo=FKE.open;
+  FKE.open=function(f,u,cb){
+    f.style.visibility='hidden';cb=cb||{};var oe=cb.onError;
+    cb.onError=function(x){f.style.visibility='visible';if(oe)oe(x)};
+    var r=oo.call(FKE,f,u,cb);
+    watch(f);
+    try{var d0=f.contentDocument;if(d0&&d0.__fkGrid)applyPack(d0)}catch(e){}
+    setTimeout(function(){if(f.style.visibility==='hidden')f.style.visibility='visible'},4000);
+    return r;
+  };
   var oc=FKE.current;FKE.current=function(){if(pickName){if(FKE.busy())return pickName;pickName=''}return oc.call(FKE)};
   FKE.objInfo=function(){var d=curDoc;if(!d)return null;var c=ctxNow(d);return (c&&c.obj)?c.obj():null};
+  var oe2=FKE.editTexture;
+  FKE.editTexture=function(path,data,cb){
+    cb=cb||{};
+    var p=packData(),e=p&&p.textures.filter(function(t){return t.path===path})[0],obj=e&&e.obj;
+    if(!obj)return oe2.call(FKE,path,data,cb);
+    var n=0;
+    (function wait(){
+      var d=curDoc,c=d&&ctxNow(d);
+      if(c&&c.catalog){
+        if(!c.catalog.b[obj]){oe2.call(FKE,path,data,cb);return}
+        applyPack(d);
+        try{d.defaultView.FKAPI.want='textures/'+path}catch(er){}
+        pickName=obj;c.select(obj);FKE.setMode('edit');return;
+      }
+      if(++n<80)setTimeout(wait,300);
+      else if(cb.onFail)cb.onFail('Каталог блоков не загрузился');
+    })();
+  };
   var os=FKE.setMode;
   FKE.setMode=function(m){
     var d=curDoc,prev=FKE.getMode();
