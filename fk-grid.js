@@ -4,6 +4,18 @@ var src='';try{src=String(document.currentScript.src||'')}catch(e){}
 var vm=/[?&]v=([\d.]+)/.exec(src),VERSION=vm?vm[1]:'?';
 var S=256,PAGE=60,MAX=6;
 var pv={},pickName='',curDoc=null,savedY=0,queue=[],active=0,imgCache={},lastPackSig=null;
+var st3=null,mode3d=null,fail3=0,setLab=function(){};
+var SH={
+  cube:{parts:[[1,1,1,0,0,0]],shift:0},
+  slab:{parts:[[1,.5,1,0,-.25,0]],shift:.25},
+  stairs:{parts:[[1,.5,1,0,-.25,0],[1,.5,.5,0,.25,-.25]],shift:0},
+  wall:{parts:[[.5,1,.5,0,0,0],[1,.875,.25,0,-.0625,0]],shift:0},
+  fence:{parts:[[.25,1,.25,0,0,0],[1,.1875,.125,0,-.03125,0],[1,.1875,.125,0,.34375,0]],shift:0},
+  gate:{parts:[[.125,.6875,.125,-.4375,.15625,0],[.125,.6875,.125,.4375,.15625,0],[.75,.1875,.125,0,-.03125,0],[.75,.1875,.125,0,.34375,0]],shift:0},
+  button:{parts:[[.375,.125,.25,0,-.4375,0]],shift:.4},
+  plate:{parts:[[.875,.0625,.875,0,-.46875,0]],shift:.45},
+  trapdoor:{parts:[[1,.1875,1,0,-.40625,0]],shift:.4}
+};
 var CSS='#list{display:none!important}'+
 '#fkGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}'+
 '.fkc{position:relative;display:flex;flex-direction:column;padding:0;min-height:0;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--ink);cursor:pointer;text-align:center}'+
@@ -12,6 +24,7 @@ var CSS='#list{display:none!important}'+
 '.fkn{padding:5px 4px 6px;font-size:11px;line-height:1.25;height:2.9em;overflow:hidden;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}'+
 '.fkm{position:absolute;top:4px;right:6px;color:#e0b030;font-size:14px;line-height:1;text-shadow:0 0 3px #000}'+
 '#fkEmpty{grid-column:1/-1;padding:16px 4px;text-align:center;color:var(--mute)}'+
+'#fkLab{font-size:11px;color:var(--mute);margin:4px 0 0}'+
 '#fkMore{height:1px}';
 function pump(){while(active<MAX&&queue.length){var j=queue.shift();active++;j().then(fin,fin)}}
 function fin(){active--;pump()}
@@ -21,7 +34,7 @@ function need(shape){
   if(shape==='azalea')return ['plant','north','up'];
   if(shape==='beacon')return ['down','up','east'];
   if(shape==='door')return ['down','north'];
-  return ['up','south','east'];
+  return ['up','down','north','south','east','west'];
 }
 function packData(){
   try{var d=JSON.parse(localStorage.getItem('fk070_packs'));return (d&&d.packs&&d.packs.filter(function(x){return x.id===d.active})[0])||null}catch(e){return null}
@@ -33,6 +46,87 @@ function getImg(d,ctx,path){
   if(f&&f.data)return new Promise(function(ok){var im=new d.defaultView.Image();im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=f.data});
   if(!imgCache[path])imgCache[path]=ctx.load(path).then(function(im){if(!im)delete imgCache[path];return im});
   return imgCache[path];
+}
+function init3(d){
+  var T=d.defaultView.THREE;if(!T)return null;
+  try{
+    var cv=d.createElement('canvas');
+    var r=new T.WebGLRenderer({canvas:cv,antialias:true,alpha:true,preserveDrawingBuffer:true});
+    r.setPixelRatio(1);r.setSize(S,S,false);r.setClearColor(0x000000,0);
+    var sc=new T.Scene(),cam=new T.PerspectiveCamera(35,1,.1,50);
+    cam.position.set(0,0,4.4);cam.lookAt(0,0,0);
+    sc.add(new T.AmbientLight(0xffffff,.75));
+    var dl=new T.DirectionalLight(0xffffff,.55);dl.position.set(2,4,3);sc.add(dl);
+    var g=new T.Group();g.rotation.set(.45,-.7,0);sc.add(g);
+    var o={T:T,r:r,sc:sc,cam:cam,g:g,cv:cv,edge:new T.LineBasicMaterial({color:0x9aa0a6}),hidden:new T.MeshBasicMaterial({visible:false})};
+    cv.addEventListener('webglcontextlost',function(e){e.preventDefault();mode3d=false;setLab()});
+    return o;
+  }catch(e){return null}
+}
+function semi(c){
+  var a=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+  for(var i=3;i<a.length;i+=4){var v=a[i];if(v>8&&v<248)return true}
+  return false;
+}
+function snap3d(o,shape,im,dbl){
+  var T=o.T,g=o.g,mats={},tex=[],geos=[];
+  function matOf(key,canvas){
+    if(mats[key])return mats[key];
+    var c=canvas||im[key];if(!c)return null;
+    var t=new T.CanvasTexture(c);t.magFilter=t.minFilter=T.NearestFilter;t.generateMipmaps=false;t.needsUpdate=true;
+    var m=new T.MeshLambertMaterial({transparent:true,alphaTest:.05,side:dbl?T.DoubleSide:T.FrontSide,map:t});
+    m.depthWrite=!semi(c);tex.push(t);mats[key]=m;return m;
+  }
+  function box(w,h,d,x,y,z,ids,ys,vs){
+    var ge=new T.BoxGeometry(w,h,d),p=ge.attributes.position,n=ge.attributes.normal,uv=ge.attributes.uv;
+    ys=ys||0;vs=vs||1;
+    for(var i=0;i<p.count;i++){
+      var X=p.getX(i)+x,Y=p.getY(i)+y,Z=p.getZ(i)+z,nx=n.getX(i),ny=n.getY(i),nz=n.getZ(i),u,v;
+      if(Math.abs(nx)>.5){u=nx>0?.5-Z:Z+.5;v=(Y+.5-ys)*vs}
+      else if(Math.abs(nz)>.5){u=nz>0?X+.5:.5-X;v=(Y+.5-ys)*vs}
+      else{u=X+.5;v=ny>0?.5-Z:Z+.5}
+      uv.setXY(i,u,v);
+    }
+    ids=ids||['east','west','up','down','south','north'];
+    var m=new T.Mesh(ge,ids.map(function(k){return k===null?o.hidden:(matOf(k)||o.hidden)}));
+    m.add(new T.LineSegments(new T.EdgesGeometry(ge),o.edge));
+    m.position.set(x,y,z);geos.push(ge);return m;
+  }
+  function plane(key,h,y,ry){
+    var ge=new T.PlaneGeometry(Math.SQRT2,h),m=new T.Mesh(ge,matOf(key)||o.hidden);
+    m.position.y=y;m.rotation.y=ry;geos.push(ge);return m;
+  }
+  if(shape==='plant'||shape==='azalea'){
+    var st=shape==='azalea'?'plant':'up';
+    g.add(plane(st,1,0,Math.PI/4));g.add(plane(st,1,0,-Math.PI/4));
+    if(shape==='azalea')g.add(box(1,1,1,0,0,0,['north','north','up',null,'north','north']));
+  }else if(shape==='beacon'){
+    g.add(box(.75,.1875,.75,0,-.40625,0,['down','down','down','down','down','down']));
+    g.add(box(.625,.625,.625,0,0,0,['up','up','up','up','up','up']));
+    g.add(box(1,1,1,0,0,0,['east','east','east','east','east','east']));
+  }else if(shape==='door'){
+    var L=im.down,U=im.north;
+    if(!L||!U)throw new Error('door');
+    var R2=Math.max(L.width,U.width),dc=o.cv.ownerDocument.createElement('canvas');
+    dc.width=R2;dc.height=R2*2;var dg=dc.getContext('2d');dg.imageSmoothingEnabled=false;
+    dg.drawImage(U,0,0,U.width,U.height,0,0,R2,R2);dg.drawImage(L,0,0,L.width,L.height,0,R2,R2,R2);
+    matOf('__door',dc);
+    var dd=['__door','__door','__door','__door','__door','__door'];
+    g.add(box(1,2,.1875,0,0,-.40625,dd,-.5,.5));
+  }else{
+    var sh=SH[shape]||SH.cube;
+    sh.parts.forEach(function(a){g.add(box(a[0],a[1],a[2],a[3],a[4],a[5]))});
+    if(sh.shift)g.children.forEach(function(mm){mm.position.y+=sh.shift});
+  }
+  var url=null;
+  try{o.r.render(o.sc,o.cam);url=o.cv.toDataURL('image/png')}
+  finally{
+    while(g.children.length)g.remove(g.children[0]);
+    geos.forEach(function(x){x.dispose()});
+    Object.keys(mats).forEach(function(k){mats[k].dispose()});
+    tex.forEach(function(t){t.dispose()});
+  }
+  return url;
 }
 function makePreview(d,ctx,id){
   var cat=ctx.catalog,b=cat.b[id],sp=cat.sp&&cat.sp[id];
@@ -49,6 +143,17 @@ function makePreview(d,ctx,id){
       g.drawImage(im,0,0,im.width,im.width,0,0,R,R);
       norm[k]=c;
     });
+    if(mode3d===null){
+      var forced2d=/[?&]p2d=1/.test(String(location.search||''));
+      st3=forced2d?null:init3(d);mode3d=!!st3;setLab();
+    }
+    if(mode3d&&st3){
+      try{
+        var dbl=/leaves/.test(id)||shape==='plant'||shape==='azalea';
+        var u3=snap3d(st3,shape,norm,dbl);
+        if(u3&&u3.length>200)return u3;
+      }catch(e){fail3++;if(fail3>=3){mode3d=false;setLab()}}
+    }
     var cv=d.createElement('canvas');cv.width=cv.height=S;
     ctx.drawBlock(cv,shape,function(k){return norm[k]},R,S);
     try{return cv.toDataURL('image/png')}catch(e){return null}
@@ -71,6 +176,8 @@ function attach(d){
   d.__fkGrid=true;curDoc=d;
   try{localStorage.removeItem('foundrykin.project.v4');localStorage.removeItem('foundrykin.project.v3')}catch(e){}
   var st=d.createElement('style');st.textContent=CSS;d.head.appendChild(st);
+  var lab=d.createElement('div');lab.id='fkLab';qi.parentNode.insertBefore(lab,qi.nextSibling);
+  setLab=function(){lab.textContent=mode3d===null?'':(mode3d?'Превью: 3D-снимок':'Превью: 2D (запасной режим)');window.FKG.mode=mode3d===null?'?':(mode3d?'3d':'2d')};
   var box=d.createElement('div');box.id='fkGrid';
   var more=d.createElement('div');more.id='fkMore';
   list.parentNode.insertBefore(box,list.nextSibling);
@@ -195,5 +302,5 @@ if(typeof FKE!=='undefined'){
     if(d&&m==='search'&&prev==='edit'&&savedY){setTimeout(function(){try{d.defaultView.scrollTo(0,savedY)}catch(e){}},30)}
   };
 }
-window.FKG={version:VERSION};
+window.FKG={version:VERSION,mode:'?'};
 })();
