@@ -65,7 +65,7 @@ function renderPacks(){
   if(!data.packs.length){box.innerHTML='<p class="lbl">Паков пока нет. Создай первый ниже или импортируй .mcpack.</p>';return}
   box.innerHTML=data.packs.map(function(p){
     return '<div class="card"><div class="pk" data-a="open" data-id="'+p.id+'"><img src="'+(p.icon||ICON)+'" alt=""><div class="n"><b>'+esc(p.name)+'</b><span class="lbl">v'+esc(p.version)+' · текстур: '+p.textures.length+'</span></div></div>'+
-      '<div class="acts"><button data-a="exp" data-id="'+p.id+'">Экспорт</button><button data-a="mc" data-id="'+p.id+'">В Minecraft</button><button data-a="edit" data-id="'+p.id+'">Править .json</button><button data-a="del" data-id="'+p.id+'">Удалить</button></div></div>';
+      '<div class="acts"><button data-a="exp" data-id="'+p.id+'">Экспорт</button><button data-a="edit" data-id="'+p.id+'">Править .json</button><button data-a="del" data-id="'+p.id+'">Удалить</button></div></div>';
   }).join('');
 }
 $('#packList').addEventListener('click',function(e){
@@ -74,8 +74,7 @@ $('#packList').addEventListener('click',function(e){
   data.active=id;save(KEY,data);
   if(a==='open')go('pack');
   if(a==='edit')go('edit');
-  if(a==='exp')exportPack(p,false);
-  if(a==='mc')exportPack(p,true);
+  if(a==='exp')exportPack(p);
   if(a==='del'){if(confirm('Удалить пак «'+p.name+'» вместе со всеми текстурами в нём?')){data.packs=data.packs.filter(function(x){return x.id!==id});data.active=null;save(KEY,data);renderPacks()}}
 });
 $('#cGo').onclick=function(){
@@ -154,27 +153,13 @@ function manifest(p,u1,u2){
   if(p.author)m.metadata={authors:[p.author]};
   return m;
 }
-function buildPack(p){
+function exportPack(p){
+  if(typeof JSZip==='undefined'){say('JSZip недоступен офлайн.');return}
   var z=new JSZip(),m=p.keep?manifest(p,p.id,p.mod):manifest(p,uuid(),uuid());
   z.file('manifest.json',JSON.stringify(m,null,2));
   if(p.icon)z.file('pack_icon.png',p.icon.split(',')[1],{base64:true});
   p.textures.forEach(function(t){z.file('textures/'+t.path+'.png',t.data.split(',')[1],{base64:true})});
-  return z.generateAsync({type:'blob'});
-}
-function exportPack(p,share){
-  if(typeof JSZip==='undefined'){say('JSZip недоступен офлайн.');return}
-  buildPack(p).then(function(b){
-    var fn=p.name+'.mcpack';
-    if(share&&typeof File!=='undefined'&&navigator.canShare&&navigator.share){
-      var f=new File([b],fn,{type:'application/octet-stream'});
-      if(navigator.canShare({files:[f]})){
-        navigator.share({files:[f],title:p.name}).catch(function(e){if(e&&e.name==='AbortError')return;download(b,fn);say('Меню приложений не сработало: файл скачан, открой его, и Minecraft предложит импорт.')});
-        return;
-      }
-    }
-    download(b,fn);
-    say(share?'В этом браузере меню приложений недоступно: файл скачан, открой его, и Minecraft предложит импорт.':'Скачан '+fn);
-  },function(e){say('Ошибка архива: '+e.message)});
+  z.generateAsync({type:'blob'}).then(function(b){download(b,p.name+'.mcpack');say('Скачан '+p.name+'.mcpack')},function(e){say('Ошибка архива: '+e.message)});
 }
 $('#impF').onchange=function(){
   var f=this.files[0];this.value='';if(!f)return;
@@ -343,7 +328,6 @@ function report(){
   var tex=0;data.packs.forEach(function(p){tex+=p.textures.length});
   var sz=0;try{sz=JSON.stringify(data).length}catch(e){}
   L.push('память браузера: '+ls+'; паков: '+data.packs.length+', текстур: '+tex+', данные ≈ '+Math.round(sz/1024)+' КБ');
-  L.push('меню приложений (Web Share с файлами): '+((navigator.canShare&&navigator.share)?'есть':'нет'));
   L.push('адрес редактора: '+settings.url);
   L.push('страница: '+location.href);
   L.push('браузер: '+String(navigator.userAgent).slice(0,140));
