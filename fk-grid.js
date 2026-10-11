@@ -57,11 +57,11 @@ function init3(d){
     var cv=d.createElement('canvas');
     var r=new T.WebGLRenderer({canvas:cv,antialias:true,alpha:true,preserveDrawingBuffer:true});
     r.setPixelRatio(1);r.setSize(S,S,false);r.setClearColor(0x000000,0);
-    var sc=new T.Scene(),cam=new T.PerspectiveCamera(35,1,.1,50);
+    var sc=new T.Scene(),cam=new T.OrthographicCamera(-.95,.95,.95,-.95,.1,50);
     cam.position.set(0,0,3.9);cam.lookAt(0,0,0);
     sc.add(new T.AmbientLight(0xffffff,.75));
     var dl=new T.DirectionalLight(0xffffff,.55);dl.position.set(2,4,3);sc.add(dl);
-    var g=new T.Group();g.rotation.set(.45,-.7,0);sc.add(g);
+    var g=new T.Group();g.rotation.set(.6155,-.7854,0);sc.add(g);
     var o={T:T,r:r,sc:sc,cam:cam,g:g,cv:cv,edge:new T.LineBasicMaterial({color:0x9aa0a6}),hidden:new T.MeshBasicMaterial({visible:false})};
     cv.addEventListener('webglcontextlost',function(e){e.preventDefault();mode3d=false;setLab()});
     return o;
@@ -97,12 +97,12 @@ function snap3d(o,shape,im,dbl){
     m.position.set(x,y,z);geos.push(ge);return m;
   }
   function plane(key,h,y,ry){
-    var ge=new T.PlaneGeometry(Math.SQRT2,h),m=new T.Mesh(ge,matOf(key)||o.hidden);
+    var ge=new T.PlaneGeometry(1,h),m=new T.Mesh(ge,matOf(key)||o.hidden);
     m.position.y=y;m.rotation.y=ry;geos.push(ge);return m;
   }
   if(shape==='plant'||shape==='azalea'){
     var st=shape==='azalea'?'plant':'up';
-    g.add(plane(st,1,0,Math.PI/4));g.add(plane(st,1,0,-Math.PI/4));
+    g.add(plane(st,1,0,0));g.add(plane(st,1,0,Math.PI/2));
     if(shape==='azalea')g.add(box(1,1,1,0,0,0,['north','north','up',null,'north','north']));
   }else if(shape==='beacon'){
     g.add(box(.75,.1875,.75,0,-.40625,0,['down','down','down','down','down','down']));
@@ -124,9 +124,9 @@ function snap3d(o,shape,im,dbl){
     if(sh.shift)g.children.forEach(function(mm){mm.position.y+=sh.shift});
   }
   var url=null;
-  try{o.r.render(o.sc,o.cam);url=o.cv.toDataURL('image/png')}
+  try{g.updateMatrixWorld(true);var bb=new T.Box3().setFromObject(g),ce=bb.getCenter(new T.Vector3()),kk=Math.min(1,1.78/Math.max(bb.max.x-bb.min.x,bb.max.y-bb.min.y,.001));g.scale.setScalar(kk);g.position.set(-ce.x*kk,-ce.y*kk,0);o.r.render(o.sc,o.cam);url=o.cv.toDataURL('image/png')}
   finally{
-    while(g.children.length)g.remove(g.children[0]);
+    g.scale.setScalar(1);g.position.set(0,0,0);while(g.children.length)g.remove(g.children[0]);
     geos.forEach(function(x){x.dispose()});
     Object.keys(mats).forEach(function(k){mats[k].dispose()});
     tex.forEach(function(t){t.dispose()});
