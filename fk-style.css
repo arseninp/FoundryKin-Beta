@@ -6,6 +6,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-app
 #top{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;border-bottom:1px solid var(--line);background:var(--panel);min-height:52px}
 #top .t{flex:1;font-weight:700;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #top .t small{color:var(--mute);font-weight:400;font-size:12px;margin-left:6px}
+#top .t .pill{display:inline-block;margin:2px 0 0;padding:1px 9px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--mute);font-size:11px;font-weight:400;line-height:1.5}
 #screens{flex:1;min-height:0;position:relative}
 .screen{display:none;position:absolute;inset:0;overflow:auto;padding:12px 14px 90px;max-width:520px;margin:0 auto;width:100%}
 .screen.on{display:block}
