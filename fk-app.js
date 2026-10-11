@@ -23,13 +23,16 @@ function uuid(){
 }
 function ver(s){var v=String(s||'').split('.').map(function(n){return parseInt(n,10)||0});while(v.length<3)v.push(0);return v.slice(0,3)}
 var ICON='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"><rect width="56" height="56" fill="#8a8f98"/><rect x="14" y="14" width="28" height="28" fill="#3f7d4e"/></svg>');
-var TITLES={home:'FoundryKin<small>v'+V+'</small>',create:'Create',settings:'Настройки',add:'Add texture',edit:'Редактирование',diag:'Диагностика'};
+var FINDER={en:'FINDER',ru:'Поисковик'};
+function finderTitle(){return FINDER[settings.lang==='ru'?'ru':'en']}
+function packTitle(p){return p?'<div>'+esc(p.name)+'</div><span class="pill">v'+esc(p.version)+' · изменённых текстур: '+p.textures.length+'</span>':'Пак'}
+var TITLES={home:'FoundryKin<small>v'+V+'</small>',create:'Create',settings:'Настройки',add:finderTitle(),edit:'Редактирование',diag:'Диагностика'};
 function top(){return stack[stack.length-1]}
 function hasFke(){return typeof FKE!=='undefined'}
 function render(){
   var name=top(),p=active();
   document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('on',s.id==='s-'+name)});
-  $('#title').innerHTML=name==='pack'?esc(p?p.name:'Пак'):TITLES[name];
+  $('#title').innerHTML=name==='pack'?packTitle(p):TITLES[name];
   $('#title').style.whiteSpace='nowrap';
   $('#back').style.display=stack.length>1?'inline-flex':'none';
   $('#ok').style.display='none';
@@ -104,7 +107,7 @@ function renderTex(){
   var p=active(),box=$('#texList');
   if(!p){box.innerHTML='';return}
   var gs=groupsOf(p);
-  $('#pInfo').textContent='v'+p.version+' · изменённых текстур: '+p.textures.length;
+  if(top()==='pack')$('#title').innerHTML=packTitle(p);
   if(!p.textures.length){box.innerHTML='<p class="lbl">Пока пусто. Нажми «+ Add texture», найди блок, измени текстуру и нажми «✓ В пак».</p>';return}
   box.innerHTML=gs.map(function(g){
     var shown=pickShown(g),title=g.obj?nice(g.obj):g.items[0].t.path;
@@ -245,7 +248,7 @@ function onMode(m){
   }else{
     if(titleT){clearInterval(titleT);titleT=null}
     $('#ok').disabled=false;
-    $('#title').innerHTML='Add texture';
+    $('#title').innerHTML=finderTitle();
   }
 }
 function loadEditor(){
