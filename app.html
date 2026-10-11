@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FoundryKin</title>
-<link rel="stylesheet" href="fk-style.css?v=0.7.6">
+<link rel="stylesheet" href="fk-style.css?v=0.8.21">
 </head>
 <body>
 <div id="top"><button class="btn" id="back" style="display:none">←</button><div class="t" id="title">FoundryKin</div><button class="btn pri" id="ok" style="display:none">✓ В пак</button></div>
@@ -17,11 +17,10 @@
 <h2>Текстур-паки</h2>
 <div id="packList"></div>
 <h2>Новый пак</h2>
-<p class="lbl">Название (латиницей)</p><input type="text" id="cName" value="my_pack" autocapitalize="off" autocomplete="off" spellcheck="false">
+<input type="text" id="cName" aria-label="Название пака (латиницей)" placeholder="название пака (латиницей)" autocapitalize="off" autocomplete="off" spellcheck="false">
 <div class="row"><button class="btn pri" id="cGo">Создать пак</button><label class="btn" for="impF">Импорт .mcpack</label><input type="file" id="impF" accept=".mcpack,.zip,application/zip,application/octet-stream"></div>
 </section>
 <section class="screen" id="s-pack">
-<p class="lbl" id="pInfo"></p>
 <div id="texList"></div>
 </section>
 <section class="screen" id="s-edit">
@@ -57,11 +56,11 @@
 </div>
 <div class="bar" id="bar"><button class="btn pri" id="addBtn">+ Add texture</button></div>
 <div id="msg"></div>
-<script>window.FK_V='0.8.20';</script>
+<script>window.FK_V='0.8.21';</script>
 <script src="fk-editor.js?v=0.7.8"></script>
-<script src="fk-grid.js?v=0.8.20"></script>
+<script src="fk-grid.js?v=0.8.21"></script>
 <script src="fk-bg.js?v=0.8.19"></script>
-<script src="fk-app.js?v=0.8.5"></script>
+<script src="fk-app.js?v=0.8.21"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
 </html>
