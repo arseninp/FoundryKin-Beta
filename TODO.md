@@ -1,6 +1,8 @@
 # TODO
 
-- [ ] Accept v0.8.21 on device: Create placeholder, Finder label, pack metadata pill, two card bubbles, edited-state border updates; preserve 3D camera, centering, plants and sticky search.
-- [ ] Immediately after v0.8.21 acceptance: remove model 2D renderer from editor and cards, toggle, fallback canvas/functions, forced-2D option and obsolete patches. Keep drawing canvas and texture canvases. Failed 3D card previews remain blank.
+- [x] v0.8.21 interface step 1 written to main (Create placeholder, FINDER title, pack metadata pill, split card bubbles, red border for edited blocks).
+- [ ] Fix the minor interface defects found while checking v0.8.21 (list pending from the project owner).
+- [x] v0.8.22 removed the model 2D view from the interface: card fallback, editor 2D/3D toggle, #fb canvas and hint. Drawing canvases remain. A failed 3D card preview stays blank.
+- [ ] Delete the now unreachable setFb/drawFb code together with legacy index.html during the editor rewrite (it is not worth patching).
 - [ ] Rewrite editor using explicit modules; replace legacy index.html and remove runtime string patches.
-- [ ] Editor layout/help, brush sizes 1–8, HSV/history, vanilla reset: separate reviewed steps.
+- [ ] Editor layout/help, brush sizes 1-8, HSV/history, vanilla reset: separate reviewed steps.
