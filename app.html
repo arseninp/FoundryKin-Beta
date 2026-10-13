@@ -5,9 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FoundryKin</title>
 <link rel="stylesheet" href="fk-style.css?v=0.8.21">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Days+One&display=swap">
+<style>
+body{font-family:'Days One',system-ui,-apple-system,"Segoe UI",sans-serif}
+.col{display:flex;flex-direction:column;gap:8px;margin:10px 0}.col>.btn{width:100%}
+#back svg{display:block;width:22px;height:22px}
+</style>
 </head>
 <body>
-<div id="top"><button class="btn" id="back" style="display:none">←</button><div class="t" id="title">FoundryKin</div><button class="btn pri" id="ok" style="display:none">✓ В пак</button></div>
+<div id="top"><button class="btn" id="back" style="display:none" aria-label="Назад"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg></button><div class="t" id="title">FoundryKin</div><button class="btn pri" id="ok" style="display:none">Добавить</button></div>
 <div id="screens">
 <section class="screen on" id="s-home">
 <button class="btn pri big" data-go="create">Create</button>
@@ -17,8 +25,7 @@
 <h2>Текстур-паки</h2>
 <div id="packList"></div>
 <h2>Новый пак</h2>
-<input type="text" id="cName" aria-label="Название пака (латиницей)" placeholder="название пака (латиницей)" autocapitalize="off" autocomplete="off" spellcheck="false">
-<div class="row"><button class="btn pri" id="cGo">Создать пак</button><label class="btn" for="impF">Импорт .mcpack</label><input type="file" id="impF" accept=".mcpack,.zip,application/zip,application/octet-stream"></div>
+<div class="col"><button class="btn pri" id="cGo">Создать пак</button><label class="btn" for="impF">Добавить Mcpack</label><input type="file" id="impF" accept=".mcpack,.zip,application/zip,application/octet-stream"></div>
 </section>
 <section class="screen" id="s-pack">
 <div id="texList"></div>
@@ -40,7 +47,7 @@
 <h2>Тема</h2>
 <select id="sTheme"><option value="auto">Как в системе</option><option value="light">Светлая</option><option value="dark">Тёмная</option></select>
 <h2>Адрес редактора</h2>
-<p class="lbl">Файл со старым редактором. Если вкладка Add texture пустая, укажи здесь правильный адрес (например полный https://…/index.html).</p>
+<p class="lbl">Файл со старым редактором. Если вкладка Find пустая, укажи здесь правильный адрес (например полный https://…/index.html).</p>
 <input type="text" id="sUrl" autocapitalize="off" autocomplete="off" spellcheck="false">
 <div class="row"><button class="btn" id="sUrlSave">Сохранить адрес</button></div>
 <h2>Данные</h2>
@@ -56,14 +63,14 @@
 </div>
 <div class="bar" id="bar"><button class="btn pri" id="addBtn">Find</button></div>
 <div id="msg"></div>
-<script>window.FK_V='0.8.29';</script>
+<script>window.FK_V='0.8.30';</script>
 <script src="fk-editor.js?v=0.7.8"></script>
 <script src="fk-grid.js?v=0.8.22"></script>
 <script src="fk-bg.js?v=0.8.22"></script>
-<script src="fk-help.js?v=0.8.29"></script>
-<script src="fk-tools.js?v=0.8.29"></script>
-<script src="fk-shell.js?v=0.8.29"></script>
-<script src="fk-app.js?v=0.8.21"></script>
+<script src="fk-help.js?v=0.8.30"></script>
+<script src="fk-tools.js?v=0.8.30"></script>
+<script src="fk-shell.js?v=0.8.30"></script>
+<script src="fk-app.js?v=0.8.30"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
 </html>

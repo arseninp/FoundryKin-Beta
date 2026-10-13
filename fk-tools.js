@@ -1,4 +1,4 @@
-/* fk-tools.js v0.8.29: editor layout, icon set, colour queue with long-press delete, palette and settings sheets, replace-colour tool, brush size, 64px, alpha, rotate/flip, no 3D edge lines (patches into index.html). Loaded after fk-help.js. */
+/* fk-tools.js v0.8.30: editor layout, icon set, colour queue with long-press delete, palette and settings sheets, replace-colour tool, brush size, 64px, alpha, rotate/flip, no 3D edge lines (patches into index.html). Loaded after fk-help.js. */
 (function(){
 var NL=String.fromCharCode(10),Q=String.fromCharCode(39);
 function inj(f){var s=String(f);return s.slice(s.indexOf('{')+1,s.lastIndexOf('}'))}
@@ -23,7 +23,8 @@ var FKI={
   eraser:'<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/>',
   bucket:'<path d="m19 11-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11Z"/><path d="m5 2 5 5"/><path d="M2 13h15"/><path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z"/>',
   pipette:'<path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/>',
-  drop:'<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>'
+  drop:'<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>'
 };
 function fkIcon(n){return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+FKI[n]+'</svg>'}
 var fkUI=null,fkQ=null,fkP={h:0,s:0,v:0,a:255};
@@ -87,8 +88,8 @@ function fkSwap(p){
 }
 function fkMk(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e}
 function fkSheet(title){
-  var back=fkMk('div','fkBack'),sh=fkMk('div','fkSheet'),head=fkMk('div','fkHead'),t=fkMk('span','fkTitle',title),ok=fkMk('button','fkOk','✓'),body=fkMk('div','');
-  ok.type='button';ok.setAttribute('aria-label','Готово');head.appendChild(t);head.appendChild(ok);sh.appendChild(head);sh.appendChild(body);back.appendChild(sh);document.body.appendChild(back);
+  var back=fkMk('div','fkBack'),sh=fkMk('div','fkSheet'),head=fkMk('div','fkHead'),t=fkMk('span','fkTitle',title),ok=fkMk('button','fkOk'),body=fkMk('div','');
+  ok.innerHTML=fkIcon('check');ok.type='button';ok.setAttribute('aria-label','Готово');head.appendChild(t);head.appendChild(ok);sh.appendChild(head);sh.appendChild(body);back.appendChild(sh);document.body.appendChild(back);
   var o={back:back,body:body,ok:ok,show:function(){back.classList.add('on')},hide:function(){back.classList.remove('on')}};
   back.addEventListener('click',function(e){if(e.target===back)o.hide()});
   return o;
@@ -99,14 +100,15 @@ function fkBuild(){
   var main=document.querySelector('main'),canvasSec=$('#ed').closest('.sec'),tools=$('#tools');
   var R2=$('#undo').closest('.row'),R3=$('#clr').closest('.row'),pal=$('#pal'),undo=$('#undo'),redo=$('#redo'),resSeg=R2.querySelector('.seg');
   var nameInp=$('#name'),S3=nameInp.closest('.sec'),expPng=$('#expPng'),expPack=$('#expPack'),msg=$('#msg'),clr=$('#clr'),fileLabel=R3.querySelector('label[for="file"]');
+  var fnt=fkMk('link');fnt.rel='stylesheet';fnt.href='https://fonts.googleapis.com/css2?family=Days+One&display=swap';document.head.appendChild(fnt);
   var st=fkMk('style');
-  st.textContent='button svg{display:block;width:22px;height:22px;margin:0 auto;pointer-events:none}'+
+  st.textContent='body{font-family:"Days One",system-ui,-apple-system,"Segoe UI",sans-serif}button svg{display:block;width:22px;height:22px;margin:0 auto;pointer-events:none}'+
   '#fkTop{display:flex;gap:6px;margin:8px 0}#fkTop button{flex:1 1 0;min-width:0;min-height:40px;padding:4px 0;background:var(--panel);border:1px solid var(--line)}#fkTop .fkGap{margin-left:8px}'+
   '#fkColors{display:flex;gap:6px;align-items:center;margin:8px 0}#fkPalBtn{flex:0 0 auto;width:44px;height:40px;min-height:0;padding:0;background:var(--panel);border:1px solid var(--line)}'+
   '#fkSwatches{display:flex;gap:6px;overflow-x:auto;flex:1 1 auto;min-width:0;min-height:38px;padding:2px 0}.fkSw{flex:0 0 auto;width:34px;height:34px;min-height:0;padding:0;border-radius:8px;border:2px solid var(--line);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}.fkSw.on{border-color:var(--ink)}'+
   '.fkMenu{position:fixed;z-index:120;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.4);padding:4px;display:none}.fkMenu button{display:block;width:100%;min-height:40px;padding:8px 16px;text-align:left;white-space:nowrap}'+
   '#tools{flex-wrap:nowrap;gap:6px;margin:8px 0}#tools .seg{flex:1 1 auto;min-width:0}#tools .seg button{flex:1 1 0;min-width:0;padding:8px 0}.fkPick{flex:0 0 auto;width:48px;margin-right:8px;padding:0;background:var(--panel);border:1px solid var(--line)}'+
-  '#fkSvc{flex-wrap:nowrap;gap:6px;margin:8px 0}#fkSvc>button,#fkSvc>label{flex:1 1 auto;min-width:0;min-height:40px;padding:9px 4px;font-size:14px;white-space:nowrap;justify-content:center}#fkSvc>.fkIconBtn,#fkSvc>.fkHelpBtn{flex:0 0 auto;min-width:44px;padding:0 6px}'+
+  '#fkSvc{flex-wrap:nowrap;gap:6px;margin:8px 0}#fkSvc>button,#fkSvc>label{flex:1 1 auto;min-width:0;min-height:40px;padding:9px 2px;font-size:13px;white-space:nowrap;justify-content:center}#fkSvc>.fkIconBtn,#fkSvc>.fkHelpBtn{flex:0 0 auto;min-width:44px;padding:0 6px}'+
   'label.ghost{background:var(--panel);border:1px solid var(--line)}#msg:empty{display:none}#msg{margin:6px 0}'+
   'main>.sec{margin-top:10px}main>.sec:first-child{margin-top:0}'+
   '.fkBack{position:fixed;left:0;top:0;right:0;bottom:0;z-index:100;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center}.fkBack.on{display:flex}'+

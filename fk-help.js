@@ -1,4 +1,4 @@
-/* fk-help.js v0.8.29: shorter editor texts, help panel; the ⋮ button sits next to the floating search and in the service row. Loaded after fk-bg.js. */
+/* fk-help.js v0.8.30: shorter editor texts, help panel; the ⋮ button sits next to the floating search and in the service row. Loaded after fk-bg.js. */
 (function(){
 var EDITS=[
 ['Блок из игры (ищи по-английски: oak, door, trapdoor). В списке только родительские блоки, плиты, ступени, заборы и т.п. выбираются под превью. Точка: есть правки.','Блок из игры: ищи по-английски.'],
@@ -8,11 +8,11 @@ var EDITS=[
 ];
 if(typeof PATCHES!=='undefined')EDITS.forEach(function(p){PATCHES.push(p)});
 if(typeof FKE==='undefined')return;
-var HELP='<p class="lbl">Правки попадают в пак по кнопке «✓ В пак» вверху экрана. Паки хранятся в памяти браузера на этом устройстве: если очистить данные браузера, они пропадут, поэтому экспортируй .mcpack из меню пака и сохраняй резервную копию.</p>'+
+var HELP='<p class="lbl">Правки попадают в пак по кнопке «Добавить» вверху экрана. Паки хранятся в памяти браузера на этом устройстве: если очистить данные браузера, они пропадут, поэтому экспортируй .mcpack из меню пака и сохраняй резервную копию.</p>'+
 '<p class="lbl">Блок ищи по-английски (oak, door, trapdoor). В списке только родительские блоки; плиты, ступени, заборы и т.п. выбираются под превью. Красная рамка у карточки — у блока есть правки.</p>'+
 '<p class="lbl">Если один файл текстуры используется в нескольких блоках (например, доски и книжная полка), правка видна везде. «Заменить» кладёт загруженный PNG в выбранную текстуру, прозрачные пиксели остаются прозрачными.</p>'+
 '<p class="lbl">Пипетка слева берёт цвет с холста. Капля заменяет цвет: выбери новый цвет, коснись пикселя, и все пиксели точно такого же цвета на этой грани станут выбранным. Цвет в ряду можно удалить: задержи на нём палец.</p>';
-var DOTS='<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
+var DOTS='<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="12" cy="4.5" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="19.5" r="2.4"/></svg>';
 var CSS='#fkSearchBar{position:sticky;top:8px;z-index:30;display:flex;gap:6px;align-items:stretch}'+
 '#fkSearchBar #q{position:static;flex:1 1 auto;min-width:0;box-shadow:0 2px 10px rgba(0,0,0,.28)}'+
 '#fkSearchBar .fkHelpBtn{box-shadow:0 2px 10px rgba(0,0,0,.28)}'+
