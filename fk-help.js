@@ -1,34 +1,35 @@
-/* fk-help.js v0.8.25: shorter editor texts, help panel; the ⋮ button sits next to the floating search and in the export row. Loaded after fk-bg.js. */
+/* fk-help.js v0.8.28: shorter editor texts, help panel; the ⋮ button sits next to the floating search and in the service row. Loaded after fk-bg.js. */
 (function(){
 var EDITS=[
 ['Блок из игры (ищи по-английски: oak, door, trapdoor). В списке только родительские блоки, плиты, ступени, заборы и т.п. выбираются под превью. Точка: есть правки.','Блок из игры: ищи по-английски.'],
 ['Загруженный PNG ляжет в выбранную текстуру. Прозрачные пиксели остаются прозрачными.','Загруженный PNG заменит выбранную текстуру.'],
 ['Имя блока (подставляется из выбранного блока)','Имя блока'],
-['<p class="lbl">Текстуры хранятся по файлам игры: если один файл используется в нескольких блоках (например, доски и книжная полка), правка видна везде. В один .mcpack попадают все файлы, которые ты правил. Проект сохраняется автоматически в память браузера на этом устройстве. Если очистить данные браузера, он пропадёт, поэтому скачивай результат.</p>','<p class="lbl">Правки попадают в пак по кнопке «✓ В пак».</p>']
+['<p class="lbl">Текстуры хранятся по файлам игры: если один файл используется в нескольких блоках (например, доски и книжная полка), правка видна везде. В один .mcpack попадают все файлы, которые ты правил. Проект сохраняется автоматически в память браузера на этом устройстве. Если очистить данные браузера, он пропадёт, поэтому скачивай результат.</p>','']
 ];
 if(typeof PATCHES!=='undefined')EDITS.forEach(function(p){PATCHES.push(p)});
 if(typeof FKE==='undefined')return;
-var HELP='<p class="lbl">Блок ищи по-английски (oak, door, trapdoor). В списке только родительские блоки; плиты, ступени, заборы и т.п. выбираются под превью. Красная рамка у карточки — у блока есть правки.</p>'+
-'<p class="lbl">Если один файл текстуры используется в нескольких блоках (например, доски и книжная полка), правка видна везде. Загруженный PNG заменяет выбранную текстуру, прозрачные пиксели остаются прозрачными.</p>'+
-'<p class="lbl">Правки сохраняются в пак кнопкой «✓ В пак». Паки хранятся в памяти браузера на этом устройстве: если очистить данные браузера, они пропадут, поэтому экспортируй .mcpack и скачивай резервную копию.</p>';
+var HELP='<p class="lbl">Правки попадают в пак по кнопке «✓ В пак» вверху экрана. Паки хранятся в памяти браузера на этом устройстве: если очистить данные браузера, они пропадут, поэтому экспортируй .mcpack из меню пака и сохраняй резервную копию.</p>'+
+'<p class="lbl">Блок ищи по-английски (oak, door, trapdoor). В списке только родительские блоки; плиты, ступени, заборы и т.п. выбираются под превью. Красная рамка у карточки — у блока есть правки.</p>'+
+'<p class="lbl">Если один файл текстуры используется в нескольких блоках (например, доски и книжная полка), правка видна везде. «Заменить» кладёт загруженный PNG в выбранную текстуру, прозрачные пиксели остаются прозрачными.</p>'+
+'<p class="lbl">Пипетка слева берёт цвет с холста. Капля заменяет цвет: выбери новый цвет, коснись пикселя, и все пиксели точно такого же цвета на этой грани станут выбранным. Цвет в ряду можно удалить: задержи на нём палец.</p>';
 var CSS='#fkSearchBar{position:sticky;top:8px;z-index:30;display:flex;gap:6px;align-items:stretch}'+
 '#fkSearchBar #q{position:static;flex:1 1 auto;min-width:0;box-shadow:0 2px 10px rgba(0,0,0,.28)}'+
 '#fkSearchBar .fkHelpBtn{box-shadow:0 2px 10px rgba(0,0,0,.28)}'+
 '.fkHelpBtn{min-width:44px;font-size:18px;line-height:1}'+
-'#fkInfo summary{display:none!important}'+
+'#fkInfo summary{display:none!important}#fkInfo:not([open]){display:none}'+
 '#fkHelpPanel{position:fixed;left:0;top:0;right:0;bottom:0;z-index:100;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;padding:12px;overflow:auto}'+
 '#fkHelpPanel.on{display:flex}'+
 '#fkHelpCard{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:14px;max-width:460px;width:100%}'+
 '#fkHelpState .lbl{color:var(--ink)}';
 function attach(d){
   if(d.__fkHelp)return;
-  var box=d.querySelector('#fkInfo'),q=d.querySelector('#q'),exp=d.querySelector('#expPack');
+  var box=d.querySelector('#fkInfo'),q=d.querySelector('#q'),exp=d.querySelector('#clr');
   if(!box||!q||!q.parentNode||!exp||!exp.parentNode||!d.body)return;
   d.__fkHelp=true;
   var info=d.querySelector('#info'),dbg=d.querySelector('#dbg');
   var st=d.createElement('style');st.textContent=CSS;d.head.appendChild(st);
   function mk(){
-    var b=d.createElement('button');b.type='button';b.className='ghost fkHelpBtn';b.textContent='\u22EE';
+    var b=d.createElement('button');b.type='button';b.className='ghost fkHelpBtn';b.textContent='⋮';
     b.title='Справка';b.setAttribute('aria-label','Справка');b.setAttribute('aria-expanded','false');return b;
   }
   var b1=mk(),b2=mk();
