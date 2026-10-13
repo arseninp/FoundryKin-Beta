@@ -1,23 +1,33 @@
-# FoundryKin architecture
+# FoundryKin — архитектура
 
-## Current files
-- app.html: application shell and screen markup.
-- fk-app.js: screens/navigation, packs, storage, import/export and titles.
-- fk-style.css: application styles.
-- fk-grid.js: card UI, 3D snapshots, legacy editor integration patches.
-- fk-editor.js: legacy editor loading, patches, integration API.
-- fk-bg.js: model/card background and sticky search styles.
-- index.html: legacy editor base, scheduled for replacement.
+Статус: описывает код версии 0.8.22 и целевую структуру. Обновлять при изменении ролей файлов.
 
-## Target organization (not implemented yet)
-- app/: Create, pack screen, Finder, navigation, storage and import/export.
-- cards/: card UI and edited-state indication.
-- render/: models, textures, preview camera and centering.
-- editor/: drawing canvas, tools, undo/redo, reset and layout.
-- help/: help content, technical details and errors.
-- config/: versions and localized labels.
+## Как устроено сейчас
+- `app.html` грузит скрипты в порядке `fk-editor.js`, `fk-grid.js`, `fk-bg.js`, `fk-app.js`. Версии файлов задаются через `?v=` в `app.html`.
+- Старый редактор `index.html` открывается в iframe. Перед этим его текст правится на лету: массив `PATCHES` из `fk-editor.js`, `NEWPATCHES` из `fk-grid.js` и замены в `fk-bg.js`. Результат подаётся в `srcdoc`. Диагностика сообщает, сколько патчей применилось.
+- `fk-app.js` отвечает за экраны, паки, хранение и экспорт. Заголовок экрана поиска — FINDER (`finderTitle()`), шапка пака показывает пузырь с версией и счётчиком.
+- `fk-grid.js` строит сетку карточек в iframe: каждая карточка — один блок с двумя пузырями. Превью — 3D-снимок, один раз отрисованный в WebGL.
+- `fk-bg.js` отвечает за фон и поиск: сплошной фон модели и карточек (`#d9d4cd` / `#3a3935`), плавающее поле поиска (`position: sticky`), синхронизация темы редактора с темой приложения и удаление 2D-кнопки.
+- Рендер карточек: `OrthographicCamera` в `fk-grid.js`, углы (0.6155, −0.7854), модель центрируется по габариту и только уменьшается. Растения — два перекрёстных плоских спрайта под 0° и 90° к граням куба. Если 3D недоступен, превью пустое.
+- Данные: `localStorage`, `fk070_packs` (пак: название, версия, автор, иконка, список текстур с путём, данными, объектом) и `fk070_settings`.
 
-Use explicit APIs, not source-string replacement, eval or synchronous loader wrappers. Separate rendering from card DOM and storage from screens. Replace the legacy index.html base and remove patches after regression testing loading/editing/saving/import/export. Update this file when ownership changes.
+## 2D
+Плоский 2D-вид модели удалён из интерфейса (v0.8.22). Остаются плоскость рисования `#ed` и холсты текстур. Недостижимые функции `setFb` и `drawFb` лежат в `index.html` и уйдут вместе с ним.
 
-## Current scope
-v0.8.21 changes interface only. Full removal of model 2D rendering follows device acceptance (see TODO.md). Drawing canvases remain.
+## index.html — временный
+Старый редактор держится на патчах, это временная конструкция. Он будет выброшен целиком при переписывании. До этого не править его напрямую, а добавлять изменения патчами и проверять, что якоря находятся.
+
+## Принципы
+- Явные API между частями, а не замена строк, `eval` и синхронные обёртки загрузки.
+- Рендер независим от DOM карточек, хранение независимо от экранов.
+- Каждый файл отвечает за одно.
+- Заменять старую базу только после проверки загрузки, правки, сохранения, импорта и экспорта.
+- Обновлять этот файл при изменении ролей файлов.
+
+## Целевая структура (не реализована)
+- `app/` — Create, экран пака, Finder, навигация, хранение, импорт и экспорт.
+- `cards/` — карточки, индикатор правок.
+- `render/` — модели, текстуры, камера, центрирование.
+- `editor/` — холст, инструменты, отмена и повтор, сброс, компоновка.
+- `help/` — справка, технический текст, ошибки.
+- `config/` — версии, локализованные подписи.

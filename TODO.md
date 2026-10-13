@@ -1,8 +1,22 @@
 # TODO
 
-- [x] v0.8.21 interface step 1 written to main (Create placeholder, FINDER title, pack metadata pill, split card bubbles, red border for edited blocks).
-- [ ] Fix the minor interface defects found while checking v0.8.21 (list pending from the project owner).
-- [x] v0.8.22 removed the model 2D view from the interface: card fallback, editor 2D/3D toggle, #fb canvas and hint. Drawing canvases remain. A failed 3D card preview stays blank.
-- [ ] Delete the now unreachable setFb/drawFb code together with legacy index.html during the editor rewrite (it is not worth patching).
-- [ ] Rewrite editor using explicit modules; replace legacy index.html and remove runtime string patches.
-- [ ] Editor layout/help, brush sizes 1-8, HSV/history, vanilla reset: separate reviewed steps.
+Порядок сверху вниз. Один пункт — одна строка. Сделанное переносится в журнал `CONTEXT.md`.
+
+1. [ ] Недочёты v0.8.21 — список ждём от владельца.
+2. [x] Решено: функции редактора пока патчами в старый `index.html`; модульный редактор — отдельная большая задача (ROADMAP, «Убрать к релизу»).
+3. [ ] Редактор: чистка подписей, технический текст в справку (кнопка ⋮), сохранить префиксы «Каталог не загрузился/пустой» и вывод ошибок.
+4. [ ] Редактор: размер кисти 1–8, квадрат N×N, сохраняется в `localStorage`, ряд кнопок под холстом.
+5. [ ] Редактор: палитра — квадрат текущего цвета, история 20 цветов, большая HSV-палитра.
+6. [ ] Редактор: кнопка сброса грани к ванильной текстуре.
+7. [ ] Редактор: новая компоновка (3D, палитра, табы, холст, кисть, служебные кнопки, скачивание).
+8. [ ] Решить: слот «иконка» в табах граней.
+9. [ ] Отложенные блоки: сложные формы (таблички, кровать, баннеры, цепи, фонари, бамбук, капельники) и кривые формы существующих, кроме азалии, — список от владельца.
+10. [ ] Шрифт Inter.
+11. [ ] Оформление по макетам: две темы, цвета из документа.
+12. [ ] IndexedDB для паков больше 3 МБ.
+13. [ ] Единый поиск: блоки, предметы, частицы, сущности.
+14. [ ] Переписать `index.html` на модули, удалить `setFb`/`drawFb` и все патчи.
+15. [ ] PWA: установка, офлайн.
+16. [ ] Монетизация.
+
+Отложено без номера: инструмент тона (±5% яркости), идея «Subpacks», кэш превью между запусками, язык интерфейса (FINDER/Поисковик), следующий бэкап через 4–5 версий.
