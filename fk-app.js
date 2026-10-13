@@ -8,7 +8,7 @@ function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}cat
 var data=load(KEY,{active:null,packs:[]});
 var settings=load(SKEY,{theme:'auto',url:DEF_URL});
 if(!settings.url)settings.url=DEF_URL;
-data.packs.forEach(function(p){p.author=p.author||'';p.game=p.game||'1.21.0';p.icon=p.icon||'';p.desc=p.desc||'';p.version=p.version||'1.0.0';p.textures=p.textures||[]});
+data.packs.forEach(function(p){delete p.fresh;p.author=p.author||'';p.game=p.game||'1.21.0';p.icon=p.icon||'';p.desc=p.desc||'';p.version=p.version||'1.0.0';p.textures=p.textures||[]});
 var stack=['home'],mt=null,editDirty=false,titleT=null,lastTitle='';
 document.title='FoundryKin v'+V;
 function say(t){var m=$('#msg');m.textContent=t||'';m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},t.length>90?7000:3500)}
@@ -23,7 +23,7 @@ function uuid(){
 }
 function ver(s){var v=String(s||'').split('.').map(function(n){return parseInt(n,10)||0});while(v.length<3)v.push(0);return v.slice(0,3)}
 var ICON='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"><rect width="56" height="56" fill="#8a8f98"/><rect x="14" y="14" width="28" height="28" fill="#3f7d4e"/></svg>');
-var FINDER={en:'FINDER',ru:'Поисковик'};
+var FINDER={en:'Find',ru:'Find'};
 function finderTitle(){return FINDER[settings.lang==='ru'?'ru':'en']}
 function packTitle(p){return p?'<div>'+esc(p.name)+'</div><span class="pill">v'+esc(p.version)+' · изменённых текстур: '+p.textures.length+'</span>':'Пак'}
 var TITLES={home:'FoundryKin<small>v'+V+'</small>',create:'Create',settings:'Настройки',add:finderTitle(),edit:'Редактирование',diag:'Диагностика'};
@@ -49,13 +49,14 @@ function render(){
 function go(n){stack.push(n);render()}
 $('#back').onclick=function(){
   if(top()==='add'&&hasFke()&&FKE.getMode()==='edit'){
-    if(FKE.dirtyNow()&&!confirm('Текстура изменена, но не сохранена в пак. Выйти и потерять прогресс?'))return;
+    if(FKE.dirtyNow()&&!confirm('Текстура изменена, но не добавлена в пак. Выйти и потерять прогресс?'))return;
     FKE.setMode('search');return;
   }
   if(top()==='edit'&&editDirty){
     if(!confirm('Изменения в данных пака не сохранены. Выйти и потерять их?'))return;
     editDirty=false;
   }
+  if(top()==='edit'){var ap=active();if(ap&&ap.fresh){delete ap.fresh;save(KEY,data)}}
   if(stack.length>1){stack.pop();render()}
 };
 window.addEventListener('beforeunload',function(e){
@@ -65,10 +66,10 @@ document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){
 $('#addBtn').onclick=function(){if(!active()){say('Сначала выбери пак.');return}go('add')};
 function renderPacks(){
   var box=$('#packList');
-  if(!data.packs.length){box.innerHTML='<p class="lbl">Паков пока нет. Создай первый ниже или импортируй .mcpack.</p>';return}
+  if(!data.packs.length){box.innerHTML='<p class="lbl">Паков пока нет. Создай первый ниже или добавь Mcpack.</p>';return}
   box.innerHTML=data.packs.map(function(p){
     return '<div class="card"><div class="pk" data-a="open" data-id="'+p.id+'"><img src="'+(p.icon||ICON)+'" alt=""><div class="n"><b>'+esc(p.name)+'</b><span class="lbl">v'+esc(p.version)+' · текстур: '+p.textures.length+'</span></div></div>'+
-      '<div class="acts"><button data-a="exp" data-id="'+p.id+'">Экспорт</button><button data-a="edit" data-id="'+p.id+'">Править .json</button><button data-a="del" data-id="'+p.id+'">Удалить</button></div></div>';
+      '<div class="acts"><button data-a="exp" data-id="'+p.id+'">Экспорт</button><button data-a="edit" data-id="'+p.id+'">Изменить</button><button data-a="del" data-id="'+p.id+'">Удалить</button></div></div>';
   }).join('');
 }
 $('#packList').addEventListener('click',function(e){
@@ -81,11 +82,9 @@ $('#packList').addEventListener('click',function(e){
   if(a==='del'){if(confirm('Удалить пак «'+p.name+'» вместе со всеми текстурами в нём?')){data.packs=data.packs.filter(function(x){return x.id!==id});data.active=null;save(KEY,data);renderPacks()}}
 });
 $('#cGo').onclick=function(){
-  var name=$('#cName').value.trim().replace(/[^A-Za-z0-9_\- ]/g,'');
-  if(!name){say('Введи название латиницей.');return}
-  var p={id:uuid(),name:name,desc:'',version:'1.0.0',game:'1.21.0',author:'',icon:'',textures:[]};
+  var p={id:uuid(),name:'my_pack',desc:'',version:'1.0.0',game:'1.21.0',author:'',icon:'',textures:[],fresh:true};
   data.packs.push(p);data.active=p.id;
-  if(save(KEY,data))go('pack');
+  if(save(KEY,data))go('edit');else data.packs.pop();
 };
 function groupsOf(p){
   var gs=[],idx={};
@@ -108,7 +107,7 @@ function renderTex(){
   if(!p){box.innerHTML='';return}
   var gs=groupsOf(p);
   if(top()==='pack')$('#title').innerHTML=packTitle(p);
-  if(!p.textures.length){box.innerHTML='<p class="lbl">Пока пусто. Нажми «+ Add texture», найди блок, измени текстуру и нажми «✓ В пак».</p>';return}
+  if(!p.textures.length){box.innerHTML='<p class="lbl">Пока пусто. Нажми «Find», найди блок, измени текстуру и нажми «Добавить».</p>';return}
   box.innerHTML=gs.map(function(g){
     var shown=pickShown(g),title=g.obj?nice(g.obj):g.items[0].t.path;
     var sub='';
@@ -195,7 +194,7 @@ $('#impF').onchange=function(){
           var okId=typeof h.uuid==='string'&&/^[0-9a-f-]{36}$/i.test(h.uuid)&&!byId(h.uuid);
           var p={id:okId?h.uuid:uuid(),keep:okId,mod:(mods[0]&&typeof mods[0].uuid==='string')?mods[0].uuid:'',name:nm,desc:String(h.description||''),version:Array.isArray(h.version)?h.version.join('.'):'1.0.0',game:Array.isArray(h.min_engine_version)?h.min_engine_version.join('.'):'1.21.0',author:(m.metadata&&m.metadata.authors&&m.metadata.authors[0])||'',icon:ib?'data:image/png;base64,'+ib:'',textures:texs};
           data.packs.push(p);data.active=p.id;
-          if(save(KEY,data)){renderPacks();say('Импортирован пак «'+p.name+'», текстур: '+texs.length+'. Объекты сгруппируются после открытия Add texture.')}
+          if(save(KEY,data)){renderPacks();say('Импортирован пак «'+p.name+'», текстур: '+texs.length+'. Объекты сгруппируются после открытия Find.')}
           else{data.packs.pop()}
         });
       });
@@ -204,7 +203,8 @@ $('#impF').onchange=function(){
 };
 function fillEdit(){
   var p=active();if(!p)return;
-  $('#eName').value=p.name;$('#eAuthor').value=p.author;$('#eDesc').value=p.desc;$('#eVer').value=p.version;$('#eGame').value=p.game;
+  var f=!!p.fresh;
+  $('#eName').value=f?'':p.name;$('#eAuthor').value=p.author;$('#eDesc').value=p.desc;$('#eVer').value=f?'':p.version;$('#eGame').value=f?'':p.game;
   $('#eIco').src=p.icon||ICON;
   $('#eJson').value=JSON.stringify(manifest(p),null,2);
   editDirty=false;
@@ -219,11 +219,13 @@ $('#eIcoF').onchange=function(){
 $('#eIcoX').onclick=function(){var p=active();if(!p)return;if(!confirm('Убрать иконку пака?'))return;p.icon='';$('#eIco').src=ICON;save(KEY,data)};
 $('#eSave').onclick=function(){
   var p=active();if(!p)return;
-  var n=$('#eName').value.trim().replace(/[^A-Za-z0-9_\- ]/g,'');
-  if(!n){say('Название: только латиница.');return}
+  var raw=$('#eName').value.trim(),n=raw.replace(/[^A-Za-z0-9_\- ]/g,'');
+  if(raw&&!n){say('Название: только латиница.');return}
+  if(!n)n='my_pack';
   p.name=n;p.author=$('#eAuthor').value.trim();p.desc=$('#eDesc').value.trim();
   p.version=$('#eVer').value.trim()||'1.0.0';p.game=$('#eGame').value.trim()||'1.21.0';
-  if(save(KEY,data)){editDirty=false;$('#eJson').value=JSON.stringify(manifest(p),null,2);say('Сохранено.')}
+  delete p.fresh;
+  if(save(KEY,data)){fillEdit();say('Сохранено.')}
 };
 function editTitle(){
   var c=FKE.current(),oi=FKE.objInfo?FKE.objInfo():null;
@@ -322,7 +324,7 @@ function report(){
     var i=FKE.info();
     L.push('fk-editor.js: v'+i.version);
     L.push('index.html: '+(i.indexLen?i.indexLen+' симв. (ожидалось '+i.expectedLen+')'+(i.indexLen===i.expectedLen?'':'  !! изменён'):'ещё не загружался'));
-    L.push('правки редактора: '+(i.indexLen?'применено '+i.applied+' из '+i.total+(i.failed.length?', не применились: '+i.failed.join(' | '):''):'ещё не проверялись (открой Add texture)'));
+    L.push('правки редактора: '+(i.indexLen?'применено '+i.applied+' из '+i.total+(i.failed.length?', не применились: '+i.failed.join(' | '):''):'ещё не проверялись (открой Find)'));
     L.push('редактор готов: '+(i.ready?'да':'нет')+', режим: '+i.mode+', загрузка блока: '+(i.busy?'идёт':'нет'));
     L.push('каталог: '+i.catalog);
   }else L.push('fk-editor.js: НЕ ЗАГРУЖЕН');
