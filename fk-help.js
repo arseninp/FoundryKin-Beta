@@ -1,4 +1,4 @@
-/* fk-help.js v0.8.28: shorter editor texts, help panel; the ⋮ button sits next to the floating search and in the service row. Loaded after fk-bg.js. */
+/* fk-help.js v0.8.29: shorter editor texts, help panel; the ⋮ button sits next to the floating search and in the service row. Loaded after fk-bg.js. */
 (function(){
 var EDITS=[
 ['Блок из игры (ищи по-английски: oak, door, trapdoor). В списке только родительские блоки, плиты, ступени, заборы и т.п. выбираются под превью. Точка: есть правки.','Блок из игры: ищи по-английски.'],
@@ -12,15 +12,16 @@ var HELP='<p class="lbl">Правки попадают в пак по кнопк
 '<p class="lbl">Блок ищи по-английски (oak, door, trapdoor). В списке только родительские блоки; плиты, ступени, заборы и т.п. выбираются под превью. Красная рамка у карточки — у блока есть правки.</p>'+
 '<p class="lbl">Если один файл текстуры используется в нескольких блоках (например, доски и книжная полка), правка видна везде. «Заменить» кладёт загруженный PNG в выбранную текстуру, прозрачные пиксели остаются прозрачными.</p>'+
 '<p class="lbl">Пипетка слева берёт цвет с холста. Капля заменяет цвет: выбери новый цвет, коснись пикселя, и все пиксели точно такого же цвета на этой грани станут выбранным. Цвет в ряду можно удалить: задержи на нём палец.</p>';
+var DOTS='<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
 var CSS='#fkSearchBar{position:sticky;top:8px;z-index:30;display:flex;gap:6px;align-items:stretch}'+
 '#fkSearchBar #q{position:static;flex:1 1 auto;min-width:0;box-shadow:0 2px 10px rgba(0,0,0,.28)}'+
 '#fkSearchBar .fkHelpBtn{box-shadow:0 2px 10px rgba(0,0,0,.28)}'+
-'.fkHelpBtn{min-width:44px;font-size:18px;line-height:1}'+
+'.fkHelpBtn{min-width:44px;min-height:40px}.fkHelpBtn svg{display:block;width:22px;height:22px;margin:0 auto;pointer-events:none}'+
 '#fkInfo summary{display:none!important}#fkInfo:not([open]){display:none}'+
 '#fkHelpPanel{position:fixed;left:0;top:0;right:0;bottom:0;z-index:100;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;padding:12px;overflow:auto}'+
 '#fkHelpPanel.on{display:flex}'+
 '#fkHelpCard{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:14px;max-width:460px;width:100%}'+
-'#fkHelpState .lbl{color:var(--ink)}';
+'#fkHelpState .lbl{color:var(--ink);word-break:break-all}';
 function attach(d){
   if(d.__fkHelp)return;
   var box=d.querySelector('#fkInfo'),q=d.querySelector('#q'),exp=d.querySelector('#clr');
@@ -29,7 +30,7 @@ function attach(d){
   var info=d.querySelector('#info'),dbg=d.querySelector('#dbg');
   var st=d.createElement('style');st.textContent=CSS;d.head.appendChild(st);
   function mk(){
-    var b=d.createElement('button');b.type='button';b.className='ghost fkHelpBtn';b.textContent='⋮';
+    var b=d.createElement('button');b.type='button';b.className='ghost fkHelpBtn';b.innerHTML=DOTS;
     b.title='Справка';b.setAttribute('aria-label','Справка');b.setAttribute('aria-expanded','false');return b;
   }
   var b1=mk(),b2=mk();
@@ -46,6 +47,8 @@ function attach(d){
   function bad(){return (info&&/^Каталог (не загрузился|пустой)/.test(info.textContent))||(dbg&&/ошибка/.test(dbg.textContent))}
   function fill(){
     state.innerHTML='';
+    var oi=null;try{oi=FKE.objInfo&&FKE.objInfo()}catch(e){}
+    if(oi&&oi.file){var pf=d.createElement('p');pf.className='lbl';pf.textContent='Файл: '+oi.file;state.appendChild(pf)}
     [info,dbg].forEach(function(x){
       var t=x&&String(x.textContent||'').trim();
       if(t){var p=d.createElement('p');p.className='lbl';p.textContent=t;state.appendChild(p)}
