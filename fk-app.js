@@ -9,7 +9,7 @@ var data=load(KEY,{active:null,packs:[]});
 var settings=load(SKEY,{theme:'auto',url:DEF_URL});
 if(!settings.url)settings.url=DEF_URL;
 data.packs.forEach(function(p){delete p.fresh;p.author=p.author||'';p.game=p.game||'1.21.0';p.icon=p.icon||'';p.desc=p.desc||'';p.version=p.version||'1.0.0';p.textures=p.textures||[]});
-var stack=['home'],mt=null,editDirty=false,titleT=null,lastTitle='';
+var stack=['home'],mt=null,editDirty=false,editNew=false,draftIcon='',titleT=null,lastTitle='';
 document.title='FoundryKin v'+V;
 function say(t){var m=$('#msg');m.textContent=t||'';m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},t.length>90?7000:3500)}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -56,7 +56,7 @@ $('#back').onclick=function(){
     if(!confirm('Изменения в данных пака не сохранены. Выйти и потерять их?'))return;
     editDirty=false;
   }
-  if(top()==='edit'){var ap=active();if(ap&&ap.fresh){delete ap.fresh;save(KEY,data)}}
+  if(top()==='edit')editNew=false;
   if(stack.length>1){stack.pop();render()}
 };
 window.addEventListener('beforeunload',function(e){
@@ -77,15 +77,11 @@ $('#packList').addEventListener('click',function(e){
   var id=el.dataset.id,a=el.dataset.a,p=byId(id);if(!p)return;
   data.active=id;save(KEY,data);
   if(a==='open')go('pack');
-  if(a==='edit')go('edit');
+  if(a==='edit'){editNew=false;go('edit')}
   if(a==='exp')exportPack(p);
   if(a==='del'){if(confirm('Удалить пак «'+p.name+'» вместе со всеми текстурами в нём?')){data.packs=data.packs.filter(function(x){return x.id!==id});data.active=null;save(KEY,data);renderPacks()}}
 });
-$('#cGo').onclick=function(){
-  var p={id:uuid(),name:'my_pack',desc:'',version:'1.0.0',game:'1.21.0',author:'',icon:'',textures:[],fresh:true};
-  data.packs.push(p);data.active=p.id;
-  if(save(KEY,data))go('edit');else data.packs.pop();
-};
+$('#cGo').onclick=function(){editNew=true;go('edit')};
 function groupsOf(p){
   var gs=[],idx={};
   p.textures.forEach(function(t,i){
@@ -202,30 +198,33 @@ $('#impF').onchange=function(){
   }).catch(function(e){say(e&&e.message==='big'?'Пак слишком большой для хранилища браузера. Пока поддерживаются паки примерно до 2–3 МБ.':'Не удалось прочитать архив: '+(e&&e.message||e))});
 };
 function fillEdit(){
-  var p=active();if(!p)return;
-  var f=!!p.fresh;
-  $('#eName').value=f?'':p.name;$('#eAuthor').value=p.author;$('#eDesc').value=p.desc;$('#eVer').value=f?'':p.version;$('#eGame').value=f?'':p.game;
-  $('#eIco').src=p.icon||ICON;
-  $('#eJson').value=JSON.stringify(manifest(p),null,2);
+  var p=editNew?null:active();if(!editNew&&!p)return;
+  var s=p||{name:'',author:'',desc:'',version:'',game:'',icon:''};
+  $('#eName').value=s.name;$('#eAuthor').value=s.author;$('#eDesc').value=s.desc;$('#eVer').value=s.version;$('#eGame').value=s.game;
+  draftIcon=s.icon||'';$('#eIco').src=draftIcon||ICON;
+  $('#eJson').value=p?JSON.stringify(manifest(p),null,2):'';
   editDirty=false;
 }
 document.querySelectorAll('#s-edit input[type=text]').forEach(function(i){i.addEventListener('input',function(){editDirty=true})});
 $('#eIcoF').onchange=function(){
-  var p=active(),f=this.files[0];if(!p||!f)return;
+  var f=this.files[0];this.value='';if(!f)return;
   var r=new FileReader();
-  r.onload=function(){p.icon=r.result;$('#eIco').src=p.icon;save(KEY,data);$('#eJson').value=JSON.stringify(manifest(p),null,2)};
+  r.onload=function(){draftIcon=r.result;$('#eIco').src=draftIcon;editDirty=true};
   r.readAsDataURL(f);
 };
-$('#eIcoX').onclick=function(){var p=active();if(!p)return;if(!confirm('Убрать иконку пака?'))return;p.icon='';$('#eIco').src=ICON;save(KEY,data)};
+$('#eIcoX').onclick=function(){if(!draftIcon)return;if(!confirm('Убрать иконку пака?'))return;draftIcon='';$('#eIco').src=ICON;editDirty=true};
 $('#eSave').onclick=function(){
-  var p=active();if(!p)return;
   var raw=$('#eName').value.trim(),n=raw.replace(/[^A-Za-z0-9_\- ]/g,'');
   if(raw&&!n){say('Название: только латиница.');return}
   if(!n)n='my_pack';
+  var isNew=editNew,p=isNew?{id:uuid(),name:n,desc:'',version:'1.0.0',game:'1.21.0',author:'',icon:'',textures:[]}:active();
+  if(!p)return;
   p.name=n;p.author=$('#eAuthor').value.trim();p.desc=$('#eDesc').value.trim();
-  p.version=$('#eVer').value.trim()||'1.0.0';p.game=$('#eGame').value.trim()||'1.21.0';
-  delete p.fresh;
-  if(save(KEY,data)){fillEdit();say('Сохранено.')}
+  p.version=$('#eVer').value.trim()||'1.0.0';p.game=$('#eGame').value.trim()||'1.21.0';p.icon=draftIcon;
+  if(isNew)data.packs.push(p);
+  data.active=p.id;
+  if(save(KEY,data)){editNew=false;fillEdit();say('Сохранено.')}
+  else if(isNew){data.packs.pop()}
 };
 function editTitle(){
   var c=FKE.current(),oi=FKE.objInfo?FKE.objInfo():null;
