@@ -1,84 +1,102 @@
-/* FoundryKin editor host: loads index.html into the iframe and exposes the FKE contract used by fk-app.js. */
+/* fk-editor.js: loads the editor iframe. It is the only boundary between the shell and the editor. */
 var FKE=(function(){
-var src='';try{src=String(document.currentScript.src||'')}catch(e){}
-var vm=/[?&]v=([\d.]+)/.exec(src),VERSION=vm?vm[1]:'?';
-var frame=null,loaded=null,base=0,lastMode='search',cb={},themeNow='light',pending=null,pendingFail=null,pendingT=null;
-function api(){try{var w=frame&&frame.contentWindow;return (w&&w.FKAPI)||null}catch(e){return null}}
-function setTheme(th){
-  themeNow=th;
-  try{var d=frame&&frame.contentDocument;if(d&&d.documentElement)d.documentElement.setAttribute('data-theme',th)}catch(e){}
+var frame=null,url='',mode='search',cb={},ready=false,wantEdit=false;
+var base=0,savedY=0,pendingName='',theme='light',packProvider=null,scrollCb=null,subs=[];
+function win(){try{return frame&&frame.contentWindow}catch(e){return null}}
+function doc(){try{return frame&&frame.contentDocument}catch(e){return null}}
+function api(){var w=win();return (w&&w.FKAPI)||null}
+function grid(){var a=api();return (a&&a.grid)?a.grid():null}
+function packMap(){return packProvider?packProvider():{}}
+function setTheme(t){
+  theme=t;
+  var d=doc();
+  if(d&&d.documentElement)d.documentElement.setAttribute('data-theme',t);
 }
-function wait(fn,fail){
-  pending=fn;pendingFail=fail;clearTimeout(pendingT);
-  pendingT=setTimeout(function(){var f=pendingFail;pending=null;pendingFail=null;if(f)f('timeout')},30000);
+function syncPack(){
+  var g=grid(),w=win();
+  if(!g)return;
+  g.setPack(packMap());
+  if(w&&w.FKGRID)w.FKGRID.render();
 }
-function settle(){
-  if(!pending)return;
-  var fn=pending;pending=null;pendingFail=null;clearTimeout(pendingT);fn();
+function restore(){
+  var g=grid(),w=win();
+  if(!g)return;
+  g.discard();g.setPack(packMap());
+  if(w&&w.FKGRID)w.FKGRID.render();
+  setTimeout(function(){try{w.scrollTo(0,savedY)}catch(e){}},30);
 }
-function abort(code){
-  var f=pendingFail;pending=null;pendingFail=null;clearTimeout(pendingT);
-  if(f)f(code);
+function setMode(m,name){
+  var prev=mode,w=win(),d=doc(),a=api();
+  if(name)pendingName=name;
+  if(m==='edit'&&prev!=='edit'){
+    base=a?a.edits:0;
+    try{savedY=w.scrollY}catch(e){}
+  }
+  mode=m;
+  if(d&&d.body){
+    d.body.classList.toggle('fk-search',m==='search');
+    d.body.classList.toggle('fk-edit',m==='edit');
+    try{w.scrollTo(0,m==='edit'?0:savedY)}catch(e){}
+  }
+  if(m==='search'&&prev==='edit')restore();
+  if(cb.onMode)cb.onMode(mode);
 }
-function onState(S){
-  var a=api();
-  if(a&&S.mode!==lastMode){lastMode=S.mode;if(S.mode==='edit')base=a.edits||0}
-  if(cb.onState)cb.onState(S,a);
-  settle();
+function hook(){
+  var w=win(),a=api();
+  if(a)a.subscribe(function(s){subs.forEach(function(f){try{f(s)}catch(e){}})});
+  w.addEventListener('scroll',function(){if(scrollCb)scrollCb(w.scrollY)},{passive:true});
 }
-function fail(code){
-  loaded=null;
-  if(cb.onError)cb.onError(code);
-  abort(code);
-}
-function open(f,url,callbacks){
+function open(f,u,callbacks){
   cb=callbacks||{};frame=f;
-  var a0=api();
-  if(loaded===url&&a0){a0.syncPack();a0.setMode('search');return}
-  loaded=url;lastMode='search';
+  if(ready&&url===u){syncPack();setMode('search');return}
+  url=u;ready=false;
   f.onload=function(){
-    var d=null,a=api();
-    try{d=f.contentDocument}catch(e){}
-    if(!d){fail('cross_origin');return}
-    if(!a){fail('not_editor');return}
-    setTheme(themeNow);
-    a.subscribe(onState);
-    try{f.contentWindow.addEventListener('scroll',function(){if(cb.onScroll)cb.onScroll()},{passive:true})}catch(e){}
-    onState(a.state);
+    var d=null,why='';
+    try{d=f.contentDocument;if(!d||!d.querySelector('#ed'))why='not_editor'}catch(e){why='cross_origin'}
+    if(why){url='';if(cb.onError)cb.onError(why,u);return}
+    ready=true;setTheme(theme);hook();syncPack();
+    setMode(wantEdit?'edit':'search');
   };
-  f.src=url;
+  f.src=u;
 }
-function editTexture(path,data,obj,callbacks){
-  callbacks=callbacks||{};
-  function failed(code){if(callbacks.onFail)callbacks.onFail(code)}
-  (function attempt(){
-    var a=api();
-    if(!a){wait(attempt,failed);return}
-    var r=a.openTexture(path,data,obj);
-    if(r){a.setMode('edit');return}
-    if(r===false){failed('not_found');return}
-    var st=a.state.status;
-    if(st==='failed'||st==='empty'){failed('catalog');return}
-    wait(attempt,failed);
+function editTexture(path,data,obj,c){
+  c=c||{};wantEdit=true;
+  var tries=0;
+  function fail(code){wantEdit=false;setMode('search');if(c.onFail)c.onFail(code,path)}
+  (function wait(){
+    var a=api(),st=a&&a.state;
+    if(st&&st.status==='ready'){
+      wantEdit=false;
+      var g=a.grid(),r;
+      g.setPack(packMap());
+      if(obj&&g.catalog.b[obj]){a.want='textures/'+path;g.select(obj);r=obj}
+      else r=a.openTexture(path,data);
+      if(!r){fail('no_block');return}
+      pendingName=String(r);setMode('edit');
+      return;
+    }
+    if((st&&(st.status==='failed'||st.status==='empty'))||++tries>80){fail('catalog');return}
+    setTimeout(wait,300);
   })();
 }
+function busy(){var a=api();return !!(a&&a.busy)}
 return {
-  version:VERSION,
-  open:open,editTexture:editTexture,theme:setTheme,
-  reset:function(){loaded=null},
-  ready:function(){return !!api()},
-  getMode:function(){var a=api();return a?a.state.mode:'search'},
-  setMode:function(m){var a=api();if(a)a.setMode(m)},
-  current:function(){var a=api();return a?a.current():null},
+  open:open,setMode:setMode,editTexture:editTexture,syncPack:syncPack,setTheme:setTheme,busy:busy,
+  getMode:function(){return mode},
+  reset:function(){url='';ready=false},
+  setPackProvider:function(fn){packProvider=fn},
+  onScroll:function(fn){scrollCb=fn},
+  subscribe:function(fn){subs.push(fn)},
+  scrollY:function(){var w=win();try{return w?w.scrollY:0}catch(e){return 0}},
+  closeMenu:function(){var w=win();if(w&&w.FKM&&w.FKM.cur){w.FKM.close();return true}return false},
   files:function(){var a=api();return (a&&!a.busy)?a.files():null},
-  dirtyNow:function(){var a=api();return !!a&&a.state.mode==='edit'&&(a.edits||0)>base},
-  markSaved:function(){var a=api();base=a?(a.edits||0):0},
-  closeMenu:function(){var a=api();return !!(a&&a.closeMenu&&a.closeMenu())},
-  scrollY:function(){try{return frame.contentWindow.scrollY||0}catch(e){return 0}},
+  current:function(){if(busy()&&pendingName)return pendingName;var a=api();return a?a.cur():''},
+  objInfo:function(){var g=grid();return g?g.obj():null},
+  dirtyNow:function(){var a=api();return !!a&&mode==='edit'&&a.edits>base},
+  markSaved:function(){var a=api();base=a?a.edits:0},
   info:function(){
-    var a=api();if(!a)return {ready:false};
-    var s=a.state,st=a.stats();
-    return {ready:true,mode:s.mode,status:s.status,source:s.source,count:s.count,filtered:s.filtered,refreshing:s.refreshing,refreshFailed:s.refreshFailed,error:s.error,errors:s.errors.slice(),webgl:st.webgl,frames:st.frames,res:st.res};
+    var a=api();
+    return {ready:ready,mode:mode,busy:busy(),state:a?a.state:null,stats:a&&a.stats?a.stats():null};
   }
 };
 })();
