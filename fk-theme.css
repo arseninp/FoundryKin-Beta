@@ -1,0 +1,2 @@
+:root,:root[data-theme=light]{--bg:#e6e3dc;--panel:#d5d0ca;--ink:#2a2826;--mute:#7e7973;--line:#b2ada7;--acc:#718198;--accink:#fff;--stage:#d5d0ca;--fkbg:#d5d0ca;--red:#a4757b}
+:root[data-theme=dark]{--bg:#262625;--panel:#383733;--ink:#e8e5df;--mute:#989590;--line:#51504e;--acc:#6d7791;--accink:#fff;--stage:#383733;--fkbg:#383733;--red:#a47c7c}
