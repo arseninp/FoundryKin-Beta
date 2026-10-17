@@ -1,102 +1,74 @@
-/* fk-editor.js: loads the editor iframe. It is the only boundary between the shell and the editor. */
+/* FKE: bridge between the app shell and the editor document (index.html inside the iframe).
+   The editor owns the mode; FKE forwards calls to window.FKAPI and reports changes to the shell. */
 var FKE=(function(){
-var frame=null,url='',mode='search',cb={},ready=false,wantEdit=false;
-var base=0,savedY=0,pendingName='',theme='light',packProvider=null,scrollCb=null,subs=[];
+var src='';try{src=String(document.currentScript.src||'')}catch(e){}
+var vm=/[?&]v=([\d.]+)/.exec(src),VERSION=vm?vm[1]:'?';
+var frame=null,cb={},loaded=null,wantEdit=false,mode='search',base=0,attached=null;
 function win(){try{return frame&&frame.contentWindow}catch(e){return null}}
-function doc(){try{return frame&&frame.contentDocument}catch(e){return null}}
-function api(){var w=win();return (w&&w.FKAPI)||null}
-function grid(){var a=api();return (a&&a.grid)?a.grid():null}
-function packMap(){return packProvider?packProvider():{}}
-function setTheme(t){
-  theme=t;
-  var d=doc();
-  if(d&&d.documentElement)d.documentElement.setAttribute('data-theme',t);
+function api(){try{var w=win();return (w&&w.FKAPI)||null}catch(e){return null}}
+function attach(a){
+  if(attached===a)return;
+  attached=a;
+  a.subscribe(function(s){
+    if(s.mode!==mode){
+      if(s.mode==='edit')base=a.edits||0;
+      mode=s.mode;
+      if(cb.onMode)cb.onMode(mode);
+    }
+    if(cb.onState)cb.onState(s);
+  });
 }
-function syncPack(){
-  var g=grid(),w=win();
-  if(!g)return;
-  g.setPack(packMap());
-  if(w&&w.FKGRID)w.FKGRID.render();
-}
-function restore(){
-  var g=grid(),w=win();
-  if(!g)return;
-  g.discard();g.setPack(packMap());
-  if(w&&w.FKGRID)w.FKGRID.render();
-  setTimeout(function(){try{w.scrollTo(0,savedY)}catch(e){}},30);
-}
-function setMode(m,name){
-  var prev=mode,w=win(),d=doc(),a=api();
-  if(name)pendingName=name;
-  if(m==='edit'&&prev!=='edit'){
-    base=a?a.edits:0;
-    try{savedY=w.scrollY}catch(e){}
-  }
-  mode=m;
-  if(d&&d.body){
-    d.body.classList.toggle('fk-search',m==='search');
-    d.body.classList.toggle('fk-edit',m==='edit');
-    try{w.scrollTo(0,m==='edit'?0:savedY)}catch(e){}
-  }
-  if(m==='search'&&prev==='edit')restore();
-  if(cb.onMode)cb.onMode(mode);
-}
-function hook(){
-  var w=win(),a=api();
-  if(a)a.subscribe(function(s){subs.forEach(function(f){try{f(s)}catch(e){}})});
-  w.addEventListener('scroll',function(){if(scrollCb)scrollCb(w.scrollY)},{passive:true});
-}
-function open(f,u,callbacks){
-  cb=callbacks||{};frame=f;
-  if(ready&&url===u){syncPack();setMode('search');return}
-  url=u;ready=false;
+function open(f,url,c){
+  cb=c||{};frame=f;
+  var a=api();
+  if(loaded===url&&a){attach(a);a.setMode('search');if(cb.onReady)cb.onReady();return}
+  loaded=url;attached=null;
   f.onload=function(){
-    var d=null,why='';
-    try{d=f.contentDocument;if(!d||!d.querySelector('#ed'))why='not_editor'}catch(e){why='cross_origin'}
-    if(why){url='';if(cb.onError)cb.onError(why,u);return}
-    ready=true;setTheme(theme);hook();syncPack();
-    setMode(wantEdit?'edit':'search');
+    var a2=api();
+    if(!a2||!a2.subscribe){loaded=null;if(cb.onError)cb.onError('not_editor',url);return}
+    attach(a2);
+    try{win().addEventListener('scroll',function(){if(cb.onScroll)cb.onScroll(win().scrollY)},{passive:true})}catch(e){}
+    a2.setMode(wantEdit?'edit':'search');
+    if(cb.onReady)cb.onReady();
   };
-  f.src=u;
+  f.src=url;
 }
-function editTexture(path,data,obj,c){
-  c=c||{};wantEdit=true;
-  var tries=0;
-  function fail(code){wantEdit=false;setMode('search');if(c.onFail)c.onFail(code,path)}
-  (function wait(){
-    var a=api(),st=a&&a.state;
-    if(st&&st.status==='ready'){
-      wantEdit=false;
-      var g=a.grid(),r;
-      g.setPack(packMap());
-      if(obj&&g.catalog.b[obj]){a.want='textures/'+path;g.select(obj);r=obj}
-      else r=a.openTexture(path,data);
-      if(!r){fail('no_block');return}
-      pendingName=String(r);setMode('edit');
+function editTexture(path,data,c){
+  c=c||{};wantEdit=true;var tries=0;
+  (function poll(){
+    var a=api(),r=(a&&a.openTexture)?a.openTexture(path,data,c.obj):null;
+    if(r){wantEdit=false;a.setMode('edit');return}
+    if(r===false||++tries>40){
+      wantEdit=false;if(a)a.setMode('search');
+      if(c.onFail)c.onFail(r===false?'no_block':'no_catalog');
       return;
     }
-    if((st&&(st.status==='failed'||st.status==='empty'))||++tries>80){fail('catalog');return}
-    setTimeout(wait,300);
+    setTimeout(poll,500);
   })();
 }
-function busy(){var a=api();return !!(a&&a.busy)}
+function info(){
+  var a=api(),s=a&&a.state,st=a&&a.stats?a.stats():null;
+  return {
+    version:VERSION,mode:mode,ready:!!a,busy:!!(a&&a.busy),
+    status:s?s.status:'',source:s?s.source:'',count:s?s.count:0,
+    errors:s?s.errors.slice():[],webgl:st?st.webgl:null,frames:st?st.frames:0,
+    editor:a&&a.version?a.version:'?'
+  };
+}
 return {
-  open:open,setMode:setMode,editTexture:editTexture,syncPack:syncPack,setTheme:setTheme,busy:busy,
+  version:VERSION,
+  open:open,editTexture:editTexture,info:info,
   getMode:function(){return mode},
-  reset:function(){url='';ready=false},
-  setPackProvider:function(fn){packProvider=fn},
-  onScroll:function(fn){scrollCb=fn},
-  subscribe:function(fn){subs.push(fn)},
-  scrollY:function(){var w=win();try{return w?w.scrollY:0}catch(e){return 0}},
-  closeMenu:function(){var w=win();if(w&&w.FKM&&w.FKM.cur){w.FKM.close();return true}return false},
+  setMode:function(m){var a=api();if(a)a.setMode(m)},
+  reset:function(){loaded=null},
+  ready:function(){return !!api()},
+  busy:function(){var a=api();return !!(a&&a.busy)},
   files:function(){var a=api();return (a&&!a.busy)?a.files():null},
-  current:function(){if(busy()&&pendingName)return pendingName;var a=api();return a?a.cur():''},
-  objInfo:function(){var g=grid();return g?g.obj():null},
-  dirtyNow:function(){var a=api();return !!a&&mode==='edit'&&a.edits>base},
-  markSaved:function(){var a=api();base=a?a.edits:0},
-  info:function(){
-    var a=api();
-    return {ready:ready,mode:mode,busy:busy(),state:a?a.state:null,stats:a&&a.stats?a.stats():null};
-  }
+  current:function(){var a=api();return a?(a.busy&&a.pending?a.pending:a.cur()):''},
+  objInfo:function(){var a=api();try{return a?a.grid().obj():null}catch(e){return null}},
+  dirtyNow:function(){var a=api();return !!a&&mode==='edit'&&(a.edits||0)>base},
+  markSaved:function(){var a=api();base=a?(a.edits||0):0},
+  closeMenu:function(){var a=api();return !!(a&&a.closeMenu&&a.closeMenu())},
+  scrollY:function(){try{return win().scrollY||0}catch(e){return 0}}
 };
 })();
