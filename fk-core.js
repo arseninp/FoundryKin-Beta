@@ -28,10 +28,11 @@ var SHAPES={
 };
 var ALL_SHAPES=['cube','slab','stairs','wall','fence','gate','button','plate'];
 var $=function(s){return document.querySelector(s)};
+try{var PD=parent.document.documentElement;var syncTheme=function(){document.documentElement.setAttribute('data-theme',PD.getAttribute('data-theme')||'light')};syncTheme();new MutationObserver(syncTheme).observe(PD,{attributes:true,attributeFilter:['data-theme']})}catch(e){}
 var ed=$('#ed'), ectx=ed.getContext('2d');
 
 var listeners=[];
-var S={status:'loading',source:'',count:0,filtered:true,refreshing:false,refreshFailed:'',error:null,errors:[],info:null,message:null};
+var S={mode:'search',status:'loading',source:'',count:0,filtered:true,refreshing:false,refreshFailed:'',error:null,errors:[],info:null,message:null};
 var ctx={onHistory:null,onRes:null};
 function emit(){listeners.forEach(function(f){try{f(S)}catch(e){}})}
 function showErr(code,detail){
@@ -403,7 +404,7 @@ function selectBlock(id){
     var so=slotsFor(m);setupSlots(so.list,so.fm);updShapeUi(keysList);
     applyEntry(entryFor(so.list),function(){build();setBlockInfo(id,m,note,mo);API.loaded(m)});
   }
-  S.info=null;API.loading();
+  S.info=null;API.pending=id;API.loading();
   ensureFiles(m).then(function(r){go(!r.vanilla?'gray':(r.missing?'part':(r.loaded?'base':'')))}).catch(function(err){
     showErr('block_load',err.message);
     go('gray');
@@ -425,12 +426,20 @@ function pngSize(d){
   return (w>0&&w<=1024)?w:16;
 }
 var API={
-  edits:0,busy:false,want:null,block:'',state:S,ctx:ctx,
+  edits:0,busy:false,want:null,block:'',pending:'',state:S,ctx:ctx,
+  version:(function(){try{return parent.FK_V||'?'}catch(e){return '?'}})(),
   subscribe:function(f){listeners.push(f)},
+  setMode:function(m){
+    S.mode=m;
+    document.body.classList.toggle('fk-search',m==='search');
+    document.body.classList.toggle('fk-edit',m==='edit');
+    try{scrollTo(0,0)}catch(e){}
+    emit();
+  },
   cur:function(){return cur},
   files:function(){return curFiles().filter(function(f){return dirty[f.path.replace(/\.png$/,'')]})},
   loading:function(){API.busy=true;emit()},
-  loaded:function(m){API.busy=false;API.block=m;var w=API.want;API.want=null;if(w&&cv[w])setSlot(w);emit()},
+  loaded:function(m){API.busy=false;API.pending='';API.block=m;var w=API.want;API.want=null;if(w&&cv[w])setSlot(w);emit()},
   openTexture:function(path,data){
     var key='textures/'+path;
     if(!catalog)return null;
@@ -447,7 +456,7 @@ var API={
   stats:function(){return {frames:frames,webgl:gl,res:res,slots:slots.length}},
   grid:function(){
     return {
-      catalog:catalog,files:files,dirty:dirty,load:FKCatalog.loadAny,select:selectBlock,edited:isEdited,
+      catalog:catalog,files:files,dirty:dirty,shapes:SHAPES,load:FKCatalog.loadAny,select:selectBlock,edited:isEdited,
       discard:function(){slots.forEach(function(s){ph[s.id]=true})},
       obj:function(){return {id:cur||null,paths:slots.map(function(s){return s.id}),file:slot?String(slot).split('/').pop():''}},
       setPack:function(map){
