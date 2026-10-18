@@ -2,7 +2,7 @@
 (function(){
 var FK=window.FK;
 function tt(k,p){return FK.t(k,p)}
-var res=16, shape='cube', tool='pen', color='#c0392b';
+var res=16, shape='cube';
 var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={}, applyGen=0, hiddenMat=null;
 var files={}, cur='', dirty={}, catalog=null, existing=null, shapeKeys=['cube'];
 var FACES=['up','down','north','south','east','west'];
@@ -32,6 +32,7 @@ var ed=$('#ed'), ectx=ed.getContext('2d');
 
 var listeners=[];
 var S={status:'loading',source:'',count:0,filtered:true,refreshing:false,refreshFailed:'',error:null,errors:[],info:null,message:null};
+var ctx={onHistory:null,onRes:null};
 function emit(){listeners.forEach(function(f){try{f(S)}catch(e){}})}
 function showErr(code,detail){
   var last=S.errors[S.errors.length-1];detail=detail||'';
@@ -241,7 +242,7 @@ function snap(k){return ctxOf(k).getImageData(0,0,res,res)}
 function pushUndo(){var s=undoS[slot];s.push(snap(slot));if(s.length>60)s.shift();redoS[slot]=[];updHist()}
 function doUndo(){var s=undoS[slot];if(!s||!s.length)return;redoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
 function doRedo(){var s=redoS[slot];if(!s||!s.length)return;undoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
-function updHist(){$('#undo').disabled=!(undoS[slot]&&undoS[slot].length);$('#redo').disabled=!(redoS[slot]&&redoS[slot].length)}
+function updHist(){if(ctx.onHistory)ctx.onHistory(!!(undoS[slot]&&undoS[slot].length),!!(redoS[slot]&&redoS[slot].length))}
 function resetHist(){slots.forEach(function(s){undoS[s.id]=[];redoS[s.id]=[]});updHist()}
 
 /* editor */
@@ -250,55 +251,10 @@ function touched(){
   dirty[slot]=true;delete ph[slot];API.edits++;
   refreshTex(slot);drawEd();
 }
-function cell(e){
-  var r=ed.getBoundingClientRect();
-  return {x:Math.floor((e.clientX-r.left)/r.width*res),y:Math.floor((e.clientY-r.top)/r.height*res)};
-}
-function inb(p){return p.x>=0&&p.y>=0&&p.x<res&&p.y<res}
-function dot(g,x,y){if(x<0||y<0||x>=res||y>=res)return;if(tool==='erase')g.clearRect(x,y,1,1);else{g.fillStyle=color;g.fillRect(x,y,1,1)}}
-function line(g,a,b){
-  var x0=a.x,y0=a.y,x1=b.x,y1=b.y,dx=Math.abs(x1-x0),dy=-Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1,err=dx+dy;
-  for(var n=0;n<512;n++){dot(g,x0,y0);if(x0===x1&&y0===y1)break;var e2=2*err;if(e2>=dy){err+=dy;x0+=sx}if(e2<=dx){err+=dx;y0+=sy}}
-}
-function hexRgba(h){var n=parseInt(h.slice(1),16);return [n>>16&255,n>>8&255,n&255,255]}
-function floodFill(p){
-  var g=ctxOf(slot),img=g.getImageData(0,0,res,res),d=img.data,t=hexRgba(color);
-  function at(x,y){return (y*res+x)*4}
-  var i0=at(p.x,p.y),s=[d[i0],d[i0+1],d[i0+2],d[i0+3]];
-  if(s[0]===t[0]&&s[1]===t[1]&&s[2]===t[2]&&s[3]===t[3])return;
-  var st=[[p.x,p.y]];
-  while(st.length){
-    var q=st.pop(),x=q[0],y=q[1];if(x<0||y<0||x>=res||y>=res)continue;
-    var i=at(x,y);if(d[i]!==s[0]||d[i+1]!==s[1]||d[i+2]!==s[2]||d[i+3]!==s[3])continue;
-    d[i]=t[0];d[i+1]=t[1];d[i+2]=t[2];d[i+3]=t[3];
-    st.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
-  }
-  g.putImageData(img,0,0);
-}
-function pickAt(p){
-  var d=ctxOf(slot).getImageData(p.x,p.y,1,1).data;if(!d[3])return;
-  var h='#'+[d[0],d[1],d[2]].map(function(v){return ('0'+v.toString(16)).slice(-2)}).join('');
-  pickColor(h,false);
-}
-var down=false,last=null;
-ed.addEventListener('pointerdown',function(e){
-  var p=cell(e);if(!inb(p)||!cv[slot])return;
-  e.preventDefault();ed.setPointerCapture(e.pointerId);
-  if(tool==='pick'){pickAt(p);return}
-  pushUndo();
-  if(tool==='fill'){floodFill(p);touched();return}
-  down=true;last=p;dot(ctxOf(slot),p.x,p.y);touched();
-});
-ed.addEventListener('pointermove',function(e){
-  if(!down||!cv[slot])return;var p=cell(e);line(ctxOf(slot),last,p);last=p;touched();
-});
-function up(){down=false;last=null}
-ed.addEventListener('pointerup',up);ed.addEventListener('pointercancel',up);
 
 function seg(sel,attr,fn){$(sel).addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.disabled)return;
   $(sel).querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});fn(b.dataset[attr])})}
 seg('#shapes','s',function(v){shape=v;build()});
-seg('#tools','t',function(v){tool=v});
 function setShapeUi(){$('#shapes').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.s===shape)})}
 function updShapeUi(list){
   shapeKeys=list;
@@ -315,28 +271,8 @@ function setRes(n){
   res=n;
   slots.forEach(function(s){cv[s.id].width=cv[s.id].height=res;var g=ctxOf(s.id);g.imageSmoothingEnabled=false;g.drawImage(old[s.id],0,0,res,res)});
   resetHist();rebuildTextures();drawEd();slots.forEach(function(s){dirty[s.id]=true});API.edits++;
+  if(ctx.onRes)ctx.onRes(res);
 }
-function setResUi(){document.querySelectorAll('[data-r]').forEach(function(x){x.classList.toggle('on',+x.dataset.r===res)})}
-document.querySelectorAll('[data-r]').forEach(function(b){b.addEventListener('click',function(){setRes(+b.dataset.r);setResUi()})});
-$('#undo').onclick=doUndo;$('#redo').onclick=doRedo;
-
-var pal=['#c0392b','#e67e22','#f1c40f','#3f7d4e','#2980b9','#8e44ad','#ffffff','#7f8c8d','#2c2c2c','#866043'];
-var pe=$('#pal');
-pal.forEach(function(c){var b=document.createElement('button');b.className='sw'+(c===color?' on':'');b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label',c);
-  b.onclick=function(){pickColor(c)};pe.appendChild(b)});
-var ci=document.createElement('input');ci.type='color';ci.value=color;ci.oninput=function(){pickColor(ci.value,true)};pe.appendChild(ci);
-function pickColor(c,fromInput){
-  color=c;if(tool==='pick'||tool==='erase'){tool='pen';$('#tools').querySelectorAll('[data-t]').forEach(function(b){b.classList.toggle('on',b.dataset.t==='pen')})}
-  pe.querySelectorAll('.sw').forEach(function(b){b.classList.toggle('on',b.dataset.c===c)});ci.value=c;
-}
-$('#file').onchange=function(e){
-  var inp=e.target,f=inp.files[0];if(!f)return;var fr=new FileReader();
-  fr.onload=function(){var img=new Image();
-    img.onload=function(){if(!cv[slot])return;pushUndo();var g=ctxOf(slot);g.clearRect(0,0,res,res);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res);touched()};
-    img.src=fr.result};
-  fr.readAsDataURL(f);inp.value='';
-};
-$('#clr').onclick=function(){if(!cv[slot])return;pushUndo();ctxOf(slot).clearRect(0,0,res,res);touched()};
 
 /* texture files */
 function packCur(){
@@ -352,7 +288,7 @@ function entryFor(list){
 }
 function applyEntry(e,done){
   var gen=++applyGen,list=slots,canv=cv,phNow=ph;
-  res=e.res||16;setResUi();
+  res=e.res||16;if(ctx.onRes)ctx.onRes(res);
   var left=list.length;
   function fin(){
     if(--left!==0)return;
@@ -473,15 +409,6 @@ function selectBlock(id){
     go('gray');
   });
 }
-/* export */
-function download(blob,fname){
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();
-  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
-}
-function dataToBlob(d){
-  var bin=atob(d.split(',')[1]),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
-  return new Blob([u],{type:'image/png'});
-}
 function curFiles(){
   packCur();
   var out=[],seen={};
@@ -492,18 +419,13 @@ function curFiles(){
   });
   return out;
 }
-$('#expPng').onclick=function(){
-  var f=curFiles();
-  f.forEach(function(x,i){setTimeout(function(){download(dataToBlob(x.data),x.path.split('/').pop())},i*300)});
-  say('msg.png_saved',{n:f.length});
-};
 function pngSize(d){
   var w=16;
   try{var b=atob(d.split(',')[1].slice(0,40));w=(b.charCodeAt(16)*16777216)+(b.charCodeAt(17)<<16)+(b.charCodeAt(18)<<8)+b.charCodeAt(19)}catch(e){}
   return (w>0&&w<=1024)?w:16;
 }
 var API={
-  edits:0,busy:false,want:null,block:'',state:S,
+  edits:0,busy:false,want:null,block:'',state:S,ctx:ctx,
   subscribe:function(f){listeners.push(f)},
   cur:function(){return cur},
   files:function(){return curFiles().filter(function(f){return dirty[f.path.replace(/\.png$/,'')]})},
@@ -539,6 +461,13 @@ var API={
     };
   }
 };
+ctx.el={ed:ed};
+ctx.res=function(){return res};
+ctx.setRes=setRes;
+ctx.ready=function(){return !!cv[slot]};
+ctx.g=function(){return ctxOf(slot)};
+ctx.pushUndo=pushUndo;ctx.undo=doUndo;ctx.redo=doRedo;ctx.touched=touched;
+ctx.syncHist=updHist;ctx.files=curFiles;ctx.say=say;
 window.FKAPI=API;
 
 /* start */
