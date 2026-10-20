@@ -18,8 +18,13 @@ function attach(a){
     if(cb.onState)cb.onState(s);
   });
 }
+function editorUrl(url){
+  var u=new URL(url,document.baseURI);
+  u.searchParams.set('v',window.FK_V||VERSION);
+  return u.href;
+}
 function open(f,url,c){
-  cb=c||{};frame=f;
+  cb=c||{};frame=f;url=editorUrl(url);
   var a=api();
   if(loaded===url&&a){attach(a);a.setMode('search');if(cb.onReady)cb.onReady();return}
   loaded=url;attached=null;
