@@ -1,0 +1,29 @@
+/* Shared FoundryKin foundation. Load this file in every document after local styles.
+   New sections use fk-header, fk-header-back and fk-header-bubble, not copied dimensions. */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;800&display=swap');
+:root{--bg:#e6e3dc;--panel:#d5d0ca;--ink:#2a2826;--mute:#7e7973;--line:#b2ada7;--acc:#718198;--accink:#fff;--find:#8aa7bd;--red:#a4757b;--stage:var(--panel);--fk-font:Montserrat,system-ui,-apple-system,"Segoe UI",sans-serif;--fk-header-height:40px;--fk-header-back-width:48px;--fk-header-icon:22px;--fk-header-gap:8px;--fk-header-side:12px;--fk-header-start:24px;--fk-header-min:8px;--fk-header-radius:8px;--fk-header-reserve:76px}
+:root[data-theme=dark]{--bg:#262625;--panel:#383733;--ink:#e8e5df;--mute:#989590;--line:#51504e;--acc:#6d7791;--accink:#fff;--find:#6a8499;--red:#a47c7c}
+@media(prefers-color-scheme:dark){:root:not([data-theme]){--bg:#262625;--panel:#383733;--ink:#e8e5df;--mute:#989590;--line:#51504e;--acc:#6d7791;--accink:#fff;--find:#6a8499;--red:#a47c7c}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-tap-highlight-color:transparent;font-family:var(--fk-font)}
+body{margin:0;background:var(--bg);color:var(--ink);font:500 15px/1.4 var(--fk-font)}
+button,input,select,textarea{font-family:inherit}
+/* Shared header geometry and components; modes differ only in positioning. */
+.fk-header{display:flex;align-items:center;gap:var(--fk-header-gap);height:var(--fk-header-height);min-height:var(--fk-header-height);margin:0;background:transparent;border:0;z-index:50}
+.fk-header--shell{position:absolute;top:calc(var(--fkHeaderY,var(--fk-header-start)) + env(safe-area-inset-top,0px));left:0;right:0;padding:0 var(--fk-header-side)}
+.fk-header--find{position:sticky;top:calc(var(--fk-header-min) + env(safe-area-inset-top,0px));width:calc(100vw - 2 * var(--fk-header-side));margin-left:calc((100% - 100vw)/2 + var(--fk-header-side));padding:0}
+.fk-header>.fk-header-bubble,.fk-header .fk-header-back,.fk-header .fkHelpBtn,.fk-header .fk-header-action,.fk-header .fk-header-field input{box-sizing:border-box;height:var(--fk-header-height);min-height:var(--fk-header-height);border:1px solid var(--line);border-radius:var(--fk-header-radius);background:var(--panel);color:var(--ink);font-family:var(--fk-font)}
+.fk-header .fk-header-back{display:inline-flex;align-items:center;justify-content:center;flex:0 0 var(--fk-header-back-width);width:var(--fk-header-back-width);min-width:var(--fk-header-back-width);padding:0;line-height:1;cursor:pointer}
+.fk-header .fk-header-back svg{display:block;flex:none;width:var(--fk-header-icon);height:var(--fk-header-icon);margin:0;pointer-events:none}
+.fk-header>.fk-header-bubble{display:flex;align-items:center;flex:1 1 0;min-width:0;padding:0 10px;font-size:17px;font-weight:800;overflow:hidden;white-space:nowrap}
+.fk-header>.fk-header-field{position:relative;display:flex;align-items:center;flex:1 1 0;min-width:0;height:var(--fk-header-height)}
+.fk-header .fk-header-field input{display:block;width:100%;min-width:0;margin:0;padding:0 40px 0 10px;font-size:16px;line-height:normal;font-weight:500}
+.fk-header .fk-header-field input::placeholder{font-size:17px;font-weight:800;color:var(--ink);opacity:1}
+.fk-header .fk-header-field svg{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;width:20px;height:20px;margin:0;pointer-events:none}
+.fk-header>.fk-header-help{display:flex;align-items:center;flex:0 0 auto;height:var(--fk-header-height)}
+.fk-header .fkHelpBtn{display:inline-flex;align-items:center;justify-content:center;flex:none;width:44px;min-width:44px;padding:0;line-height:1;cursor:pointer}
+.fk-header .fkHelpBtn svg{display:block;flex:none;width:var(--fk-header-icon);height:var(--fk-header-icon);margin:0;pointer-events:none}
+.fk-header .fk-header-action{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;padding:0 12px;font-size:15px;font-weight:800;background:var(--acc);border-color:var(--acc);color:var(--accink)}
+.fk-header button:active:not(:disabled){filter:brightness(.9)}
+.fk-header button:disabled{opacity:.45}
