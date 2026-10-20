@@ -1,79 +1,69 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FoundryKin</title>
-<link rel="stylesheet" href="fk-style.css?v=0.8.21">
+<link rel="stylesheet" href="fk-style.css?v=0.8.34">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;800&display=swap">
-<style>
-body{font-family:Montserrat,system-ui,-apple-system,"Segoe UI",sans-serif;font-weight:500}
-button,.btn,.btn.pri,h2,#top .t,.big{font-weight:800}
-.lbl,small,.pill,#msg{font-weight:400}
-.col{display:flex;flex-direction:column;gap:8px;margin:10px 0}.col>.btn{width:100%}
-#back svg{display:block;width:22px;height:22px}
-</style>
 </head>
 <body>
-<div id="top"><button class="btn" id="back" style="display:none" aria-label="Назад"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg></button><div class="t" id="title">FoundryKin</div><button class="btn pri" id="ok" style="display:none">Добавить</button></div>
+<div id="top"><button class="btn" id="back" hidden data-i18n-attr="aria-label:ui.back"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg></button><div class="t" id="title"></div><button class="btn pri" id="ok" hidden data-i18n="ui.add"></button></div>
 <div id="screens">
 <section class="screen on" id="s-home">
-<button class="btn pri big" data-go="create">Create</button>
-<button class="btn big" data-go="settings">Настройки</button>
+<button class="btn big" data-go="create" data-i18n="nav.create"></button>
+<button class="btn big" data-go="settings" data-i18n="nav.settings"></button>
 </section>
 <section class="screen" id="s-create">
-<h2>Текстур-паки</h2>
+<h2 data-i18n="packs.title"></h2>
 <div id="packList"></div>
-<h2>Новый пак</h2>
-<div class="col"><button class="btn pri" id="cGo">Создать пак</button><label class="btn" for="impF">Добавить Mcpack</label><input type="file" id="impF" accept=".mcpack,.zip,application/zip,application/octet-stream"></div>
+<h2 data-i18n="packs.new"></h2>
+<div class="col"><button class="btn pri" id="cGo" data-i18n="packs.create"></button><label class="btn" for="impF" data-i18n="packs.import"></label><input type="file" id="impF" accept=".mcpack,.zip,application/zip,application/octet-stream"></div>
 </section>
 <section class="screen" id="s-pack">
 <div id="texList"></div>
 </section>
 <section class="screen" id="s-edit">
-<p class="lbl">Название</p><input type="text" id="eName" autocapitalize="off" autocomplete="off" spellcheck="false">
-<p class="lbl">Автор</p><input type="text" id="eAuthor" autocomplete="off">
-<p class="lbl">Описание</p><input type="text" id="eDesc">
-<p class="lbl">Версия пака</p><input type="text" id="eVer" placeholder="1.0.0">
-<p class="lbl">Версия игры (min_engine_version)</p><input type="text" id="eGame" placeholder="1.21.0">
-<p class="lbl">Иконка пака (PNG)</p>
-<div class="row" style="align-items:center"><img class="ico" id="eIco" alt=""><label class="btn" for="eIcoF">Выбрать PNG</label><input type="file" id="eIcoF" accept="image/png,image/*"><button class="btn" id="eIcoX">Убрать</button></div>
-<div class="row"><button class="btn pri" id="eSave">Сохранить</button></div>
-<p class="lbl">manifest.json (предпросмотр)</p>
+<p class="lbl" data-i18n="form.name"></p><input type="text" id="eName" autocapitalize="off" autocomplete="off" spellcheck="false">
+<p class="lbl" data-i18n="form.author"></p><input type="text" id="eAuthor" autocomplete="off">
+<p class="lbl" data-i18n="form.desc"></p><input type="text" id="eDesc">
+<p class="lbl" data-i18n="form.version"></p><input type="text" id="eVer" placeholder="1.0.0">
+<p class="lbl" data-i18n="form.game"></p><input type="text" id="eGame" placeholder="1.21.0">
+<p class="lbl" data-i18n="form.icon"></p>
+<div class="row" style="align-items:center"><img class="ico" id="eIco" alt=""><label class="btn" for="eIcoF" data-i18n="form.pick_png"></label><input type="file" id="eIcoF" accept="image/png,image/*"><button class="btn" id="eIcoX" data-i18n="form.remove"></button></div>
+<div class="row"><button class="btn pri" id="eSave" data-i18n="form.save"></button></div>
+<p class="lbl" data-i18n="form.manifest"></p>
 <textarea id="eJson" readonly></textarea>
 </section>
-<section class="screen" id="s-add"><div id="addErr"></div><iframe id="editor" title="Редактор текстур"></iframe></section>
+<section class="screen" id="s-add"><div id="addErr"></div><iframe id="editor" data-i18n-attr="title:editor.title"></iframe></section>
 <section class="screen" id="s-settings">
-<h2>Тема</h2>
-<select id="sTheme"><option value="auto">Как в системе</option><option value="light">Светлая</option><option value="dark">Тёмная</option></select>
-<h2>Адрес редактора</h2>
-<p class="lbl">Файл со старым редактором. Если вкладка Find пустая, укажи здесь правильный адрес (например полный https://…/index.html).</p>
+<h2 data-i18n="settings.theme"></h2>
+<select id="sTheme"><option value="auto" data-i18n="theme.auto"></option><option value="light" data-i18n="theme.light"></option><option value="dark" data-i18n="theme.dark"></option></select>
+<h2 data-i18n="settings.language"></h2>
+<select id="sLang"><option value="auto" data-i18n="lang.auto"></option><option value="en" data-i18n="lang.en"></option><option value="ru" data-i18n="lang.ru"></option></select>
+<h2 data-i18n="settings.editor"></h2>
+<p class="lbl" data-i18n="settings.editor_hint"></p>
 <input type="text" id="sUrl" autocapitalize="off" autocomplete="off" spellcheck="false">
-<div class="row"><button class="btn" id="sUrlSave">Сохранить адрес</button></div>
-<h2>Данные</h2>
-<div class="row"><button class="btn" id="sExport">Скачать данные паков (.json)</button><button class="btn" id="sClear">Удалить все паки</button></div>
-<h2>Если что-то не работает</h2>
-<div class="row"><button class="btn" id="sDiag">Диагностика</button></div>
+<div class="row"><button class="btn" id="sUrlSave" data-i18n="settings.save_address"></button></div>
+<h2 data-i18n="settings.data"></h2>
+<div class="row"><button class="btn" id="sExport" data-i18n="settings.export_data"></button><button class="btn" id="sClear" data-i18n="settings.clear"></button></div>
+<h2 data-i18n="settings.trouble"></h2>
+<div class="row"><button class="btn" id="sDiag" data-i18n="settings.diag"></button></div>
 </section>
 <section class="screen" id="s-diag">
-<p class="lbl">Отчёт о состоянии приложения. Скопируй его и пришли, если что-то работает не так.</p>
+<p class="lbl" data-i18n="diag.hint"></p>
 <pre class="rep" id="dReport"></pre>
-<div class="row"><button class="btn pri" id="dCopy">Скопировать отчёт</button><button class="btn" id="dRefresh">Обновить</button></div>
+<div class="row"><button class="btn pri" id="dCopy" data-i18n="diag.copy"></button><button class="btn" id="dRefresh" data-i18n="diag.refresh"></button></div>
 </section>
 </div>
-<div class="bar" id="bar"><button class="btn pri" id="addBtn">Find</button></div>
-<div id="msg"></div>
-<script>window.FK_V='0.8.33';</script>
-<script src="fk-editor.js?v=0.7.8"></script>
-<script src="fk-grid.js?v=0.8.22"></script>
-<script src="fk-bg.js?v=0.8.22"></script>
-<script src="fk-help.js?v=0.8.31"></script>
-<script src="fk-tools.js?v=0.8.31"></script>
-<script src="fk-shell.js?v=0.8.30"></script>
-<script src="fk-ui.js?v=0.8.33"></script>
-<script src="fk-app.js?v=0.8.31"></script>
+<div class="bar" id="bar"><button class="btn find" id="addBtn"><span data-i18n="ui.find"></span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button></div>
+<div id="msg" role="status"></div>
+<script>window.FK_V='0.8.34';</script>
+<script src="fk-i18n.js?v=0.8.34"></script>
+<script src="fk-editor.js?v=0.8.34"></script>
+<script src="fk-app.js?v=0.8.34"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
 </html>
