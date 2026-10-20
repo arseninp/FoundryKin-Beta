@@ -215,22 +215,28 @@ function setupSlots(list,fm){
   slot=list[0].id;
   buildSlotUi();
 }
-function uiIcon(b,label,k,faces,n){
+function uiIcon(b,label,k){
  b.type='button';b.title=label;b.setAttribute('aria-label',label);
  var s='',p=SHAPES[k]&&SHAPES[k].parts;
- if(faces&&faces.length){
-  ['up','west','north','east','south','down'].forEach(function(f,i){s+='<rect x="'+(i===0||i===5?7:(i-1)*5)+'" y="'+(i===0?2:i===5?12:7)+'" width="4" height="4" fill="'+(faces.indexOf(f)>=0?'currentColor':'none')+'"/>'});
- }else if(faces){s='<rect x="3" y="3" width="18" height="18"/><path d="m3 17 6-6 4 4 4-6 4 8"/><text x="4" y="9" font-size="6" stroke="none" fill="currentColor">'+n+'</text>'}
- else if(p){
+ if(p){
   function v(x,y,z){return (12+(x-z)*9)+','+(12-y*12+(x+z)*4)}
   p.forEach(function(a){var l=a[3]-a[0]/2,r=l+a[0],t=a[4]+a[1]/2,d=t-a[1],f=a[5]+a[2]/2,h=f-a[2];s+='<path d="M'+v(l,t,f)+' '+v(r,t,f)+' '+v(r,t,h)+' '+v(l,t,h)+'Z M'+v(l,t,f)+' '+v(l,d,f)+' '+v(r,d,f)+' '+v(r,d,h)+' '+v(r,t,h)+' M'+v(r,t,f)+' '+v(r,d,f)+'"/>'});
  }else s=k==='door'?'<rect x="6" y="2" width="12" height="20"/><path d="M15 12h1"/>':k==='beacon'?'<rect x="3" y="3" width="18" height="18"/><rect x="7" y="7" width="10" height="10"/>':'<path d="M12 22V4m0 9L4 5m8 12 8-8"/>';
  b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">'+s+'</svg>';
 }
+function slotLabels(list){
+ var names=list.map(function(s){return String(s.id).split('/').pop().replace(/\.(png|tga)$/i,'').split('_')}),pre=0;
+ while(names.length>1&&names.every(function(a){return pre<a.length&&a[pre]===names[0][pre]}))pre++;
+ return list.map(function(s,i){
+  var parts=names[i].slice(pre),label=(parts.length?parts:names[i]).join(' '),keys=s.k||[];
+  if(keys.length>1)label=keys.map(function(k){return k.split('.').pop()}).join(' + ');
+  return label;
+ });
+}
 function buildSlotUi(){
-  var boxEl=$('#slots');boxEl.innerHTML='';
+  var boxEl=$('#slots'),labels=slotLabels(slots);boxEl.innerHTML='';
   slots.forEach(function(s,i){
-    var b=document.createElement('button');uiIcon(b,s.k?s.k.map(function(x){return tt(x)}).join(' + '):s.label,'',FACES.filter(function(f){return faceMap[f]===s.id}),i+1);b.dataset.id=s.id;
+    var b=document.createElement('button');b.type='button';b.textContent=labels[i];b.title=s.id;b.dataset.id=s.id;
     if(s.id===slot)b.className='on';
     b.onclick=function(){setSlot(s.id)};boxEl.appendChild(b);
   });
