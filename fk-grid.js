@@ -6,7 +6,7 @@ function T(k,p){return FK.t(k,p)}
 function $(s){return document.querySelector(s)}
 var PAGE=60,MAX=6,S256=256;
 var box=$('#fkGrid'),more=$('#fkMore'),qi=$('#q'),catLoad=$('#catLoad');
-var pv={},queue=[],active=0,imgCache={},lastPack=null,lastCat=null,lastSig='',prevMode='search',savedY=0;
+var pv={},queue=[],active=0,imgCache={},lastPack=null,lastCat=null,lastSig='',prevMode='search',savedY=0,clicked=false;
 var ids=[],shown=0,st3=null,mode3d=null,fail3=0,migrated=null,tmr=null;
 
 /* job queue: a few snapshots at a time */
@@ -243,17 +243,15 @@ function restoreScroll(y){
 qi.addEventListener('input',function(){clearTimeout(tmr);tmr=setTimeout(render,150)});
 box.addEventListener('click',function(e){
   var b=e.target.closest?e.target.closest('.fkc'):null;if(!b)return;
-  savedY=window.scrollY;
+  savedY=window.scrollY;clicked=true;
   A.grid().select(b.getAttribute('data-id'));
   A.setMode('edit');
-});
-$('#fkBack').addEventListener('click',function(){
-  try{var b=parent.document.getElementById('back');if(b)b.click()}catch(e){}
 });
 A.subscribe(function(s){
   var force=false,y=0;
   if(s.mode!==prevMode){
-    if(prevMode==='edit'){discardEdits();force=true;y=savedY}
+    if(s.mode==='edit'){if(!clicked)savedY=0;clicked=false}
+    else if(prevMode==='edit'){discardEdits();force=true;y=savedY}
     prevMode=s.mode;
   }
   catLoad.hidden=!(s.status==='failed'||s.status==='empty');
