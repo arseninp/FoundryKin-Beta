@@ -247,6 +247,10 @@ box.addEventListener('click',function(e){
   A.grid().select(b.getAttribute('data-id'));
   A.setMode('edit');
 });
+/* the shell hides its own header on the Find screen, so this button stands in for the shell Back */
+$('#fkBack').addEventListener('click',function(){
+  try{var b=parent.document.getElementById('back');if(b)b.click()}catch(e){}
+});
 A.subscribe(function(s){
   var force=false,y=0;
   if(s.mode!==prevMode){
