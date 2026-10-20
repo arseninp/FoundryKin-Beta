@@ -1,902 +1,119 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FoundryKin v0.6.4 — редактор текстур Bedrock</title>
+<title>FoundryKin editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;800&display=swap">
 <style>
-:root{--bg:#eceae4;--panel:#fbfaf7;--ink:#23262b;--mute:#6b6f76;--line:#d3d0c7;--acc:#3f7d4e;--accink:#fff;--stage:#cfd8dc}
-@media (prefers-color-scheme:dark){:root{--bg:#16181b;--panel:#202327;--ink:#e8e6e1;--mute:#9a9ea5;--line:#33373d;--acc:#6fbf80;--accink:#10210f;--stage:#0f1113}}
+:root{--bg:#e6e3dc;--panel:#d5d0ca;--ink:#2a2826;--mute:#7e7973;--line:#b2ada7;--acc:#718198;--accink:#fff;--find:#8aa7bd;--red:#a4757b;--stage:var(--panel)}
+:root[data-theme="dark"]{--bg:#262625;--panel:#383733;--ink:#e8e5df;--mute:#989590;--line:#51504e;--acc:#6d7791;--accink:#fff;--find:#6a8499;--red:#a47c7c}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#262625;--panel:#383733;--ink:#e8e5df;--mute:#989590;--line:#51504e;--acc:#6d7791;--accink:#fff;--find:#6a8499;--red:#a47c7c}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}
+[hidden]{display:none!important}
+html{-webkit-tap-highlight-color:transparent;font-family:Montserrat,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select,textarea{font-family:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.4;font-weight:500;padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}
 main{max-width:460px;margin:0 auto;padding:14px 14px 28px}
-h1{font:700 22px system-ui,-apple-system,"Segoe UI",sans-serif;margin:4px 0 12px}
-.stage{position:relative;background:var(--stage);border-radius:14px;overflow:hidden;aspect-ratio:1/1;touch-action:pan-y}
+body.fk-edit main{padding-top:76px}
+body.fk-search main{padding-left:12px;padding-right:12px}
+.stage{position:relative;background:var(--stage);border:1px solid var(--line);border-radius:14px;overflow:hidden;aspect-ratio:1/1;touch-action:pan-y}
 .stage canvas{display:block;width:100%;height:100%}
-.hint{position:absolute;left:10px;bottom:8px;font-size:12px;color:var(--mute);pointer-events:none}
 .row{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
 .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;flex-wrap:wrap}
 .seg button{flex:1}
-button{font:inherit;color:var(--ink);background:transparent;border:0;border-radius:8px;padding:9px 10px;min-height:40px;cursor:pointer}
-button.on{background:var(--acc);color:var(--accink);font-weight:600}
-button.ghost{background:var(--panel);border:1px solid var(--line)}
+#shapes{flex-wrap:nowrap;overflow-x:auto}
+#shapes button{flex:1 1 0;min-width:0;min-height:36px;padding:6px 2px;font-size:12px;font-weight:500}
+#shapes button svg{width:22px;height:22px}
+button{font:inherit;font-weight:800;color:var(--ink);background:transparent;border:0;border-radius:8px;padding:9px 10px;min-height:40px;cursor:pointer}
+button.on{background:var(--acc);color:var(--accink)}
+button.ghost,label.ghost{background:var(--panel);border:1px solid var(--line)}
 button:disabled{opacity:.4}
+button:active:not(:disabled),label.btn:active{filter:brightness(.9)}
 button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+button svg{display:block;width:22px;height:22px;margin:0 auto;pointer-events:none}
 .sec{margin-top:16px}
-.lbl{font-size:13px;color:var(--mute);margin:0 0 6px}
+.lbl{font-size:13px;font-weight:400;color:var(--mute);margin:0 0 6px}
 #ed{width:100%;aspect-ratio:1/1;display:block;image-rendering:pixelated;touch-action:none;border-radius:10px;border:1px solid var(--line);
 background:conic-gradient(#bbb 25%,#e6e6e6 0 50%,#bbb 0 75%,#e6e6e6 0) 0 0/24px 24px}
-.pal{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.sw{width:34px;height:34px;border-radius:8px;border:2px solid var(--line);padding:0;min-height:0}
-.sw.on{border-color:var(--ink)}
-input[type=color]{width:42px;height:34px;border:1px solid var(--line);border-radius:8px;background:none;padding:2px}
 input[type=text]{width:100%;min-height:40px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit}
-label.chk{display:flex;align-items:center;gap:8px;margin:10px 0}
 input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidden}
-.btn{display:inline-flex;align-items:center;border-radius:8px;padding:9px 10px;min-height:40px;cursor:pointer}
-.list{max-height:190px;overflow:auto;display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.list button{background:var(--panel);border:1px solid var(--line);padding:6px 9px;min-height:34px;font-size:13px}
-.list button.fam{border:2px solid var(--acc)}
-#info{margin-top:8px}
-#dbg{margin-top:6px}
-#msg{font-size:13px;color:var(--mute);min-height:18px}
+.btn{display:inline-flex;align-items:center;font-weight:800;border-radius:8px;padding:9px 10px;min-height:40px;cursor:pointer}
+#msg{font-size:13px;font-weight:400;color:var(--mute);margin:6px 0}#msg:empty{display:none}
+body.fk-search .fk-edit-part,body.fk-edit .fk-search-part{display:none!important}
+/* Find screen: floating bubbles. The bar itself is transparent; the gap around the bubbles belongs to the page, so cards scroll under them */
+#searchPart{margin-top:10px}
+.fkBar{position:sticky;top:calc(8px + env(safe-area-inset-top,0px));z-index:20;display:flex;gap:8px;align-items:center;background:transparent;padding:0;margin:0}.fkBar>button,.fkBar>span{flex:0 0 auto;display:flex;align-items:center;height:40px}
+.fkField{position:relative;flex:1 1 auto;min-width:0;height:40px}.fkField input{height:40px;padding-right:40px;font-size:16px}.fkField svg{position:absolute;right:11px;top:50%;width:20px;height:20px;margin-top:-10px;pointer-events:none}
+#q::placeholder{font-size:17px;font-weight:800;color:var(--ink);opacity:1}
+#fkBack,.fkHelpBtn{height:40px;min-height:40px;padding:0;background:var(--panel);border:1px solid var(--line)}
+#fkBack{width:48px;display:inline-flex;align-items:center;justify-content:center}
+.fkHelpBtn{width:44px}
+#fkSvc>.fkHelpBtn{width:auto;min-width:44px;padding:0 6px}
+#fkGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+.fkc{display:flex;flex-direction:column;gap:6px;padding:0;min-height:0;text-align:center}
+.fkp{aspect-ratio:1/1;border-radius:12px;background:var(--panel);border:2px solid var(--line);overflow:hidden}
+.fkp img{display:block;width:100%;height:100%;object-fit:contain}
+.fkn{font-size:12px;font-weight:800;line-height:1.25;border-radius:8px;background:var(--panel);border:2px solid var(--line);padding:3px 6px;overflow:hidden;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.fkc.fk-edited .fkp,.fkc.fk-edited .fkn{border-color:var(--red)}
+#fkEmpty{grid-column:1/-1;color:var(--mute);font-size:13px;font-weight:400;padding:12px 4px}
+#fkMore{height:1px}
+/* tools panel */
+.fkTrigOn{position:relative;z-index:101}
+#toolsPanel{margin-top:10px}
+#fkTop{display:flex;gap:6px;margin:8px 0}#fkTop button{flex:1 1 0;min-width:0;min-height:40px;padding:4px 0;background:var(--panel);border:1px solid var(--line)}#fkTop .fkGap{margin-left:8px}
+#fkColors{display:flex;gap:6px;align-items:center;margin:8px 0}#fkPalBtn{flex:0 0 auto;width:44px;height:40px;min-height:0;padding:0;background:var(--panel);border:1px solid var(--line)}
+#fkSwatches{display:flex;gap:6px;overflow-x:auto;flex:1 1 auto;min-width:0;min-height:38px;padding:2px 0}
+.fkSw{flex:0 0 auto;width:34px;height:34px;min-height:0;padding:0;border-radius:8px;border:2px solid var(--line);-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}.fkSw.on{border-color:var(--ink)}
+.fkMenu{position:fixed;z-index:120;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.4);padding:4px;display:none}
+.fkMenu button{display:block;width:100%;min-height:40px;padding:8px 16px;text-align:left;white-space:nowrap}
+#tools{display:flex;flex-wrap:nowrap;gap:6px;margin:8px 0}#tools .seg{flex:1 1 auto;min-width:0}#tools .seg button{flex:1 1 0;min-width:0;padding:8px 0}
+.fkPick{flex:0 0 auto;width:48px;margin-right:8px;padding:0;background:var(--panel);border:1px solid var(--line)}
+#fkSvc{display:flex;flex-wrap:nowrap;gap:6px;margin:8px 0}#fkSvc>button,#fkSvc>label{flex:1 1 auto;min-width:0;min-height:40px;padding:9px 2px;font-size:12px;white-space:nowrap;justify-content:center}#fkSvc>.fkIconBtn{flex:0 0 auto;min-width:44px;padding:0 6px}
+.fkBack{position:fixed;left:0;top:0;right:0;bottom:0;z-index:100;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center}.fkBack.on{display:flex}
+.fkSheet{width:100%;max-width:460px;max-height:90vh;overflow:auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-bottom:0;border-radius:16px 16px 0 0;padding:12px 14px 18px}
+.fkHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.fkOk{min-width:44px;font-size:20px;color:var(--acc);border:1px solid var(--line);background:transparent}
+.fkSvW{position:relative;border-radius:10px;box-shadow:0 0 0 1px var(--line)}#fkSV{display:block;width:100%;height:170px;border-radius:10px;touch-action:none}
+.fkMark{position:absolute;width:20px;height:20px;box-sizing:border-box;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #000,inset 0 0 0 1px #000;transform:translate(-50%,-50%);pointer-events:none}
+.fkRow{display:flex;gap:10px;align-items:center;margin:12px 0}.fkPrev{flex:0 0 44px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line)}.fkSl{flex:1 1 auto;display:flex;flex-direction:column;gap:8px}
+.fkR{-webkit-appearance:none;appearance:none;width:100%;height:24px;margin:0;padding:0;background:transparent;outline:none}
+.fkR::-webkit-slider-runnable-track{height:16px;border-radius:8px;background:var(--fkT)}.fkR::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;margin-top:-4px;box-sizing:border-box;border-radius:50%;background:#fff;border:2px solid #444}
+.fkR::-moz-range-track{height:16px;border-radius:8px;background:var(--fkT)}.fkR::-moz-range-thumb{width:24px;height:24px;box-sizing:border-box;border-radius:50%;background:#fff;border:2px solid #444}
+.fkFld{display:flex;gap:8px}.fkFld label{flex:1 1 0;display:flex;flex-direction:column;align-items:center;font-size:12px;font-weight:400;color:var(--mute);gap:4px}
+.fkFld input{width:100%;min-height:36px;text-align:center;padding:4px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+#fkHex{width:100%;min-height:40px;margin-top:10px;text-align:center;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
 </style>
 </head>
-<body>
+<body class="fk-search">
 <main>
-<h1>FoundryKin v0.6.4</h1>
 
-<div class="sec" style="margin-top:0">
-<p class="lbl">Блок из игры (ищи по-английски: oak, door, trapdoor). В списке только родительские блоки, плиты, ступени, заборы и т.п. выбираются под превью. Точка: есть правки.</p>
-<input type="text" id="q" placeholder="поиск блока" autocapitalize="off" autocomplete="off" spellcheck="false">
-<div class="list" id="list"></div>
-<p class="lbl" id="info">Каталог блоков загружается… Пока работает свободный режим.</p>
-<div class="row"><label class="ghost btn" for="catfile">Загрузить blocks.json</label><input type="file" id="catfile" accept=".json,application/json,text/plain" multiple></div>
+<section class="sec fk-search-part" id="searchPart">
+<div class="fkBar">
+<button type="button" id="fkBack" data-i18n-attr="title:ui.back aria-label:ui.back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg></button>
+<div class="fkField"><input type="text" id="q" data-i18n-attr="placeholder:search.placeholder aria-label:search.placeholder" autocapitalize="off" autocomplete="off" spellcheck="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+<span id="fkHelpSlot"></span>
 </div>
+<div class="row" id="catLoad" hidden><label class="ghost btn" for="catfile" data-i18n="cat.load"></label><input type="file" id="catfile" accept=".json,application/json,text/plain" multiple></div>
+<div id="fkGrid"></div>
+<div id="fkMore"></div>
+</section>
 
-<div class="stage" id="stage"><canvas id="fb" width="300" height="300" style="display:none"></canvas><span class="hint" id="hint">тяни, чтобы покрутить</span></div>
-<p class="lbl" id="dbg">Запуск…</p>
-<div class="row"><button class="ghost" id="fbBtn">Переключить 2D / 3D</button></div>
+<div class="stage fk-edit-part" id="stage"></div>
+<div class="row fk-edit-part" id="shapesRow"><div class="seg" style="width:100%" id="shapes"></div></div>
+<div class="seg fk-edit-part" id="slots"></div>
+<div class="sec fk-edit-part"><canvas id="ed"></canvas></div>
+<div class="fk-edit-part" id="toolsPanel"></div>
+<p id="msg" class="fk-edit-part"></p>
 
-<div class="row" id="shapesRow"><div class="seg" style="width:100%" id="shapes"></div></div>
-
-<label class="chk" id="sameLabel"><input type="checkbox" id="same" checked> Одна текстура на все грани</label>
-<div class="seg" id="slots"></div>
-
-<div class="sec"><canvas id="ed"></canvas></div>
-
-<div class="sec">
-<div class="row" id="tools">
-<div class="seg" style="flex:1"><button data-t="pen" class="on">Кисть</button><button data-t="erase">Ластик</button><button data-t="fill">Заливка</button><button data-t="pick">Пипетка</button></div>
-</div>
-<div class="row">
-<div class="seg"><button data-r="16" class="on">16</button><button data-r="32">32</button></div>
-<button class="ghost" id="undo">↶ Отмена</button><button class="ghost" id="redo">↷ Повтор</button>
-</div>
-<div class="pal" id="pal"></div>
-<div class="row">
-<label class="ghost btn" for="file">Загрузить PNG</label>
-<button class="ghost" id="clr">Очистить грань</button>
-<input type="file" id="file" accept="image/png,image/*">
-</div>
-<p class="lbl">Загруженный PNG ляжет в выбранную текстуру. Прозрачные пиксели остаются прозрачными.</p>
-</div>
-
-<div class="sec">
-<p class="lbl">Имя блока (в свободном режиме вводится вручную, для блока из игры подставляется само)</p>
-<input type="text" id="name" value="my_block" autocapitalize="off" autocomplete="off" spellcheck="false">
-<div class="row">
-<button class="ghost" id="expPng">Скачать PNG</button>
-<button class="ghost" id="expPack">Скачать .mcpack</button>
-</div>
-<p id="msg"></p>
-<p class="lbl">Текстуры хранятся по файлам игры: если один файл используется в нескольких блоках (например, доски и книжная полка), правка видна везде. В один .mcpack попадают все файлы, которые ты правил. Проект сохраняется автоматически в память браузера на этом устройстве. Если очистить данные браузера, он пропадёт, поэтому скачивай результат.</p>
-</div>
 </main>
-
+<script src="fk-i18n.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script>
-(function(){
-var VER='v0.6.4';
-var res=16, shape='cube', tool='pen', color='#c0392b';
-var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={}, applyGen=0, hiddenMat=null;
-var files={}, cur='custom', dirty={}, customName='my_block', customSame=true, catalog=null, existing=null, pendingCur=null, shapeKeys=['cube'];
-var FACES=['up','down','north','south','east','west'];
-var FN={up:'верх',down:'низ',north:'север',south:'юг',east:'восток',west:'запад'};
-var SHAPES={
-  cube:{label:'Куб',parts:[[1,1,1,0,0,0]],shift:0},
-  slab:{label:'Плита',parts:[[1,.5,1,0,-.25,0]],shift:.25},
-  stairs:{label:'Ступени',parts:[[1,.5,1,0,-.25,0],[1,.5,.5,0,.25,-.25]],shift:0},
-  wall:{label:'Стена',parts:[[.5,1,.5,0,0,0],[1,.875,.25,0,-.0625,0]],shift:0},
-  fence:{label:'Забор',parts:[[.25,1,.25,0,0,0],[1,.1875,.125,0,-.03125,0],[1,.1875,.125,0,.34375,0]],shift:0},
-  gate:{label:'Калитка',parts:[[.125,.6875,.125,-.4375,.15625,0],[.125,.6875,.125,.4375,.15625,0],[.75,.1875,.125,0,-.03125,0],[.75,.1875,.125,0,.34375,0]],shift:0},
-  button:{label:'Кнопка',parts:[[.375,.125,.25,0,-.4375,0]],shift:.4},
-  plate:{label:'Нажимная плита',parts:[[.875,.0625,.875,0,-.46875,0]],shift:.45},
-  trapdoor:{label:'Люк',parts:[[1,.1875,1,0,-.40625,0]],shift:.4},
-  trapdooropen:{label:'Люк (открыт)',parts:[[1,1,.1875,0,0,-.40625]],shift:0},
-  door:{label:'Дверь'},
-  dooropen:{label:'Дверь (открыта)'},
-  plant:{label:'Растение'},
-  azalea:{label:'Азалия'},
-  beacon:{label:'Маяк'}
-};
-var ALL_SHAPES=['cube','slab','stairs','wall','fence','gate','button','plate'];
-var $=function(s){return document.querySelector(s)};
-var ed=$('#ed'), ectx=ed.getContext('2d');
-
-var errs=[];
-function showErr(t){errs.push(t);if(errs.length>3)errs.shift();$('#dbg').textContent=VER+' ошибка: '+errs.join(' | ')}
-window.addEventListener('error',function(e){showErr((e.message||'ошибка')+(e.lineno?' (стр. '+e.lineno+')':''))});
-window.addEventListener('unhandledrejection',function(e){showErr('promise: '+((e.reason&&e.reason.message)||e.reason))});
-
-function say(t){$('#msg').textContent=t||''}
-function clamp(v){return Math.max(0,Math.min(255,Math.round(v)))}
-function rnd(x,y,s){var h=Math.sin(x*127.1+y*311.7+s*74.7)*43758.5453;return h-Math.floor(h)}
-function placeholder(g,r){
-  for(var y=0;y<r;y++)for(var x=0;x<r;x++){var v=118+Math.round(rnd(Math.floor(x*16/r),Math.floor(y*16/r),5)*50);g.fillStyle='rgb('+v+','+v+','+v+')';g.fillRect(x,y,1,1)}
-}
-function fillNoise(c,base,s,grass){
-  var n=c.width,g=c.getContext('2d');g.clearRect(0,0,n,n);
-  for(var y=0;y<n;y++)for(var x=0;x<n;x++){
-    var col=base;
-    if(grass&&y<Math.round(n*0.2*(0.8+0.5*rnd(x*16/n|0,0,s))))col=grass;
-    var v=(rnd(Math.floor(x*16/n),Math.floor(y*16/n),s)-.5)*34;
-    g.fillStyle='rgb('+clamp(col[0]+v)+','+clamp(col[1]+v)+','+clamp(col[2]+v)+')';g.fillRect(x,y,1,1);
-  }
-}
-function starter(){
-  var G=[96,160,64],D=[134,96,67];
-  if(cv.side)fillNoise(cv.side,D,2,G);
-  if(cv.top)fillNoise(cv.top,G,1);
-  if(cv.bottom)fillNoise(cv.bottom,D,3);
-}
-function ctxOf(k){return cv[k].getContext('2d')}
-function fk(id){return cur==='custom'?'custom/'+id:id}
-
-function shapeOfId(id){
-  if(/_trapdoor$/.test(id))return 'trapdoor';
-  return 'cube';
-}
-function isDoorBlock(m){return !!(catalog&&catalog.sp&&catalog.sp[m]&&catalog.sp[m].kind==='door')}
-function modelOf(m){
-  if(m==='beacon')return 'beacon';
-  if(m==='azalea'||m==='flowering_azalea')return 'azalea';
-  return (catalog&&catalog.p&&catalog.p[m])?'plant':null;
-}
-function shapeKeysFor(m,grp){
-  if(isDoorBlock(m))return ['door','dooropen'];
-  var mo=modelOf(m);if(mo)return (mo==='beacon'||mo==='azalea')?[mo]:[mo,'cube'];
-  if(/_trapdoor$/.test(m))return ['trapdoor','trapdooropen'];
-  var ks=['cube'],f=catalog.forms&&catalog.forms[m];
-  if(f)Object.keys(f).forEach(function(k){if(ks.indexOf(k)<0)ks.push(k)});
-  ks.sort(function(a,b){return ALL_SHAPES.indexOf(a)-ALL_SHAPES.indexOf(b)});
-  return ks;
-}
-
-/* ---------- 3D (WebGL) ---------- */
-var stage=$('#stage'),W=stage.clientWidth||360;
-var gl=(typeof THREE!=='undefined'),renderer=null,scene=null,cam=null,group=null,edgeMat=null,frames=0,fbOn=false;
-if(!gl)showErr('библиотека three.js не загрузилась');
-if(gl){
-  try{
-    renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
-    renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(W,W);stage.insertBefore(renderer.domElement,stage.firstChild);
-    scene=new THREE.Scene();cam=new THREE.PerspectiveCamera(35,1,.1,50);cam.position.set(0,0,4.4);cam.lookAt(0,0,0);
-    scene.add(new THREE.AmbientLight(0xffffff,.75));var dl=new THREE.DirectionalLight(0xffffff,.55);dl.position.set(2,4,3);scene.add(dl);
-    edgeMat=new THREE.LineBasicMaterial({color:0x9aa0a6});
-    hiddenMat=new THREE.MeshBasicMaterial({visible:false});
-    group=new THREE.Group();group.rotation.set(.45,-.7,0);scene.add(group);
-  }catch(err){gl=false;renderer=null;showErr('WebGL недоступен: '+err.message)}
-}
-function texBuf(id){
-  var n=res,d=ctxOf(id).getImageData(0,0,n,n).data,buf=new Uint8Array(n*n*4),semi=false;
-  for(var y=0;y<n;y++){var s=y*n*4,t=(n-1-y)*n*4;for(var x=0;x<n*4;x++){var v=d[s+x];buf[t+x]=v;if((x&3)===3&&v>8&&v<248)semi=true}}
-  return {buf:buf,semi:semi};
-}
-function makeTex(id){
-  if(!gl)return null;
-  var r=texBuf(id),n=res;
-  var tx=new THREE.DataTexture(r.buf,n,n,THREE.RGBAFormat);
-  tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;tx.needsUpdate=true;tx.userData={semi:r.semi};return tx;
-}
-function refreshDoor(){
-  if(!gl||!mats.__door)return;
-  if(shape!=='door'&&shape!=='dooropen')return;
-  var L=faceMap.down,U=faceMap.north;
-  if(!cv[L]||!cv[U])return;
-  var n=res,a=texBuf(L),b=texBuf(U),buf=new Uint8Array(n*n*8);
-  buf.set(a.buf,0);buf.set(b.buf,n*n*4);
-  if(tex.__door)tex.__door.dispose();
-  var tx=new THREE.DataTexture(buf,n,2*n,THREE.RGBAFormat);
-  tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;tx.needsUpdate=true;
-  tex.__door=tx;mats.__door.map=tx;mats.__door.depthWrite=!(a.semi||b.semi);mats.__door.needsUpdate=true;
-}
-function refreshTex(id){
-  if(!gl||!cv[id]||!mats[id])return;
-  if(tex[id])tex[id].dispose();
-  tex[id]=makeTex(id);mats[id].map=tex[id];mats[id].depthWrite=!tex[id].userData.semi;mats[id].needsUpdate=true;
-  refreshDoor();
-}
-function rebuildTextures(){slots.forEach(function(s){refreshTex(s.id)});refreshDoor()}
-function box(w,h,d,x,y,z,ids,ys,noEdge,vs){
-  var g=new THREE.BoxGeometry(w,h,d),p=g.attributes.position,n=g.attributes.normal,uv=g.attributes.uv;
-  ys=ys||0;vs=vs||1;
-  for(var i=0;i<p.count;i++){
-    var X=p.getX(i)+x,Y=p.getY(i)+y,Z=p.getZ(i)+z,nx=n.getX(i),ny=n.getY(i),nz=n.getZ(i),u,v;
-    if(Math.abs(nx)>.5){u=nx>0?.5-Z:Z+.5;v=(Y+.5-ys)*vs}
-    else if(Math.abs(nz)>.5){u=nz>0?X+.5:.5-X;v=(Y+.5-ys)*vs}
-    else{u=X+.5;v=ny>0?.5-Z:Z+.5}
-    uv.setXY(i,u,v);
-  }
-  var f=faceMap;
-  ids=ids||[f.east,f.west,f.up,f.down,f.south,f.north];
-  var m=new THREE.Mesh(g,ids.map(function(k){return k===null?hiddenMat:mats[k]}));
-  if(!noEdge)m.add(new THREE.LineSegments(new THREE.EdgesGeometry(g),edgeMat));
-  m.position.set(x,y,z);return m;
-}
-function plane(id,h,y,ry){
-  var m=new THREE.Mesh(new THREE.PlaneGeometry(Math.SQRT2,h),mats[id]);
-  m.position.y=y;m.rotation.y=ry;return m;
-}
-function buildPlant(){
-  var st=shape==='azalea'?faceMap.plant:faceMap.up;
-  group.add(plane(st,1,0,Math.PI/4));group.add(plane(st,1,0,-Math.PI/4));
-  if(shape==='azalea'){var t=faceMap.up,s=faceMap.north;group.add(box(1,1,1,0,0,0,[s,s,t,null,s,s]))}
-}
-function buildBeacon(){
-  var f=faceMap,g=f.east,b=f.down,c=f.up;
-  group.add(box(.75,.1875,.75,0,-.40625,0,[b,b,b,b,b,b]));
-  group.add(box(.625,.625,.625,0,0,0,[c,c,c,c,c,c]));
-  group.add(box(1,1,1,0,0,0,[g,g,g,g,g,g]));
-}
-function buildDoor(open){
-  var D='__door',d6=[D,D,D,D,D,D];
-  refreshDoor();
-  if(!open)group.add(box(1,2,.1875,0,0,-.40625,d6,-.5,false,.5));
-  else group.add(box(.1875,2,1,-.40625,0,0,d6,-.5,false,.5));
-}
-function build(){
-  if(gl){
-    while(group.children.length)group.remove(group.children[0]);
-    if(shape==='plant'||shape==='azalea')buildPlant();
-    else if(shape==='beacon')buildBeacon();
-    else if(shape==='door'||shape==='dooropen')buildDoor(shape==='dooropen');
-    else{
-      var d=SHAPES[shape]||SHAPES.cube;
-      d.parts.forEach(function(a){group.add(box.apply(null,a))});
-      if(d.shift)group.children.forEach(function(m){m.position.y+=d.shift});
-    }
-  }
-  drawFb();
-}
-var drag=null,idle=true,lastT=0;
-stage.addEventListener('pointerdown',function(e){if(!gl||fbOn)return;drag={x:e.clientX,y:e.clientY};idle=false;stage.setPointerCapture(e.pointerId)});
-stage.addEventListener('pointermove',function(e){if(!drag)return;group.rotation.y+=(e.clientX-drag.x)*.01;group.rotation.x=Math.max(-1.4,Math.min(1.4,group.rotation.x+(e.clientY-drag.y)*.01));drag={x:e.clientX,y:e.clientY}});
-function endDrag(){drag=null;setTimeout(function(){if(!drag)idle=true},2500)}
-stage.addEventListener('pointerup',endDrag);stage.addEventListener('pointercancel',endDrag);
-var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-function loop(t){
-  requestAnimationFrame(loop);
-  if(!gl||fbOn)return;
-  if(!isFinite(group.rotation.x)||!isFinite(group.rotation.y))group.rotation.set(.45,-.7,0);
-  if(idle&&!reduce&&isFinite(t))group.rotation.y+=Math.min(100,(t-lastT))*.0004;
-  if(isFinite(t))lastT=t;
-  try{renderer.render(scene,cam);frames++}catch(err){showErr('рендер: '+err.message);setFb(true)}
-}
-addEventListener('resize',function(){if(!gl)return;var w=stage.clientWidth;if(w)renderer.setSize(w,w)});
-
-/* ---------- запасной 2D-вид ---------- */
-function setFb(on){
-  fbOn=on;$('#fb').style.display=on?'block':'none';
-  if(renderer)renderer.domElement.style.display=on?'none':'block';
-  $('#hint').textContent=on?'упрощённый 2D-вид':'тяни, чтобы покрутить';
-  if(on)drawFb();
-}
-$('#fbBtn').onclick=function(){if(!gl){say('3D недоступно на этом устройстве.');return}setFb(!fbOn)};
-function drawFb(){
-  if(!fbOn||!slots.length)return;
-  var c=$('#fb'),g=c.getContext('2d');
-  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,300,300);g.imageSmoothingEnabled=false;
-  var isDoor=(shape==='door'||shape==='dooropen');
-  var s=isDoor?95:140,a=s*.866,b=s*.5,T0={x:150,y:isDoor?12+s:12},R=res,F=faceMap;
-  function im(k){return cv[F[k]]}
-  function P(x,y,z){return {x:T0.x+x*a-y*a,y:T0.y+x*b+y*b+(1-z)*s}}
-  function face(img,sx,sy,sw,sh,o,vx,vy,shade){
-    g.save();g.setTransform(vx.x/sw,vx.y/sw,vy.x/sh,vy.y/sh,o.x,o.y);
-    g.drawImage(img,sx,sy,sw,sh,0,0,sw,sh);
-    if(shade){g.fillStyle='rgba(0,0,0,'+shade+')';g.fillRect(0,0,sw,sh)}
-    g.restore();
-  }
-  function fbBox(x0,x1,y0,y1,z0,z1,I,zs0,zs1){
-    I=I||{left:im('south'),right:im('east'),top:im('up')};
-    if(!I.left||!I.right||!I.top)return;
-    if(zs0===undefined){zs0=z0;zs1=z1}
-    face(I.left,x0*R,(1-zs1)*R,(x1-x0)*R,(zs1-zs0)*R,P(x0,y1,z1),{x:(x1-x0)*a,y:(x1-x0)*b},{x:0,y:(z1-z0)*s},.2);
-    face(I.right,(1-y1)*R,(1-zs1)*R,(y1-y0)*R,(zs1-zs0)*R,P(x1,y1,z1),{x:(y1-y0)*a,y:-(y1-y0)*b},{x:0,y:(z1-z0)*s},.35);
-    face(I.top,x0*R,y0*R,(x1-x0)*R,(y1-y0)*R,P(x0,y0,z1),{x:(x1-x0)*a,y:(x1-x0)*b},{x:-(y1-y0)*a,y:(y1-y0)*b},0);
-  }
-  function fbPlane(img){if(img)face(img,0,0,R,R,P(0,1,1),{x:2*a,y:0},{x:0,y:s},0)}
-  if(shape==='plant')fbPlane(im('up'));
-  else if(shape==='azalea'){fbPlane(im('plant'));fbBox(0,1,0,1,0,1,{left:im('north'),right:im('north'),top:im('up')});fbPlane(im('plant'))}
-  else if(shape==='beacon'){
-    var bd=im('down'),cr=im('up'),sh2=im('east');
-    fbBox(.125,.875,.125,.875,0,.1875,{left:bd,right:bd,top:bd});
-    fbBox(.1875,.8125,.1875,.8125,.1875,.8125,{left:cr,right:cr,top:cr});
-    fbBox(0,1,0,1,0,1,{left:sh2,right:sh2,top:sh2});
-  }
-  else if(isDoor){
-    var L=im('down'),U=im('north');
-    if(shape==='door'){
-      fbBox(0,1,0,.1875,0,1,{left:L,right:L,top:L},0,1);
-      fbBox(0,1,0,.1875,1,2,{left:U,right:U,top:U},0,1);
-    }else{
-      fbBox(0,.1875,0,1,0,1,{left:L,right:L,top:L},0,1);
-      fbBox(0,.1875,0,1,1,2,{left:U,right:U,top:U},0,1);
-    }
-  }
-  else{
-    var d=SHAPES[shape]||SHAPES.cube,sh=d.shift||0;
-    var list=d.parts.map(function(p){return [p[3]-p[0]/2+.5,p[3]+p[0]/2+.5,p[5]-p[2]/2+.5,p[5]+p[2]/2+.5,p[4]-p[1]/2+.5+sh,p[4]+p[1]/2+.5+sh]});
-    list.sort(function(A,B){return (A[0]+A[2]+A[4])-(B[0]+B[2]+B[4])});
-    list.forEach(function(q){fbBox(q[0],q[1],q[2],q[3],q[4],q[5])});
-  }
-}
-
-/* ---------- слоты (текстуры блока) ---------- */
-function slotsOf(p){
-  var order=[],map={};
-  FACES.forEach(function(f,i){var path=p[i];if(!map[path]){map[path]=[];order.push(path)}map[path].push(f)});
-  var list=order.map(function(path){
-    var fs=map[path],sides=['north','south','east','west'].filter(function(x){return fs.indexOf(x)>=0}),names=[];
-    var hasUp=fs.indexOf('up')>=0,hasDown=fs.indexOf('down')>=0;
-    if(hasUp&&hasDown&&sides.length===4)return {id:path,label:'все грани'};
-    if(hasUp)names.push('верх');
-    if(hasDown)names.push('низ');
-    if(sides.length===4)names.push('бок');else sides.forEach(function(s){names.push(FN[s])});
-    return {id:path,label:names.join(' + ')};
-  });
-  var fm={};FACES.forEach(function(f,i){fm[f]=p[i]});
-  return {list:list,fm:fm};
-}
-function slotsFor(m){
-  if(catalog.sp&&catalog.sp[m])return {list:catalog.sp[m].list,fm:catalog.sp[m].fm};
-  return slotsOf(catalog.b[m]);
-}
-function pathsFor(m){
-  if(catalog.sp&&catalog.sp[m])return catalog.sp[m].list.map(function(s){return s.id});
-  var o=[];catalog.b[m].forEach(function(x){if(o.indexOf(x)<0)o.push(x)});return o;
-}
-function customSlots(){return customSame?[{id:'side',label:'все грани'}]:[{id:'top',label:'верх'},{id:'side',label:'бок'},{id:'bottom',label:'низ'}]}
-function customFaceMap(){return customSame?{up:'side',down:'side',north:'side',south:'side',east:'side',west:'side'}:{up:'top',down:'bottom',north:'side',south:'side',east:'side',west:'side'}}
-function setupSlots(list,fm){
-  applyGen++;
-  Object.keys(tex).forEach(function(k){if(tex[k])tex[k].dispose()});
-  Object.keys(mats).forEach(function(k){if(mats[k])mats[k].dispose()});
-  tex={};mats={};cv={};undoS={};redoS={};ph={};
-  slots=list;faceMap=fm;
-  var dbl=(cur!=='custom')&&(/leaves/.test(cur)||modelOf(cur)==='plant'||modelOf(cur)==='azalea');
-  list.forEach(function(s){
-    cv[s.id]=document.createElement('canvas');cv[s.id].width=cv[s.id].height=res;
-    undoS[s.id]=[];redoS[s.id]=[];
-    if(gl)mats[s.id]=new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:dbl?THREE.DoubleSide:THREE.FrontSide});
-  });
-  if(gl)mats.__door=new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:THREE.FrontSide});
-  slot=list[0].id;
-  buildSlotUi();
-}
-function buildSlotUi(){
-  var boxEl=$('#slots');boxEl.innerHTML='';
-  slots.forEach(function(s){
-    var b=document.createElement('button');b.textContent=s.label;b.dataset.id=s.id;
-    if(s.id===slot)b.className='on';
-    b.onclick=function(){setSlot(s.id)};boxEl.appendChild(b);
-  });
-  boxEl.style.display=slots.length>1?'flex':'none';
-}
-function setSlot(id){
-  if(!cv[id])return;slot=id;
-  $('#slots').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.id===id)});
-  drawEd();
-}
-
-/* ---------- история ---------- */
-function snap(k){return ctxOf(k).getImageData(0,0,res,res)}
-function pushUndo(){var s=undoS[slot];s.push(snap(slot));if(s.length>60)s.shift();redoS[slot]=[];updHist()}
-function doUndo(){var s=undoS[slot];if(!s||!s.length)return;redoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
-function doRedo(){var s=redoS[slot];if(!s||!s.length)return;undoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
-function updHist(){$('#undo').disabled=!(undoS[slot]&&undoS[slot].length);$('#redo').disabled=!(redoS[slot]&&redoS[slot].length)}
-function resetHist(){slots.forEach(function(s){undoS[s.id]=[];redoS[s.id]=[]});updHist()}
-
-/* ---------- редактор ---------- */
-function drawEd(){ed.width=ed.height=res;ectx.clearRect(0,0,res,res);if(cv[slot])ectx.drawImage(cv[slot],0,0);updHist();drawFb()}
-function touched(){
-  var k=fk(slot),fresh=!dirty[k];
-  dirty[k]=true;delete ph[slot];
-  refreshTex(slot);drawEd();scheduleSave();
-  if(fresh)renderList();
-}
-function cell(e){
-  var r=ed.getBoundingClientRect();
-  return {x:Math.floor((e.clientX-r.left)/r.width*res),y:Math.floor((e.clientY-r.top)/r.height*res)};
-}
-function inb(p){return p.x>=0&&p.y>=0&&p.x<res&&p.y<res}
-function dot(g,x,y){if(x<0||y<0||x>=res||y>=res)return;if(tool==='erase')g.clearRect(x,y,1,1);else{g.fillStyle=color;g.fillRect(x,y,1,1)}}
-function line(g,a,b){
-  var x0=a.x,y0=a.y,x1=b.x,y1=b.y,dx=Math.abs(x1-x0),dy=-Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1,err=dx+dy;
-  for(var n=0;n<512;n++){dot(g,x0,y0);if(x0===x1&&y0===y1)break;var e2=2*err;if(e2>=dy){err+=dy;x0+=sx}if(e2<=dx){err+=dx;y0+=sy}}
-}
-function hexRgba(h){var n=parseInt(h.slice(1),16);return [n>>16&255,n>>8&255,n&255,255]}
-function floodFill(p){
-  var g=ctxOf(slot),img=g.getImageData(0,0,res,res),d=img.data,t=hexRgba(color);
-  function at(x,y){return (y*res+x)*4}
-  var i0=at(p.x,p.y),s=[d[i0],d[i0+1],d[i0+2],d[i0+3]];
-  if(s[0]===t[0]&&s[1]===t[1]&&s[2]===t[2]&&s[3]===t[3])return;
-  var st=[[p.x,p.y]];
-  while(st.length){
-    var q=st.pop(),x=q[0],y=q[1];if(x<0||y<0||x>=res||y>=res)continue;
-    var i=at(x,y);if(d[i]!==s[0]||d[i+1]!==s[1]||d[i+2]!==s[2]||d[i+3]!==s[3])continue;
-    d[i]=t[0];d[i+1]=t[1];d[i+2]=t[2];d[i+3]=t[3];
-    st.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
-  }
-  g.putImageData(img,0,0);
-}
-function pickAt(p){
-  var d=ctxOf(slot).getImageData(p.x,p.y,1,1).data;if(!d[3])return;
-  var h='#'+[d[0],d[1],d[2]].map(function(v){return ('0'+v.toString(16)).slice(-2)}).join('');
-  pickColor(h,false);
-}
-var down=false,last=null;
-ed.addEventListener('pointerdown',function(e){
-  var p=cell(e);if(!inb(p)||!cv[slot])return;
-  e.preventDefault();ed.setPointerCapture(e.pointerId);
-  if(tool==='pick'){pickAt(p);return}
-  pushUndo();
-  if(tool==='fill'){floodFill(p);touched();return}
-  down=true;last=p;dot(ctxOf(slot),p.x,p.y);touched();
-});
-ed.addEventListener('pointermove',function(e){
-  if(!down||!cv[slot])return;var p=cell(e);line(ctxOf(slot),last,p);last=p;touched();
-});
-function up(){down=false;last=null}
-ed.addEventListener('pointerup',up);ed.addEventListener('pointercancel',up);
-
-function seg(sel,attr,fn){$(sel).addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.disabled)return;
-  $(sel).querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});fn(b.dataset[attr])})}
-seg('#shapes','s',function(v){shape=v;build();scheduleSave()});
-seg('#tools','t',function(v){tool=v});
-function setShapeUi(){$('#shapes').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.s===shape)})}
-function updShapeUi(list){
-  shapeKeys=(list==='all')?ALL_SHAPES:list;
-  var bx=$('#shapes');bx.innerHTML='';
-  shapeKeys.forEach(function(k){var b=document.createElement('button');b.textContent=SHAPES[k].label;b.dataset.s=k;bx.appendChild(b)});
-  if(shapeKeys.indexOf(shape)<0)shape=shapeKeys[0]||'cube';
-  $('#shapesRow').style.display=shapeKeys.length>1?'flex':'none';
-  setShapeUi();
-}
-function syncSame(){$('#sameLabel').style.display=cur==='custom'?'flex':'none';$('#same').checked=customSame}
-
-function setRes(n){
-  if(n===res)return;
-  var old={};slots.forEach(function(s){var c=document.createElement('canvas');c.width=c.height=res;c.getContext('2d').drawImage(cv[s.id],0,0);old[s.id]=c});
-  res=n;
-  slots.forEach(function(s){cv[s.id].width=cv[s.id].height=res;var g=ctxOf(s.id);g.imageSmoothingEnabled=false;g.drawImage(old[s.id],0,0,res,res)});
-  resetHist();rebuildTextures();drawEd();scheduleSave();
-}
-function setResUi(){document.querySelectorAll('[data-r]').forEach(function(x){x.classList.toggle('on',+x.dataset.r===res)})}
-document.querySelectorAll('[data-r]').forEach(function(b){b.addEventListener('click',function(){setRes(+b.dataset.r);setResUi()})});
-$('#undo').onclick=doUndo;$('#redo').onclick=doRedo;
-
-var pal=['#c0392b','#e67e22','#f1c40f','#3f7d4e','#2980b9','#8e44ad','#ffffff','#7f8c8d','#2c2c2c','#866043'];
-var pe=$('#pal');
-pal.forEach(function(c){var b=document.createElement('button');b.className='sw'+(c===color?' on':'');b.style.background=c;b.dataset.c=c;b.setAttribute('aria-label',c);
-  b.onclick=function(){pickColor(c)};pe.appendChild(b)});
-var ci=document.createElement('input');ci.type='color';ci.value=color;ci.oninput=function(){pickColor(ci.value,true)};pe.appendChild(ci);
-function pickColor(c,fromInput){
-  color=c;if(tool==='pick'||tool==='erase'){tool='pen';$('#tools').querySelectorAll('[data-t]').forEach(function(b){b.classList.toggle('on',b.dataset.t==='pen')})}
-  pe.querySelectorAll('.sw').forEach(function(b){b.classList.toggle('on',b.dataset.c===c)});ci.value=c;
-}
-$('#file').onchange=function(e){
-  var inp=e.target,f=inp.files[0];if(!f)return;var fr=new FileReader();
-  fr.onload=function(){var img=new Image();
-    img.onload=function(){if(!cv[slot])return;pushUndo();var g=ctxOf(slot);g.clearRect(0,0,res,res);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res);touched()};
-    img.src=fr.result};
-  fr.readAsDataURL(f);inp.value='';
-};
-$('#clr').onclick=function(){if(!cv[slot])return;pushUndo();ctxOf(slot).clearRect(0,0,res,res);touched()};
-
-/* ---------- файлы текстур и сохранение ---------- */
-var SAVE_KEY='foundrykin.project.v4',OLD_KEY='foundrykin.project.v3';
-function packCur(){
-  slots.forEach(function(s){
-    if(ph[s.id]||!cv[s.id])return;
-    files[fk(s.id)]={res:res,data:cv[s.id].toDataURL('image/png')};
-  });
-}
-function entryFor(list){
-  var r=0,o={};
-  list.forEach(function(s){var f=files[fk(s.id)];if(f){o[s.id]=f.data;if(f.res>r)r=f.res}});
-  return {res:r||res,slots:o};
-}
-var saveT=null;
-function scheduleSave(){clearTimeout(saveT);saveT=setTimeout(save,500)}
-function save(){
-  try{packCur();localStorage.setItem(SAVE_KEY,JSON.stringify({v:4,cur:cur,shape:shape,name:customName,customSame:customSame,files:files,dirty:dirty}))}
-  catch(err){say('Не удалось сохранить в браузере: '+err.message)}
-}
-function syncName(){
-  var n=$('#name');
-  if(cur==='custom'){n.disabled=false;n.value=customName}else{n.disabled=true;n.value=cur}
-}
-function applyEntry(e,done){
-  var gen=++applyGen,list=slots,canv=cv,phNow=ph;
-  res=e.res||16;setResUi();
-  var left=list.length;
-  function fin(){
-    if(--left!==0)return;
-    if(gen!==applyGen)return;
-    rebuildTextures();drawEd();resetHist();if(done)done();
-  }
-  list.forEach(function(s){
-    var c=canv[s.id];
-    c.width=c.height=res;
-    var src=e.slots&&e.slots[s.id];
-    if(!src){placeholder(c.getContext('2d'),res);phNow[s.id]=true;fin();return}
-    var img=new Image();
-    img.onload=function(){if(gen===applyGen){var g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res)}fin()};
-    img.onerror=fin;img.src=src;
-  });
-}
-function startCustom(){
-  customSame=true;cur='custom';
-  setupSlots(customSlots(),customFaceMap());
-  starter();
-  updShapeUi('all');syncSame();rebuildTextures();build();drawEd();syncName();
-}
-function load(){
-  var raw=null,o=null;
-  try{raw=localStorage.getItem(SAVE_KEY)}catch(err){return false}
-  if(raw){try{o=JSON.parse(raw)}catch(err){o=null}}
-  if(o&&o.v===4&&o.files){
-    files=o.files;dirty=o.dirty||{};customName=o.name||'my_block';customSame=o.customSame!==false;
-    pendingCur=(o.cur&&o.cur!=='custom')?o.cur:null;
-    if(!pendingCur)shape=o.shape||'cube';
-  }else{
-    var old=null;
-    try{old=JSON.parse(localStorage.getItem(OLD_KEY))}catch(err){}
-    if(!old||old.v!==3||!old.store||!old.store.custom||!old.store.custom.slots)return false;
-    customName=old.name||'my_block';customSame=old.customSame!==false;
-    Object.keys(old.store.custom.slots).forEach(function(k){files['custom/'+k]={res:old.store.custom.res||16,data:old.store.custom.slots[k]};dirty['custom/'+k]=true});
-  }
-  cur='custom';
-  setupSlots(customSlots(),customFaceMap());updShapeUi('all');syncSame();
-  var e=entryFor(slots);
-  if(Object.keys(e.slots).length)applyEntry(e,function(){build();syncName()});
-  else{starter();rebuildTextures();build();drawEd();syncName()}
-  return true;
-}
-
-/* ---------- каталог блоков Bedrock ---------- */
-var URLS_B=['https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/blocks.json','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/blocks.json'];
-var URLS_T=['https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/textures/terrain_texture.json','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/textures/terrain_texture.json'];
-var URLS_F=['https://data.jsdelivr.com/v1/package/gh/Mojang/bedrock-samples@main/flat','https://api.github.com/repos/Mojang/bedrock-samples/git/trees/main?recursive=1'];
-var VAN1='https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/';
-var VAN2='https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/';
-var CAT_KEY='foundrykin.catalog.v3',EX_KEY='foundrykin.exist.v2';
-var lastB=null,lastT=null;
-function parseLoose(t){
-  t=String(t).replace(/^\uFEFF/,'');
-  try{return JSON.parse(t)}catch(e){}
-  t=t.replace(/("(?:\\.|[^"\\])*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g,function(m,s){return s||''});
-  t=t.replace(/,(\s*[}\]])/g,'$1');
-  return JSON.parse(t);
-}
-function fetchJson(urls,i,errs2){
-  i=i||0;errs2=errs2||[];
-  if(i>=urls.length)return Promise.reject(new Error(errs2.join('; ')||'нет ответа'));
-  return fetch(urls[i]).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}).then(parseLoose)
-    .catch(function(err){errs2.push((err&&err.message?err.message:String(err))+' ['+urls[i].split('/')[2]+']');return fetchJson(urls,i+1,errs2)});
-}
-var FORM_RE=/_(slab|stairs|wall|fence_gate|fence|button|pressure_plate)\d*$/;
-var FORM_OF={slab:'slab',stairs:'stairs',wall:'wall',fence_gate:'gate',fence:'fence',button:'button',pressure_plate:'plate'};
-function isDerived(id){return FORM_RE.test(id)||/^double_/.test(id)||/_double_/.test(id)}
-function baseFor(id,m,raw){
-  var pre=id.slice(0,m.index),cands=[pre,pre+'_block',pre+'_planks',pre+'_wool',pre+'_concrete',pre+'s',pre+'_bricks',pre+'_brick'];
-  for(var i=0;i<cands.length;i++){var c=cands[i];if(raw[c]&&!isDerived(c))return c}
-  return null;
-}
-var BASE=/_(double_slab|slab|stairs|wall|fence_gate|fence|button|pressure_plate)$/;
-function buildCatalog(B,T){
-  var td=(T&&T.texture_data)||{};
-  function resolve(k){
-    var e=td[k];if(!e)return null;
-    var t=e.textures;if(Array.isArray(t))t=t[0];if(t&&typeof t==='object')t=t.path;
-    return typeof t==='string'?t:null;
-  }
-  var b={},p={},unres={};
-  Object.keys(B).forEach(function(id){
-    var e=B[id];if(!e||typeof e!=='object'||!e.textures)return;
-    var t=e.textures,ks;
-    if(typeof t==='string')ks=[t,t,t,t,t,t];
-    else{
-      var any=t.side||t.up||t.down||t.north||t.south||t.east||t.west;
-      var f=function(k){return t[k]||t.side||any};
-      ks=[f('up'),f('down'),f('north'),f('south'),f('east'),f('west')];
-    }
-    for(var i=0;i<6;i++)if(!ks[i])return;
-    var miss=false,paths=ks.map(function(k){var r=resolve(k);if(r)return r;miss=true;return 'textures/blocks/'+k});
-    b[id]=paths;if(miss)unres[id]=1;
-    if(typeof t==='string'&&e.sound==='grass'&&!e.isotropic&&!e.carried_textures&&!e.ambient_occlusion_exponent)p[id]=1;
-  });
-  return {b:b,p:p};
-}
-function doorPaths(id){
-  var N=(id==='wooden_door')?'wood':id.replace(/_door$/,'');
-  var pats=[['door_'+N+'_lower','door_'+N+'_upper'],[N+'_door_bottom',N+'_door_top'],[N+'_door_lower',N+'_door_upper']];
-  var low=null,upp=null,i,j;
-  for(i=0;i<pats.length;i++){
-    var l='textures/blocks/'+pats[i][0],u='textures/blocks/'+pats[i][1];
-    if(existing?(existing[l]&&existing[u]):i===0){low=l;upp=u;break}
-  }
-  if(!low)return null;
-  var icons=['textures/items/door_'+N,'textures/items/'+N+'_door'],ic=null;
-  for(j=0;j<icons.length;j++){if(existing?existing[icons[j]]:j===0){ic=icons[j];break}}
-  return {low:low,up:upp,icon:ic};
-}
-function indexCatalog(c){
-  var raw=c.b,all={},sp={},forms={},kids={};
-  Object.keys(raw).forEach(function(id){
-    if(isDerived(id)){
-      if(/^double_/.test(id)||/_double_/.test(id))return;
-      var m=FORM_RE.exec(id);if(!m)return;
-      var base=baseFor(id,m,raw);if(!base)return;
-      var f=FORM_OF[m[1]];
-      (forms[base]=forms[base]||{})[f]=1;(kids[base]=kids[base]||[]).push(id);
-      return;
-    }
-    all[id]=raw[id];
-  });
-  Object.keys(raw).forEach(function(id){
-    if(!all[id]||!/_door$/.test(id))return;
-    var d=doorPaths(id);
-    if(!d){delete all[id];return}
-    all[id]=[d.low,d.low,d.up,d.up,d.up,d.up];
-    var list=[{id:d.up,label:'верх'},{id:d.low,label:'низ'}];
-    if(d.icon)list.push({id:d.icon,label:'иконка'});
-    sp[id]={kind:'door',list:list,fm:{up:d.low,down:d.low,north:d.up,south:d.up,east:d.up,west:d.up}};
-  });
-  if(all.beacon){
-    var bp=all.beacon;
-    sp.beacon={kind:'labels',list:[{id:bp[0],label:'ядро'},{id:bp[1],label:'низ'},{id:bp[4],label:'стороны'}],fm:{up:bp[0],down:bp[1],north:bp[2],south:bp[3],east:bp[4],west:bp[5]}};
-  }
-  ['azalea','flowering_azalea'].forEach(function(id){
-    if(!all[id])return;
-    var ap=all[id];
-    sp[id]={kind:'azalea',list:[{id:ap[0],label:'верх'},{id:ap[2],label:'бока'},{id:ap[4],label:'саженец'}],fm:{up:ap[0],down:ap[2],north:ap[2],south:ap[2],east:ap[2],west:ap[2],plant:ap[4]}};
-  });
-  var b={},filtered=false;
-  if(existing){
-    Object.keys(all).forEach(function(id){if(all[id].every(function(p){return existing[p]}))b[id]=all[id]});
-    if(Object.keys(b).length)filtered=true;else b=all;
-  }else b=all;
-  var sig={},members={},mother={};
-  Object.keys(b).forEach(function(id){var sg=b[id].join('|');sig[id]=sg;(members[sg]=members[sg]||[]).push(id);mother[id]=id});
-  return {b:b,p:c.p||{},sp:sp,forms:forms,kids:kids,sig:sig,members:members,mother:mother,ids:Object.keys(b).sort(),filtered:filtered,hidden:Object.keys(raw).length-Object.keys(b).length};
-}
-function infoIsStatus(){return /^Каталог/.test($('#info').textContent)}
-function catText(){
-  return 'Каталог загружен, блоков в списке: '+catalog.ids.length+(catalog.filtered?'':'. Список файлов игры не получен, некоторые блоки могут быть лишними')+'. Выбери блок из списка.';
-}
-function useCatalog(B,T){
-  if(B)lastB=B;if(T)lastT=T;
-  if(!lastB)return false;
-  var c=buildCatalog(lastB,lastT);
-  if(!Object.keys(c.b).length){$('#info').textContent='Каталог пустой: в файле нет блоков с текстурами.';return false}
-  try{localStorage.setItem(CAT_KEY,JSON.stringify({b:c.b,p:c.p}))}catch(err){}
-  catalog=indexCatalog(c);
-  if(infoIsStatus())$('#info').textContent=catText();
-  renderList();
-  if(pendingCur&&catalog.b[pendingCur]){var pc=pendingCur;pendingCur=null;selectBlock(pc)}
-  return true;
-}
-function fetchExisting(){
-  return fetchJson(URLS_F).then(function(j){
-    var s={},n=0;
-    (j.files||[]).forEach(function(f){var nm=f.name;if(/^\/resource_pack\/textures\/.+\.png$/.test(nm)){s[nm.slice(15,-4)]=1;n++}});
-    (j.tree||[]).forEach(function(f){var nm=f.path;if(/^resource_pack\/textures\/.+\.png$/.test(nm)){s[nm.slice(14,-4)]=1;n++}});
-    if(!n)throw new Error('пустой список файлов');
-    return s;
-  });
-}
-function loadCatalog(){
-  var cached=null,cex=null;
-  try{cached=JSON.parse(localStorage.getItem(CAT_KEY))}catch(err){}
-  try{cex=JSON.parse(localStorage.getItem(EX_KEY))}catch(err){}
-  if(cex&&cex.length){existing={};cex.forEach(function(p){existing[p]=1})}
-  if(cached&&cached.b){catalog=indexCatalog(cached);renderList();if(infoIsStatus())$('#info').textContent='Каталог из памяти устройства, блоков: '+catalog.ids.length+'. Обновляю из интернета…';
-    if(pendingCur&&catalog.b[pendingCur]){var pc=pendingCur;pendingCur=null;selectBlock(pc)}}
-  var eB='',eT='',eF='';
-  Promise.all([
-    fetchJson(URLS_B).catch(function(e){eB=e.message;return null}),
-    fetchJson(URLS_T).catch(function(e){eT=e.message;return null}),
-    fetchExisting().catch(function(e){eF=e.message;return null})
-  ]).then(function(r){
-    if(r[2]){
-      existing=r[2];
-      try{localStorage.setItem(EX_KEY,JSON.stringify(Object.keys(existing).filter(function(p){return p.indexOf('textures/blocks/')===0||p.indexOf('textures/items/')===0})))}catch(err){}
-    }else if(!existing)say('Список файлов игры не получен ('+eF+'): показаны все блоки.');
-    if(!r[0]){if(!catalog)$('#info').textContent='Каталог не загрузился: '+eB+'. Нажми «Загрузить blocks.json» и выбери файл с телефона либо работай в свободном режиме.';else if(infoIsStatus())$('#info').textContent='Каталог из памяти устройства, блоков: '+catalog.ids.length+'. Обновить не удалось: '+eB;return}
-    if(!r[1])say('terrain_texture.json не загрузился: '+eT);
-    useCatalog(r[0],r[1]);
-  });
-}
-$('#catfile').onchange=function(e){
-  var inp=e.target,fl=[].slice.call(inp.files),left=fl.length,B=null,T=null;
-  if(!left)return;
-  fl.forEach(function(f){
-    var fr=new FileReader();
-    fr.onload=function(){
-      try{var j=parseLoose(fr.result);if(j&&j.texture_data)T=j;else B=j}catch(err){say('Файл '+f.name+' не читается как JSON: '+err.message)}
-      if(--left===0){if(!useCatalog(B,T)&&!lastB)$('#info').textContent='Каталог не загрузился: в выбранных файлах нет blocks.json.'}
-    };
-    fr.onerror=function(){if(--left===0)say('Не удалось прочитать файл.')};
-    fr.readAsText(f);
-  });
-  inp.value='';
-};
-function isEdited(id){return pathsFor(id).some(function(p){return dirty[p]})}
-function renderList(){
-  var q=$('#q').value.trim().toLowerCase().replace(/\s+/g,'_'),box=$('#list');box.innerHTML='';
-  if(!catalog)return;
-  var cs=(cur!=='custom'&&catalog.sig[cur])||null;
-  var ids=catalog.ids.filter(function(id){return !q||id.indexOf(q)>=0}).slice(0,60);
-  ids.forEach(function(id){
-    var b=document.createElement('button');b.textContent=id+(isEdited(id)?' ●':'');
-    if(cs&&catalog.sig[id]===cs)b.className='fam';
-    b.onclick=function(){selectBlock(id)};box.appendChild(b);
-  });
-  var f=document.createElement('button');f.textContent='✎ свободный режим';f.onclick=selectCustom;box.insertBefore(f,box.firstChild);
-}
-$('#q').addEventListener('input',renderList);
-function showInfo(id,m,note,mo){
-  var grp=catalog.members[catalog.sig[m]],g=grp.filter(function(x){return x!==m});
-  var fl=pathsFor(m),fo=catalog.forms&&catalog.forms[m];
-  var t='Выбрано: '+id+'. ';
-  t+='Файлов текстур: '+fl.length+' ('+fl.join(', ')+'). ';
-  if(g.length)t+='Те же файлы используют ещё '+g.length+': '+g.slice(0,8).join(', ')+(g.length>8?' и другие.':'.');
-  if(fo)t+=' Формы блока (под превью): '+Object.keys(fo).map(function(k){return SHAPES[k].label.toLowerCase()}).join(', ')+'. Текстура у них та же, что у родителя.';
-  if(note==='base')t+=' За основу взята оригинальная текстура игры.';
-  if(note==='part')t+=' Часть оригинальных файлов не загрузилась, на их месте серая заготовка.';
-  if(note==='gray')t+=' Оригинал не загрузился, поставлена серая заготовка.';
-  if(isDoorBlock(m))t+=' Дверь — единый объект высотой в два блока. Иконка видна только в инвентаре, в превью её нет.';
-  else if(mo)t+=' Модель в превью приблизительная: '+(mo==='beacon'?'стеклянная оболочка, ядро и основание внутри':(mo==='azalea'?'куб без нижней грани с саженцем-крестом внутри':'плоскости крестом'))+'.';
-  else t+=' Форма в превью приблизительная.';
-  $('#info').textContent=t;
-}
-function loadImg(u){return new Promise(function(ok){var im=new Image();im.crossOrigin='anonymous';im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=u})}
-function loadAny(p){return loadImg(VAN1+p+'.png').then(function(im){return im||loadImg(VAN2+p+'.png')})}
-function ensureFiles(m){
-  var p=pathsFor(m),need=[];
-  p.forEach(function(x){if(!files[x]&&need.indexOf(x)<0)need.push(x)});
-  if(!need.length)return Promise.resolve({vanilla:true,missing:0,loaded:false});
-  return Promise.all(need.map(loadAny)).then(function(imgs){
-    var first=imgs.filter(Boolean)[0],r=(first&&first.width===32)?32:16,miss=0,c=document.createElement('canvas');
-    need.forEach(function(x,i){
-      var im=imgs[i];
-      if(!im){miss++;return}
-      c.width=c.height=r;var g=c.getContext('2d');g.imageSmoothingEnabled=false;
-      g.drawImage(im,0,0,im.width,im.width,0,0,r,r);
-      files[x]={res:r,data:c.toDataURL('image/png')};
-    });
-    return {vanilla:!!first,missing:miss,loaded:true};
-  });
-}
-var selTok=0;
-function selectBlock(id){
-  if(!catalog||!catalog.b[id])return;
-  var m=catalog.mother[id],tok=++selTok,grp=catalog.members[catalog.sig[m]];
-  var mo=modelOf(m),keysList=shapeKeysFor(m,grp);
-  var want=isDoorBlock(m)?'door':(mo?mo:shapeOfId(id));
-  var sh=keysList.indexOf(want)>=0?want:keysList[0];
-  function go(note){
-    if(tok!==selTok)return;
-    packCur();cur=m;shape=sh;
-    var so=slotsFor(m);setupSlots(so.list,so.fm);updShapeUi(keysList);syncSame();
-    applyEntry(entryFor(so.list),function(){build();syncName();showInfo(id,m,note,mo);renderList();scheduleSave()});
-  }
-  $('#info').textContent='Загружаю оригинальные текстуры…';
-  ensureFiles(m).then(function(r){go(!r.vanilla?'gray':(r.missing?'part':(r.loaded?'base':'')))}).catch(function(err){
-    showErr('загрузка блока: '+err.message);
-    go('gray');
-  });
-}
-function selectCustom(){
-  selTok++;packCur();cur='custom';
-  setupSlots(customSlots(),customFaceMap());updShapeUi('all');syncSame();
-  var e=entryFor(slots),after=function(){build();syncName();renderList();$('#info').textContent='Свободный режим: имя блока вводится вручную.';scheduleSave()};
-  if(Object.keys(e.slots).length)applyEntry(e,after);
-  else{starter();rebuildTextures();drawEd();after()}
-}
-$('#same').addEventListener('change',function(){
-  if(cur!=='custom')return;
-  var on=this.checked;if(on===customSame)return;
-  packCur();
-  var g=function(k){var f=files['custom/'+k];return f&&f.data};
-  var ns={side:g('side')};
-  if(!on){ns.top=g('top')||g('side');ns.bottom=g('bottom')||g('side')}
-  customSame=on;setupSlots(customSlots(),customFaceMap());
-  applyEntry({res:res,slots:ns},function(){build();scheduleSave()});
-});
-
-/* ---------- экспорт ---------- */
-function cleanName(n){
-  n=String(n||'').toLowerCase().replace(/[^a-z0-9_]/g,'_').replace(/^_+|_+$/g,'');return n||'my_block';
-}
-function download(blob,fname){
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();
-  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
-}
-function dataToBlob(d){
-  var bin=atob(d.split(',')[1]),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
-  return new Blob([u],{type:'image/png'});
-}
-function customPath(id){var n=cleanName(customName);return customSame?'textures/blocks/'+n:'textures/blocks/'+n+'_'+id}
-function curFiles(){
-  packCur();
-  var out=[],seen={};
-  slots.forEach(function(s){
-    var f=files[fk(s.id)];if(!f)return;
-    var p=cur==='custom'?customPath(s.id):s.id;
-    if(!seen[p]){seen[p]=1;out.push({path:p+'.png',data:f.data})}
-  });
-  return out;
-}
-function dirtyFiles(){
-  var out=[],seen={};
-  Object.keys(dirty).forEach(function(k){
-    var f=files[k];if(!f)return;
-    var p;
-    if(k.indexOf('custom/')===0){var id=k.slice(7);if(customSame&&id!=='side')return;p=customPath(id)}
-    else p=k;
-    if(!seen[p]){seen[p]=1;out.push({path:p+'.png',data:f.data})}
-  });
-  return out;
-}
-$('#expPng').onclick=function(){
-  var f=curFiles();
-  f.forEach(function(x,i){setTimeout(function(){download(dataToBlob(x.data),x.path.split('/').pop())},i*300)});
-  say('PNG: '+f.length+' файл(а).');
-};
-function uuid(){return (window.crypto&&crypto.randomUUID)?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16)})}
-$('#expPack').onclick=function(){
-  if(typeof JSZip==='undefined'){say('Библиотека JSZip не загрузилась (нужен интернет при первом запуске).');return}
-  var all=dirtyFiles(),seen={};
-  all.forEach(function(x){seen[x.path]=1});
-  curFiles().forEach(function(x){if(!seen[x.path]){seen[x.path]=1;all.push(x)}});
-  if(!all.length){say('Нечего экспортировать: нарисуй хотя бы одну текстуру.');return}
-  var z=new JSZip();
-  all.forEach(function(x){z.file(x.path,x.data.split(',')[1],{base64:true})});
-  z.file('manifest.json',JSON.stringify({
-    format_version:2,
-    header:{name:'FoundryKin pack',description:'Создано в FoundryKin',uuid:uuid(),version:[1,0,0],min_engine_version:[1,20,0]},
-    modules:[{type:'resources',uuid:uuid(),version:[1,0,0]}]
-  },null,2));
-  z.generateAsync({type:'blob'}).then(function(b){download(b,'FoundryKin_pack.mcpack');say('Пак собран, файлов текстур: '+all.length+'.')});
-};
-$('#name').addEventListener('input',function(){if(cur==='custom'){customName=this.value;scheduleSave()}});
-
-/* ---------- старт ---------- */
-startCustom();
-load();
-loadCatalog();
-requestAnimationFrame(loop);
-setTimeout(function(){if(gl&&!fbOn&&frames<2){showErr('3D не отрисовался, включён запасной 2D-вид');setFb(true)}},2500);
-if(!gl)setFb(true);
-setInterval(function(){
-  if(errs.length)return;
-  $('#dbg').textContent=VER+' · '+(fbOn?'2D-вид':'3D')+' · кадров: '+frames+' · текстур: '+slots.length+' · размер '+res+'px';
-},1000);
-})();
-</script>
+<script src="fk-catalog.js"></script>
+<script src="fk-core.js"></script>
+<script src="fk-tools.js"></script>
+<script src="fk-grid.js"></script>
+<script src="fk-help.js"></script>
 </body>
 </html>
