@@ -1,9 +1,9 @@
 /* Shared FoundryKin foundation. Load this file in every document after local styles.
    New sections use fk-header, fk-header-back and fk-header-bubble, not copied dimensions. */
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;800&display=swap');
-:root{--bg:#e6e3dc;--panel:#d5d0ca;--ink:#2a2826;--mute:#7e7973;--line:#b2ada7;--acc:#718198;--accink:#fff;--find:#8aa7bd;--red:#a4757b;--stage:var(--panel);--fk-font:Montserrat,system-ui,-apple-system,"Segoe UI",sans-serif;--fk-header-height:40px;--fk-header-back-width:48px;--fk-header-icon:22px;--fk-header-gap:8px;--fk-header-side:12px;--fk-header-start:24px;--fk-header-min:8px;--fk-header-radius:8px;--fk-header-reserve:76px}
-:root[data-theme=dark]{--bg:#262625;--panel:#383733;--ink:#e8e5df;--mute:#989590;--line:#51504e;--acc:#6d7791;--accink:#fff;--find:#6a8499;--red:#a47c7c}
-@media(prefers-color-scheme:dark){:root:not([data-theme]){--bg:#262625;--panel:#383733;--ink:#e8e5df;--mute:#989590;--line:#51504e;--acc:#6d7791;--accink:#fff;--find:#6a8499;--red:#a47c7c}}
+:root{--bg:#e6e3dc;--panel:#d5d0ca;--ink:#2a2826;--mute:#7e7973;--line:#b2ada7;--acc:#718198;--accink:#fff;--find:var(--acc);--red:#a4757b;--stage:var(--panel);--fk-font:Montserrat,system-ui,-apple-system,"Segoe UI",sans-serif;--fk-header-height:40px;--fk-header-back-width:48px;--fk-header-icon:22px;--fk-header-gap:8px;--fk-header-side:12px;--fk-header-start:24px;--fk-header-min:8px;--fk-header-radius:8px;--fk-header-reserve:76px}
+:root[data-theme=dark]{--bg:#262625;--panel:#383733;--ink:#e8e5df;--mute:#989590;--line:#51504e;--acc:#6d7791;--accink:#fff;--red:#a47c7c}
+@media(prefers-color-scheme:dark){:root:not([data-theme]){--bg:#262625;--panel:#383733;--ink:#e8e5df;--mute:#989590;--line:#51504e;--acc:#6d7791;--accink:#fff;--red:#a47c7c}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{-webkit-tap-highlight-color:transparent;font-family:var(--fk-font)}
