@@ -45,7 +45,8 @@ function headerY(){
   if(s)y=(s.id==='s-add'&&hasFke())?FKE.scrollY():s.scrollTop;
   document.documentElement.style.setProperty('--fkHeaderY',Math.max(8,24-y)+'px');
 }
-function syncFind(){document.body.classList.toggle('findSearch',top()==='add'&&hasFke()&&FKE.ready()&&FKE.getMode()==='search')}
+/* the shell header is hidden on the Find screen from the moment the screen opens, not after the editor has finished loading */
+function syncFind(){document.body.classList.toggle('findSearch',top()==='add'&&hasFke()&&FKE.getMode()==='search'&&!FKE.pendingEdit())}
 function refreshTitle(){
   if(top()!=='add'||!hasFke()||FKE.getMode()!=='edit')return;
   $('#ok').disabled=FKE.busy();
@@ -335,6 +336,13 @@ window.FKAPP={migrate:migrate};
 
 /* settings and diagnostics */
 function fillSettings(){$('#sUrl').value=settings.url;$('#sTheme').value=settings.theme;$('#sLang').value=settings.lang||'auto'}
+function fontsOf(d){
+  try{
+    var a=Array.from(d.fonts).filter(function(f){return f.family.indexOf('Montserrat')>=0}),n={};
+    a.forEach(function(f){n[f.status]=(n[f.status]||0)+1});
+    return 'Montserrat faces: '+a.length+' '+JSON.stringify(n)+', body: '+d.defaultView.getComputedStyle(d.body).fontFamily.split(',')[0];
+  }catch(e){return 'n/a'}
+}
 function report(){
   var L=['FoundryKin diagnostics'];
   L.push('app.html: v'+V);
@@ -348,6 +356,8 @@ function report(){
     L.push('fk-editor.js: v'+i.version+', editor document: '+(i.ready?'v'+i.editor:'not loaded'));
     L.push('editor mode: '+i.mode+', busy: '+(i.busy?'yes':'no')+', webgl: '+i.webgl+', frames: '+i.frames);
     L.push('catalog: '+(i.status||'-')+(i.source?' ('+i.source+')':'')+', blocks: '+i.count);
+    L.push('fonts shell: '+fontsOf(document));
+    L.push('fonts editor: '+(FKE.doc()?fontsOf(FKE.doc()):'n/a'));
     if(i.errors.length)L.push('editor errors: '+i.errors.map(function(e){return e.code+(e.detail?': '+e.detail:'')}).join(' | '));
   }else L.push('fk-editor.js: NOT LOADED');
   var ls='ok';

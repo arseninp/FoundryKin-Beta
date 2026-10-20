@@ -74,6 +74,8 @@ return {
   dirtyNow:function(){var a=api();return !!a&&mode==='edit'&&(a.edits||0)>base},
   markSaved:function(){var a=api();base=a?(a.edits||0):0},
   closeMenu:function(){var a=api();return !!(a&&a.closeMenu&&a.closeMenu())},
-  scrollY:function(){try{return win().scrollY||0}catch(e){return 0}}
+  scrollY:function(){try{return win().scrollY||0}catch(e){return 0}},
+  pendingEdit:function(){return wantEdit},
+  doc:function(){try{return win().document}catch(e){return null}}
 };
 })();
