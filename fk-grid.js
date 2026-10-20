@@ -6,7 +6,7 @@ function T(k,p){return FK.t(k,p)}
 function $(s){return document.querySelector(s)}
 var PAGE=60,MAX=6,S256=256;
 var box=$('#fkGrid'),more=$('#fkMore'),qi=$('#q'),catLoad=$('#catLoad');
-var pv={},queue=[],active=0,imgCache={},lastPackSig=null,lastCat=null,lastSig='',prevMode='search',savedY=0;
+var pv={},queue=[],active=0,imgCache={},lastPack=null,lastCat=null,lastSig='',prevMode='search',savedY=0;
 var ids=[],shown=0,st3=null,mode3d=null,fail3=0,migrated=null,tmr=null;
 
 /* job queue: a few snapshots at a time */
@@ -26,7 +26,13 @@ function packData(){
   try{var d=JSON.parse(localStorage.getItem('fk070_packs'));return (d&&d.packs&&d.packs.filter(function(x){return x.id===d.active})[0])||null}catch(e){return null}
 }
 function packMap(){var p=packData(),m={};if(p)p.textures.forEach(function(t){if(t.data)m['textures/'+t.path]=t.data});return m}
-function packSig(m){return Object.keys(m).sort().map(function(k){return k+':'+m[k].length}).join('|')}
+/* compares the pack by content: same paths and identical data URLs */
+function samePack(a,b){
+  var ka=Object.keys(a);
+  if(ka.length!==Object.keys(b).length)return false;
+  for(var i=0;i<ka.length;i++){if(a[ka[i]]!==b[ka[i]])return false}
+  return true;
+}
 function getImg(ctx,path){
   var f=ctx.files&&ctx.files[path];
   if(f&&f.data)return new Promise(function(ok){var im=new Image();im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=f.data});
@@ -160,14 +166,14 @@ function makePreview(ctx,id){
 
 /* active pack: put its textures into the editor state */
 function applyPack(){
-  var c=A.grid(),m=packMap(),sg=packSig(m);
-  if(sg===lastPackSig)return false;
-  lastPackSig=sg;c.setPack(m);pv={};
+  var c=A.grid(),m=packMap();
+  if(lastPack&&samePack(m,lastPack))return false;
+  lastPack=m;c.setPack(m);pv={};
   return true;
 }
 function discardEdits(){
   var c=A.grid();c.discard();
-  var m=packMap();lastPackSig=packSig(m);c.setPack(m);pv={};
+  var m=packMap();lastPack=m;c.setPack(m);pv={};
 }
 
 /* cards */
@@ -225,11 +231,19 @@ function refresh(){
     paint(k);
   });
 }
+/* back from the editor: load enough cards to reach the saved position, then scroll once the layout is ready */
+function restoreScroll(y){
+  var de=document.documentElement;
+  while(shown<ids.length&&de.scrollHeight<y+window.innerHeight)addPage();
+  window.scrollTo(0,y);
+  requestAnimationFrame(function(){window.scrollTo(0,y)});
+}
 
 /* events */
 qi.addEventListener('input',function(){clearTimeout(tmr);tmr=setTimeout(render,150)});
 box.addEventListener('click',function(e){
   var b=e.target.closest?e.target.closest('.fkc'):null;if(!b)return;
+  savedY=window.scrollY;
   A.grid().select(b.getAttribute('data-id'));
   A.setMode('edit');
 });
@@ -237,13 +251,9 @@ $('#fkBack').addEventListener('click',function(){
   try{var b=parent.document.getElementById('back');if(b)b.click()}catch(e){}
 });
 A.subscribe(function(s){
-  var force=false;
+  var force=false,y=0;
   if(s.mode!==prevMode){
-    if(s.mode==='edit')savedY=window.scrollY;
-    else if(prevMode==='edit'){
-      discardEdits();force=true;
-      if(savedY){var y=savedY;setTimeout(function(){window.scrollTo(0,y)},30)}
-    }
+    if(prevMode==='edit'){discardEdits();force=true;y=savedY}
     prevMode=s.mode;
   }
   catLoad.hidden=!(s.status==='failed'||s.status==='empty');
@@ -252,6 +262,7 @@ A.subscribe(function(s){
   if(!c.catalog){note(statusNote(s));return}
   if(force||changed||c.catalog!==lastCat)render();
   else if(sig(c)!==lastSig){lastSig=sig(c);refresh()}
+  if(y)restoreScroll(y);
 });
 applyPack();
 render();
