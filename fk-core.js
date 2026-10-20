@@ -30,7 +30,6 @@ var ALL_SHAPES=['cube','slab','stairs','wall','fence','gate','button','plate'];
 var $=function(s){return document.querySelector(s)};
 try{var PD=parent.document.documentElement;var syncTheme=function(){document.documentElement.setAttribute('data-theme',PD.getAttribute('data-theme')||'light')};syncTheme();new MutationObserver(syncTheme).observe(PD,{attributes:true,attributeFilter:['data-theme']})}catch(e){}
 var ed=$('#ed'), ectx=ed.getContext('2d');
-
 var listeners=[];
 var S={mode:'search',status:'loading',source:'',count:0,filtered:true,refreshing:false,refreshFailed:'',error:null,errors:[],info:null,message:null};
 var ctx={onHistory:null,onRes:null};
@@ -48,7 +47,6 @@ function placeholder(g,r){
   for(var y=0;y<r;y++)for(var x=0;x<r;x++){var v=118+Math.round(rnd(Math.floor(x*16/r),Math.floor(y*16/r),5)*50);g.fillStyle='rgb('+v+','+v+','+v+')';g.fillRect(x,y,1,1)}
 }
 function ctxOf(k){return cv[k].getContext('2d')}
-
 function shapeOfId(id){
   if(/_trapdoor$/.test(id))return 'trapdoor';
   return 'cube';
@@ -68,8 +66,6 @@ function shapeKeysFor(m,grp){
   ks.sort(function(a,b){return ALL_SHAPES.indexOf(a)-ALL_SHAPES.indexOf(b)});
   return ks;
 }
-
-/* 3D (WebGL) */
 var stage=$('#stage'),W=stage.clientWidth||360;
 var gl=(typeof THREE!=='undefined'),renderer=null,scene=null,cam=null,group=null,frames=0;
 if(!gl)showErr('three_missing');
@@ -178,8 +174,6 @@ function loop(t){
   try{renderer.render(scene,cam);frames++}catch(err){showErr('render',err.message)}
 }
 addEventListener('resize',function(){if(!gl)return;var w=stage.clientWidth;if(w)renderer.setSize(w,w)});
-
-/* slots */
 function slotsOf(p){
   var order=[],map={};
   FACES.forEach(function(f,i){var path=p[i];if(!map[path]){map[path]=[];order.push(path)}map[path].push(f)});
@@ -221,10 +215,22 @@ function setupSlots(list,fm){
   slot=list[0].id;
   buildSlotUi();
 }
+function uiIcon(b,label,k,faces,n){
+ b.type='button';b.title=label;b.setAttribute('aria-label',label);
+ var s='',p=SHAPES[k]&&SHAPES[k].parts;
+ if(faces&&faces.length){
+  ['up','west','north','east','south','down'].forEach(function(f,i){s+='<rect x="'+(i===0||i===5?7:(i-1)*5)+'" y="'+(i===0?2:i===5?12:7)+'" width="4" height="4" fill="'+(faces.indexOf(f)>=0?'currentColor':'none')+'"/>'});
+ }else if(faces){s='<rect x="3" y="3" width="18" height="18"/><path d="m3 17 6-6 4 4 4-6 4 8"/><text x="4" y="9" font-size="6" stroke="none" fill="currentColor">'+n+'</text>'}
+ else if(p){
+  function v(x,y,z){return (12+(x-z)*9)+','+(12-y*12+(x+z)*4)}
+  p.forEach(function(a){var l=a[3]-a[0]/2,r=l+a[0],t=a[4]+a[1]/2,d=t-a[1],f=a[5]+a[2]/2,h=f-a[2];s+='<path d="M'+v(l,t,f)+' '+v(r,t,f)+' '+v(r,t,h)+' '+v(l,t,h)+'Z M'+v(l,t,f)+' '+v(l,d,f)+' '+v(r,d,f)+' '+v(r,d,h)+' '+v(r,t,h)+' M'+v(r,t,f)+' '+v(r,d,f)+'"/>'});
+ }else s=k==='door'?'<rect x="6" y="2" width="12" height="20"/><path d="M15 12h1"/>':k==='beacon'?'<rect x="3" y="3" width="18" height="18"/><rect x="7" y="7" width="10" height="10"/>':'<path d="M12 22V4m0 9L4 5m8 12 8-8"/>';
+ b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">'+s+'</svg>';
+}
 function buildSlotUi(){
   var boxEl=$('#slots');boxEl.innerHTML='';
-  slots.forEach(function(s){
-    var b=document.createElement('button');b.textContent=s.k?s.k.map(function(x){return tt(x)}).join(' + '):s.label;b.dataset.id=s.id;
+  slots.forEach(function(s,i){
+    var b=document.createElement('button');uiIcon(b,s.k?s.k.map(function(x){return tt(x)}).join(' + '):s.label,'',FACES.filter(function(f){return faceMap[f]===s.id}),i+1);b.dataset.id=s.id;
     if(s.id===slot)b.className='on';
     b.onclick=function(){setSlot(s.id)};boxEl.appendChild(b);
   });
@@ -237,22 +243,17 @@ function setSlot(id){
   if(shape==='rail')build();
   if(slots.some(function(s){return s.carried})){var so=slotsFor(cur),isC=slots.some(function(s){return s.carried&&s.id===id}),nf={};if(isC){Object.keys(faceMap).forEach(function(k){nf[k]=id});faceMap=nf}else faceMap=so.fm;build()}
 }
-
-/* history */
 function snap(k){return ctxOf(k).getImageData(0,0,res,res)}
 function pushUndo(){var s=undoS[slot];s.push(snap(slot));if(s.length>60)s.shift();redoS[slot]=[];updHist()}
 function doUndo(){var s=undoS[slot];if(!s||!s.length)return;redoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
 function doRedo(){var s=redoS[slot];if(!s||!s.length)return;undoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
 function updHist(){if(ctx.onHistory)ctx.onHistory(!!(undoS[slot]&&undoS[slot].length),!!(redoS[slot]&&redoS[slot].length))}
 function resetHist(){slots.forEach(function(s){undoS[s.id]=[];redoS[s.id]=[]});updHist()}
-
-/* editor */
 function drawEd(){ed.width=ed.height=res;ed.style.backgroundSize=(200/res)+'% '+(200/res)+'%';ectx.clearRect(0,0,res,res);if(cv[slot])ectx.drawImage(cv[slot],0,0);updHist()}
 function touched(){
   dirty[slot]=true;delete ph[slot];API.edits++;
   refreshTex(slot);drawEd();
 }
-
 function seg(sel,attr,fn){$(sel).addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.disabled)return;
   $(sel).querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});fn(b.dataset[attr])})}
 seg('#shapes','s',function(v){shape=v;build()});
@@ -260,12 +261,11 @@ function setShapeUi(){$('#shapes').querySelectorAll('button').forEach(function(b
 function updShapeUi(list){
   shapeKeys=list;
   var bx=$('#shapes');bx.innerHTML='';
-  shapeKeys.forEach(function(k){var b=document.createElement('button');b.textContent=tt('shape.'+k);b.dataset.s=k;bx.appendChild(b)});
+  shapeKeys.forEach(function(k){var b=document.createElement('button');uiIcon(b,tt('shape.'+k),k);b.dataset.s=k;bx.appendChild(b)});
   if(shapeKeys.indexOf(shape)<0)shape=shapeKeys[0]||'cube';
   $('#shapesRow').style.display=shapeKeys.length>1?'flex':'none';
   setShapeUi();
 }
-
 function setRes(n){
   if(n===res)return;
   var old={};slots.forEach(function(s){var c=document.createElement('canvas');c.width=c.height=res;c.getContext('2d').drawImage(cv[s.id],0,0);old[s.id]=c});
@@ -274,8 +274,6 @@ function setRes(n){
   resetHist();rebuildTextures();drawEd();slots.forEach(function(s){dirty[s.id]=true});API.edits++;
   if(ctx.onRes)ctx.onRes(res);
 }
-
-/* texture files */
 function packCur(){
   slots.forEach(function(s){
     if(ph[s.id]||!cv[s.id])return;
@@ -306,7 +304,6 @@ function applyEntry(e,done){
     img.onerror=fin;img.src=src;
   });
 }
-/* Bedrock block catalog */
 var CAT_KEY='foundrykin.catalog.v3',EX_KEY='foundrykin.exist.v2';
 var lastB=null,lastT=null;
 function catalogReady(src){
@@ -478,8 +475,6 @@ ctx.g=function(){return ctxOf(slot)};
 ctx.pushUndo=pushUndo;ctx.undo=doUndo;ctx.redo=doRedo;ctx.touched=touched;
 ctx.syncHist=updHist;ctx.files=curFiles;ctx.say=say;
 window.FKAPI=API;
-
-/* start */
 FK.apply(document);
 loadCatalog();
 requestAnimationFrame(loop);
