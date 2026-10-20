@@ -45,10 +45,12 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px;overflow:hidde
 body.fk-search .fk-edit-part,body.fk-edit .fk-search-part{display:none!important}
 /* Find screen: floating bubbles. The bar itself is transparent; the gap around the bubbles belongs to the page, so cards scroll under them */
 #searchPart{margin-top:10px}
-.fkBar{position:sticky;top:8px;z-index:20;display:flex;gap:8px;align-items:center;background:transparent;padding:0;margin:0}.fkBar>button,.fkBar>span{flex:0 0 auto}
-.fkField{position:relative;flex:1 1 auto;min-width:0}.fkField input{height:40px;padding-right:40px;font-size:16px}.fkField svg{position:absolute;right:11px;top:50%;width:20px;height:20px;margin-top:-10px;pointer-events:none}
+.fkBar{position:sticky;top:calc(8px + env(safe-area-inset-top,0px));z-index:20;display:flex;gap:8px;align-items:center;background:transparent;padding:0;margin:0}.fkBar>button,.fkBar>span{flex:0 0 auto;display:flex;align-items:center;height:40px}
+.fkField{position:relative;flex:1 1 auto;min-width:0;height:40px}.fkField input{height:40px;padding-right:40px;font-size:16px}.fkField svg{position:absolute;right:11px;top:50%;width:20px;height:20px;margin-top:-10px;pointer-events:none}
 #q::placeholder{font-size:17px;font-weight:800;color:var(--ink);opacity:1}
-#fkBack,.fkHelpBtn{width:44px;height:40px;min-height:40px;padding:0;background:var(--panel);border:1px solid var(--line)}
+#fkBack,.fkHelpBtn{height:40px;min-height:40px;padding:0;background:var(--panel);border:1px solid var(--line)}
+#fkBack{width:48px;display:inline-flex;align-items:center;justify-content:center}
+.fkHelpBtn{width:44px}
 #fkSvc>.fkHelpBtn{width:auto;min-width:44px;padding:0 6px}
 #fkGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
 .fkc{display:flex;flex-direction:column;gap:6px;padding:0;min-height:0;text-align:center}
