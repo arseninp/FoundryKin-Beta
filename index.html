@@ -14,9 +14,9 @@ body.fk-search main{padding:var(--fk-header-start) var(--fk-header-side) 28px}
 .row{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
 .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;flex-wrap:wrap}
 .seg button{flex:1}
-#shapes{flex-wrap:nowrap;overflow-x:auto}
-#shapes button{flex:1 1 0;min-width:0;min-height:36px;padding:6px 2px;font-size:12px;font-weight:500}
-#shapes button svg{width:22px;height:22px}
+#slots,#shapes{height:auto;max-height:none;min-height:50px;flex-wrap:wrap;align-items:center;gap:4px;padding:4px;overflow:visible}
+#slots button,#shapes button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 40px;width:40px;height:40px;min-width:40px;min-height:40px;margin:0;padding:7px;line-height:1}
+#slots button svg,#shapes button svg{display:block;flex:none;width:24px;height:24px;margin:0;pointer-events:none}
 button{font:inherit;font-weight:800;color:var(--ink);background:transparent;border:0;border-radius:8px;padding:9px 10px;min-height:40px;cursor:pointer}
 button.on{background:var(--acc);color:var(--accink)}
 button.ghost,label.ghost{background:var(--panel);border:1px solid var(--line)}
@@ -69,7 +69,7 @@ body.fk-search .fk-edit-part,body.fk-edit .fk-search-part{display:none!important
 .fkFld input{width:100%;min-height:36px;text-align:center;padding:4px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
 #fkHex{width:100%;min-height:40px;margin-top:10px;text-align:center;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
 </style>
-<link rel="stylesheet" href="fk-base.css?v=0.8.38">
+<link rel="stylesheet" href="fk-base.css?v=0.8.39">
 </head>
 <body class="fk-search">
 <main>
@@ -93,12 +93,12 @@ body.fk-search .fk-edit-part,body.fk-edit .fk-search-part{display:none!important
 <p id="msg" class="fk-edit-part"></p>
 
 </main>
-<script src="fk-i18n.js?v=0.8.38"></script>
+<script src="fk-i18n.js?v=0.8.39"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="fk-catalog.js?v=0.8.38"></script>
-<script src="fk-core.js?v=0.8.38"></script>
-<script src="fk-tools.js?v=0.8.38"></script>
-<script src="fk-grid.js?v=0.8.38"></script>
-<script src="fk-help.js?v=0.8.38"></script>
+<script src="fk-catalog.js?v=0.8.39"></script>
+<script src="fk-core.js?v=0.8.39"></script>
+<script src="fk-tools.js?v=0.8.39"></script>
+<script src="fk-grid.js?v=0.8.39"></script>
+<script src="fk-help.js?v=0.8.39"></script>
 </body>
 </html>
