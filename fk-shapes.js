@@ -14,6 +14,9 @@ var SHAPES={
   pane:{parts:[[1,1,.125,0,0,0]],shift:0},
   cake:{parts:[[.875,.5,.875,0,-.25,0]],shift:.25},
   anvil:{},
+  bed:{},
+  bell:{},
+  dripleaf:{},
   trapdoor:{parts:[[1,.1875,1,0,-.40625,0]],shift:.4},
   door:{},
   plant:{},
@@ -53,6 +56,18 @@ function box(E,w,h,d,x,y,z,ids,ys,vs,rot){
   var m=new THREE.Mesh(g,ids.map(function(k){return k===null?E.hiddenMat:E.mats[k]}));
   m.position.set(x,y,z);return m;
 }
+function ubox(E,w,h,d,x,y,z,id,R){
+  var g=new THREE.BoxGeometry(w,h,d),p=g.attributes.position,n=g.attributes.normal,uv=g.attributes.uv;
+  for(var i=0;i<p.count;i++){
+    var nx=n.getX(i),ny=n.getY(i),nz=n.getZ(i),lx=p.getX(i)/w+.5,ly=p.getY(i)/h+.5,lz=p.getZ(i)/d+.5,f,a,b;
+    if(nx>.5){f='east';a=1-lz;b=ly}else if(nx<-.5){f='west';a=lz;b=ly}
+    else if(nz>.5){f='south';a=lx;b=ly}else if(nz<-.5){f='north';a=1-lx;b=ly}
+    else if(ny>.5){f='up';a=lx;b=1-lz}else{f='down';a=lx;b=lz}
+    var r=R[f]||R.up,k=r[4]||0,s=k?1-b:a,t=k===1?1-a:k===2?a:1-b;
+    uv.setXY(i,(r[0]+s*(r[2]-r[0]))/64,1-(r[1]+t*(r[3]-r[1]))/64);
+  }
+  var m=new THREE.Mesh(g,E.mats[id]);m.position.set(x,y,z);return m;
+}
 function plane(E,id,w,h,x,y,z,rx,ry){
   var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),E.mats[id]);
   m.position.set(x,y,z);m.rotation.set(rx||0,ry||0,0);return m;
@@ -62,6 +77,9 @@ function cross(E,id,w,h,y,x,z){
   E.group.add(plane(E,id,w*k,h,x||0,y,z||0,0,a));E.group.add(plane(E,id,w*k,h,x||0,y,z||0,0,b));
 }
 function twoSided(E,id){var m=E.mats[id];if(m){m.side=THREE.DoubleSide;m.needsUpdate=true}}
+function sprite(E){
+  twoSided(E,E.slot);E.group.add(plane(E,E.slot,1.1,1.1,0,0,0,0,0));
+}
 function bamboo(E){
   var f=E.faceMap,s=f.north,st=box(E,.1875,1,.1875,0,0,0,[s,s,s,s,s,s]),uv=st.geometry.attributes.uv;
   for(var i=0;i<uv.count;i++)uv.setX(i,uv.getX(i)-.40625);
@@ -101,6 +119,37 @@ function anvil(E){
   G.add(box(E,.25,.3125,.5,0,-.03125,0,a));
   G.add(box(E,.625,.375,1,0,.3125,0,[b,b,t,b,b,b]));
 }
+function bed(E){
+  var id=E.faceMap.up,G=E.group;
+  var H={up:[6,6,22,22],down:[28,6,44,22],east:[22,6,28,22,1],west:[0,6,6,22,2],north:[6,0,22,6],south:[6,0,22,6]};
+  var F={up:[6,28,22,44],down:[28,28,44,44],east:[22,28,28,44,1],west:[0,28,6,44,2],south:[22,22,38,28],north:[6,28,22,44]};
+  G.add(ubox(E,1,.375,1,0,-.125,-.5,id,H));
+  G.add(ubox(E,1,.375,1,0,-.125,.5,id,F));
+  [[-1,-1,6],[1,-1,18],[-1,1,0],[1,1,12]].forEach(function(l){
+    var v=l[2],s=[53,v+3,56,v+6],R={up:[53,v,56,v+3],down:[56,v,59,v+3],north:s,south:s,east:s,west:s};
+    G.add(ubox(E,.1875,.1875,.1875,l[0]*.40625,-.40625,l[1]*.90625,id,R));
+  });
+}
+function bell(E){
+  var f=E.faceMap,w=f.east,st=f.west,sd=f.north,tp=f.up,bt=f.down,G=E.group,W=[w,w,w,w,w,w],S=[st,st,st,st,st,st];
+  G.add(box(E,1,.125,.125,0,.4375,0,W));
+  [-.4375,.4375].forEach(function(x){G.add(box(E,.125,.875,.125,x,-.0625,0,W));G.add(box(E,.25,.125,.25,x,-.4375,0,S))});
+  G.add(box(E,.375,.4375,.375,0,.15625,0,[sd,sd,tp,sd,sd,sd]));
+  G.add(box(E,.5,.125,.5,0,-.125,0,[sd,sd,sd,bt,sd,sd]));
+}
+function leaf(E){
+  var f=E.faceMap,G=E.group;
+  if(E.cur==='big_dripleaf'){
+    var tp=f.east,sm=f.north,s1=f.down,s2=f.up;
+    G.add(box(E,.375,.6875,.375,0,-.15625,.1875,[sm,sm,sm,sm,sm,sm]));
+    G.add(box(E,1,.25,1,0,.3125,0,[s1,s1,tp,tp,s2,s2]));
+  }else{
+    var t2=f.up,sd=f.down,st=f.north,sb=f.south;
+    twoSided(E,st);twoSided(E,sb);
+    cross(E,sb,Math.SQRT2,.5,-.25);cross(E,st,Math.SQRT2,.5,.25);
+    G.add(box(E,.875,.0625,.875,0,.4375,0,[sd,sd,t2,sd,sd,sd]));
+  }
+}
 function flat(E){
   var f=E.faceMap,id=E.slot===f.up?f.up:f.down;
   twoSided(E,id);E.group.add(plane(E,id,1,1,0,0,0,-Math.PI/2,0));
@@ -121,11 +170,15 @@ function candle(E){
 }
 function build(E){
   var s=E.shape,g=E.group;
+  if(typeof E.slot==='string'&&E.slot.indexOf('textures/items/')===0)return sprite(E);
   if(s==='plant'||s==='azalea')return plant(E);
   if(s==='beacon')return beacon(E);
   if(s==='door')return door(E);
   if(s==='pane')return pane(E);
   if(s==='anvil')return anvil(E);
+  if(s==='bed')return bed(E);
+  if(s==='bell')return bell(E);
+  if(s==='dripleaf')return leaf(E);
   if(s==='rail')return flat(E);
   if(s==='decal')return decal(E);
   var d=E.SHAPES[s]||E.SHAPES.cube,rot=(s==='cube'&&/_glazed_terracotta$/.test(E.cur))?GLZ:null;

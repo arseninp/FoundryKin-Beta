@@ -42,6 +42,7 @@ function modelOf(m){
 function shapeKeysFor(m,grp){
   if(isDoorBlock(m))return ['door'];
   if(m==='anvil')return ['anvil'];if(m==='cake')return ['cake'];
+  if(m==='bell')return ['bell'];if(m==='big_dripleaf'||m==='small_dripleaf_block')return ['dripleaf'];if(/_bed$/.test(m))return ['bed'];
   if(/(^|_)candle$/.test(m))return ['candle'];if(/(^|_)carpet$/.test(m))return ['carpet'];if(/(^|_)rail$/.test(m)||m==='waterlily'||m==='leaf_litter'||m==='frog_spawn')return ['rail'];if(m==='vine'||m==='glow_lichen'||m==='sculk_vein'||m==='resin_clump')return ['decal'];var mo=modelOf(m);if(mo)return [mo];
   if(/_trapdoor$/.test(m))return ['trapdoor'];
   var ks=['cube'],f=catalog.forms&&catalog.forms[m];
@@ -162,6 +163,7 @@ function slotLabels(list){
  return list.map(function(s,i){
   var parts=names[i].slice(pre),label=(parts.length?parts:names[i]).join(' '),keys=s.k||[];
   if(keys.length>1)label=keys.map(function(k){return k.split('.').pop()}).join(' + ');
+  if(s.t)label=s.t;
   return label;
  });
 }
@@ -298,7 +300,7 @@ function loadCatalog(){
   ]).then(function(r){
     if(r[2]){
       existing=r[2];
-      try{localStorage.setItem(EX_KEY,JSON.stringify(Object.keys(existing).filter(function(p){return p.indexOf('textures/blocks/')===0||p.indexOf('textures/items/')===0})))}catch(err){}
+      try{localStorage.setItem(EX_KEY,JSON.stringify(Object.keys(existing).filter(function(p){return p.indexOf('textures/blocks/')===0||p.indexOf('textures/items/')===0||p.indexOf('textures/entity/bed/')===0})))}catch(err){}
     }else if(!existing)say('msg.files_list_failed',{detail:eF});
     if(!r[0]){
       if(!catalog)catalogFailed('catalog_fetch',eB);
@@ -335,7 +337,7 @@ function ensureFiles(m){
   p.forEach(function(x){if(!files[x]&&need.indexOf(x)<0)need.push(x)});
   if(!need.length)return Promise.resolve({vanilla:true,missing:0,loaded:false});
   return Promise.all(need.map(FKCatalog.loadAny)).then(function(imgs){
-    var first=imgs.filter(Boolean)[0],r=(first&&first.width===32)?32:16,miss=0,c=document.createElement('canvas');
+    var first=imgs.filter(Boolean)[0],mx=Math.max.apply(null,[0].concat(imgs.filter(Boolean).map(function(i){return i.width}))),r=mx>=64?64:mx>=32?32:16,miss=0,c=document.createElement('canvas');
     need.forEach(function(x,i){
       var im=imgs[i];
       if(!im){miss++;return}
