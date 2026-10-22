@@ -103,6 +103,18 @@ function indexCatalog(c,existing){
     var ap=all[id];
     sp[id]={kind:'azalea',list:[{id:ap[0],k:['slot.top']},{id:ap[2],k:['slot.sides']},{id:ap[4],k:['slot.sapling']}],fm:{up:ap[0],down:ap[2],north:ap[2],south:ap[2],east:ap[2],west:ap[2],plant:ap[4]}};
   });
+  if(all.cave_vines){
+    var cv=all.cave_vines;
+    sp.cave_vines={kind:'labels',list:[{id:cv[0],k:['slot.body']},{id:cv[1],k:['slot.head']}],fm:{up:cv[0],down:cv[1],north:cv[2],south:cv[3],east:cv[4],west:cv[5]}};
+    ['cave_vines_body_with_berries','cave_vines_head_with_berries'].forEach(function(x){delete all[x]});
+  }
+  var AM=['amethyst_cluster','large_amethyst_bud','medium_amethyst_bud','small_amethyst_bud'],al=[],gm={};
+  AM.forEach(function(x,i){if(all[x]){al.push({id:all[x][0],k:['slot.'+x]});if(i)gm['g'+i]=all[x][0]}});
+  if(all.amethyst_cluster&&al.length>1){
+    var ac=all.amethyst_cluster;
+    sp.amethyst_cluster={kind:'pick',list:al,fm:{up:ac[0],down:ac[1],north:ac[2],south:ac[3],east:ac[4],west:ac[5],g1:gm.g1,g2:gm.g2,g3:gm.g3}};
+    AM.slice(1).forEach(function(x){delete all[x]});
+  }
   var b={},filtered=false;
   if(existing){
     Object.keys(all).forEach(function(id){if(all[id].every(function(p){return existing[p]}))b[id]=all[id]});

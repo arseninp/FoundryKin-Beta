@@ -1,5 +1,5 @@
 /* fk-grid.js: the Find screen of the editor: block search, card grid and static 3D snapshots.
-   Works only through FKAPI (state, grid(), subscribe, setMode). */
+   Works only through FKAPI (state, grid(), subscribe, setMode). Models come from FKShapes. */
 (function(){
 var FK=window.FK,A=window.FKAPI;
 function T(k,p){return FK.t(k,p)}
@@ -13,8 +13,13 @@ var ids=[],shown=0,st3=null,mode3d=null,fail3=0,migrated=null,tmr=null;
 function pump(){while(active<MAX&&queue.length){var j=queue.shift();active++;Promise.resolve().then(j).then(fin,fin)}}
 function fin(){active--;pump()}
 function enqueue(j){queue.push(j);pump()}
-function need(shape){
-  if(shape==='plant')return ['up'];
+function need(shape,id){
+  if(shape==='plant'){
+    if(id==='bamboo')return ['north','up','south','east'];
+    if(id==='cave_vines')return ['up','down'];
+    if(id==='amethyst_cluster')return ['up','g1','g2','g3'];
+    return ['up'];
+  }
   if(shape==='azalea')return ['plant','north','up'];
   if(shape==='beacon')return ['down','up','east'];
   if(shape==='door')return ['down','north'];
@@ -61,66 +66,25 @@ function semi(c){
   for(var i=3;i<a.length;i+=4){var v=a[i];if(v>8&&v<248)return true}
   return false;
 }
-function snap3d(o,SH,shape,im,dbl){
-  var T3=o.T,g=o.g,mats={},tex=[],geos=[];
+function snap3d(o,SH,shape,im,dbl,id){
+  var T3=o.T,g=o.g,mats={},own=[],tex=[],fm={};
   function matOf(key,canvas){
     if(mats[key])return mats[key];
     var c=canvas||im[key];if(!c)return null;
     var t=new T3.CanvasTexture(c);t.magFilter=t.minFilter=T3.NearestFilter;t.generateMipmaps=false;t.needsUpdate=true;
     var m=new T3.MeshLambertMaterial({transparent:true,alphaTest:.05,side:dbl?T3.DoubleSide:T3.FrontSide,map:t});
-    m.depthWrite=!semi(c);tex.push(t);mats[key]=m;return m;
+    m.depthWrite=!semi(c);tex.push(t);own.push(m);mats[key]=m;return m;
   }
-  function box(w,h,d,x,y,z,idl,ys,vs){
-    var ge=new T3.BoxGeometry(w,h,d),p=ge.attributes.position,n=ge.attributes.normal,uv=ge.attributes.uv;
-    ys=ys||0;vs=vs||1;
-    for(var i=0;i<p.count;i++){
-      var X=p.getX(i)+x,Y=p.getY(i)+y,Z=p.getZ(i)+z,nx=n.getX(i),ny=n.getY(i),nz=n.getZ(i),u,v;
-      if(Math.abs(nx)>.5){u=nx>0?.5-Z:Z+.5;v=(Y+.5-ys)*vs}
-      else if(Math.abs(nz)>.5){u=nz>0?X+.5:.5-X;v=(Y+.5-ys)*vs}
-      else{u=X+.5;v=ny>0?.5-Z:Z+.5}
-      uv.setXY(i,u,v);
-    }
-    idl=idl||['east','west','up','down','south','north'];
-    var m=new T3.Mesh(ge,idl.map(function(k){return k===null?o.hidden:(matOf(k)||o.hidden)}));
-    m.position.set(x,y,z);geos.push(ge);return m;
-  }
-  function plane(key,h,y,ry){
-    var ge=new T3.PlaneGeometry(1,h),m=new T3.Mesh(ge,matOf(key)||o.hidden);
-    m.position.y=y;m.rotation.y=ry;geos.push(ge);return m;
-  }
-  if(shape==='plant'||shape==='azalea'){
-    var st=shape==='azalea'?'plant':'up';
-    g.add(plane(st,1,0,0));g.add(plane(st,1,0,Math.PI/2));
-    if(shape==='azalea')g.add(box(1,1,1,0,0,0,['north','north','up',null,'north','north']));
-  }else if(shape==='beacon'){
-    g.add(box(.75,.1875,.75,0,-.40625,0,['down','down','down','down','down','down']));
-    g.add(box(.625,.625,.625,0,0,0,['up','up','up','up','up','up']));
-    g.add(box(1,1,1,0,0,0,['east','east','east','east','east','east']));
-  }else if(shape==='door'){
+  ['up','down','north','south','east','west','plant','g1','g2','g3'].forEach(function(k){fm[k]=k;if(!matOf(k))mats[k]=o.hidden});
+  if(shape==='door'){
     var L=im.down,U=im.north;
     if(!L||!U)throw new Error('door');
     var R2=Math.max(L.width,U.width),dc=document.createElement('canvas');
     dc.width=R2;dc.height=R2*2;var dg=dc.getContext('2d');dg.imageSmoothingEnabled=false;
     dg.drawImage(U,0,0,U.width,U.height,0,0,R2,R2);dg.drawImage(L,0,0,L.width,L.height,0,R2,R2,R2);
     matOf('__door',dc);
-    g.add(box(1,2,.1875,0,0,-.40625,['__door','__door','__door','__door','__door','__door'],-.5,.5));
-  }else{
-    var sh=(SH[shape]&&SH[shape].parts)?SH[shape]:SH.cube;
-    sh.parts.forEach(function(a){
-      var bm=box(a[0],a[1],a[2],a[3],a[4],a[5],shape==='rail'?['east','west','down','down','south','north']:undefined);
-      if(shape==='candle'){var uv=bm.geometry.attributes.uv;for(var i=0;i<uv.count;i++)uv.setX(i,uv.getX(i)-.4375);uv.needsUpdate=true}
-      g.add(bm);
-    });
-    if(shape==='candle'){
-      var wmt=matOf('east');
-      if(wmt)[.7853981633974483,-.7853981633974483].forEach(function(ry){
-        var pg=new T3.PlaneGeometry(.125,.125),pu=pg.attributes.uv;
-        for(var j=0;j<pu.count;j++)pu.setXY(j,pu.getX(j)*.125,.375+pu.getY(j)*.125);
-        var pm=new T3.Mesh(pg,wmt);pm.position.y=-.0625;pm.rotation.y=ry;geos.push(pg);g.add(pm);
-      });
-    }
-    if(sh.shift)g.children.forEach(function(mm){mm.position.y+=sh.shift});
   }
+  FKShapes.build({shape:shape,cur:id,slot:'up',faceMap:fm,mats:mats,group:g,hiddenMat:o.hidden,SHAPES:SH,refreshDoor:function(){}});
   var url=null;
   try{
     g.updateMatrixWorld(true);
@@ -128,9 +92,9 @@ function snap3d(o,SH,shape,im,dbl){
     g.scale.setScalar(kk);g.position.set(-ce.x*kk,-ce.y*kk,0);
     o.r.render(o.sc,o.cam);url=o.cv.toDataURL('image/png');
   }finally{
-    g.scale.setScalar(1);g.position.set(0,0,0);while(g.children.length)g.remove(g.children[0]);
-    geos.forEach(function(x){x.dispose()});
-    Object.keys(mats).forEach(function(k){mats[k].dispose()});
+    g.scale.setScalar(1);g.position.set(0,0,0);
+    while(g.children.length){var ch=g.children[0];if(ch.geometry)ch.geometry.dispose();g.remove(ch)}
+    own.forEach(function(x){x.dispose()});
     tex.forEach(function(t){t.dispose()});
   }
   return url;
@@ -140,7 +104,7 @@ function makePreview(ctx,id){
   var cat=ctx.catalog,b=cat.b[id],sp=cat.sp&&cat.sp[id];
   var fm=sp?sp.fm:{up:b[0],down:b[1],north:b[2],south:b[3],east:b[4],west:b[5]};
   if(cat.cr&&cat.cr[id]&&TINT.test(id)){var cp=cat.cr[id];fm={up:cp,down:cp,north:cp,south:cp,east:cp,west:cp}}
-  var shape=ctx.shapeFor(id),keys=need(shape);
+  var shape=ctx.shapeFor(id),keys=need(shape,id);
   return Promise.all(keys.map(function(k){return fm[k]?getImg(ctx,fm[k]):null})).then(function(arr){
     var R=0;arr.forEach(function(im){if(im&&im.width>R)R=im.width});
     if(!R)return null;
@@ -156,7 +120,7 @@ function makePreview(ctx,id){
     if(mode3d&&st3){
       try{
         var dbl=/leaves/.test(id)||shape==='plant'||shape==='azalea'||shape==='candle';
-        var u3=snap3d(st3,ctx.shapes,shape,norm,dbl);
+        var u3=snap3d(st3,ctx.shapes,shape,norm,dbl,id);
         if(u3&&u3.length>200)return u3;
       }catch(e){fail3++;if(fail3>=3)mode3d=false}
     }

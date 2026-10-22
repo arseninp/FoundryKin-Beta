@@ -21,8 +21,8 @@ function plane(E,id,w,h,x,y,z,rx,ry){
   var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),E.mats[id]);
   m.position.set(x,y,z);m.rotation.set(rx||0,ry||0,0);return m;
 }
-function cross(E,id,w,h,y){
-  E.group.add(plane(E,id,w,h,0,y,0,0,PI4));E.group.add(plane(E,id,w,h,0,y,0,0,-PI4));
+function cross(E,id,w,h,y,x,z){
+  E.group.add(plane(E,id,w,h,x||0,y,z||0,0,PI4));E.group.add(plane(E,id,w,h,x||0,y,z||0,0,-PI4));
 }
 function twoSided(E,id){var m=E.mats[id];if(m){m.side=THREE.DoubleSide;m.needsUpdate=true}}
 function bamboo(E){
@@ -34,6 +34,11 @@ function bamboo(E){
 function plant(E){
   var f=E.faceMap,az=E.shape==='azalea';
   if(E.cur==='bamboo')return bamboo(E);
+  if(E.cur==='cave_vines'){cross(E,f.up,Math.SQRT2,1,.5);cross(E,f.down,Math.SQRT2,1,-.5);return}
+  if(E.cur==='amethyst_cluster'){
+    [[f.up,-1,-1],[f.g1,1,-1],[f.g2,-1,1],[f.g3,1,1]].forEach(function(a){if(a[0])cross(E,a[0],.7,.5,-.25,a[1]*.25,a[2]*.25)});
+    return;
+  }
   cross(E,az?f.plant:f.up,Math.SQRT2,1,0);
   if(az){var s=f.north;E.group.add(box(E,1,1,1,0,0,0,[s,s,f.up,null,s,s]))}
 }
