@@ -18,8 +18,8 @@ function fetchJson(urls,i,errs2){
   return fetch(urls[i]).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}).then(parseLoose)
     .catch(function(err){errs2.push((err&&err.message?err.message:String(err))+' ['+urls[i].split('/')[2]+']');return fetchJson(urls,i+1,errs2)});
 }
-var FORM_RE=/_(slab|stairs|wall|fence_gate|fence|button|pressure_plate)\d*$/;
-var FORM_OF={slab:'slab',stairs:'stairs',wall:'wall',fence_gate:'gate',fence:'fence',button:'button',pressure_plate:'plate'};
+var FORM_RE=/_(slab|stairs|wall|fence_gate|fence|button|pressure_plate|pane)\d*$/;
+var FORM_OF={slab:'slab',stairs:'stairs',wall:'wall',fence_gate:'gate',fence:'fence',button:'button',pressure_plate:'plate',pane:'pane'};
 function isDerived(id){return FORM_RE.test(id)||/^double_/.test(id)||/_double_/.test(id)}
 function baseFor(id,m,raw){
   var pre=id.slice(0,m.index),cands=[pre,pre+'_block',pre+'_planks',pre+'_wool',pre+'_concrete',pre+'s',pre+'_bricks',pre+'_brick'];
@@ -115,6 +115,11 @@ function indexCatalog(c,existing){
     sp.amethyst_cluster={kind:'pick',list:al,fm:{up:ac[0],down:ac[1],north:ac[2],south:ac[3],east:ac[4],west:ac[5],g1:gm.g1,g2:gm.g2,g3:gm.g3}};
     AM.slice(1).forEach(function(x){delete all[x]});
   }
+  Object.keys(kids).forEach(function(bs){
+    var pk=kids[bs].filter(function(k){return /_pane$/.test(k)})[0],gp=all[bs],pt=pk&&raw[pk][4];
+    if(!pt||!gp||pt===gp[0]||sp[bs])return;
+    sp[bs]={kind:'labels',list:[{id:gp[0],k:['slot.glass']},{id:pt,k:['slot.edge']}],fm:{up:gp[0],down:gp[1],north:gp[2],south:gp[3],east:gp[4],west:gp[5],edge:pt}};
+  });
   var b={},filtered=false;
   if(existing){
     Object.keys(all).forEach(function(id){if(all[id].every(function(p){return existing[p]}))b[id]=all[id]});

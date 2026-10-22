@@ -3,30 +3,12 @@
 var FK=window.FK;
 function tt(k,p){return FK.t(k,p)}
 var res=16, shape='cube';
-var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={}, applyGen=0, hiddenMat=null;
+var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={}, applyGen=0, hiddenMat=null, fr={}, fi={}, hs={};
 var files={}, cur='', dirty={}, catalog=null, existing=null, shapeKeys=['cube'];
 var FACES=['up','down','north','south','east','west'];
 var FN={up:'face.up',down:'face.down',north:'face.north',south:'face.south',east:'face.east',west:'face.west'};
-var SHAPES={
-  cube:{parts:[[1,1,1,0,0,0]],shift:0},
-  slab:{parts:[[1,.5,1,0,-.25,0]],shift:.25},
-  stairs:{parts:[[1,.5,1,0,-.25,0],[1,.5,.5,0,.25,-.25]],shift:0},
-  wall:{parts:[[.5,1,.5,0,0,0],[1,.875,.25,0,-.0625,0]],shift:0},
-  fence:{parts:[[.25,1,.25,0,0,0],[1,.1875,.125,0,-.03125,0],[1,.1875,.125,0,.34375,0]],shift:0},
-  gate:{parts:[[.125,.6875,.125,-.4375,.15625,0],[.125,.6875,.125,.4375,.15625,0],[.75,.1875,.125,0,-.03125,0],[.75,.1875,.125,0,.34375,0]],shift:0},
-  button:{parts:[[.375,.125,.25,0,-.4375,0]],shift:.4},
-  plate:{parts:[[.875,.0625,.875,0,-.46875,0]],shift:.45},
-  trapdoor:{parts:[[1,.1875,1,0,-.40625,0]],shift:.4},
-  door:{},
-  plant:{},
-  azalea:{},
-  beacon:{},
-  candle:{parts:[[.125,.375,.125,0,-.3125,0]],shift:0},
-  carpet:{parts:[[1,.0625,1,0,-.46875,0]],shift:.45},
-  rail:{parts:[[1,.0625,1,0,-.46875,0]],shift:.45},
-  decal:{parts:[[1,1,.0625,0,0,-.46875]],shift:0}
-};
-var ALL_SHAPES=['cube','slab','stairs','wall','fence','gate','button','plate'];
+var SHAPES=FKShapes.SHAPES;
+var ALL_SHAPES=['cube','slab','stairs','wall','fence','gate','button','plate','pane'];
 var $=function(s){return document.querySelector(s)};
 try{var PD=parent.document.documentElement;var syncTheme=function(){document.documentElement.setAttribute('data-theme',PD.getAttribute('data-theme')||'light')};syncTheme();new MutationObserver(syncTheme).observe(PD,{attributes:true,attributeFilter:['data-theme']})}catch(e){}
 var ed=$('#ed'), ectx=ed.getContext('2d');
@@ -159,26 +141,19 @@ function setupSlots(list,fm){
   applyGen++;
   Object.keys(tex).forEach(function(k){if(tex[k])tex[k].dispose()});
   Object.keys(mats).forEach(function(k){if(mats[k])mats[k].dispose()});
-  tex={};mats={};cv={};undoS={};redoS={};ph={};
+  tex={};mats={};cv={};undoS={};redoS={};ph={};fr={};fi={};hs={};
   slots=list;faceMap=fm;
   var dbl=/leaves/.test(cur)||modelOf(cur)==='plant'||modelOf(cur)==='azalea';
   list.forEach(function(s){
-    cv[s.id]=document.createElement('canvas');cv[s.id].width=cv[s.id].height=res;
+    var n=(files[s.id]&&files[s.id].frames)||1,a=[];
+    for(var i=0;i<n;i++){var c=document.createElement('canvas');c.width=c.height=res;a.push(c)}
+    fr[s.id]=a;fi[s.id]=0;hs[s.id]=[];cv[s.id]=a[0];
     undoS[s.id]=[];redoS[s.id]=[];
     if(gl)mats[s.id]=new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:dbl?THREE.DoubleSide:THREE.FrontSide});
   });
   if(gl)mats.__door=new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:THREE.FrontSide});
   slot=list[0].id;
   buildSlotUi();
-}
-function uiIcon(b,label,k){
- b.type='button';b.title=label;b.setAttribute('aria-label',label);
- var s='',p=SHAPES[k]&&SHAPES[k].parts;
- if(p){
-  function v(x,y,z){return (12+(x-z)*9)+','+(12-y*12+(x+z)*4)}
-  p.forEach(function(a){var l=a[3]-a[0]/2,r=l+a[0],t=a[4]+a[1]/2,d=t-a[1],f=a[5]+a[2]/2,h=f-a[2];s+='<path d="M'+v(l,t,f)+' '+v(r,t,f)+' '+v(r,t,h)+' '+v(l,t,h)+'Z M'+v(l,t,f)+' '+v(l,d,f)+' '+v(r,d,f)+' '+v(r,d,h)+' '+v(r,t,h)+' M'+v(r,t,f)+' '+v(r,d,f)+'"/>'});
- }else s=k==='door'?'<rect x="6" y="2" width="12" height="20"/><path d="M15 12h1"/>':k==='beacon'?'<rect x="3" y="3" width="18" height="18"/><rect x="7" y="7" width="10" height="10"/>':'<path d="M12 22V4m0 9L4 5m8 12 8-8"/>';
- b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">'+s+'</svg>';
 }
 function slotLabels(list){
  var names=list.map(function(s){return String(s.id).split('/').pop().replace(/\.(png|tga)$/i,'').split('_')}),pre=0;
@@ -197,20 +172,36 @@ function buildSlotUi(){
     b.onclick=function(){setSlot(s.id)};boxEl.appendChild(b);
   });
   boxEl.style.display=slots.length>1?'flex':'none';
+  frameUi();
 }
 function setSlot(id){
   if(!cv[id])return;slot=id;
   $('#slots').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.id===id)});
-  drawEd();
+  drawEd();frameUi();
   if(shape==='rail')build();
   if(slots.some(function(s){return s.carried})){var so=slotsFor(cur),isC=slots.some(function(s){return s.carried&&s.id===id}),nf={};if(isC){Object.keys(faceMap).forEach(function(k){nf[k]=id});faceMap=nf}else faceMap=so.fm;build()}
 }
+function frameUi(){
+  var f=fr[slot],n=f?f.length:0;
+  $('#frames').style.display=n>1?'flex':'none';
+  if(n>1)$('#fNum').textContent=(fi[slot]+1)+' / '+n;
+}
+function setFrame(k){
+  var id=slot,f=fr[id];
+  if(!f||k<0||k>=f.length||k===fi[id])return;
+  hs[id][fi[id]]={u:undoS[id],r:redoS[id]};
+  fi[id]=k;cv[id]=f[k];
+  var h=hs[id][k]||{u:[],r:[]};undoS[id]=h.u;redoS[id]=h.r;
+  refreshTex(id);drawEd();frameUi();
+}
+$('#fPrev').onclick=function(){setFrame(fi[slot]-1)};
+$('#fNext').onclick=function(){setFrame(fi[slot]+1)};
 function snap(k){return ctxOf(k).getImageData(0,0,res,res)}
 function pushUndo(){var s=undoS[slot];s.push(snap(slot));if(s.length>60)s.shift();redoS[slot]=[];updHist()}
 function doUndo(){var s=undoS[slot];if(!s||!s.length)return;redoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
 function doRedo(){var s=redoS[slot];if(!s||!s.length)return;undoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
 function updHist(){if(ctx.onHistory)ctx.onHistory(!!(undoS[slot]&&undoS[slot].length),!!(redoS[slot]&&redoS[slot].length))}
-function resetHist(){slots.forEach(function(s){undoS[s.id]=[];redoS[s.id]=[]});updHist()}
+function resetHist(){slots.forEach(function(s){undoS[s.id]=[];redoS[s.id]=[];hs[s.id]=[]});updHist()}
 function drawEd(){ed.width=ed.height=res;ed.style.backgroundSize=(200/res)+'% '+(200/res)+'%';ectx.clearRect(0,0,res,res);if(cv[slot])ectx.drawImage(cv[slot],0,0);updHist()}
 function touched(){
   dirty[slot]=true;delete ph[slot];API.edits++;
@@ -223,23 +214,26 @@ function setShapeUi(){$('#shapes').querySelectorAll('button').forEach(function(b
 function updShapeUi(list){
   shapeKeys=list;
   var bx=$('#shapes');bx.innerHTML='';
-  shapeKeys.forEach(function(k){var b=document.createElement('button');uiIcon(b,tt('shape.'+k),k);b.dataset.s=k;bx.appendChild(b)});
+  shapeKeys.forEach(function(k){var b=document.createElement('button');FKShapes.icon(b,tt('shape.'+k),k);b.dataset.s=k;bx.appendChild(b)});
   if(shapeKeys.indexOf(shape)<0)shape=shapeKeys[0]||'cube';
   $('#shapesRow').style.display=shapeKeys.length>1?'flex':'none';
   setShapeUi();
 }
 function setRes(n){
   if(n===res)return;
-  var old={};slots.forEach(function(s){var c=document.createElement('canvas');c.width=c.height=res;c.getContext('2d').drawImage(cv[s.id],0,0);old[s.id]=c});
+  var old={};slots.forEach(function(s){old[s.id]=fr[s.id].map(function(f){var c=document.createElement('canvas');c.width=c.height=res;c.getContext('2d').drawImage(f,0,0);return c})});
   res=n;
-  slots.forEach(function(s){cv[s.id].width=cv[s.id].height=res;var g=ctxOf(s.id);g.imageSmoothingEnabled=false;g.drawImage(old[s.id],0,0,res,res)});
+  slots.forEach(function(s){fr[s.id].forEach(function(f,k){f.width=f.height=res;var g=f.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(old[s.id][k],0,0,res,res)})});
   resetHist();rebuildTextures();drawEd();slots.forEach(function(s){dirty[s.id]=true});API.edits++;
   if(ctx.onRes)ctx.onRes(res);
 }
 function packCur(){
   slots.forEach(function(s){
     if(ph[s.id]||!cv[s.id])return;
-    files[s.id]={res:res,data:cv[s.id].toDataURL('image/png')};
+    var fs=fr[s.id],n=fs.length,d;
+    if(n>1){var c=document.createElement('canvas');c.width=res;c.height=res*n;var g=c.getContext('2d');fs.forEach(function(f,k){g.drawImage(f,0,k*res)});d=c.toDataURL('image/png')}
+    else d=cv[s.id].toDataURL('image/png');
+    files[s.id]={res:res,data:d,frames:n};
   });
 }
 function entryFor(list){
@@ -248,7 +242,7 @@ function entryFor(list){
   return {res:r||res,slots:o};
 }
 function applyEntry(e,done){
-  var gen=++applyGen,list=slots,canv=cv,phNow=ph;
+  var gen=++applyGen,list=slots,frs=fr,phNow=ph;
   res=e.res||16;if(ctx.onRes)ctx.onRes(res);
   var left=list.length;
   function fin(){
@@ -257,12 +251,12 @@ function applyEntry(e,done){
     rebuildTextures();drawEd();resetHist();if(done)done();
   }
   list.forEach(function(s){
-    var c=canv[s.id];
-    c.width=c.height=res;
+    var fs=frs[s.id];
+    fs.forEach(function(c){c.width=c.height=res});
     var src=e.slots&&e.slots[s.id];
-    if(!src){placeholder(c.getContext('2d'),res);phNow[s.id]=true;fin();return}
+    if(!src){fs.forEach(function(c){placeholder(c.getContext('2d'),res)});phNow[s.id]=true;fin();return}
     var img=new Image();
-    img.onload=function(){if(gen===applyGen){var g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(img,0,0,res,res)}fin()};
+    img.onload=function(){if(gen===applyGen){fs.forEach(function(c,k){var g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(img,0,k*img.width,img.width,img.width,0,0,res,res)})}fin()};
     img.onerror=fin;img.src=src;
   });
 }
@@ -334,6 +328,7 @@ function setBlockInfo(id,m,note,mo){
   S.info={id:id,files:pathsFor(m),shared:grp.filter(function(x){return x!==m}),forms:fo?Object.keys(fo):[],note:note,kind:isDoorBlock(m)?'door':(mo||'shape')};
   emit();
 }
+function fcount(w,h){var n=Math.round(h/w);return n>1&&Math.abs(h/w-n)<.01?n:1}
 function ensureFiles(m){
   var p=pathsFor(m),need=[];
   p.forEach(function(x){if(!files[x]&&need.indexOf(x)<0)need.push(x)});
@@ -343,9 +338,10 @@ function ensureFiles(m){
     need.forEach(function(x,i){
       var im=imgs[i];
       if(!im){miss++;return}
-      c.width=c.height=r;var g=c.getContext('2d');g.imageSmoothingEnabled=false;
-      g.drawImage(im,0,0,im.width,im.width,0,0,r,r);
-      files[x]={res:r,data:c.toDataURL('image/png')};
+      var n=fcount(im.width,im.height);
+      c.width=r;c.height=r*n;var g=c.getContext('2d');g.imageSmoothingEnabled=false;
+      g.drawImage(im,0,0,im.width,im.width*n,0,0,r,r*n);
+      files[x]={res:r,data:c.toDataURL('image/png'),frames:n};
     });
     return {vanilla:!!first,missing:miss,loaded:true};
   });
@@ -379,10 +375,12 @@ function curFiles(){
   });
   return out;
 }
-function pngSize(d){
-  var w=16;
-  try{var b=atob(d.split(',')[1].slice(0,40));w=(b.charCodeAt(16)*16777216)+(b.charCodeAt(17)<<16)+(b.charCodeAt(18)<<8)+b.charCodeAt(19)}catch(e){}
-  return (w>0&&w<=1024)?w:16;
+function mkFile(d){
+  var w=16,h=16;
+  try{var b=atob(d.split(',')[1].slice(0,40));w=(b.charCodeAt(16)*16777216)+(b.charCodeAt(17)<<16)+(b.charCodeAt(18)<<8)+b.charCodeAt(19);h=(b.charCodeAt(20)*16777216)+(b.charCodeAt(21)<<16)+(b.charCodeAt(22)<<8)+b.charCodeAt(23)}catch(e){}
+  if(!(w>0&&w<=1024))w=16;
+  if(!(h>0))h=w;
+  return {res:w,data:d,frames:fcount(w,h)};
 }
 var API={
   edits:0,busy:false,want:null,block:'',pending:'',state:S,ctx:ctx,
@@ -409,7 +407,7 @@ var API={
     }
     if(!hit&&alt){hit=alt;key=pathsFor(alt)[0]}
     if(!hit)return false;
-    files[key]={res:pngSize(data),data:data};dirty[key]=true;API.want=key;selectBlock(hit);
+    files[key]=mkFile(data);dirty[key]=true;API.want=key;selectBlock(hit);
     return hit;
   },
   stats:function(){return {frames:frames,webgl:gl,res:res,slots:slots.length}},
@@ -420,7 +418,7 @@ var API={
       obj:function(){return {id:cur||null,paths:slots.map(function(s){return s.id}),file:slot?String(slot).split('/').pop():''}},
       setPack:function(map){
         Object.keys(dirty).forEach(function(k){if(!(k in map)){delete dirty[k];delete files[k]}});
-        Object.keys(map).forEach(function(k){files[k]={res:pngSize(map[k]),data:map[k]};dirty[k]=true});
+        Object.keys(map).forEach(function(k){files[k]=mkFile(map[k]);dirty[k]=true});
       },
       shapeFor:function(id){
         var m=catalog.mother[id],mo=modelOf(m),k=shapeKeysFor(m,catalog.members[catalog.sig[m]]),w=isDoorBlock(m)?'door':(mo?mo:shapeOfId(id));
