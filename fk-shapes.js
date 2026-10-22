@@ -1,6 +1,7 @@
 /* FKShapes: block shapes and Three.js model builders. Editor state arrives through env E; this file keeps no state. */
 var FKShapes=(function(){
 var PI4=Math.PI/4;
+var GLZ={north:270,east:0,south:90,west:180};
 var SHAPES={
   cube:{parts:[[1,1,1,0,0,0]],shift:0},
   slab:{parts:[[1,.5,1,0,-.25,0]],shift:.25},
@@ -11,6 +12,8 @@ var SHAPES={
   button:{parts:[[.375,.125,.25,0,-.4375,0]],shift:.4},
   plate:{parts:[[.875,.0625,.875,0,-.46875,0]],shift:.45},
   pane:{parts:[[1,1,.125,0,0,0]],shift:0},
+  cake:{parts:[[.875,.5,.875,0,-.25,0]],shift:.25},
+  anvil:{},
   trapdoor:{parts:[[1,.1875,1,0,-.40625,0]],shift:.4},
   door:{},
   plant:{},
@@ -30,7 +33,7 @@ function icon(b,label,k){
  }else s=k==='door'?'<rect x="6" y="2" width="12" height="20"/><path d="M15 12h1"/>':k==='beacon'?'<rect x="3" y="3" width="18" height="18"/><rect x="7" y="7" width="10" height="10"/>':'<path d="M12 22V4m0 9L4 5m8 12 8-8"/>';
  b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">'+s+'</svg>';
 }
-function box(E,w,h,d,x,y,z,ids,ys,vs){
+function box(E,w,h,d,x,y,z,ids,ys,vs,rot){
   var g=new THREE.BoxGeometry(w,h,d),p=g.attributes.position,n=g.attributes.normal,uv=g.attributes.uv;
   ys=ys||0;vs=vs||1;
   for(var i=0;i<p.count;i++){
@@ -39,6 +42,10 @@ function box(E,w,h,d,x,y,z,ids,ys,vs){
     else if(Math.abs(nz)>.5){u=nz>0?X+.5:.5-X;v=(Y+.5-ys)*vs}
     else if(vs!==1){var th=(Z-z+d/2)/d;u=X+.5;v=ny>0?1-.09375*th:.09375*th}
     else{u=X+.5;v=ny>0?.5-Z:Z+.5}
+    if(rot){
+      var a=(rot[nx>.5?'east':nx<-.5?'west':nz>.5?'south':nz<-.5?'north':ny>.5?'up':'down']||0)*Math.PI/180;
+      if(a){var c=Math.cos(a),s=Math.sin(a),pu=u-.5,pv=v-.5;u=.5+pu*c-pv*s;v=.5+pu*s+pv*c}
+    }
     uv.setXY(i,u,v);
   }
   var f=E.faceMap;
@@ -87,6 +94,13 @@ function pane(E){
   var f=E.faceMap,e=f.edge||f.east,g=f.south;
   E.group.add(box(E,1,1,.125,0,0,0,[e,e,e,e,g,g]));
 }
+function anvil(E){
+  var f=E.faceMap,b=f.down,t=(E.slot===f.g1||E.slot===f.g2)?E.slot:f.up,a=[b,b,b,b,b,b],G=E.group;
+  G.add(box(E,.75,.25,.75,0,-.375,0,a));
+  G.add(box(E,.5,.0625,.625,0,-.21875,0,a));
+  G.add(box(E,.25,.3125,.5,0,-.03125,0,a));
+  G.add(box(E,.625,.375,1,0,.3125,0,[b,b,t,b,b,b]));
+}
 function flat(E){
   var f=E.faceMap,id=E.slot===f.up?f.up:f.down;
   twoSided(E,id);E.group.add(plane(E,id,1,1,0,0,0,-Math.PI/2,0));
@@ -111,11 +125,12 @@ function build(E){
   if(s==='beacon')return beacon(E);
   if(s==='door')return door(E);
   if(s==='pane')return pane(E);
+  if(s==='anvil')return anvil(E);
   if(s==='rail')return flat(E);
   if(s==='decal')return decal(E);
-  var d=E.SHAPES[s]||E.SHAPES.cube;
+  var d=E.SHAPES[s]||E.SHAPES.cube,rot=(s==='cube'&&/_glazed_terracotta$/.test(E.cur))?GLZ:null;
   d.parts.forEach(function(a){
-    var bm=box.apply(null,[E].concat(a));
+    var bm=box.apply(null,[E].concat(a,[undefined,0,1,rot]));
     if(s==='candle'){var uv=bm.geometry.attributes.uv;for(var i=0;i<uv.count;i++)uv.setX(i,uv.getX(i)-.4375);uv.needsUpdate=true}
     g.add(bm);
   });

@@ -120,6 +120,21 @@ function indexCatalog(c,existing){
     if(!pt||!gp||pt===gp[0]||sp[bs])return;
     sp[bs]={kind:'labels',list:[{id:gp[0],k:['slot.glass']},{id:pt,k:['slot.edge']}],fm:{up:gp[0],down:gp[1],north:gp[2],south:gp[3],east:gp[4],west:gp[5],edge:pt}};
   });
+  if(all.anvil){
+    var an=all.anvil,al2=[{id:an[0],k:['slot.top']},{id:an[1],k:['slot.base']}],ag={};
+    [['chipped_anvil',1],['damaged_anvil',2]].forEach(function(x){var a=all[x[0]];if(a){al2.push({id:a[0],k:['slot.'+x[0]]});ag['g'+x[1]]=a[0]}});
+    sp.anvil={kind:'pick',list:al2,fm:{up:an[0],down:an[1],north:an[1],south:an[1],east:an[1],west:an[1],g1:ag.g1,g2:ag.g2}};
+    ['chipped_anvil','damaged_anvil','deprecated_anvil'].forEach(function(x){delete all[x]});
+  }
+  if(all.barrel){
+    var br=all.barrel;
+    sp.barrel={kind:'labels',list:[{id:br[2],k:['slot.top']},{id:br[3],k:['slot.bottom']},{id:br[0],k:['slot.side']}],fm:{up:br[2],down:br[3],north:br[0],south:br[0],east:br[0],west:br[0]}};
+  }
+  Object.keys(all).forEach(function(id){if(/(^|_)candle_cake$/.test(id))delete all[id]});
+  if(all.cake){
+    var ck=all.cake;
+    sp.cake={kind:'labels',list:[{id:ck[0],k:['slot.top']},{id:ck[1],k:['slot.bottom']},{id:ck[2],k:['slot.side']},{id:ck[5],k:['slot.west']}],fm:{up:ck[0],down:ck[1],north:ck[2],south:ck[3],east:ck[4],west:ck[5]}};
+  }
   var b={},filtered=false;
   if(existing){
     Object.keys(all).forEach(function(id){if(all[id].every(function(p){return existing[p]}))b[id]=all[id]});

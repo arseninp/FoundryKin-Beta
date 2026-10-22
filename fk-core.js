@@ -41,6 +41,7 @@ function modelOf(m){
 }
 function shapeKeysFor(m,grp){
   if(isDoorBlock(m))return ['door'];
+  if(m==='anvil')return ['anvil'];if(m==='cake')return ['cake'];
   if(/(^|_)candle$/.test(m))return ['candle'];if(/(^|_)carpet$/.test(m))return ['carpet'];if(/(^|_)rail$/.test(m)||m==='waterlily'||m==='leaf_litter'||m==='frog_spawn')return ['rail'];if(m==='vine'||m==='glow_lichen'||m==='sculk_vein'||m==='resin_clump')return ['decal'];var mo=modelOf(m);if(mo)return [mo];
   if(/_trapdoor$/.test(m))return ['trapdoor'];
   var ks=['cube'],f=catalog.forms&&catalog.forms[m];
@@ -178,7 +179,7 @@ function setSlot(id){
   if(!cv[id])return;slot=id;
   $('#slots').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.id===id)});
   drawEd();frameUi();
-  if(shape==='rail')build();
+  build();
   if(slots.some(function(s){return s.carried})){var so=slotsFor(cur),isC=slots.some(function(s){return s.carried&&s.id===id}),nf={};if(isC){Object.keys(faceMap).forEach(function(k){nf[k]=id});faceMap=nf}else faceMap=so.fm;build()}
 }
 function frameUi(){
