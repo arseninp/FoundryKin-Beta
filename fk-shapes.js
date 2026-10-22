@@ -22,7 +22,8 @@ function plane(E,id,w,h,x,y,z,rx,ry){
   m.position.set(x,y,z);m.rotation.set(rx||0,ry||0,0);return m;
 }
 function cross(E,id,w,h,y,x,z){
-  E.group.add(plane(E,id,w,h,x||0,y,z||0,0,PI4));E.group.add(plane(E,id,w,h,x||0,y,z||0,0,-PI4));
+  var k=E.iso?1/Math.SQRT2:1,a=E.iso?0:PI4,b=E.iso?Math.PI/2:-PI4;
+  E.group.add(plane(E,id,w*k,h,x||0,y,z||0,0,a));E.group.add(plane(E,id,w*k,h,x||0,y,z||0,0,b));
 }
 function twoSided(E,id){var m=E.mats[id];if(m){m.side=THREE.DoubleSide;m.needsUpdate=true}}
 function bamboo(E){

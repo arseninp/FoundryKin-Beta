@@ -84,7 +84,7 @@ function snap3d(o,SH,shape,im,dbl,id){
     dg.drawImage(U,0,0,U.width,U.height,0,0,R2,R2);dg.drawImage(L,0,0,L.width,L.height,0,R2,R2,R2);
     matOf('__door',dc);
   }
-  FKShapes.build({shape:shape,cur:id,slot:'up',faceMap:fm,mats:mats,group:g,hiddenMat:o.hidden,SHAPES:SH,refreshDoor:function(){}});
+  FKShapes.build({shape:shape,cur:id,slot:'up',iso:true,faceMap:fm,mats:mats,group:g,hiddenMat:o.hidden,SHAPES:SH,refreshDoor:function(){}});
   var url=null;
   try{
     g.updateMatrixWorld(true);
