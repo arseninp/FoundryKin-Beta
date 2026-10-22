@@ -59,7 +59,7 @@ function modelOf(m){
 }
 function shapeKeysFor(m,grp){
   if(isDoorBlock(m))return ['door'];
-  if(/(^|_)candle$/.test(m))return ['candle'];if(/(^|_)carpet$/.test(m)||m==='waterlily'||m==='leaf_litter'||m==='frog_spawn')return ['carpet'];if(/(^|_)rail$/.test(m))return ['rail'];if(m==='vine'||m==='glow_lichen'||m==='sculk_vein'||m==='resin_clump')return ['decal'];var mo=modelOf(m);if(mo)return (mo==='beacon'||mo==='azalea')?[mo]:[mo,'cube'];
+  if(/(^|_)candle$/.test(m))return ['candle'];if(/(^|_)carpet$/.test(m)||m==='waterlily'||m==='leaf_litter'||m==='frog_spawn')return ['carpet'];if(/(^|_)rail$/.test(m))return ['rail'];if(m==='vine'||m==='glow_lichen'||m==='sculk_vein'||m==='resin_clump')return ['decal'];var mo=modelOf(m);if(mo)return [mo];
   if(/_trapdoor$/.test(m))return ['trapdoor'];
   var ks=['cube'],f=catalog.forms&&catalog.forms[m];
   if(f)Object.keys(f).forEach(function(k){if(ks.indexOf(k)<0)ks.push(k)});
