@@ -55,11 +55,11 @@ function isDoorBlock(m){return !!(catalog&&catalog.sp&&catalog.sp[m]&&catalog.sp
 function modelOf(m){
   if(m==='beacon')return 'beacon';
   if(m==='azalea'||m==='flowering_azalea')return 'azalea';
-  return (catalog&&catalog.p&&catalog.p[m])?'plant':null;
+  return (m==='bamboo'||(catalog&&catalog.p&&catalog.p[m]))?'plant':null;
 }
 function shapeKeysFor(m,grp){
   if(isDoorBlock(m))return ['door'];
-  if(/(^|_)candle$/.test(m))return ['candle'];if(/(^|_)carpet$/.test(m)||m==='waterlily'||m==='leaf_litter'||m==='frog_spawn')return ['carpet'];if(/(^|_)rail$/.test(m))return ['rail'];if(m==='vine'||m==='glow_lichen'||m==='sculk_vein'||m==='resin_clump')return ['decal'];var mo=modelOf(m);if(mo)return [mo];
+  if(/(^|_)candle$/.test(m))return ['candle'];if(/(^|_)carpet$/.test(m))return ['carpet'];if(/(^|_)rail$/.test(m)||m==='waterlily'||m==='leaf_litter'||m==='frog_spawn')return ['rail'];if(m==='vine'||m==='glow_lichen'||m==='sculk_vein'||m==='resin_clump')return ['decal'];var mo=modelOf(m);if(mo)return [mo];
   if(/_trapdoor$/.test(m))return ['trapdoor'];
   var ks=['cube'],f=catalog.forms&&catalog.forms[m];
   if(f)Object.keys(f).forEach(function(k){if(ks.indexOf(k)<0)ks.push(k)});
@@ -109,55 +109,11 @@ function refreshTex(id){
   refreshDoor();
 }
 function rebuildTextures(){slots.forEach(function(s){refreshTex(s.id)});refreshDoor()}
-function box(w,h,d,x,y,z,ids,ys,vs){
-  var g=new THREE.BoxGeometry(w,h,d),p=g.attributes.position,n=g.attributes.normal,uv=g.attributes.uv;
-  ys=ys||0;vs=vs||1;
-  for(var i=0;i<p.count;i++){
-    var X=p.getX(i)+x,Y=p.getY(i)+y,Z=p.getZ(i)+z,nx=n.getX(i),ny=n.getY(i),nz=n.getZ(i),u,v;
-    if(Math.abs(nx)>.5){u=nx>0?.5-Z:Z+.5;v=(Y+.5-ys)*vs}
-    else if(Math.abs(nz)>.5){u=nz>0?X+.5:.5-X;v=(Y+.5-ys)*vs}
-    else if(vs!==1){var th=(Z-z+d/2)/d;u=X+.5;v=ny>0?1-.09375*th:.09375*th}
-    else{u=X+.5;v=ny>0?.5-Z:Z+.5}
-    uv.setXY(i,u,v);
-  }
-  var f=faceMap;
-  ids=ids||[f.east,f.west,f.up,f.down,f.south,f.north];
-  var m=new THREE.Mesh(g,ids.map(function(k){return k===null?hiddenMat:mats[k]}));
-  m.position.set(x,y,z);return m;
-}
-function plane(id,h,y,ry){
-  var m=new THREE.Mesh(new THREE.PlaneGeometry(Math.SQRT2,h),mats[id]);
-  m.position.y=y;m.rotation.y=ry;return m;
-}
-function buildPlant(){
-  var st=shape==='azalea'?faceMap.plant:faceMap.up;
-  group.add(plane(st,1,0,Math.PI/4));group.add(plane(st,1,0,-Math.PI/4));
-  if(shape==='azalea'){var t=faceMap.up,s=faceMap.north;group.add(box(1,1,1,0,0,0,[s,s,t,null,s,s]))}
-}
-function buildBeacon(){
-  var f=faceMap,g=f.east,b=f.down,c=f.up;
-  group.add(box(.75,.1875,.75,0,-.40625,0,[b,b,b,b,b,b]));
-  group.add(box(.625,.625,.625,0,0,0,[c,c,c,c,c,c]));
-  group.add(box(1,1,1,0,0,0,[g,g,g,g,g,g]));
-}
-function buildDoor(){
-  var D='__door',d6=[D,D,D,D,D,D];
-  refreshDoor();
-  group.add(box(1,2,.1875,0,0,-.40625,d6,-.5,.5));
-}
 function build(){
-  if(gl){
-    while(group.children.length)group.remove(group.children[0]);
-    if(!slots.length)return;
-    if(shape==='plant'||shape==='azalea')buildPlant();
-    else if(shape==='beacon')buildBeacon();
-    else if(shape==='door')buildDoor();
-    else{
-      var d=SHAPES[shape]||SHAPES.cube;
-      d.parts.forEach(function(a){var bm=box.apply(null,shape==='rail'?a.concat([[faceMap.east,faceMap.west,(slot===faceMap.up?faceMap.up:faceMap.down),(slot===faceMap.up?faceMap.up:faceMap.down),faceMap.south,faceMap.north]]):a);if(shape==='candle'){var uv=bm.geometry.attributes.uv;for(var i=0;i<uv.count;i++)uv.setX(i,uv.getX(i)-.4375);uv.needsUpdate=true}group.add(bm)});if(shape==='candle'){var wid=faceMap.east,wm=mats[wid];if(wm){wm.side=THREE.DoubleSide;wm.needsUpdate=true;[.7853981633974483,-.7853981633974483].forEach(function(ry){var pg=new THREE.PlaneGeometry(.125,.125),pu=pg.attributes.uv;for(var j=0;j<pu.count;j++){pu.setXY(j,pu.getX(j)*.125,.375+pu.getY(j)*.125)}var pm=new THREE.Mesh(pg,wm);pm.position.y=-.0625;pm.rotation.y=ry;group.add(pm)})}}
-      if(d.shift)group.children.forEach(function(m){m.position.y+=d.shift});
-    }
-  }
+  if(!gl)return;
+  while(group.children.length)group.remove(group.children[0]);
+  if(!slots.length)return;
+  FKShapes.build({shape:shape,cur:cur,slot:slot,faceMap:faceMap,mats:mats,group:group,hiddenMat:hiddenMat,SHAPES:SHAPES,refreshDoor:refreshDoor});
 }
 var drag=null,idle=true,lastT=0;
 stage.addEventListener('pointerdown',function(e){if(!gl)return;drag={x:e.clientX,y:e.clientY};idle=false;stage.setPointerCapture(e.pointerId)});
