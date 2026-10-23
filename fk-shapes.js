@@ -75,10 +75,14 @@ function cross(E,id,w,h,y,x,z){
 function twoSided(E,id){var m=E.mats[id];if(m){m.side=THREE.DoubleSide;m.needsUpdate=true}}
 function sprite(E){twoSided(E,E.slot);E.group.add(plane(E,E.slot,1.1,1.1,0,0,0,0,0))}
 function bamboo(E){
-  var f=E.faceMap,s=f.north,st=box(E,.1875,1,.1875,0,0,0,[s,s,s,s,s,s]),uv=st.geometry.attributes.uv;
-  for(var i=0;i<uv.count;i++)uv.setX(i,uv.getX(i)-.40625);
-  uv.needsUpdate=true;E.group.add(st);
-  cross(E,f.up,1.2,1,.3);cross(E,f.south,.9,.6,-.05);cross(E,f.east,.6,.5,-.35);
+  var f=E.faceMap,s=f.north,sub=new THREE.Group(),E2=Object.create(E);
+  E2.group=sub;sub.scale.setScalar(.7);
+  var R={north:[0,0,3,16],south:[0,0,3,16],east:[0,0,3,16],west:[0,0,3,16],up:[13,0,16,3],down:[13,4,16,7]};
+  [-1,0,1].forEach(function(y){sub.add(ubox(E,.1875,1,.1875,0,y,0,s,R,16))});
+  cross(E2,f.east,.6,.5,-1.3);
+  cross(E2,f.south,.9,1,0);
+  cross(E2,f.up,.9,1,1);
+  E.group.add(sub);
 }
 function plant(E){
   var f=E.faceMap,az=E.shape==='azalea';
@@ -177,11 +181,14 @@ function dripstone(E){
 function flat(E){var f=E.faceMap,id=E.slot===f.up?f.up:f.down;twoSided(E,id);E.group.add(plane(E,id,1,1,0,0,0,-Math.PI/2,0))}
 function decal(E){var id=E.faceMap.south;twoSided(E,id);E.group.add(plane(E,id,1,1,0,0,-.49,0,0))}
 function candle(E){
-  var wid=E.faceMap.east,wm=E.mats[wid];if(!wm)return;twoSided(E,wid);
+  var f=E.faceMap,id=f.east,G=E.group,wm=E.mats[id];
+  var R={north:[0,8,2,14],south:[0,8,2,14],east:[0,8,2,14],west:[0,8,2,14],up:[0,6,2,8],down:[0,14,2,16]};
+  G.add(ubox(E,.125,.375,.125,0,-.3125,0,id,R,16));
+  if(!wm)return;twoSided(E,id);
   [PI4,-PI4].forEach(function(ry){
-    var pg=new THREE.PlaneGeometry(.125,.125),pu=pg.attributes.uv;
-    for(var j=0;j<pu.count;j++)pu.setXY(j,pu.getX(j)*.125,.375+pu.getY(j)*.125);
-    var pm=new THREE.Mesh(pg,wm);pm.position.y=-.0625;pm.rotation.y=ry;E.group.add(pm);
+    var pg=new THREE.PlaneGeometry(.0625,.0625),pu=pg.attributes.uv;
+    for(var j=0;j<pu.count;j++)pu.setXY(j,pu.getX(j)/16,.625+pu.getY(j)/16);
+    var pm=new THREE.Mesh(pg,wm);pm.position.set(0,-.09375,0);pm.rotation.y=ry;G.add(pm);
   });
 }
 function build(E){
@@ -191,13 +198,12 @@ function build(E){
   if(s==='plant'||s==='azalea')return plant(E);
   if(s==='beacon')return beacon(E);if(s==='door')return door(E);if(s==='pane')return pane(E);if(s==='anvil')return anvil(E);
   if(s==='bed')return bed(E);if(s==='bell')return bell(E);if(s==='dripleaf')return leaf(E);if(s==='rail')return flat(E);if(s==='decal')return decal(E);
+  if(s==='candle')return candle(E);
   var d=E.SHAPES[s]||E.SHAPES.cube,rot=(s==='cube'&&/_glazed_terracotta$/.test(E.cur))?GLZ:null;
   d.parts.forEach(function(a){
-    var bm=box.apply(null,[E].concat(a,[undefined,0,1,rot]));
-    if(s==='candle'){var uv=bm.geometry.attributes.uv;for(var i=0;i<uv.count;i++)uv.setX(i,uv.getX(i)-.4375);uv.needsUpdate=true}
-    g.add(bm);
+    g.add(box.apply(null,[E].concat(a,[undefined,0,1,rot])));
   });
-  if(s==='candle')candle(E);if(d.shift)g.children.forEach(function(m){m.position.y+=d.shift});
+  if(d.shift)g.children.forEach(function(m){m.position.y+=d.shift});
 }
 return {build:build,SHAPES:SHAPES,icon:icon};
 })();
