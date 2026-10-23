@@ -54,16 +54,21 @@ function rod(E){
 }
 function bars(E){
   var f=E.faceMap,B=f.north,S=f.east;
-  face(E,B,1,1,0,0,0,0,0,[0,0,16,16],true);
-  face(E,S,.125,1,-.5,0,0,0,-Q,[7,0,9,16],true);
-  face(E,S,.125,1,.5,0,0,0,Q,[7,0,9,16],true);
-  face(E,S,1,.125,0,.49994,0,-Q,0,[7,0,9,16,90],true);
-  face(E,S,1,.125,0,-.49994,0,Q,0,[7,0,9,16,90],true);
+  face(E,B,.125,1,0,0,0,0,0,[7,0,9,16],true);
+  face(E,B,.125,1,0,0,0,0,Q,[7,0,9,16],true);
+  face(E,B,.5,1,.25,0,0,0,0,[8,0,16,16],true);
+  face(E,B,.5,1,-.25,0,0,0,0,[16,0,8,16],true);
+  face(E,B,.5,1,0,0,-.25,0,Q,[8,0,16,16],true);
+  face(E,B,.5,1,0,0,.25,0,Q,[16,0,8,16],true);
+  face(E,S,.125,1,0,0,-.49994,0,0,[7,0,9,16],true);
+  face(E,S,.125,1,0,0,.49994,0,0,[7,0,9,16],true);
+  face(E,S,.125,1,.49994,0,0,0,Q,[7,0,9,16],true);
+  face(E,S,.125,1,-.49994,0,0,0,Q,[7,0,9,16],true);
 }
 function cocoa(E){
   var f=E.faceMap,n=E.slot===f.down?0:E.slot===f.north?1:2,id=n===0?f.down:n===1?f.north:f.up,w=4+2*n,h=5+2*n;
   box(E,[8-w/2,12-h,15-w],[8+w/2,12,15],six(id),rects([n===0?11:n===1?9:8,4,n===2?16:15,9+2*n],[0,0,w,w]));
-  face(E,id,.25,.25,0,.375,.375,0,Q,[12,0,16,4],true);
+  face(E,id,.25,.25,0,.375,.375,0,Q,[16,0,12,4],true);
 }
 function conduit(E){
   var id=E.faceMap.up,R={east:[0,6,6,12],north:[6,6,12,12],west:[12,6,18,12],south:[18,6,24,12],up:[6,0,12,6],down:[12,0,18,6]};
