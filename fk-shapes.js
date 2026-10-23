@@ -1,7 +1,7 @@
 /* FKShapes: shared models for editor and Find. */
 var FKShapes=(function(){
 var PI4=Math.PI/4;
-var GLZ={north:270,east:0,south:90,west:180};
+var GLZ={north:270,east:0,south:90,west:180,up:180,down:180};
 var SHAPES={
   cube:{parts:[[1,1,1,0,0,0]],shift:0},
   slab:{parts:[[1,.5,1,0,-.25,0]],shift:.25},
