@@ -74,14 +74,17 @@ function cross(E,id,w,h,y,x,z){
 }
 function twoSided(E,id){var m=E.mats[id];if(m){m.side=THREE.DoubleSide;m.needsUpdate=true}}
 function sprite(E){twoSided(E,E.slot);E.group.add(plane(E,E.slot,1.1,1.1,0,0,0,0,0))}
+function leaves(E,id,w,h,y){
+  E.group.add(plane(E,id,w,h,0,y,0,0,0));E.group.add(plane(E,id,w,h,0,y,0,0,Math.PI/2));
+}
 function bamboo(E){
   var f=E.faceMap,s=f.north,sub=new THREE.Group(),E2=Object.create(E);
   E2.group=sub;sub.scale.setScalar(.7);
   var R={north:[0,0,3,16],south:[0,0,3,16],east:[0,0,3,16],west:[0,0,3,16],up:[13,0,16,3],down:[13,4,16,7]};
   [-1,0,1].forEach(function(y){sub.add(ubox(E,.1875,1,.1875,0,y,0,s,R,16))});
-  cross(E2,f.east,.6,.5,-1.3);
-  cross(E2,f.south,.9,1,0);
-  cross(E2,f.up,.9,1,1);
+  leaves(E2,f.east,.6,.5,-1.3);
+  leaves(E2,f.south,.9,1,0);
+  leaves(E2,f.up,.9,1,1);
   E.group.add(sub);
 }
 function plant(E){
