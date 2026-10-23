@@ -1,4 +1,4 @@
-/* FKShapes: block shapes and Three.js model builders. Editor state arrives through env E; this file keeps no state. */
+/* FKShapes: shared models for editor and Find. */
 var FKShapes=(function(){
 var PI4=Math.PI/4;
 var GLZ={north:270,east:0,south:90,west:180};
@@ -13,15 +13,9 @@ var SHAPES={
   plate:{parts:[[.875,.0625,.875,0,-.46875,0]],shift:.45},
   pane:{parts:[[1,1,.125,0,0,0]],shift:0},
   cake:{parts:[[.875,.5,.875,0,-.25,0]],shift:.25},
-  anvil:{},
-  bed:{},
-  bell:{},
-  dripleaf:{},
+  anvil:{},bed:{},bell:{},dripleaf:{},
   trapdoor:{parts:[[1,.1875,1,0,-.40625,0]],shift:.4},
-  door:{},
-  plant:{},
-  azalea:{},
-  beacon:{},
+  door:{},plant:{},azalea:{},beacon:{},
   candle:{parts:[[.125,.375,.125,0,-.3125,0]],shift:0},
   carpet:{parts:[[1,.0625,1,0,-.46875,0]],shift:.45},
   rail:{parts:[[1,.0625,1,0,-.46875,0]],shift:.45},
@@ -79,9 +73,7 @@ function cross(E,id,w,h,y,x,z){
   E.group.add(plane(E,id,w*k,h,x||0,y,z||0,0,a));E.group.add(plane(E,id,w*k,h,x||0,y,z||0,0,b));
 }
 function twoSided(E,id){var m=E.mats[id];if(m){m.side=THREE.DoubleSide;m.needsUpdate=true}}
-function sprite(E){
-  twoSided(E,E.slot);E.group.add(plane(E,E.slot,1.1,1.1,0,0,0,0,0));
-}
+function sprite(E){twoSided(E,E.slot);E.group.add(plane(E,E.slot,1.1,1.1,0,0,0,0,0))}
 function bamboo(E){
   var f=E.faceMap,s=f.north,st=box(E,.1875,1,.1875,0,0,0,[s,s,s,s,s,s]),uv=st.geometry.attributes.uv;
   for(var i=0;i<uv.count;i++)uv.setX(i,uv.getX(i)-.40625);
@@ -93,8 +85,7 @@ function plant(E){
   if(E.cur==='bamboo')return bamboo(E);
   if(E.cur==='cave_vines'){cross(E,f.up,Math.SQRT2,1,.5);cross(E,f.down,Math.SQRT2,1,-.5);return}
   if(E.cur==='amethyst_cluster'){
-    [[f.up,-1,-1],[f.g1,1,-1],[f.g2,-1,1],[f.g3,1,1]].forEach(function(a){if(a[0])cross(E,a[0],.7,.5,-.25,a[1]*.25,a[2]*.25)});
-    return;
+    [[f.up,-1,-1],[f.g1,1,-1],[f.g2,-1,1],[f.g3,1,1]].forEach(function(a){if(a[0])cross(E,a[0],.7,.5,-.25,a[1]*.25,a[2]*.25)});return;
   }
   cross(E,az?f.plant:f.up,Math.SQRT2,1,0);
   if(az){var s=f.north;E.group.add(box(E,1,1,1,0,0,0,[s,s,f.up,null,s,s]))}
@@ -105,50 +96,53 @@ function beacon(E){
   E.group.add(box(E,.625,.625,.625,0,0,0,[c,c,c,c,c,c]));
   E.group.add(box(E,1,1,1,0,0,0,[g,g,g,g,g,g]));
 }
-function door(E){
-  var D='__door';
-  E.refreshDoor();
-  E.group.add(box(E,1,2,.1875,0,0,-.40625,[D,D,D,D,D,D],-.5,.5));
-}
-function pane(E){
-  var f=E.faceMap,e=f.edge||f.east,g=f.south;
-  E.group.add(box(E,1,1,.125,0,0,0,[e,e,e,e,g,g]));
-}
+function door(E){var D='__door';E.refreshDoor();E.group.add(box(E,1,2,.1875,0,0,-.40625,[D,D,D,D,D,D],-.5,.5))}
+function pane(E){var f=E.faceMap,e=f.edge||f.east,g=f.south;E.group.add(box(E,1,1,.125,0,0,0,[e,e,e,e,g,g]))}
 function anvil(E){
   var f=E.faceMap,b=f.down,t=(E.slot===f.g1||E.slot===f.g2)?E.slot:f.up,a=[b,b,b,b,b,b],G=E.group;
-  G.add(box(E,.75,.25,.75,0,-.375,0,a));
-  G.add(box(E,.5,.0625,.625,0,-.21875,0,a));
-  G.add(box(E,.25,.3125,.5,0,-.03125,0,a));
-  G.add(box(E,.625,.375,1,0,.3125,0,[b,b,t,b,b,b]));
+  G.add(box(E,.75,.25,.75,0,-.375,0,a));G.add(box(E,.5,.0625,.625,0,-.21875,0,a));
+  G.add(box(E,.25,.3125,.5,0,-.03125,0,a));G.add(box(E,.625,.375,1,0,.3125,0,[b,b,t,b,b,b]));
+}
+function bedPiece(E,o,z,uv){
+  var w=z[0],h=z[1],d=z[2],u=uv[0],v=uv[1];
+  var R={up:[u+d,v+d,u+d+w,v+d+h],down:[u+2*d+w,v+d,u+2*d+2*w,v+d+h],east:[u+d+w,v+d,u+2*d+w,v+d+h,1],west:[u,v+d,u+d,v+d+h,2],north:[u+d,v,u+d+w,v+d],south:[u+d+w,v,u+d+2*w,v+d]};
+  E.group.add(ubox(E,w/16,d/16,h/16,(o[0]+w/2-8)/16,.0625-(o[2]+d/2)/16,(o[1]+h/2-16)/16,E.faceMap.up,R));
 }
 function bed(E){
-  var id=E.faceMap.up,G=E.group;
-  var H={up:[6,6,22,22],down:[28,6,44,22],east:[22,6,28,22,1],west:[0,6,6,22,2],north:[6,0,22,6],south:[6,0,22,6]};
-  var F={up:[6,28,22,44],down:[28,28,44,44],east:[22,28,28,44,1],west:[0,28,6,44,2],south:[22,22,38,28],north:[6,28,22,44]};
-  G.add(ubox(E,1,.375,1,0,-.125,-.5,id,H));
-  G.add(ubox(E,1,.375,1,0,-.125,.5,id,F));
-  [[-1,-1,6],[1,-1,18],[-1,1,0],[1,1,12]].forEach(function(l){
-    var v=l[2],R={up:[53,v,56,v+3],down:[56,v,59,v+3],west:[50,v+3,53,v+6],north:[53,v+3,56,v+6],east:[56,v+3,59,v+6],south:[59,v+3,62,v+6]};
-    var leg=ubox(E,.1875,.1875,.1875,l[0]*.40625,-.40625,l[1]*.90625,id,R);
-    leg.rotation.y=(v/6)*Math.PI/2;G.add(leg);
-  });
+  bedPiece(E,[0,0,0],[16,32,6],[0,0]);
+  bedPiece(E,[3,31,6],[10,1,3],[38,2]);bedPiece(E,[3,0,6],[10,1,3],[38,38]);
+  bedPiece(E,[15,3,6],[1,26,3],[52,6]);bedPiece(E,[0,3,6],[1,26,3],[44,6]);
+  bedPiece(E,[13,29,6],[3,3,3],[12,38]);bedPiece(E,[0,29,6],[3,3,3],[0,38]);
+  bedPiece(E,[13,0,6],[3,3,3],[12,44]);bedPiece(E,[0,0,6],[3,3,3],[0,44]);
+}
+function inkRect(E,id){
+  var mat=E.mats[id],im=mat&&mat.map&&mat.map.image,full=[0,0,16,16];
+  if(!im)return full;
+  try{
+    var w=im.width,h=im.height,raw=im.data,d=raw||(im.getContext&&im.getContext('2d').getImageData(0,0,w,h).data);
+    if(!d||!w||!h)return full;
+    var x0=w,y0=h,x1=-1,y1=-1;
+    for(var y=0;y<h;y++)for(var x=0;x<w;x++)if(d[(y*w+x)*4+3]>0){
+      var py=raw?h-1-y:y;x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,py);y1=Math.max(y1,py);
+    }
+    return x1<0?full:[16*x0/w,16*y0/h,16*(x1+1)/w,16*(y1+1)/h];
+  }catch(err){return full}
 }
 function bell(E){
   var f=E.faceMap,w=f.east,st=f.west,sd=f.north,tp=f.up,bt=f.down,G=E.group;
   var R={up:[0,0,2,4],down:[0,0,2,4],north:[0,1,2,16],south:[0,1,2,16],east:[0,1,4,16],west:[0,1,4,16]};
   [-.4375,.4375].forEach(function(x){G.add(ubox(E,.125,1,.25,x,0,0,st,R,16))});
   G.add(ubox(E,.75,.125,.125,0,.375,0,w,{up:[2,3,14,5],north:[2,2,14,4],south:[2,3,14,5]},16));
-  var full={up:[0,0,16,16]};
-  G.add(ubox(E,.375,.4375,.375,0,.09375,0,sd,full,16,[sd,sd,tp,sd,sd,sd]));
-  G.add(ubox(E,.5,.125,.5,0,-.1875,0,sd,full,16,[sd,sd,sd,bt,sd,sd]));
+  var side=inkRect(E,sd),top=inkRect(E,tp),bottom=inkRect(E,bt);
+  G.add(ubox(E,.375,.4375,.375,0,.09375,0,sd,{up:top,down:side,north:side,south:side,east:side,west:side},16,[sd,sd,tp,sd,sd,sd]));
+  G.add(ubox(E,.5,.125,.5,0,-.1875,0,sd,{up:side,down:bottom,north:side,south:side,east:side,west:side},16,[sd,sd,sd,bt,sd,sd]));
 }
 function patch(E,id,w,h,x,y,z,rx,ry,r){
   twoSided(E,id);
   var m=plane(E,id,w,h,x,y,z,rx,ry),uv=m.geometry.attributes.uv;
-  r=r||[0,0,16,16];
+  m.rotation.order='YXZ';r=r||[0,0,16,16];
   for(var i=0;i<uv.count;i++){
-    var u=uv.getX(i),v=uv.getY(i);
-    uv.setXY(i,(r[0]+u*(r[2]-r[0]))/16,1-(r[1]+(1-v)*(r[3]-r[1]))/16);
+    var u=uv.getX(i),v=uv.getY(i);uv.setXY(i,(r[0]+u*(r[2]-r[0]))/16,1-(r[1]+(1-v)*(r[3]-r[1]))/16);
   }
   E.group.add(m);return m;
 }
@@ -165,30 +159,23 @@ function leaf(E){
     patch(E,f.down,1,.25,-.5,5/16,0,0,Math.PI/2,[0,0,16,4]);
     patch(E,f.down,1,.25,.5,5/16,0,0,Math.PI/2,[0,0,16,4]);
   }else{
-    stem(E,f.south,7/16,1,-.5,0,[4,0,12,16]);
-    stem(E,f.north,7/16,14/16,7/16,0,[4,0,12,14]);
-    [[11.5,19,11.5,0], [4.5,24,4.5,0], [4.5,28,11.5,Math.PI/2]].forEach(function(l){
+    stem(E,f.south,7/16,1,-.5,0,[4,0,12,16]);stem(E,f.north,7/16,14/16,7/16,0,[4,0,12,14]);
+    [[11.5,19,11.5,0],[4.5,24,4.5,0],[4.5,28,11.5,Math.PI/2]].forEach(function(l){
       var x=(l[0]-8)/16,y=(l[1]-16)/16,z=(l[2]-8)/16;
       patch(E,f.up,7/16,7/16,x,y,z,-Math.PI/2,l[3],[0,0,8,8]);
-      patch(E,f.down,7/16,1/16,x,y-1/32,z-7/32,0,0,[0,0,8,1]);
-      patch(E,f.down,7/16,1/16,x,y-1/32,z+7/32,0,0,[0,0,8,1]);
-      patch(E,f.down,7/16,1/16,x-7/32,y-1/32,z,0,Math.PI/2,[0,0,8,1]);
-      patch(E,f.down,7/16,1/16,x+7/32,y-1/32,z,0,Math.PI/2,[0,0,8,1]);
+      patch(E,f.down,7/16,1/16,x,y-1/32,z-7/32,0,0,[0,0,8,1]);patch(E,f.down,7/16,1/16,x,y-1/32,z+7/32,0,0,[0,0,8,1]);
+      patch(E,f.down,7/16,1/16,x-7/32,y-1/32,z,0,Math.PI/2,[0,0,8,1]);patch(E,f.down,7/16,1/16,x+7/32,y-1/32,z,0,Math.PI/2,[0,0,8,1]);
     });
   }
 }
-function flat(E){
-  var f=E.faceMap,id=E.slot===f.up?f.up:f.down;
-  twoSided(E,id);E.group.add(plane(E,id,1,1,0,0,0,-Math.PI/2,0));
+function dripstone(E){
+  var f=E.faceMap,tip=E.slot===f.west?f.west:f.north;
+  [f.up,f.south,f.down,tip].forEach(function(id,i){twoSided(E,id);cross(E,id,Math.SQRT2*.5,.5,.75-i*.5,0,0)});
 }
-function decal(E){
-  var id=E.faceMap.south;
-  twoSided(E,id);E.group.add(plane(E,id,1,1,0,0,-.49,0,0));
-}
+function flat(E){var f=E.faceMap,id=E.slot===f.up?f.up:f.down;twoSided(E,id);E.group.add(plane(E,id,1,1,0,0,0,-Math.PI/2,0))}
+function decal(E){var id=E.faceMap.south;twoSided(E,id);E.group.add(plane(E,id,1,1,0,0,-.49,0,0))}
 function candle(E){
-  var wid=E.faceMap.east,wm=E.mats[wid];
-  if(!wm)return;
-  twoSided(E,wid);
+  var wid=E.faceMap.east,wm=E.mats[wid];if(!wm)return;twoSided(E,wid);
   [PI4,-PI4].forEach(function(ry){
     var pg=new THREE.PlaneGeometry(.125,.125),pu=pg.attributes.uv;
     for(var j=0;j<pu.count;j++)pu.setXY(j,pu.getX(j)*.125,.375+pu.getY(j)*.125);
@@ -198,24 +185,17 @@ function candle(E){
 function build(E){
   var s=E.shape,g=E.group;
   if(typeof E.slot==='string'&&E.slot.indexOf('textures/items/')===0)return sprite(E);
+  if(E.cur==='pointed_dripstone')return dripstone(E);
   if(s==='plant'||s==='azalea')return plant(E);
-  if(s==='beacon')return beacon(E);
-  if(s==='door')return door(E);
-  if(s==='pane')return pane(E);
-  if(s==='anvil')return anvil(E);
-  if(s==='bed')return bed(E);
-  if(s==='bell')return bell(E);
-  if(s==='dripleaf')return leaf(E);
-  if(s==='rail')return flat(E);
-  if(s==='decal')return decal(E);
+  if(s==='beacon')return beacon(E);if(s==='door')return door(E);if(s==='pane')return pane(E);if(s==='anvil')return anvil(E);
+  if(s==='bed')return bed(E);if(s==='bell')return bell(E);if(s==='dripleaf')return leaf(E);if(s==='rail')return flat(E);if(s==='decal')return decal(E);
   var d=E.SHAPES[s]||E.SHAPES.cube,rot=(s==='cube'&&/_glazed_terracotta$/.test(E.cur))?GLZ:null;
   d.parts.forEach(function(a){
     var bm=box.apply(null,[E].concat(a,[undefined,0,1,rot]));
     if(s==='candle'){var uv=bm.geometry.attributes.uv;for(var i=0;i<uv.count;i++)uv.setX(i,uv.getX(i)-.4375);uv.needsUpdate=true}
     g.add(bm);
   });
-  if(s==='candle')candle(E);
-  if(d.shift)g.children.forEach(function(m){m.position.y+=d.shift});
+  if(s==='candle')candle(E);if(d.shift)g.children.forEach(function(m){m.position.y+=d.shift});
 }
 return {build:build,SHAPES:SHAPES,icon:icon};
 })();
