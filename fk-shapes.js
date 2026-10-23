@@ -146,6 +146,27 @@ function bell(E){
   G.add(ubox(E,.375,.4375,.375,0,.09375,0,e,boxUV(6,7,6,0,0),32));
   G.add(ubox(E,.5,.125,.5,0,-.1875,0,e,boxUV(8,2,8,0,13),32));
 }
+function brewing(E){
+  var f=E.faceMap,S=f.north,B=f.down,G=E.group;
+  var rs={up:[7,7,9,9],down:[7,7,9,9],north:[7,2,9,16],south:[7,2,9,16],east:[7,2,9,16],west:[7,2,9,16]};
+  G.add(ubox(E,.125,.875,.125,0,-.0625,0,S,rs,16));
+  var pa={up:[9,5,15,11],down:[9,5,15,11],north:[9,14,15,16],south:[9,14,15,16],west:[5,14,11,16],east:[5,14,11,16]};
+  var pb={up:[1,1,7,7],down:[1,1,7,7],north:[1,14,7,16],south:[1,14,7,16],west:[1,14,7,16],east:[1,14,7,16]};
+  var pc={up:[1,9,7,15],down:[1,9,7,15],north:[1,14,7,16],south:[1,14,7,16],west:[9,14,15,16],east:[9,14,15,16]};
+  G.add(ubox(E,.375,.125,.375,.25,-.4375,0,B,pa,16));
+  G.add(ubox(E,.375,.125,.375,-.25,-.4375,-.25,B,pb,16));
+  G.add(ubox(E,.375,.125,.375,-.25,-.4375,.25,B,pc,16));
+  var sm=E.mats[S];
+  if(!sm)return;
+  twoSided(E,S);
+  function arm(x,ang,mir){
+    var pg=new THREE.PlaneGeometry(.5,1),uv=pg.attributes.uv;
+    for(var j=0;j<uv.count;j++)uv.setXY(j,mir?1-.5*uv.getX(j):.5+.5*uv.getX(j),uv.getY(j));
+    var m=new THREE.Mesh(pg,sm);m.position.set(x,0,0);
+    var pv=new THREE.Group();pv.rotation.y=ang;pv.add(m);G.add(pv);
+  }
+  arm(.25,0,false);arm(-.275625,PI4,true);arm(-.275625,-PI4,true);
+}
 function patch(E,id,w,h,x,y,z,rx,ry,r){
   twoSided(E,id);
   var m=plane(E,id,w,h,x,y,z,rx,ry),uv=m.geometry.attributes.uv;
@@ -198,6 +219,7 @@ function build(E){
   var s=E.shape,g=E.group;
   if(typeof E.slot==='string'&&E.slot.indexOf('textures/items/')===0)return sprite(E);
   if(E.cur==='pointed_dripstone')return dripstone(E);
+  if(E.cur==='brewing_stand')return brewing(E);
   if(s==='plant'||s==='azalea')return plant(E);
   if(s==='beacon')return beacon(E);if(s==='door')return door(E);if(s==='pane')return pane(E);if(s==='anvil')return anvil(E);
   if(s==='bed')return bed(E);if(s==='bell')return bell(E);if(s==='dripleaf')return leaf(E);if(s==='rail')return flat(E);if(s==='decal')return decal(E);

@@ -140,6 +140,11 @@ function indexCatalog(c,existing){
     sp.bell={kind:'bell',list:[{id:en,t:'bell',k:['slot.bell']},{id:bl[4],t:'beam',k:['slot.beam']},{id:bl[5],t:'posts',k:['slot.posts']}],fm:{up:en,down:en,north:en,south:en,east:bl[4],west:bl[5]}};
     all.bell=[en,en,en,en,bl[4],bl[5]];
   }
+  if(all.bubble_column){
+    var bc=all.bubble_column;
+    sp.bubble_column={kind:'labels',list:[{id:bc[0],k:['slot.top']},{id:bc[1],k:['slot.bottom']},{id:bc[2],k:['slot.outer']},{id:bc[3],k:['slot.inner']}],fm:{up:bc[0],down:bc[1],north:bc[2],south:bc[3],east:bc[2],west:bc[3]}};
+    all.bubble_column=[bc[0],bc[1],bc[2],bc[3],bc[2],bc[3]];
+  }
   delete all.bed;
   ['white','orange','magenta','light_blue','yellow','lime','pink','gray','light_gray','cyan','purple','blue','brown','green','red','black'].forEach(function(c){
     var ent='textures/entity/bed/'+(c==='light_gray'?'silver':c),ic=null,cs=['textures/items/bed_'+c];
