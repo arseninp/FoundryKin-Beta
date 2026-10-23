@@ -56,17 +56,19 @@ function box(E,w,h,d,x,y,z,ids,ys,vs,rot){
   var m=new THREE.Mesh(g,ids.map(function(k){return k===null?E.hiddenMat:E.mats[k]}));
   m.position.set(x,y,z);return m;
 }
-function ubox(E,w,h,d,x,y,z,id,R){
+function ubox(E,w,h,d,x,y,z,id,R,N,ids){
   var g=new THREE.BoxGeometry(w,h,d),p=g.attributes.position,n=g.attributes.normal,uv=g.attributes.uv;
+  N=N||64;
   for(var i=0;i<p.count;i++){
     var nx=n.getX(i),ny=n.getY(i),nz=n.getZ(i),lx=p.getX(i)/w+.5,ly=p.getY(i)/h+.5,lz=p.getZ(i)/d+.5,f,a,b;
     if(nx>.5){f='east';a=1-lz;b=ly}else if(nx<-.5){f='west';a=lz;b=ly}
     else if(nz>.5){f='south';a=lx;b=ly}else if(nz<-.5){f='north';a=1-lx;b=ly}
     else if(ny>.5){f='up';a=lx;b=1-lz}else{f='down';a=lx;b=lz}
     var r=R[f]||R.up,k=r[4]||0,s=k?1-b:a,t=k===1?1-a:k===2?a:1-b;
-    uv.setXY(i,(r[0]+s*(r[2]-r[0]))/64,1-(r[1]+t*(r[3]-r[1]))/64);
+    uv.setXY(i,(r[0]+s*(r[2]-r[0]))/N,1-(r[1]+t*(r[3]-r[1]))/N);
   }
-  var m=new THREE.Mesh(g,E.mats[id]);m.position.set(x,y,z);return m;
+  var mat=ids?ids.map(function(k){return k===null?E.hiddenMat:E.mats[k]}):E.mats[id];
+  var m=new THREE.Mesh(g,mat);m.position.set(x,y,z);return m;
 }
 function plane(E,id,w,h,x,y,z,rx,ry){
   var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),E.mats[id]);
@@ -126,28 +128,53 @@ function bed(E){
   G.add(ubox(E,1,.375,1,0,-.125,-.5,id,H));
   G.add(ubox(E,1,.375,1,0,-.125,.5,id,F));
   [[-1,-1,6],[1,-1,18],[-1,1,0],[1,1,12]].forEach(function(l){
-    var v=l[2],s=[53,v+3,56,v+6],R={up:[53,v,56,v+3],down:[56,v,59,v+3],north:s,south:s,east:s,west:s};
-    G.add(ubox(E,.1875,.1875,.1875,l[0]*.40625,-.40625,l[1]*.90625,id,R));
+    var v=l[2],R={up:[53,v,56,v+3],down:[56,v,59,v+3],west:[50,v+3,53,v+6],north:[53,v+3,56,v+6],east:[56,v+3,59,v+6],south:[59,v+3,62,v+6]};
+    var leg=ubox(E,.1875,.1875,.1875,l[0]*.40625,-.40625,l[1]*.90625,id,R);
+    leg.rotation.y=(v/6)*Math.PI/2;G.add(leg);
   });
 }
 function bell(E){
-  var f=E.faceMap,w=f.east,st=f.west,sd=f.north,tp=f.up,bt=f.down,G=E.group,W=[w,w,w,w,w,w],S=[st,st,st,st,st,st];
-  G.add(box(E,1,.125,.125,0,.4375,0,W));
-  [-.4375,.4375].forEach(function(x){G.add(box(E,.125,.875,.125,x,-.0625,0,W));G.add(box(E,.25,.125,.25,x,-.4375,0,S))});
-  G.add(box(E,.375,.4375,.375,0,.15625,0,[sd,sd,tp,sd,sd,sd]));
-  G.add(box(E,.5,.125,.5,0,-.125,0,[sd,sd,sd,bt,sd,sd]));
+  var f=E.faceMap,w=f.east,st=f.west,sd=f.north,tp=f.up,bt=f.down,G=E.group;
+  var R={up:[0,0,2,4],down:[0,0,2,4],north:[0,1,2,16],south:[0,1,2,16],east:[0,1,4,16],west:[0,1,4,16]};
+  [-.4375,.4375].forEach(function(x){G.add(ubox(E,.125,1,.25,x,0,0,st,R,16))});
+  G.add(ubox(E,.75,.125,.125,0,.375,0,w,{up:[2,3,14,5],north:[2,2,14,4],south:[2,3,14,5]},16));
+  var full={up:[0,0,16,16]};
+  G.add(ubox(E,.375,.4375,.375,0,.09375,0,sd,full,16,[sd,sd,tp,sd,sd,sd]));
+  G.add(ubox(E,.5,.125,.5,0,-.1875,0,sd,full,16,[sd,sd,sd,bt,sd,sd]));
+}
+function patch(E,id,w,h,x,y,z,rx,ry,r){
+  twoSided(E,id);
+  var m=plane(E,id,w,h,x,y,z,rx,ry),uv=m.geometry.attributes.uv;
+  r=r||[0,0,16,16];
+  for(var i=0;i<uv.count;i++){
+    var u=uv.getX(i),v=uv.getY(i);
+    uv.setXY(i,(r[0]+u*(r[2]-r[0]))/16,1-(r[1]+(1-v)*(r[3]-r[1]))/16);
+  }
+  E.group.add(m);return m;
+}
+function stem(E,id,w,h,y,z,r){
+  var a=E.iso?0:PI4,b=E.iso?Math.PI/2:-PI4,k=E.iso?1/Math.SQRT2:1;
+  patch(E,id,w*k,h,0,y,z,0,a,r);patch(E,id,w*k,h,0,y,z,0,b,r);
 }
 function leaf(E){
-  var f=E.faceMap,G=E.group;
+  var f=E.faceMap;
   if(E.cur==='big_dripleaf'){
-    var tp=f.east,sm=f.north,s1=f.down,s2=f.up;
-    G.add(box(E,.375,.6875,.375,0,-.15625,.1875,[sm,sm,sm,sm,sm,sm]));
-    G.add(box(E,1,.25,1,0,.3125,0,[s1,s1,tp,tp,s2,s2]));
+    stem(E,f.north,6*Math.SQRT2/16,15/16,-1/32,.25,[3,0,14,16]);
+    patch(E,f.east,1,1,0,7/16,0,-Math.PI/2,0);
+    patch(E,f.up,1,.25,0,5/16,-.5,0,0,[0,0,16,4]);
+    patch(E,f.down,1,.25,-.5,5/16,0,0,Math.PI/2,[0,0,16,4]);
+    patch(E,f.down,1,.25,.5,5/16,0,0,Math.PI/2,[0,0,16,4]);
   }else{
-    var t2=f.up,sd=f.down,st=f.north,sb=f.south;
-    twoSided(E,st);twoSided(E,sb);
-    cross(E,sb,Math.SQRT2,.5,-.25);cross(E,st,Math.SQRT2,.5,.25);
-    G.add(box(E,.875,.0625,.875,0,.4375,0,[sd,sd,t2,sd,sd,sd]));
+    stem(E,f.south,7/16,1,-.5,0,[4,0,12,16]);
+    stem(E,f.north,7/16,14/16,7/16,0,[4,0,12,14]);
+    [[11.5,19,11.5,0], [4.5,24,4.5,0], [4.5,28,11.5,Math.PI/2]].forEach(function(l){
+      var x=(l[0]-8)/16,y=(l[1]-16)/16,z=(l[2]-8)/16;
+      patch(E,f.up,7/16,7/16,x,y,z,-Math.PI/2,l[3],[0,0,8,8]);
+      patch(E,f.down,7/16,1/16,x,y-1/32,z-7/32,0,0,[0,0,8,1]);
+      patch(E,f.down,7/16,1/16,x,y-1/32,z+7/32,0,0,[0,0,8,1]);
+      patch(E,f.down,7/16,1/16,x-7/32,y-1/32,z,0,Math.PI/2,[0,0,8,1]);
+      patch(E,f.down,7/16,1/16,x+7/32,y-1/32,z,0,Math.PI/2,[0,0,8,1]);
+    });
   }
 }
 function flat(E){
