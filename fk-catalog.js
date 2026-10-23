@@ -135,6 +135,11 @@ function indexCatalog(c,existing){
     var ck=all.cake;
     sp.cake={kind:'labels',list:[{id:ck[0],k:['slot.top']},{id:ck[1],k:['slot.bottom']},{id:ck[2],k:['slot.side']},{id:ck[5],k:['slot.west']}],fm:{up:ck[0],down:ck[1],north:ck[2],south:ck[3],east:ck[4],west:ck[5]}};
   }
+  if(all.bell){
+    var bl=all.bell,en='textures/entity/bell/bell';
+    sp.bell={kind:'bell',list:[{id:en,t:'bell',k:['slot.bell']},{id:bl[4],t:'beam',k:['slot.beam']},{id:bl[5],t:'posts',k:['slot.posts']}],fm:{up:en,down:en,north:en,south:en,east:bl[4],west:bl[5]}};
+    all.bell=[en,en,en,en,bl[4],bl[5]];
+  }
   delete all.bed;
   ['white','orange','magenta','light_blue','yellow','lime','pink','gray','light_gray','cyan','purple','blue','brown','green','red','black'].forEach(function(c){
     var ent='textures/entity/bed/'+(c==='light_gray'?'silver':c),ic=null,cs=['textures/items/bed_'+c];
@@ -147,7 +152,7 @@ function indexCatalog(c,existing){
   });
   var b={},filtered=false;
   if(existing){
-    Object.keys(all).forEach(function(id){if((sp[id]&&sp[id].kind==='bed')||all[id].every(function(p){return existing[p]}))b[id]=all[id]});
+    Object.keys(all).forEach(function(id){if((sp[id]&&(sp[id].kind==='bed'||sp[id].kind==='bell'))||all[id].every(function(p){return existing[p]}))b[id]=all[id]});
     if(Object.keys(b).length)filtered=true;else b=all;
   }else b=all;
   var cr2={};if(c.cr)Object.keys(c.cr).forEach(function(id){if(b[id]&&!sp[id]&&existing&&existing[c.cr[id]])cr2[id]=c.cr[id]});
