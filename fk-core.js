@@ -6,7 +6,6 @@ var res=16, shape='cube';
 var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={}, applyGen=0, hiddenMat=null, fr={}, fi={}, hs={};
 var files={}, cur='', dirty={}, catalog=null, existing=null, shapeKeys=['cube'];
 var FACES=['up','down','north','south','east','west'];
-var FN={up:'face.up',down:'face.down',north:'face.north',south:'face.south',east:'face.east',west:'face.west'};
 var SHAPES=FKShapes.SHAPES;
 var ALL_SHAPES=['cube','slab','stairs','wall','fence','gate','button','plate','pane'];
 var $=function(s){return document.querySelector(s)};
@@ -115,24 +114,14 @@ function loop(t){
 }
 addEventListener('resize',function(){if(!gl)return;var w=stage.clientWidth;if(w)renderer.setSize(w,w)});
 function slotsOf(p){
-  var order=[],map={};
-  FACES.forEach(function(f,i){var path=p[i];if(!map[path]){map[path]=[];order.push(path)}map[path].push(f)});
-  var list=order.map(function(path){
-    var fs=map[path],sides=['north','south','east','west'].filter(function(x){return fs.indexOf(x)>=0}),names=[];
-    var hasUp=fs.indexOf('up')>=0,hasDown=fs.indexOf('down')>=0;
-    if(hasUp&&hasDown&&sides.length===4)return {id:path,k:['slot.all']};
-    if(hasUp)names.push('slot.top');
-    if(hasDown)names.push('slot.bottom');
-    if(sides.length===4)names.push('slot.side');else sides.forEach(function(s){names.push(FN[s])});
-    return {id:path,k:names};
-  });
-  var fm={};FACES.forEach(function(f,i){fm[f]=p[i]});
+  var list=[],seen={},fm={};
+  FACES.forEach(function(f,i){var path=p[i];fm[f]=path;if(!seen[path]){seen[path]=1;list.push({id:path})}});
   return {list:list,fm:fm};
 }
 function slotsFor(m){
   if(catalog.sp&&catalog.sp[m])return {list:catalog.sp[m].list,fm:catalog.sp[m].fm};
   var so=slotsOf(catalog.b[m]),cp=catalog.cr&&catalog.cr[m];
-  if(cp&&!so.list.some(function(s){return s.id===cp}))so.list.push({id:cp,k:['slot.carried'],carried:true});
+  if(cp&&!so.list.some(function(s){return s.id===cp}))so.list.push({id:cp,carried:true});
   return so;
 }
 function pathsFor(m){
@@ -157,24 +146,14 @@ function setupSlots(list,fm){
   slot=list[0].id;
   buildSlotUi();
 }
-function slotLabels(list){
- var names=list.map(function(s){return String(s.id).split('/').pop().replace(/\.(png|tga)$/i,'').split('_')}),pre=0;
- while(names.length>1&&names.every(function(a){return pre<a.length&&a[pre]===names[0][pre]}))pre++;
- return list.map(function(s,i){
-  var parts=names[i].slice(pre),label=(parts.length?parts:names[i]).join(' '),keys=s.k||[];
-  if(keys.length>1)label=keys.map(function(k){return k.split('.').pop()}).join(' + ');
-  if(s.t)label=s.t;
-  return label;
- });
-}
 function buildSlotUi(){
-  var boxEl=$('#slots'),labels=slotLabels(slots);boxEl.innerHTML='';
-  slots.forEach(function(s,i){
-    var b=document.createElement('button');b.type='button';b.textContent=labels[i];b.title=s.id;b.dataset.id=s.id;
+  var boxEl=$('#slots');boxEl.innerHTML='';
+  slots.forEach(function(s){
+    var b=document.createElement('button');b.type='button';b.textContent=String(s.id).split('/').pop();b.title=s.id;b.dataset.id=s.id;
     if(s.id===slot)b.className='on';
     b.onclick=function(){setSlot(s.id)};boxEl.appendChild(b);
   });
-  boxEl.style.display=slots.length>1?'flex':'none';
+  boxEl.style.display=slots.length?'flex':'none';
   frameUi();
 }
 function setSlot(id){
@@ -418,7 +397,7 @@ var API={
     return {
       catalog:catalog,files:files,dirty:dirty,shapes:SHAPES,load:FKCatalog.loadAny,select:selectBlock,edited:isEdited,
       discard:function(){slots.forEach(function(s){ph[s.id]=true})},
-      obj:function(){return {id:cur||null,paths:slots.map(function(s){return s.id}),file:slot?String(slot).split('/').pop():''}},
+      obj:function(){return {id:cur||null,paths:slots.map(function(s){return s.id})}},
       setPack:function(map){
         Object.keys(dirty).forEach(function(k){if(!(k in map)){delete dirty[k];delete files[k]}});
         Object.keys(map).forEach(function(k){files[k]=mkFile(map[k]);dirty[k]=true});
