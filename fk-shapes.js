@@ -105,7 +105,7 @@ function anvil(E){
 }
 function bedPiece(E,o,z,uv){
   var w=z[0],h=z[1],d=z[2],u=uv[0],v=uv[1];
-  var R={up:[u+d,v+d,u+d+w,v+d+h],down:[u+2*d+w,v+d,u+2*d+2*w,v+d+h],east:[u+d+w,v+d,u+2*d+w,v+d+h,1],west:[u,v+d,u+d,v+d+h,2],north:[u+d,v,u+d+w,v+d],south:[u+d+w,v,u+d+2*w,v+d]};
+  var R={up:[u+d,v+d,u+d+w,v+d+h],down:[u+2*d+w,v+d,u+2*d+2*w,v+d+h],east:[u+d+w,v+d,u+2*d+w,v+d+h,1],west:[u+d,v+d,u,v+d+h,2],north:[u+d+w,v+d,u+d,v],south:[u+d+2*w,v+d,u+d+w,v]};
   E.group.add(ubox(E,w/16,d/16,h/16,(o[0]+w/2-8)/16,.0625-(o[2]+d/2)/16,(o[1]+h/2-16)/16,E.faceMap.up,R));
 }
 function bed(E){
