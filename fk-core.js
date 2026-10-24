@@ -92,13 +92,19 @@ function refreshTex(id){
   refreshDoor();
 }
 function rebuildTextures(){slots.forEach(function(s){refreshTex(s.id)});refreshDoor()}
+function clearModel(){
+  var geometries=[];
+  group.traverse(function(o){if(o.geometry&&geometries.indexOf(o.geometry)<0)geometries.push(o.geometry)});
+  geometries.forEach(function(g){g.dispose()});
+  while(group.children.length)group.remove(group.children[0]);
+}
 function build(){
   if(!gl)return;
-  while(group.children.length)group.remove(group.children[0]);
+  clearModel();
   if(!slots.length)return;
   FKShapes.build({shape:shape,cur:cur,slot:slot,faceMap:faceMap,mats:mats,group:group,hiddenMat:hiddenMat,SHAPES:SHAPES,refreshDoor:refreshDoor});
 }
-var drag=null,idle=true,lastT=0;
+var drag=null,idle=true,lastRenderTime=0,renderCheckTimer=null;
 stage.addEventListener('pointerdown',function(e){if(!gl)return;drag={x:e.clientX,y:e.clientY};idle=false;stage.setPointerCapture(e.pointerId)});
 stage.addEventListener('pointermove',function(e){if(!drag)return;group.rotation.y+=(e.clientX-drag.x)*.01;group.rotation.x=Math.max(-1.4,Math.min(1.4,group.rotation.x+(e.clientY-drag.y)*.01));drag={x:e.clientX,y:e.clientY}});
 function endDrag(){drag=null;setTimeout(function(){if(!drag)idle=true},2500)}
@@ -107,11 +113,23 @@ var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function loop(t){
   requestAnimationFrame(loop);
   if(!gl)return;
+  var dt=lastRenderTime&&isFinite(t)?Math.max(0,Math.min(100,t-lastRenderTime)):0;
+  if(isFinite(t))lastRenderTime=t;
+  if(S.mode!=='edit'||document.hidden)return;
   if(!isFinite(group.rotation.x)||!isFinite(group.rotation.y))group.rotation.set(.45,-.7,0);
-  if(idle&&!reduce&&isFinite(t))group.rotation.y+=Math.min(100,(t-lastT))*.0004;
-  if(isFinite(t))lastT=t;
+  if(idle&&!reduce)group.rotation.y+=dt*.0004;
   try{renderer.render(scene,cam);frames++}catch(err){showErr('render',err.message)}
 }
+function watchRender(){
+  clearTimeout(renderCheckTimer);renderCheckTimer=null;
+  if(!gl||S.mode!=='edit'||document.hidden)return;
+  var start=frames;
+  renderCheckTimer=setTimeout(function(){
+    renderCheckTimer=null;
+    if(gl&&S.mode==='edit'&&!document.hidden&&frames-start<2)showErr('render_stalled');
+  },2500);
+}
+document.addEventListener('visibilitychange',watchRender);
 addEventListener('resize',function(){if(!gl)return;var w=stage.clientWidth;if(w)renderer.setSize(w,w)});
 function slotsOf(p){
   var list=[],seen={},fm={};
@@ -130,6 +148,7 @@ function pathsFor(m){
 }
 function setupSlots(list,fm){
   applyGen++;
+  if(gl)clearModel();
   Object.keys(tex).forEach(function(k){if(tex[k])tex[k].dispose()});
   Object.keys(mats).forEach(function(k){if(mats[k])mats[k].dispose()});
   tex={};mats={};cv={};undoS={};redoS={};ph={};fr={};fi={};hs={};
@@ -243,7 +262,7 @@ function applyEntry(e,done){
   });
 }
 var CAT_KEY='foundrykin.catalog.v3',EX_KEY='foundrykin.exist.v2';
-var lastB=null,lastT=null;
+var lastB=null,lastTerrain=null;
 function catalogReady(src){
   S.status='ready';S.source=src;S.count=catalog.ids.length;S.filtered=!!catalog.filtered;
   S.refreshing=false;S.refreshFailed='';S.error=null;emit();
@@ -252,9 +271,9 @@ function catalogFailed(code,detail){
   S.status='failed';S.error={code:code,detail:detail||''};S.refreshing=false;emit();
 }
 function useCatalog(B,Tx,src){
-  if(B)lastB=B;if(Tx)lastT=Tx;
+  if(B)lastB=B;if(Tx)lastTerrain=Tx;
   if(!lastB)return false;
-  var c=FKCatalog.build(lastB,lastT);
+  var c=FKCatalog.build(lastB,lastTerrain);
   if(!Object.keys(c.b).length){
     if(catalog)say('msg.catalog_empty');
     else{S.status='empty';S.error=null;S.refreshing=false;emit()}
@@ -374,6 +393,7 @@ var API={
     document.body.classList.toggle('fk-search',m==='search');
     document.body.classList.toggle('fk-edit',m==='edit');
     try{scrollTo(0,0)}catch(e){}
+    watchRender();
     emit();
   },
   cur:function(){return cur},
@@ -421,5 +441,4 @@ window.FKAPI=API;
 FK.apply(document);
 loadCatalog();
 requestAnimationFrame(loop);
-setTimeout(function(){if(gl&&frames<2)showErr('render_stalled')},2500);
 })();
