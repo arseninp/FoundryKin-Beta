@@ -93,7 +93,9 @@ function snap3d(o,SH,shape,im,dbl,id){
     o.r.render(o.sc,o.cam);url=o.cv.toDataURL('image/png');
   }finally{
     g.scale.setScalar(1);g.position.set(0,0,0);
-    while(g.children.length){var ch=g.children[0];if(ch.geometry)ch.geometry.dispose();g.remove(ch)}
+    var gs=[];g.traverse(function(x){if(x.geometry&&gs.indexOf(x.geometry)<0)gs.push(x.geometry)});
+    gs.forEach(function(x){x.dispose()});
+    while(g.children.length)g.remove(g.children[0]);
     own.forEach(function(x){x.dispose()});
     tex.forEach(function(t){t.dispose()});
   }
