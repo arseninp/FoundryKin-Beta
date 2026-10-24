@@ -2,7 +2,7 @@
 (function(){
 var C=window.FKCatalog,H=window.FKShapes;if(!C||!H)return;
 var oldIndex=C.index,oldBuild=H.build,P='textures/blocks/',Q=Math.PI/2,BASE=P+'conduit_base';
-function kind(id){if(id==='cauldron'||id==='lava_cauldron')return 'cauldron';if(id==='end_rod')return 'end';if(/(^|_)lightning_rod$/.test(id))return 'rod';if(id==='iron_bars'||/(^|_)copper_bars$/.test(id))return 'bars';if(id==='daylight_detector')return 'daylight';if(id==='grindstone'||id==='flower_pot'||id==='decorated_pot'||id==='end_portal'||id==='end_gateway'||id==='dried_ghast'||id==='fire'||id==='soul_fire'||id==='frame'||id==='glow_frame')return id;return id==='cocoa'||id==='conduit'?id:''}
+function kind(id){if(id==='cauldron'||id==='lava_cauldron')return 'cauldron';if(id==='end_rod')return 'end';if(/(^|_)lightning_rod$/.test(id))return 'rod';if(id==='iron_bars'||/(^|_)copper_bars$/.test(id))return 'bars';if(id==='daylight_detector')return 'daylight';if(id==='grindstone'||id==='flower_pot'||id==='decorated_pot'||id==='end_portal'||id==='end_gateway'||id==='dried_ghast'||id==='fire'||id==='soul_fire'||id==='frame'||id==='glow_frame'||id==='hopper'||id==='heavy_core')return id;return id==='cocoa'||id==='conduit'?id:''}
 /* Flat sprite mode: shown face-on, no idle rotation and no dragging. Used for End blocks (drawn by the engine) and item icons. */
 H.flat=function(id,slot){return id==='end_portal'||id==='end_gateway'||(typeof slot==='string'&&slot.indexOf('textures/items/')===0)};
 C.index=function(c,existing){
@@ -135,25 +135,33 @@ function driedGhast(E){
   box(E,[9,0,13],[11,1,16],six(T),{north:[6,2.5,5,3],east:[7.5,2.5,6,3],south:[8.5,2.5,7.5,3],west:[10,2.5,8.5,3],up:[6,2.5,7.5,1.5,90],down:[7.5,1.5,9,2.5,270]});
   box(E,[5,0,13],[7,1,16],six(T),{north:[6,1,5,1.5],east:[7.5,1,6,1.5],south:[8.5,1,7.5,1.5],west:[10,1,8.5,1.5],up:[6,1,7.5,0,90],down:[7.5,0,9,1,270]});
 }
-/* Fire and soul fire, drawn as in Java when burning on every side: four planes in the middle leaning outward by 22.5 degrees, four vertical planes on the block faces (1 x 1.4 blocks) and two sloped planes under the top. Selecting fire_1 shows that layer instead. */
+/* Fire and soul fire: four inner planes and four perimeter planes, all starting at the block floor. No roof planes. */
 function fire(E){
   var f=E.faceMap,id=E.slot===f.down?f.down:f.up,mat=E.mats[id],G=E.group;
   if(!mat||mat===E.hiddenMat)return;
   mat.side=THREE.DoubleSide;mat.needsUpdate=true;
   [[0,.05,0,22.5,0],[0,-.05,0,-22.5,0],[.05,0,Q,0,-22.5],[-.05,0,Q,0,22.5]].forEach(function(p){
     var m=planeMesh(mat,1,1.4),pv=new THREE.Group();
-    m.position.set(p[0],.2,p[1]);m.rotation.set(0,p[2],0);
-    pv.rotation.x=p[3]*Math.PI/180;pv.rotation.z=p[4]*Math.PI/180;
+    m.position.set(0,.7,0);m.rotation.set(0,p[2],0);
+    pv.position.set(p[0],-.5,p[1]);pv.rotation.x=p[3]*Math.PI/180;pv.rotation.z=p[4]*Math.PI/180;
     pv.add(m);G.add(pv);
   });
   [[0,-.4994,0],[0,.4994,0],[.4994,0,Q],[-.4994,0,Q]].forEach(function(p){
     var m=planeMesh(mat,1,1.4);m.position.set(p[0],.2,p[1]);m.rotation.set(0,p[2],0);G.add(m);
   });
-  [[.5,22.5,270,-.5],[-.5,-22.5,90,.5]].forEach(function(p){
-    var m=planeMesh(mat,1,1,[0,0,16,16,p[2]]),pv=new THREE.Group();
-    pv.position.set(p[0],.5,0);pv.rotation.z=p[1]*Math.PI/180;
-    m.rotation.x=Q;m.position.set(p[3],0,0);pv.add(m);G.add(pv);
-  });
+}
+/* Hopper pointing down: open rim, inside floor, lower body and outlet. */
+function hopper(E){
+  var f=E.faceMap,I=f.down,O=f.north,T=f.up;
+  box(E,[0,10,0],[16,11,16],{up:I,down:I,north:O,south:O,east:O,west:O});
+  [[[0,11,0],[2,16,16]],[[14,11,0],[16,16,16]]].forEach(function(p){box(E,p[0],p[1],{up:T,north:O,south:O,east:O,west:O})});
+  [[[2,11,0],[14,16,2]],[[2,11,14],[14,16,16]]].forEach(function(p){box(E,p[0],p[1],{up:T,north:O,south:O})});
+  box(E,[4,4,4],[12,10,12],{down:I,north:O,south:O,east:O,west:O});
+  box(E,[6,0,6],[10,4,10],{down:I,north:O,south:O,east:O,west:O});
+}
+function heavyCore(E){
+  var id=E.faceMap.up;
+  box(E,[4,0,4],[12,8,12],six(id),rects([0,8,8,16],[0,0,8,8],[8,0,16,8]));
 }
 /* Item frame and glow item frame: one 16x16x1 panel centred in the block that uses the whole 16x16 texture. */
 function itemFrame(E){
@@ -164,10 +172,12 @@ function itemFrame(E){
 function endSprite(E){face(E,E.faceMap.up,1.1,1.1,0,0,0,0,0,[0,0,16,16],true)}
 H.build=function(E){
   if(typeof E.slot==='string'&&E.slot.indexOf('textures/items/')===0)return oldBuild(E);
+  if(E.iso&&(E.cur==='dried_ghast'||E.cur==='big_dripleaf'||E.cur==='small_dripleaf_block'))E.group.rotation.y+=Math.PI;
   var k=kind(E.cur);if(!k)return oldBuild(E);
   if(k==='cauldron')return cauldron(E);if(k==='end')return end(E);if(k==='rod')return rod(E);if(k==='bars')return bars(E);if(k==='cocoa')return cocoa(E);if(k==='daylight')return daylight(E);
   if(k==='grindstone')return grindstone(E);if(k==='flower_pot')return flowerPot(E);if(k==='decorated_pot')return decoratedPot(E);if(k==='end_portal'||k==='end_gateway')return endSprite(E);
   if(k==='dried_ghast')return driedGhast(E);if(k==='fire'||k==='soul_fire')return fire(E);if(k==='frame'||k==='glow_frame')return itemFrame(E);
+  if(k==='hopper')return hopper(E);if(k==='heavy_core')return heavyCore(E);
   return conduit(E);
 };
 })();
