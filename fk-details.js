@@ -2,35 +2,49 @@
 (function(){
 var C=window.FKCatalog,H=window.FKShapes;if(!C||!H)return;
 var oldIndex=C.index,oldBuild=H.build,P='textures/blocks/',Q=Math.PI/2,BASE=P+'conduit_base';
-function kind(id){if(id==='cauldron'||id==='lava_cauldron')return 'cauldron';if(id==='end_rod')return 'end';if(/(^|_)lightning_rod$/.test(id))return 'rod';if(id==='iron_bars'||/(^|_)copper_bars$/.test(id))return 'bars';return id==='cocoa'||id==='conduit'?id:''}
+function kind(id){if(id==='cauldron'||id==='lava_cauldron')return 'cauldron';if(id==='end_rod')return 'end';if(/(^|_)lightning_rod$/.test(id))return 'rod';if(id==='iron_bars'||/(^|_)copper_bars$/.test(id))return 'bars';if(id==='daylight_detector')return 'daylight';return id==='cocoa'||id==='conduit'?id:''}
 C.index=function(c,existing){
   var cat=oldIndex(c,existing);
   cat.ids.forEach(function(id){
     var b=cat.b[id],k=kind(id);if(!k)return;
     if(k==='cocoa'){
       var a=P+'cocoa_stage_0',m=P+'cocoa_stage_1',z=P+'cocoa_stage_2';
-      cat.sp[id]={kind:'details',list:[{id:z,t:'stage 2'},{id:m,t:'stage 1'},{id:a,t:'stage 0'}],fm:{up:z,down:a,north:m,south:z,east:z,west:z}};
+      cat.sp[id]={kind:'details',list:[{id:z},{id:m},{id:a}],fm:{up:z,down:a,north:m,south:z,east:z,west:z}};
     }else if(k==='conduit'){
-      cat.sp[id]={kind:'details',list:[{id:BASE,t:'base'}],fm:{up:BASE,down:BASE,north:BASE,south:BASE,east:BASE,west:BASE}};
+      cat.sp[id]={kind:'details',list:[{id:BASE}],fm:{up:BASE,down:BASE,north:BASE,south:BASE,east:BASE,west:BASE}};
     }else if(k==='cauldron'){
-      var list=[],seen={},names=['rim','bottom','side','inside','liquid','water overlay'];
-      b.forEach(function(p,i){if(!seen[p]){seen[p]=1;list.push({id:p,t:names[i]})}});
+      var list=[],seen={};
+      b.forEach(function(p){if(!seen[p]){seen[p]=1;list.push({id:p})}});
       cat.sp[id]={kind:'details',list:list,fm:{up:b[0],down:b[1],north:b[2],south:b[3],east:b[4],west:b[5]}};
     }
-  });return cat;
+  });
+  var d=cat.b.daylight_detector,inv=cat.b.daylight_detector_inverted;
+  if(d){
+    var top=d[0],side=d[2],night=inv&&inv[0]!==top?inv[0]:P+'daylight_detector_inverted_top';
+    cat.sp.daylight_detector={kind:'details',list:[{id:top},{id:night},{id:side}],fm:{up:top,down:side,north:side,south:side,east:side,west:night}};
+    cat.b.daylight_detector=[top,side,side,side,side,night];
+    delete cat.b.daylight_detector_inverted;delete cat.sp.daylight_detector_inverted;
+    delete cat.cr.daylight_detector;delete cat.cr.daylight_detector_inverted;
+    cat.ids=cat.ids.filter(function(id){return id!=='daylight_detector_inverted'});
+    cat.sig={};cat.members={};cat.mother={};
+    cat.ids.forEach(function(id){var sg=cat.b[id].join('|');cat.sig[id]=sg;(cat.members[sg]=cat.members[sg]||[]).push(id);cat.mother[id]=id});
+    cat.mother.daylight_detector_inverted='daylight_detector';
+    if(inv)cat.hidden=(cat.hidden||0)+1;
+  }
+  return cat;
 };
-function face(E,id,w,h,x,y,z,rx,ry,r,dbl,N){
+function face(E,id,w,h,x,y,z,rx,ry,r,dbl){
   var mat=E.mats[id];if(!mat||mat===E.hiddenMat)return;
   if(dbl){mat.side=THREE.DoubleSide;mat.needsUpdate=true}
-  N=N||16;r=r||[0,0,16,16];var g=new THREE.PlaneGeometry(w,h),uv=g.attributes.uv;
-  for(var i=0;i<uv.count;i++){var a=uv.getX(i),b=1-uv.getY(i),s=r[4]===90?b:a,t=r[4]===90?1-a:b;uv.setXY(i,(r[0]+s*(r[2]-r[0]))/N,1-(r[1]+t*(r[3]-r[1]))/N)}
+  r=r||[0,0,16,16];var g=new THREE.PlaneGeometry(w,h),uv=g.attributes.uv;
+  for(var i=0;i<uv.count;i++){var a=uv.getX(i),b=1-uv.getY(i),s=r[4]===90?b:a,t=r[4]===90?1-a:b;uv.setXY(i,(r[0]+s*(r[2]-r[0]))/16,1-(r[1]+t*(r[3]-r[1]))/16)}
   var m=new THREE.Mesh(g,mat);m.position.set(x,y,z);m.rotation.set(rx||0,ry||0,0);E.group.add(m);
 }
 function autoUV(a,b){return {north:[16-b[0],16-b[1],16-a[0],16-a[1]],south:[a[0],16-b[1],b[0],16-a[1]],east:[16-b[2],16-b[1],16-a[2],16-a[1]],west:[a[2],16-b[1],b[2],16-a[1]],up:[a[0],a[2],b[0],b[2]],down:[a[0],16-b[2],b[0],16-a[2]]}}
-function box(E,a,b,ids,R,N){
+function box(E,a,b,ids,R){
   R=R||autoUV(a,b);var w=(b[0]-a[0])/16,h=(b[1]-a[1])/16,d=(b[2]-a[2])/16,x=(a[0]+b[0]-16)/32,y=(a[1]+b[1]-16)/32,z=(a[2]+b[2]-16)/32;
   var p={north:[w,h,x,y,(a[2]-8)/16,0,Math.PI],south:[w,h,x,y,(b[2]-8)/16,0,0],east:[d,h,(b[0]-8)/16,y,z,0,Q],west:[d,h,(a[0]-8)/16,y,z,0,-Q],up:[w,d,x,(b[1]-8)/16,z,-Q,0],down:[w,d,x,(a[1]-8)/16,z,Q,0]};
-  Object.keys(ids).forEach(function(k){face.apply(null,[E,ids[k]].concat(p[k],[R[k],false,N]))});
+  Object.keys(ids).forEach(function(k){face.apply(null,[E,ids[k]].concat(p[k],[R[k],false]))});
 }
 function six(id){return {north:id,south:id,east:id,west:id,up:id,down:id}}
 function rects(side,top,bottom){return {north:side,south:side,east:side,west:side,up:top,down:bottom||top}}
@@ -54,42 +68,28 @@ function rod(E){
 }
 function bars(E){
   var f=E.faceMap,B=f.north,S=f.east;
-  face(E,B,.125,1,0,0,0,0,0,[7,0,9,16],true);
-  face(E,B,.125,1,0,0,0,0,Q,[7,0,9,16],true);
-  face(E,B,.5,1,.25,0,0,0,0,[8,0,16,16],true);
-  face(E,B,.5,1,-.25,0,0,0,0,[16,0,8,16],true);
-  face(E,B,.5,1,0,0,-.25,0,Q,[8,0,16,16],true);
-  face(E,B,.5,1,0,0,.25,0,Q,[16,0,8,16],true);
-  face(E,S,.125,1,0,0,-.49994,0,0,[7,0,9,16],true);
-  face(E,S,.125,1,0,0,.49994,0,0,[7,0,9,16],true);
-  face(E,S,.125,1,.49994,0,0,0,Q,[7,0,9,16],true);
-  face(E,S,.125,1,-.49994,0,0,0,Q,[7,0,9,16],true);
+  face(E,B,1,1,0,0,0,0,0,[0,0,16,16],true);
+  face(E,S,.125,1,-.5,0,0,0,-Q,[7,0,9,16],true);
+  face(E,S,.125,1,.5,0,0,0,Q,[7,0,9,16],true);
+  face(E,S,1,.125,0,.49994,0,-Q,0,[7,0,9,16,90],true);
+  face(E,S,1,.125,0,-.49994,0,Q,0,[7,0,9,16,90],true);
 }
 function cocoa(E){
   var f=E.faceMap,n=E.slot===f.down?0:E.slot===f.north?1:2,id=n===0?f.down:n===1?f.north:f.up,w=4+2*n,h=5+2*n;
-  box(E,[8-w/2,12-h,15-w],[8+w/2,12,15],six(id),rects([n===0?11:n===1?9:8,4,n===2?16:15,9+2*n],[0,0,w,w]));
+  box(E,[8-w/2,12-h,15-w],[8+w/2,12,15],six(id),rects([15-w,4,15,4+h],[0,0,w-1,w-1]));
   face(E,id,.25,.25,0,.375,.375,0,Q,[16,0,12,4],true);
 }
 function conduit(E){
-  var id=E.faceMap.up,R={east:[0,6,6,12],north:[6,6,12,12],west:[12,6,18,12],south:[18,6,24,12],up:[6,0,12,6],down:[12,0,18,6]};
-  box(E,[5,5,5],[11,11,11],six(id),R,32);
+  var id=E.faceMap.up,R={east:[0,4,4,8],north:[4,4,8,8],west:[8,4,12,8],south:[12,4,16,8],up:[4,0,8,4],down:[8,0,12,4]};
+  box(E,[5,5,5],[11,11,11],six(id),R);
+}
+function daylight(E){
+  var f=E.faceMap,top=E.slot===f.west?f.west:f.up;
+  box(E,[0,0,0],[16,6,16],{up:top,down:f.down,north:f.north,south:f.north,east:f.north,west:f.north},rects([0,10,16,16],[0,0,16,16],[0,0,16,16]));
 }
 H.build=function(E){
   if(typeof E.slot==='string'&&E.slot.indexOf('textures/items/')===0)return oldBuild(E);
   var k=kind(E.cur);if(!k)return oldBuild(E);
-  if(k==='cauldron')return cauldron(E);if(k==='end')return end(E);if(k==='rod')return rod(E);if(k==='bars')return bars(E);if(k==='cocoa')return cocoa(E);return conduit(E);
+  if(k==='cauldron')return cauldron(E);if(k==='end')return end(E);if(k==='rod')return rod(E);if(k==='bars')return bars(E);if(k==='cocoa')return cocoa(E);if(k==='daylight')return daylight(E);return conduit(E);
 };
-/* Preserve the native 2:1 atlas on both Add and PNG export; working canvas stays padded. */
-function installExport(){
-  var A=window.FKAPI;if(!A)return;
-  function wrap(fn){return function(){
-    var out=fn.apply(this,arguments);if(A.cur()!=='conduit'||!A.ctx.ready())return out;
-    var file=out.filter(function(f){return f.path===BASE+'.png'})[0];if(!file)return out;
-    var r=A.ctx.res(),c=document.createElement('canvas');c.width=r;c.height=Math.max(1,Math.round(r/2));
-    c.getContext('2d').drawImage(A.ctx.g().canvas,0,0);file.data=c.toDataURL('image/png');
-    var rec=A.grid().files[BASE];if(rec)rec.data=file.data;return out;
-  }}
-  A.files=wrap(A.files);A.ctx.files=wrap(A.ctx.files);
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installExport);else installExport();
 })();
