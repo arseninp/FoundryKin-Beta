@@ -2,7 +2,9 @@
 (function(){
 var C=window.FKCatalog,H=window.FKShapes;if(!C||!H)return;
 var oldIndex=C.index,oldBuild=H.build,P='textures/blocks/',Q=Math.PI/2,BASE=P+'conduit_base';
-function kind(id){if(id==='cauldron'||id==='lava_cauldron')return 'cauldron';if(id==='end_rod')return 'end';if(/(^|_)lightning_rod$/.test(id))return 'rod';if(id==='iron_bars'||/(^|_)copper_bars$/.test(id))return 'bars';if(id==='daylight_detector')return 'daylight';if(id==='grindstone'||id==='flower_pot'||id==='end_portal'||id==='end_gateway')return id;return id==='cocoa'||id==='conduit'?id:''}
+function kind(id){if(id==='cauldron'||id==='lava_cauldron')return 'cauldron';if(id==='end_rod')return 'end';if(/(^|_)lightning_rod$/.test(id))return 'rod';if(id==='iron_bars'||/(^|_)copper_bars$/.test(id))return 'bars';if(id==='daylight_detector')return 'daylight';if(id==='grindstone'||id==='flower_pot'||id==='decorated_pot'||id==='end_portal'||id==='end_gateway')return id;return id==='cocoa'||id==='conduit'?id:''}
+/* Flat sprite mode: shown face-on, no idle rotation and no dragging. Used for End blocks (drawn by the engine) and item icons. */
+H.flat=function(id,slot){return id==='end_portal'||id==='end_gateway'||(typeof slot==='string'&&slot.indexOf('textures/items/')===0)};
 C.index=function(c,existing){
   var cat=oldIndex(c,existing);
   cat.ids.forEach(function(id){
@@ -105,15 +107,20 @@ function flowerPot(E){
   box(E,[6,0,10],[10,6,11],{north:id,south:id,up:id,down:id},{down:[6,5,10,6],up:[6,10,10,11],north:[6,10,10,16],south:[6,10,10,16]});
   box(E,[6,0,6],[10,4,10],{up:id,down:id},{down:[6,12,10,16],up:[6,6,10,10]});
 }
-/* End portal: one flat double-sided plane at 12/16 height. The in-game starfield is not simulated. */
-function portal(E){face(E,E.faceMap.up,1,1,0,.25,0,-Q,0,[0,0,16,16],true)}
-/* End gateway: full cube, same texture on all six faces. The beam is not drawn. */
-function gateway(E){box(E,[0,0,0],[16,16,16],six(E.faceMap.up))}
+/* Decorated pot: 14x16x14 body, a 6x1x6 lip and an 8x3x8 neck above the block. Everything uses decorated_pot_side because the catalog resolves the pot to that single texture. The neck hole is not drawn. */
+function decoratedPot(E){
+  var id=E.faceMap.up,S=[1,0,15,16];
+  box(E,[1,0,1],[15,16,15],six(id),{north:S,south:S,east:S,west:S,up:[1,1,15,15],down:[1,1,15,15]});
+  box(E,[5,16,5],[11,17,11],six(id),{north:[5,8,11,9],south:[5,8,11,9],east:[5,8,11,9],west:[5,8,11,9],up:[5,5,11,11],down:[5,5,11,11]});
+  box(E,[4,17,4],[12,20,12],six(id),{north:[4,8,12,11],south:[4,8,12,11],east:[4,8,12,11],west:[4,8,12,11],up:[4,4,12,12],down:[4,4,12,12]});
+}
+/* End portal and End gateway are drawn by the game engine, so the editor shows the texture as one flat sprite. */
+function endSprite(E){face(E,E.faceMap.up,1.1,1.1,0,0,0,0,0,[0,0,16,16],true)}
 H.build=function(E){
   if(typeof E.slot==='string'&&E.slot.indexOf('textures/items/')===0)return oldBuild(E);
   var k=kind(E.cur);if(!k)return oldBuild(E);
   if(k==='cauldron')return cauldron(E);if(k==='end')return end(E);if(k==='rod')return rod(E);if(k==='bars')return bars(E);if(k==='cocoa')return cocoa(E);if(k==='daylight')return daylight(E);
-  if(k==='grindstone')return grindstone(E);if(k==='flower_pot')return flowerPot(E);if(k==='end_portal')return portal(E);if(k==='end_gateway')return gateway(E);
+  if(k==='grindstone')return grindstone(E);if(k==='flower_pot')return flowerPot(E);if(k==='decorated_pot')return decoratedPot(E);if(k==='end_portal'||k==='end_gateway')return endSprite(E);
   return conduit(E);
 };
 })();

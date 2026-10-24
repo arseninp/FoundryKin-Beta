@@ -98,15 +98,20 @@ function clearModel(){
   geometries.forEach(function(g){g.dispose()});
   while(group.children.length)group.remove(group.children[0]);
 }
+function isFlat(){return !!(FKShapes.flat&&FKShapes.flat(cur,slot))}
+var wasFlat=false;
 function build(){
   if(!gl)return;
   clearModel();
+  var fl=isFlat();
+  if(fl)group.rotation.set(0,0,0);else if(wasFlat)group.rotation.set(.45,-.7,0);
+  wasFlat=fl;
   if(!slots.length)return;
   FKShapes.build({shape:shape,cur:cur,slot:slot,faceMap:faceMap,mats:mats,group:group,hiddenMat:hiddenMat,SHAPES:SHAPES,refreshDoor:refreshDoor});
 }
 var drag=null,idle=true,lastRenderTime=0,renderCheckTimer=null;
 stage.addEventListener('pointerdown',function(e){if(!gl)return;drag={x:e.clientX,y:e.clientY};idle=false;stage.setPointerCapture(e.pointerId)});
-stage.addEventListener('pointermove',function(e){if(!drag)return;group.rotation.y+=(e.clientX-drag.x)*.01;group.rotation.x=Math.max(-1.4,Math.min(1.4,group.rotation.x+(e.clientY-drag.y)*.01));drag={x:e.clientX,y:e.clientY}});
+stage.addEventListener('pointermove',function(e){if(!drag||isFlat())return;group.rotation.y+=(e.clientX-drag.x)*.01;group.rotation.x=Math.max(-1.4,Math.min(1.4,group.rotation.x+(e.clientY-drag.y)*.01));drag={x:e.clientX,y:e.clientY}});
 function endDrag(){drag=null;setTimeout(function(){if(!drag)idle=true},2500)}
 stage.addEventListener('pointerup',endDrag);stage.addEventListener('pointercancel',endDrag);
 var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -117,7 +122,7 @@ function loop(t){
   if(isFinite(t))lastRenderTime=t;
   if(S.mode!=='edit'||document.hidden)return;
   if(!isFinite(group.rotation.x)||!isFinite(group.rotation.y))group.rotation.set(.45,-.7,0);
-  if(idle&&!reduce)group.rotation.y+=dt*.0004;
+  if(idle&&!reduce&&!isFlat())group.rotation.y+=dt*.0004;
   try{renderer.render(scene,cam);frames++}catch(err){showErr('render',err.message)}
 }
 function watchRender(){
