@@ -212,10 +212,10 @@ function setRes(n){
 function packCur(){
   slots.forEach(function(s){
     if(ph[s.id]||!cv[s.id])return;
-    var fs=fr[s.id],n=fs.length,d;
-    if(n>1){var c=document.createElement('canvas');c.width=res;c.height=res*n;var g=c.getContext('2d');fs.forEach(function(f,k){g.drawImage(f,0,k*res)});d=c.toDataURL('image/png')}
+    var fs=fr[s.id],n=fs.length,aspect=n>1?1:((files[s.id]&&files[s.id].aspect)||1),d;
+    if(n>1||aspect!==1){var c=document.createElement('canvas');c.width=res;c.height=Math.max(1,Math.round(res*n*aspect));var g=c.getContext('2d');fs.forEach(function(f,k){g.drawImage(f,0,k*res)});d=c.toDataURL('image/png')}
     else d=cv[s.id].toDataURL('image/png');
-    files[s.id]={res:res,data:d,frames:n};
+    files[s.id]={res:res,data:d,frames:n,aspect:aspect};
   });
 }
 function entryFor(list){
@@ -320,10 +320,10 @@ function ensureFiles(m){
     need.forEach(function(x,i){
       var im=imgs[i];
       if(!im){miss++;return}
-      var n=fcount(im.width,im.height);
-      c.width=r;c.height=r*n;var g=c.getContext('2d');g.imageSmoothingEnabled=false;
-      g.drawImage(im,0,0,im.width,im.width*n,0,0,r,r*n);
-      files[x]={res:r,data:c.toDataURL('image/png'),frames:n};
+      var n=fcount(im.width,im.height),aspect=n===1&&im.height<im.width?im.height/im.width:1;
+      c.width=r;c.height=Math.max(1,Math.round(r*n*aspect));var g=c.getContext('2d');g.imageSmoothingEnabled=false;
+      g.drawImage(im,0,0,im.width,im.height,0,0,r,c.height);
+      files[x]={res:r,data:c.toDataURL('image/png'),frames:n,aspect:aspect};
     });
     return {vanilla:!!first,missing:miss,loaded:true};
   });
@@ -362,7 +362,8 @@ function mkFile(d){
   try{var b=atob(d.split(',')[1].slice(0,40));w=(b.charCodeAt(16)*16777216)+(b.charCodeAt(17)<<16)+(b.charCodeAt(18)<<8)+b.charCodeAt(19);h=(b.charCodeAt(20)*16777216)+(b.charCodeAt(21)<<16)+(b.charCodeAt(22)<<8)+b.charCodeAt(23)}catch(e){}
   if(!(w>0&&w<=1024))w=16;
   if(!(h>0))h=w;
-  return {res:w,data:d,frames:fcount(w,h)};
+  var n=fcount(w,h);
+  return {res:w,data:d,frames:n,aspect:n===1&&h<w?h/w:1};
 }
 var API={
   edits:0,busy:false,want:null,block:'',pending:'',state:S,ctx:ctx,
