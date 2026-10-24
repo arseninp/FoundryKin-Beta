@@ -13,7 +13,9 @@ var ids=[],shown=0,st3=null,mode3d=null,fail3=0,migrated=null,tmr=null;
 function pump(){while(active<MAX&&queue.length){var j=queue.shift();active++;Promise.resolve().then(j).then(fin,fin)}}
 function fin(){active--;pump()}
 function enqueue(j){queue.push(j);pump()}
+/* texture keys the model of a block needs; every key is a face of FKShapes faceMap */
 function need(shape,id){
+  if(id==='dried_ghast')return ['up','down','north','south','east','west','tent'];
   if(shape==='plant'){
     if(id==='bamboo')return ['north','up','south','east'];
     if(id==='cave_vines')return ['up','down'];
@@ -75,7 +77,7 @@ function snap3d(o,SH,shape,im,dbl,id){
     var m=new T3.MeshLambertMaterial({transparent:true,alphaTest:.05,side:dbl?T3.DoubleSide:T3.FrontSide,map:t});
     m.depthWrite=!semi(c);tex.push(t);own.push(m);mats[key]=m;return m;
   }
-  ['up','down','north','south','east','west','plant','g1','g2','g3'].forEach(function(k){fm[k]=k;if(!matOf(k))mats[k]=o.hidden});
+  ['up','down','north','south','east','west','plant','g1','g2','g3','tent'].forEach(function(k){fm[k]=k;if(!matOf(k))mats[k]=o.hidden});
   if(shape==='door'){
     var L=im.down,U=im.north;
     if(!L||!U)throw new Error('door');
