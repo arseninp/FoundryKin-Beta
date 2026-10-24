@@ -2,7 +2,7 @@
 (function(){
 var C=window.FKCatalog,H=window.FKShapes;if(!C||!H)return;
 var oldIndex=C.index,oldBuild=H.build,P='textures/blocks/',Q=Math.PI/2,BASE=P+'conduit_base';
-function kind(id){if(id==='cauldron'||id==='lava_cauldron')return 'cauldron';if(id==='end_rod')return 'end';if(/(^|_)lightning_rod$/.test(id))return 'rod';if(id==='iron_bars'||/(^|_)copper_bars$/.test(id))return 'bars';if(id==='daylight_detector')return 'daylight';if(id==='grindstone'||id==='flower_pot'||id==='decorated_pot'||id==='end_portal'||id==='end_gateway')return id;return id==='cocoa'||id==='conduit'?id:''}
+function kind(id){if(id==='cauldron'||id==='lava_cauldron')return 'cauldron';if(id==='end_rod')return 'end';if(/(^|_)lightning_rod$/.test(id))return 'rod';if(id==='iron_bars'||/(^|_)copper_bars$/.test(id))return 'bars';if(id==='daylight_detector')return 'daylight';if(id==='grindstone'||id==='flower_pot'||id==='decorated_pot'||id==='end_portal'||id==='end_gateway'||id==='dried_ghast'||id==='fire'||id==='frame'||id==='glow_frame')return id;return id==='cocoa'||id==='conduit'?id:''}
 /* Flat sprite mode: shown face-on, no idle rotation and no dragging. Used for End blocks (drawn by the engine) and item icons. */
 H.flat=function(id,slot){return id==='end_portal'||id==='end_gateway'||(typeof slot==='string'&&slot.indexOf('textures/items/')===0)};
 C.index=function(c,existing){
@@ -18,6 +18,13 @@ C.index=function(c,existing){
       var list=[],seen={};
       b.forEach(function(p){if(!seen[p]){seen[p]=1;list.push({id:p})}});
       cat.sp[id]={kind:'details',list:list,fm:{up:b[0],down:b[1],north:b[2],south:b[3],east:b[4],west:b[5]}};
+    }else if(k==='decorated_pot'){
+      var sd=b[2],bs=P+'decorated_pot_base';
+      cat.sp[id]={kind:'details',list:[{id:sd},{id:bs}],fm:{up:bs,down:bs,north:sd,south:sd,east:sd,west:sd}};
+    }else if(k==='dried_ghast'){
+      var tn=(cat.cr&&cat.cr[id])||P+'dried_ghast_tentacles',gl=[],gs={};
+      b.concat([tn]).forEach(function(p){if(!gs[p]){gs[p]=1;gl.push({id:p})}});
+      cat.sp[id]={kind:'details',list:gl,fm:{up:b[0],down:b[1],north:b[2],south:b[3],east:b[4],west:b[5],tent:tn}};
     }
   });
   var d=cat.b.daylight_detector,inv=cat.b.daylight_detector_inverted;
@@ -38,8 +45,8 @@ C.index=function(c,existing){
 function face(E,id,w,h,x,y,z,rx,ry,r,dbl){
   var mat=E.mats[id];if(!mat||mat===E.hiddenMat)return;
   if(dbl){mat.side=THREE.DoubleSide;mat.needsUpdate=true}
-  r=r||[0,0,16,16];var g=new THREE.PlaneGeometry(w,h),uv=g.attributes.uv;
-  for(var i=0;i<uv.count;i++){var a=uv.getX(i),b=1-uv.getY(i),s=r[4]===90?b:a,t=r[4]===90?1-a:b;uv.setXY(i,(r[0]+s*(r[2]-r[0]))/16,1-(r[1]+t*(r[3]-r[1]))/16)}
+  r=r||[0,0,16,16];var g=new THREE.PlaneGeometry(w,h),uv=g.attributes.uv,k=r[4];
+  for(var i=0;i<uv.count;i++){var a=uv.getX(i),b=1-uv.getY(i),s=k===90?b:k===270?1-b:a,t=k===90?1-a:k===270?a:b;uv.setXY(i,(r[0]+s*(r[2]-r[0]))/16,1-(r[1]+t*(r[3]-r[1]))/16)}
   var m=new THREE.Mesh(g,mat);m.position.set(x,y,z);m.rotation.set(rx||0,ry||0,0);E.group.add(m);
 }
 function autoUV(a,b){return {north:[16-b[0],16-b[1],16-a[0],16-a[1]],south:[a[0],16-b[1],b[0],16-a[1]],east:[16-b[2],16-b[1],16-a[2],16-a[1]],west:[a[2],16-b[1],b[2],16-a[1]],up:[a[0],a[2],b[0],b[2]],down:[a[0],16-b[2],b[0],16-a[2]]}}
@@ -107,12 +114,40 @@ function flowerPot(E){
   box(E,[6,0,10],[10,6,11],{north:id,south:id,up:id,down:id},{down:[6,5,10,6],up:[6,10,10,11],north:[6,10,10,16],south:[6,10,10,16]});
   box(E,[6,0,6],[10,4,10],{up:id,down:id},{down:[6,12,10,16],up:[6,6,10,10]});
 }
-/* Decorated pot: 14x16x14 body, a 6x1x6 lip and an 8x3x8 neck above the block. Everything uses decorated_pot_side because the catalog resolves the pot to that single texture. The neck hole is not drawn. */
+/* Decorated pot: sides use decorated_pot_side (columns 1..15). decorated_pot_base is a 32x32 sheet (Java layout, rects below are in 1/16 of the sheet): neck top/bottom and sides at the top, the narrow lip below them, then body top and bottom. */
 function decoratedPot(E){
-  var id=E.faceMap.up,S=[1,0,15,16];
-  box(E,[1,0,1],[15,16,15],six(id),{north:S,south:S,east:S,west:S,up:[1,1,15,15],down:[1,1,15,15]});
-  box(E,[5,16,5],[11,17,11],six(id),{north:[5,8,11,9],south:[5,8,11,9],east:[5,8,11,9],west:[5,8,11,9],up:[5,5,11,11],down:[5,5,11,11]});
-  box(E,[4,17,4],[12,20,12],six(id),{north:[4,8,12,11],south:[4,8,12,11],east:[4,8,12,11],west:[4,8,12,11],up:[4,4,12,12],down:[4,4,12,12]});
+  var f=E.faceMap,S=f.north,B=f.up,SR=[1,0,15,16];
+  box(E,[1,0,1],[15,16,15],{north:S,south:S,east:S,west:S,up:B,down:B},{north:SR,south:SR,east:SR,west:SR,up:[0,6.5,7,13.5],down:[7,6.5,14,13.5]});
+  box(E,[5,16,5],[11,17,11],six(B),{east:[0,5.5,3,6],north:[3,5.5,6,6],west:[6,5.5,9,6],south:[9,5.5,12,6],up:[3,2.5,6,5.5],down:[6,2.5,9,5.5]});
+  box(E,[4,17,4],[12,20,12],six(B),{east:[0,4,4,5.5],north:[4,4,8,5.5],west:[8,4,12,5.5],south:[12,4,16,5.5],up:[4,0,8,4],down:[8,0,12,4]});
+}
+/* Dried ghast: Java block model (10x10x10 body and six 1 px tentacles) used as a geometry reference. Bedrock faces: up=top, down=bottom, north=back, south=front, east=left, west=right, tent=tentacles. */
+function driedGhast(E){
+  var f=E.faceMap,T=f.tent;
+  box(E,[3,0,3],[13,10,13],{north:f.north,east:f.east,south:f.south,west:f.west,up:f.up,down:f.down},{north:[0,0,10,10],east:[0,0,10,10],south:[0,0,10,10],west:[0,0,10,10],up:[10,10,0,0],down:[10,0,0,10]});
+  box(E,[0,0,5],[3,1,7],six(T),{north:[1,1.5,2.5,2],east:[0,1.5,1,2],south:[3.5,1.5,5,2],west:[2.5,1.5,3.5,2],up:[2.5,1.5,1.5,0,90],down:[2.5,1.5,3.5,0,90]});
+  box(E,[0,0,9],[3,1,11],six(T),{north:[1,3.5,2.5,4],east:[0,3.5,1,4],south:[3.5,3.5,5,4],west:[2.5,3.5,3.5,4],up:[2.5,3.5,1.5,2,90],down:[2.5,3.5,3.5,2,90]});
+  box(E,[13,0,5],[16,1,7],six(T),{north:[2.5,7.5,1,8],east:[3.5,7.5,2.5,8],south:[5,7.5,3.5,8],west:[1,7.5,0,8],up:[2.5,6,1.5,7.5,90],down:[2.5,6,3.5,7.5,90]});
+  box(E,[13,0,9],[16,1,11],six(T),{north:[2.5,5.5,1,6],east:[3.5,5.5,2.5,6],south:[5,5.5,3.5,6],west:[1,5.5,0,6],up:[2.5,4,1.5,5.5,90],down:[2.5,4,3.5,5.5,90]});
+  box(E,[9,0,13],[11,1,16],six(T),{north:[6,2.5,5,3],east:[7.5,2.5,6,3],south:[8.5,2.5,7.5,3],west:[10,2.5,8.5,3],up:[6,2.5,7.5,1.5,90],down:[7.5,1.5,9,2.5,270]});
+  box(E,[5,0,13],[7,1,16],six(T),{north:[6,1,5,1.5],east:[7.5,1,6,1.5],south:[8.5,1,7.5,1.5],west:[10,1,8.5,1.5],up:[6,1,7.5,0,90],down:[7.5,0,9,1,270]});
+}
+/* Fire on the floor: four planes 1 x 1.4 blocks, leaning outward by 22.5 degrees, as in the Java template. Selecting fire_1 shows that layer instead. */
+function fire(E){
+  var f=E.faceMap,id=E.slot===f.down?f.down:f.up,mat=E.mats[id];
+  if(!mat||mat===E.hiddenMat)return;
+  mat.side=THREE.DoubleSide;mat.needsUpdate=true;
+  [[0,.05,0,22.5,0],[0,-.05,0,-22.5,0],[.05,0,Q,0,-22.5],[-.05,0,Q,0,22.5]].forEach(function(p){
+    var m=new THREE.Mesh(new THREE.PlaneGeometry(1,1.4),mat),pv=new THREE.Group();
+    m.position.set(p[0],.2,p[1]);m.rotation.set(0,p[2],0);
+    pv.rotation.x=p[3]*Math.PI/180;pv.rotation.z=p[4]*Math.PI/180;
+    pv.add(m);E.group.add(pv);
+  });
+}
+/* Item frame and glow item frame: one 12x12x1 panel centred in the block, framed area of the single 16x16 texture. */
+function itemFrame(E){
+  var id=E.faceMap.up;
+  box(E,[2,2,7.5],[14,14,8.5],six(id),{north:[2,2,14,14],south:[2,2,14,14],up:[2,2,14,3],down:[2,13,14,14],east:[2,2,3,14],west:[13,2,14,14]});
 }
 /* End portal and End gateway are drawn by the game engine, so the editor shows the texture as one flat sprite. */
 function endSprite(E){face(E,E.faceMap.up,1.1,1.1,0,0,0,0,0,[0,0,16,16],true)}
@@ -121,6 +156,7 @@ H.build=function(E){
   var k=kind(E.cur);if(!k)return oldBuild(E);
   if(k==='cauldron')return cauldron(E);if(k==='end')return end(E);if(k==='rod')return rod(E);if(k==='bars')return bars(E);if(k==='cocoa')return cocoa(E);if(k==='daylight')return daylight(E);
   if(k==='grindstone')return grindstone(E);if(k==='flower_pot')return flowerPot(E);if(k==='decorated_pot')return decoratedPot(E);if(k==='end_portal'||k==='end_gateway')return endSprite(E);
+  if(k==='dried_ghast')return driedGhast(E);if(k==='fire')return fire(E);if(k==='frame'||k==='glow_frame')return itemFrame(E);
   return conduit(E);
 };
 })();
