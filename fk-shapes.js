@@ -21,6 +21,15 @@ var SHAPES={
   rail:{parts:[[1,.0625,1,0,-.46875,0]],shift:.45},
   decal:{parts:[[1,1,.0625,0,0,-.46875]],shift:0}
 };
+/* Camera classes: the model is never refitted, the camera is chosen once from the object's height in blocks.
+   1 = ordinary block, 2 = two blocks high or long (doors, beds, tall flowers, pots), 3 = three blocks, 4 = large mobs later. */
+var VIEW_SCALE={1:1,2:1.4,3:1.8,4:2.3};
+function viewClass(id){
+  if(id==='bamboo')return 3;
+  if(/(^|_)door$/.test(id)||/_bed$/.test(id)||/^(?:sunflower|lilac|rose_bush|peony|decorated_pot|pointed_dripstone|cave_vines)$/.test(id))return 2;
+  return 1;
+}
+function view(id){return VIEW_SCALE[viewClass(id)]}
 function icon(b,label,k){
  b.type='button';b.title=label;b.setAttribute('aria-label',label);
  var s='',p=SHAPES[k]&&SHAPES[k].parts;
@@ -77,15 +86,14 @@ function sprite(E){twoSided(E,E.slot);E.group.add(plane(E,E.slot,1.1,1.1,0,0,0,0
 function leaves(E,id,w,h,y){
   E.group.add(plane(E,id,w,h,0,y,0,0,0));E.group.add(plane(E,id,w,h,0,y,0,0,Math.PI/2));
 }
+/* Bamboo: three full stem segments at true scale; the camera class (3) frames them, no model scaling. */
 function bamboo(E){
-  var f=E.faceMap,s=f.north,sub=new THREE.Group(),E2=Object.create(E);
-  E2.group=sub;sub.scale.setScalar(.7);
+  var f=E.faceMap,s=f.north;
   var R={north:[0,0,3,16],south:[0,0,3,16],east:[0,0,3,16],west:[0,0,3,16],up:[13,0,16,3],down:[13,4,16,7]};
-  [-1,0,1].forEach(function(y){sub.add(ubox(E,.1875,1,.1875,0,y,0,s,R,16))});
-  leaves(E2,f.east,.6,.5,-1.3);
-  leaves(E2,f.south,.9,1,0);
-  leaves(E2,f.up,.9,1,1);
-  E.group.add(sub);
+  [-1,0,1].forEach(function(y){E.group.add(ubox(E,.1875,1,.1875,0,y,0,s,R,16))});
+  leaves(E,f.east,.6,.5,-1.3);
+  leaves(E,f.south,.9,1,0);
+  leaves(E,f.up,.9,1,1);
 }
 function plant(E){
   var f=E.faceMap,az=E.shape==='azalea';
@@ -230,5 +238,5 @@ function build(E){
   });
   if(d.shift)g.children.forEach(function(m){m.position.y+=d.shift});
 }
-return {build:build,SHAPES:SHAPES,icon:icon};
+return {build:build,SHAPES:SHAPES,icon:icon,view:view};
 })();

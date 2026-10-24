@@ -68,6 +68,7 @@ function semi(c){
   for(var i=3;i<a.length;i+=4){var v=a[i];if(v>8&&v<248)return true}
   return false;
 }
+/* One fixed camera per size class (FKShapes.view): no bounding-box fitting, no rescaling of the model. */
 function snap3d(o,SH,shape,im,dbl,id){
   var T3=o.T,g=o.g,mats={},own=[],tex=[],fm={};
   function matOf(key,canvas){
@@ -88,15 +89,12 @@ function snap3d(o,SH,shape,im,dbl,id){
   }
   var fl=!!(FKShapes.flat&&FKShapes.flat(id));
   g.rotation.set(fl?0:.6155,fl?0:-.7854,0);
+  o.cam.zoom=1/FKShapes.view(id);o.cam.updateProjectionMatrix();
   FKShapes.build({shape:shape,cur:id,slot:'up',iso:true,faceMap:fm,mats:mats,group:g,hiddenMat:o.hidden,SHAPES:SH,refreshDoor:function(){}});
   var url=null;
   try{
-    g.updateMatrixWorld(true);
-    var bb=new T3.Box3().setFromObject(g),ce=bb.getCenter(new T3.Vector3()),kk=Math.min(1,1.78/Math.max(bb.max.x-bb.min.x,bb.max.y-bb.min.y,.001));
-    g.scale.setScalar(kk);g.position.set(-ce.x*kk,-ce.y*kk,0);
     o.r.render(o.sc,o.cam);url=o.cv.toDataURL('image/png');
   }finally{
-    g.scale.setScalar(1);g.position.set(0,0,0);
     var gs=[];g.traverse(function(x){if(x.geometry&&gs.indexOf(x.geometry)<0)gs.push(x.geometry)});
     gs.forEach(function(x){x.dispose()});
     while(g.children.length)g.remove(g.children[0]);

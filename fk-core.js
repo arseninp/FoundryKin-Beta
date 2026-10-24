@@ -106,6 +106,7 @@ function build(){
   var fl=isFlat();
   if(fl)group.rotation.set(0,0,0);else if(wasFlat)group.rotation.set(.45,-.7,0);
   wasFlat=fl;
+  cam.position.z=3.9*FKShapes.view(cur);
   if(!slots.length)return;
   FKShapes.build({shape:shape,cur:cur,slot:slot,faceMap:faceMap,mats:mats,group:group,hiddenMat:hiddenMat,SHAPES:SHAPES,refreshDoor:refreshDoor});
 }
