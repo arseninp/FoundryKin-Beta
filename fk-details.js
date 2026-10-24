@@ -2,7 +2,7 @@
 (function(){
 var C=window.FKCatalog,H=window.FKShapes;if(!C||!H)return;
 var oldIndex=C.index,oldBuild=H.build,P='textures/blocks/',Q=Math.PI/2,BASE=P+'conduit_base';
-function kind(id){if(id==='cauldron'||id==='lava_cauldron')return 'cauldron';if(id==='end_rod')return 'end';if(/(^|_)lightning_rod$/.test(id))return 'rod';if(id==='iron_bars'||/(^|_)copper_bars$/.test(id))return 'bars';if(id==='daylight_detector')return 'daylight';return id==='cocoa'||id==='conduit'?id:''}
+function kind(id){if(id==='cauldron'||id==='lava_cauldron')return 'cauldron';if(id==='end_rod')return 'end';if(/(^|_)lightning_rod$/.test(id))return 'rod';if(id==='iron_bars'||/(^|_)copper_bars$/.test(id))return 'bars';if(id==='daylight_detector')return 'daylight';if(id==='grindstone'||id==='flower_pot'||id==='end_portal'||id==='end_gateway')return id;return id==='cocoa'||id==='conduit'?id:''}
 C.index=function(c,existing){
   var cat=oldIndex(c,existing);
   cat.ids.forEach(function(id){
@@ -87,9 +87,33 @@ function daylight(E){
   var f=E.faceMap,top=E.slot===f.west?f.west:f.up;
   box(E,[0,0,0],[16,6,16],{up:top,down:f.down,north:f.north,south:f.north,east:f.north,west:f.north},rects([0,10,16,16],[0,0,16,16],[0,0,16,16]));
 }
+/* Grindstone: Java block model used as a geometry reference (legs, pivots, wheel). Bedrock faces: up=round, down=leg, north=pivot, east/south/west=side. */
+function grindstone(E){
+  var f=E.faceMap,L=f.down,Pv=f.north,Rd=f.up,Sd=f.east;
+  box(E,[12,0,6],[14,7,10],{north:L,east:L,south:L,west:L,down:L},{north:[2,9,4,16],east:[10,16,6,9],south:[12,9,14,16],west:[6,9,10,16],down:[12,6,14,10]});
+  box(E,[2,0,6],[4,7,10],{north:L,east:L,south:L,west:L,down:L},{north:[12,9,14,16],east:[10,16,6,9],south:[2,9,4,16],west:[6,9,10,16],down:[2,6,4,10]});
+  box(E,[12,7,5],[14,13,11],{north:Pv,east:Pv,south:Pv,up:Pv,down:Pv},{north:[6,0,8,6],east:[0,0,6,6],south:[6,0,8,6],up:[8,0,10,6],down:[8,0,10,6]});
+  box(E,[2,7,5],[4,13,11],{north:Pv,south:Pv,west:Pv,up:Pv,down:Pv},{north:[6,0,8,6],south:[6,0,8,6],west:[0,0,6,6],up:[8,0,10,6],down:[8,0,10,6]});
+  box(E,[4,4,2],[12,16,14],{north:Rd,east:Sd,south:Rd,west:Sd,up:Rd,down:Rd},{north:[0,0,8,12],east:[0,0,12,12],south:[0,0,8,12],west:[0,0,12,12],up:[0,0,8,12],down:[0,0,8,12]});
+}
+/* Empty flower pot: four 1 px walls 6 px high and a 4 px base. The soil top reuses the pot texture as a stand-in. */
+function flowerPot(E){
+  var id=E.faceMap.up;
+  box(E,[5,0,5],[6,6,11],six(id),{down:[5,5,6,11],up:[5,5,6,11],north:[10,10,11,16],south:[5,10,6,16],west:[5,10,11,16],east:[5,10,11,16]});
+  box(E,[10,0,5],[11,6,11],six(id),{down:[10,5,11,11],up:[10,5,11,11],north:[5,10,6,16],south:[10,10,11,16],west:[5,10,11,16],east:[5,10,11,16]});
+  box(E,[6,0,5],[10,6,6],{north:id,south:id,up:id,down:id},{down:[6,10,10,11],up:[6,5,10,6],north:[6,10,10,16],south:[6,10,10,16]});
+  box(E,[6,0,10],[10,6,11],{north:id,south:id,up:id,down:id},{down:[6,5,10,6],up:[6,10,10,11],north:[6,10,10,16],south:[6,10,10,16]});
+  box(E,[6,0,6],[10,4,10],{up:id,down:id},{down:[6,12,10,16],up:[6,6,10,10]});
+}
+/* End portal: one flat double-sided plane at 12/16 height. The in-game starfield is not simulated. */
+function portal(E){face(E,E.faceMap.up,1,1,0,.25,0,-Q,0,[0,0,16,16],true)}
+/* End gateway: full cube, same texture on all six faces. The beam is not drawn. */
+function gateway(E){box(E,[0,0,0],[16,16,16],six(E.faceMap.up))}
 H.build=function(E){
   if(typeof E.slot==='string'&&E.slot.indexOf('textures/items/')===0)return oldBuild(E);
   var k=kind(E.cur);if(!k)return oldBuild(E);
-  if(k==='cauldron')return cauldron(E);if(k==='end')return end(E);if(k==='rod')return rod(E);if(k==='bars')return bars(E);if(k==='cocoa')return cocoa(E);if(k==='daylight')return daylight(E);return conduit(E);
+  if(k==='cauldron')return cauldron(E);if(k==='end')return end(E);if(k==='rod')return rod(E);if(k==='bars')return bars(E);if(k==='cocoa')return cocoa(E);if(k==='daylight')return daylight(E);
+  if(k==='grindstone')return grindstone(E);if(k==='flower_pot')return flowerPot(E);if(k==='end_portal')return portal(E);if(k==='end_gateway')return gateway(E);
+  return conduit(E);
 };
 })();
