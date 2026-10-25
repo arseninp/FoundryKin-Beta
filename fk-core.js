@@ -82,6 +82,13 @@ function resizeStage(){
   if(w&&w!==W){W=w;renderer.setSize(w,w)}
   requestRender();
 }
+/* Keep the layout size, but do not expose the previous object's tools while loading. */
+function loadingUi(on){
+  stage.setAttribute('aria-busy',String(on));
+  ['#ed','#slots','#shapesRow','#frames','#toolsPanel'].forEach(function(sel){
+    var el=$(sel);el.inert=on;el.style.visibility=on?'hidden':'';
+  });
+}
 function texBuf(id){
   var n=res,d=ctxOf(id).getImageData(0,0,n,n).data,buf=new Uint8Array(n*n*4),semi=false;
   for(var y=0;y<n;y++){var s=y*n*4,t=(n-1-y)*n*4;for(var x=0;x<n*4;x++){var v=d[s+x];buf[t+x]=v;if((x&3)===3&&v>8&&v<248)semi=true}}
@@ -133,7 +140,7 @@ function build(){
 }
 var drag=null;
 stage.addEventListener('pointerdown',function(e){
-  if(!gl||S.mode!=='edit'||isFlat()||drag)return;
+  if(!gl||API.busy||S.mode!=='edit'||isFlat()||drag)return;
   drag={id:e.pointerId,x:e.clientX,y:e.clientY};stage.setPointerCapture(e.pointerId);
 });
 stage.addEventListener('pointermove',function(e){
@@ -193,7 +200,7 @@ function buildSlotUi(){
   frameUi();
 }
 function setSlot(id){
-  if(!cv[id])return;slot=id;
+  if(API.busy||!cv[id])return;slot=id;
   $('#slots').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.id===id)});
   drawEd();frameUi();
   if(slots.some(function(s){return s.carried})){
@@ -208,6 +215,7 @@ function frameUi(){
   if(n>1)$('#fNum').textContent=(fi[slot]+1)+' / '+n;
 }
 function setFrame(k){
+  if(API.busy)return;
   var id=slot,f=fr[id];
   if(!f||k<0||k>=f.length||k===fi[id])return;
   hs[id][fi[id]]={u:undoS[id],r:redoS[id]};
@@ -219,8 +227,8 @@ $('#fPrev').onclick=function(){setFrame(fi[slot]-1)};
 $('#fNext').onclick=function(){setFrame(fi[slot]+1)};
 function snap(k){return ctxOf(k).getImageData(0,0,res,res)}
 function pushUndo(){var s=undoS[slot];s.push(snap(slot));if(s.length>60)s.shift();redoS[slot]=[];updHist()}
-function doUndo(){var s=undoS[slot];if(!s||!s.length)return;redoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
-function doRedo(){var s=redoS[slot];if(!s||!s.length)return;undoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
+function doUndo(){if(API.busy)return;var s=undoS[slot];if(!s||!s.length)return;redoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
+function doRedo(){if(API.busy)return;var s=redoS[slot];if(!s||!s.length)return;undoS[slot].push(snap(slot));ctxOf(slot).putImageData(s.pop(),0,0);touched()}
 function updHist(){if(ctx.onHistory)ctx.onHistory(!!(undoS[slot]&&undoS[slot].length),!!(redoS[slot]&&redoS[slot].length))}
 function resetHist(){slots.forEach(function(s){undoS[s.id]=[];redoS[s.id]=[];hs[s.id]=[]});updHist()}
 function drawEd(){ed.width=ed.height=res;ed.style.backgroundSize=(200/res)+'% '+(200/res)+'%';ectx.clearRect(0,0,res,res);if(cv[slot])ectx.drawImage(cv[slot],0,0);updHist()}
@@ -228,7 +236,7 @@ function touched(){
   dirty[slot]=true;delete ph[slot];API.edits++;
   refreshTex(slot);drawEd();
 }
-function seg(sel,attr,fn){$(sel).addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.disabled)return;
+function seg(sel,attr,fn){$(sel).addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.disabled||API.busy)return;
   $(sel).querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});fn(b.dataset[attr])})}
 seg('#shapes','s',function(v){shape=v;build()});
 function setShapeUi(){$('#shapes').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.s===shape)})}
@@ -241,7 +249,7 @@ function updShapeUi(list){
   setShapeUi();
 }
 function setRes(n){
-  if(n===res)return;
+  if(API.busy||n===res)return;
   var old={};slots.forEach(function(s){old[s.id]=fr[s.id].map(function(f){var c=document.createElement('canvas');c.width=c.height=res;c.getContext('2d').drawImage(f,0,0);return c})});
   res=n;
   slots.forEach(function(s){fr[s.id].forEach(function(f,k){f.width=f.height=res;var g=f.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(old[s.id][k],0,0,res,res)})});
@@ -374,14 +382,22 @@ function selectBlock(id){
   var mo=modelOf(m),keysList=shapeKeysFor(m,grp);
   var want=isDoorBlock(m)?'door':(mo?mo:shapeOfId(id));
   var sh=keysList.indexOf(want)>=0?want:keysList[0];
+  /* Save only a fully opened object; never pack partially decoded canvases. */
+  if(!API.busy)packCur();
+  applyGen++;endDrag();
+  if(gl){clearModel();requestRender()}
   function go(note){
     if(tok!==selTok)return;
-    packCur();cur=m;shape=sh;
+    cur=m;shape=sh;
     var so=slotsFor(m);setupSlots(so.list,so.fm);updShapeUi(keysList);
-    applyEntry(entryFor(so.list),function(){build();setBlockInfo(id,m,note,mo);API.loaded(m)});
+    applyEntry(entryFor(so.list),function(){
+      if(tok!==selTok)return;
+      build();setBlockInfo(id,m,note,mo);API.loaded(m);
+    });
   }
   S.info=null;API.pending=id;API.loading();
   ensureFiles(m).then(function(r){go(!r.vanilla?'gray':(r.missing?'part':(r.loaded?'base':'')))}).catch(function(err){
+    if(tok!==selTok)return;
     showErr('block_load',err.message);
     go('gray');
   });
@@ -418,8 +434,8 @@ var API={
   },
   cur:function(){return cur},
   files:function(){return curFiles().filter(function(f){return dirty[f.path.replace(/\.png$/,'')]})},
-  loading:function(){API.busy=true;emit()},
-  loaded:function(m){API.busy=false;API.pending='';API.block=m;var w=API.want;API.want=null;if(w&&cv[w])setSlot(w);emit()},
+  loading:function(){API.busy=true;loadingUi(true);emit()},
+  loaded:function(m){API.busy=false;API.pending='';API.block=m;loadingUi(false);var w=API.want;API.want=null;if(w&&cv[w])setSlot(w);emit()},
   openTexture:function(path,data){
     var key='textures/'+path;
     if(!catalog)return null;
@@ -438,7 +454,7 @@ var API={
     return {
       catalog:catalog,files:files,dirty:dirty,shapes:SHAPES,load:FKCatalog.loadAny,select:selectBlock,edited:isEdited,
       discard:function(){slots.forEach(function(s){ph[s.id]=true})},
-      obj:function(){return {id:cur||null,paths:slots.map(function(s){return s.id})}},
+      obj:function(){return API.busy?{id:API.pending||null,paths:[]}:{id:cur||null,paths:slots.map(function(s){return s.id})}},
       setPack:function(map){
         Object.keys(dirty).forEach(function(k){if(!(k in map)){delete dirty[k];delete files[k]}});
         Object.keys(map).forEach(function(k){files[k]=mkFile(map[k]);dirty[k]=true});
@@ -453,7 +469,7 @@ var API={
 ctx.el={ed:ed};
 ctx.res=function(){return res};
 ctx.setRes=setRes;
-ctx.ready=function(){return !!cv[slot]};
+ctx.ready=function(){return !API.busy&&!!cv[slot]};
 ctx.g=function(){return ctxOf(slot)};
 ctx.pushUndo=pushUndo;ctx.undo=doUndo;ctx.redo=doRedo;ctx.touched=touched;
 ctx.syncHist=updHist;ctx.files=curFiles;ctx.say=say;
