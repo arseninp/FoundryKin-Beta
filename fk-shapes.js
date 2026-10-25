@@ -77,9 +77,9 @@ function plane(E,id,w,h,x,y,z,rx,ry){
   var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),E.mats[id]);
   m.position.set(x,y,z);m.rotation.set(rx||0,ry||0,0);return m;
 }
+/* Cross: two planes along the block axes, the same in the editor and in Find. Width w is the plane length, so w=sqrt(2) shows a square texture undistorted from the corner view. */
 function cross(E,id,w,h,y,x,z){
-  var k=E.iso?1/Math.SQRT2:1,a=E.iso?0:PI4,b=E.iso?Math.PI/2:-PI4;
-  E.group.add(plane(E,id,w*k,h,x||0,y,z||0,0,a));E.group.add(plane(E,id,w*k,h,x||0,y,z||0,0,b));
+  E.group.add(plane(E,id,w,h,x||0,y,z||0,0,0));E.group.add(plane(E,id,w,h,x||0,y,z||0,0,Math.PI/2));
 }
 function twoSided(E,id){var m=E.mats[id];if(m){m.side=THREE.DoubleSide;m.needsUpdate=true}}
 function sprite(E){twoSided(E,E.slot);E.group.add(plane(E,E.slot,1.1,1.1,0,0,0,0,0))}
@@ -184,9 +184,9 @@ function patch(E,id,w,h,x,y,z,rx,ry,r){
   }
   E.group.add(m);return m;
 }
+/* Stem: two UV-cut planes along the block axes, the same in the editor and in Find. */
 function stem(E,id,w,h,y,z,r){
-  var a=E.iso?0:PI4,b=E.iso?Math.PI/2:-PI4,k=E.iso?1/Math.SQRT2:1;
-  patch(E,id,w*k,h,0,y,z,0,a,r);patch(E,id,w*k,h,0,y,z,0,b,r);
+  patch(E,id,w,h,0,y,z,0,0,r);patch(E,id,w,h,0,y,z,0,Math.PI/2,r);
 }
 function leaf(E){
   var f=E.faceMap;
