@@ -142,19 +142,6 @@ function bed(E){
   bedPiece(E,[13,29,6],[3,3,3],[12,38]);bedPiece(E,[0,29,6],[3,3,3],[0,38]);
   bedPiece(E,[13,0,6],[3,3,3],[12,44]);bedPiece(E,[0,0,6],[3,3,3],[0,44]);
 }
-function inkRect(E,id){
-  var mat=E.mats[id],im=mat&&mat.map&&mat.map.image,full=[0,0,16,16];
-  if(!im)return full;
-  try{
-    var w=im.width,h=im.height,raw=im.data,d=raw||(im.getContext&&im.getContext('2d').getImageData(0,0,w,h).data);
-    if(!d||!w||!h)return full;
-    var x0=w,y0=h,x1=-1,y1=-1;
-    for(var y=0;y<h;y++)for(var x=0;x<w;x++)if(d[(y*w+x)*4+3]>0){
-      var py=raw?h-1-y:y;x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,py);y1=Math.max(y1,py);
-    }
-    return x1<0?full:[16*x0/w,16*y0/h,16*(x1+1)/w,16*(y1+1)/h];
-  }catch(err){return full}
-}
 function boxUV(w,h,d,u,v){
   return {east:[u,v+d,u+d,v+d+h],north:[u+d,v+d,u+d+w,v+d+h],west:[u+d+w,v+d,u+2*d+w,v+d+h],south:[u+2*d+w,v+d,u+2*d+2*w,v+d+h],up:[u+d,v,u+d+w,v+d],down:[u+d+w,v,u+d+2*w,v+d]};
 }

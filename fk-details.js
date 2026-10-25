@@ -172,7 +172,6 @@ function itemFrame(E){
 function endSprite(E){face(E,E.faceMap.up,1.1,1.1,0,0,0,0,0,[0,0,16,16],true)}
 H.build=function(E){
   if(typeof E.slot==='string'&&E.slot.indexOf('textures/items/')===0)return oldBuild(E);
-  if(E.iso&&(E.cur==='dried_ghast'||E.cur==='big_dripleaf'||E.cur==='small_dripleaf_block'))E.group.rotation.y+=Math.PI;
   var k=kind(E.cur);if(!k)return oldBuild(E);
   if(k==='cauldron')return cauldron(E);if(k==='end')return end(E);if(k==='rod')return rod(E);if(k==='bars')return bars(E);if(k==='cocoa')return cocoa(E);if(k==='daylight')return daylight(E);
   if(k==='grindstone')return grindstone(E);if(k==='flower_pot')return flowerPot(E);if(k==='decorated_pot')return decoratedPot(E);if(k==='end_portal'||k==='end_gateway')return endSprite(E);
