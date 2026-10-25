@@ -51,6 +51,7 @@ function shapeKeysFor(m,grp){
 }
 var stage=$('#stage'),W=stage.clientWidth||360;
 var gl=(typeof THREE!=='undefined'),renderer=null,scene=null,cam=null,group=null,frames=0;
+var renderFrame=null;
 if(!gl)showErr('three_missing');
 if(gl){
   try{
@@ -61,6 +62,25 @@ if(gl){
     hiddenMat=new THREE.MeshBasicMaterial({visible:false});
     group=new THREE.Group();group.rotation.set(.45,-.7,0);scene.add(group);
   }catch(err){gl=false;renderer=null;showErr('webgl_unavailable',err.message)}
+}
+/* Coalesce changes into one frame. A stationary or hidden editor has no RAF loop. */
+function requestRender(){
+  if(!gl||S.mode!=='edit'||document.hidden||renderFrame!==null)return;
+  renderFrame=requestAnimationFrame(function(){
+    renderFrame=null;
+    if(!gl||S.mode!=='edit'||document.hidden)return;
+    if(!isFinite(group.rotation.x)||!isFinite(group.rotation.y))group.rotation.set(0,0,0);
+    try{renderer.render(scene,cam);frames++}catch(err){showErr('render',err.message)}
+  });
+}
+function cancelRender(){
+  if(renderFrame!==null){cancelAnimationFrame(renderFrame);renderFrame=null}
+}
+function resizeStage(){
+  if(!gl||S.mode!=='edit'||document.hidden)return;
+  var w=stage.clientWidth;
+  if(w&&w!==W){W=w;renderer.setSize(w,w)}
+  requestRender();
 }
 function texBuf(id){
   var n=res,d=ctxOf(id).getImageData(0,0,n,n).data,buf=new Uint8Array(n*n*4),semi=false;
@@ -84,12 +104,13 @@ function refreshDoor(){
   var tx=new THREE.DataTexture(buf,n,2*n,THREE.RGBAFormat);
   tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;tx.needsUpdate=true;
   tex.__door=tx;mats.__door.map=tx;mats.__door.depthWrite=!(a.semi||b.semi);mats.__door.needsUpdate=true;
+  requestRender();
 }
 function refreshTex(id){
   if(!gl||!cv[id]||!mats[id])return;
   if(tex[id])tex[id].dispose();
   tex[id]=makeTex(id);mats[id].map=tex[id];mats[id].depthWrite=!tex[id].userData.semi;mats[id].needsUpdate=true;
-  refreshDoor();
+  refreshDoor();requestRender();
 }
 function rebuildTextures(){slots.forEach(function(s){refreshTex(s.id)});refreshDoor()}
 function clearModel(){
@@ -107,36 +128,26 @@ function build(){
   if(fl)group.rotation.set(0,0,0);else if(wasFlat)group.rotation.set(.45,-.7,0);
   wasFlat=fl;
   cam.position.z=3.9*FKShapes.view(cur);
-  if(!slots.length)return;
-  FKShapes.build({shape:shape,cur:cur,slot:slot,faceMap:faceMap,mats:mats,group:group,hiddenMat:hiddenMat,SHAPES:SHAPES,refreshDoor:refreshDoor});
+  if(slots.length)FKShapes.build({shape:shape,cur:cur,slot:slot,faceMap:faceMap,mats:mats,group:group,hiddenMat:hiddenMat,SHAPES:SHAPES,refreshDoor:refreshDoor});
+  requestRender();
 }
-var drag=null,idle=true,lastRenderTime=0,renderCheckTimer=null;
-stage.addEventListener('pointerdown',function(e){if(!gl)return;drag={x:e.clientX,y:e.clientY};idle=false;stage.setPointerCapture(e.pointerId)});
-stage.addEventListener('pointermove',function(e){if(!drag||isFlat())return;group.rotation.y+=(e.clientX-drag.x)*.01;group.rotation.x=Math.max(-1.4,Math.min(1.4,group.rotation.x+(e.clientY-drag.y)*.01));drag={x:e.clientX,y:e.clientY}});
-function endDrag(){drag=null;setTimeout(function(){if(!drag)idle=true},2500)}
-stage.addEventListener('pointerup',endDrag);stage.addEventListener('pointercancel',endDrag);
-var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-function loop(t){
-  requestAnimationFrame(loop);
-  if(!gl)return;
-  var dt=lastRenderTime&&isFinite(t)?Math.max(0,Math.min(100,t-lastRenderTime)):0;
-  if(isFinite(t))lastRenderTime=t;
-  if(S.mode!=='edit'||document.hidden)return;
-  if(!isFinite(group.rotation.x)||!isFinite(group.rotation.y))group.rotation.set(.45,-.7,0);
-  if(idle&&!reduce&&!isFlat())group.rotation.y+=dt*.0004;
-  try{renderer.render(scene,cam);frames++}catch(err){showErr('render',err.message)}
-}
-function watchRender(){
-  clearTimeout(renderCheckTimer);renderCheckTimer=null;
-  if(!gl||S.mode!=='edit'||document.hidden)return;
-  var start=frames;
-  renderCheckTimer=setTimeout(function(){
-    renderCheckTimer=null;
-    if(gl&&S.mode==='edit'&&!document.hidden&&frames-start<2)showErr('render_stalled');
-  },2500);
-}
-document.addEventListener('visibilitychange',watchRender);
-addEventListener('resize',function(){if(!gl)return;var w=stage.clientWidth;if(w)renderer.setSize(w,w)});
+var drag=null;
+stage.addEventListener('pointerdown',function(e){
+  if(!gl||S.mode!=='edit'||isFlat()||drag)return;
+  drag={id:e.pointerId,x:e.clientX,y:e.clientY};stage.setPointerCapture(e.pointerId);
+});
+stage.addEventListener('pointermove',function(e){
+  if(!drag||drag.id!==e.pointerId||isFlat())return;
+  group.rotation.y+=(e.clientX-drag.x)*.01;
+  group.rotation.x=Math.max(-1.4,Math.min(1.4,group.rotation.x+(e.clientY-drag.y)*.01));
+  drag.x=e.clientX;drag.y=e.clientY;requestRender();
+});
+function endDrag(e){if(!e||drag&&drag.id===e.pointerId)drag=null}
+stage.addEventListener('pointerup',endDrag);stage.addEventListener('pointercancel',endDrag);stage.addEventListener('lostpointercapture',endDrag);
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){endDrag();cancelRender()}else resizeStage();
+});
+addEventListener('resize',resizeStage);
 function slotsOf(p){
   var list=[],seen={},fm={};
   FACES.forEach(function(f,i){var path=p[i];fm[f]=path;if(!seen[path]){seen[path]=1;list.push({id:path})}});
@@ -185,8 +196,11 @@ function setSlot(id){
   if(!cv[id])return;slot=id;
   $('#slots').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.id===id)});
   drawEd();frameUi();
+  if(slots.some(function(s){return s.carried})){
+    var so=slotsFor(cur),isC=slots.some(function(s){return s.carried&&s.id===id}),nf={};
+    if(isC){Object.keys(faceMap).forEach(function(k){nf[k]=id});faceMap=nf}else faceMap=so.fm;
+  }
   build();
-  if(slots.some(function(s){return s.carried})){var so=slotsFor(cur),isC=slots.some(function(s){return s.carried&&s.id===id}),nf={};if(isC){Object.keys(faceMap).forEach(function(k){nf[k]=id});faceMap=nf}else faceMap=so.fm;build()}
 }
 function frameUi(){
   var f=fr[slot],n=f?f.length:0;
@@ -399,7 +413,7 @@ var API={
     document.body.classList.toggle('fk-search',m==='search');
     document.body.classList.toggle('fk-edit',m==='edit');
     try{scrollTo(0,0)}catch(e){}
-    watchRender();
+    if(m==='edit')resizeStage();else{endDrag();cancelRender()}
     emit();
   },
   cur:function(){return cur},
@@ -446,5 +460,4 @@ ctx.syncHist=updHist;ctx.files=curFiles;ctx.say=say;
 window.FKAPI=API;
 FK.apply(document);
 loadCatalog();
-requestAnimationFrame(loop);
 })();
