@@ -32,7 +32,6 @@ function open(f,url,c){
     var a2=api();
     if(!a2||!a2.subscribe){loaded=null;if(cb.onError)cb.onError('not_editor',url);return}
     attach(a2);
-    try{win().addEventListener('scroll',function(){if(cb.onScroll)cb.onScroll(win().scrollY)},{passive:true})}catch(e){}
     /* A card can be clicked before iframe load finishes; keep that user-selected mode. */
     a2.setMode(wantEdit?'edit':(a2.state&&a2.state.mode)||'search');
     if(cb.onReady)cb.onReady();
@@ -75,7 +74,6 @@ return {
   dirtyNow:function(){var a=api();return !!a&&mode==='edit'&&(a.edits||0)>base},
   markSaved:function(){var a=api();base=a?(a.edits||0):0},
   closeMenu:function(){var a=api();return !!(a&&a.closeMenu&&a.closeMenu())},
-  scrollY:function(){try{return win().scrollY||0}catch(e){return 0}},
   pendingEdit:function(){return wantEdit},
   doc:function(){try{return win().document}catch(e){return null}}
 };
