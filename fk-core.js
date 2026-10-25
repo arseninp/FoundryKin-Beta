@@ -3,7 +3,7 @@
 var FK=window.FK;
 function tt(k,p){return FK.t(k,p)}
 var res=16, shape='cube';
-var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={}, applyGen=0, fr={}, fi={}, hs={}, doorCv=null;
+var slots=[], slot=null, faceMap={}, cv={}, tex={}, mats={}, undoS={}, redoS={}, ph={}, applyGen=0, hiddenMat=null, fr={}, fi={}, hs={};
 var files={}, cur='', dirty={}, catalog=null, existing=null, shapeKeys=['cube'];
 var FACES=['up','down','north','south','east','west'];
 var SHAPES=FKShapes.SHAPES;
@@ -49,73 +49,94 @@ function shapeKeysFor(m,grp){
   ks.sort(function(a,b){return ALL_SHAPES.indexOf(a)-ALL_SHAPES.indexOf(b)});
   return ks;
 }
-/* the 3D view lives in FKView; here it is only shown and redrawn on request */
-var stage=$('#stage'),W=stage.clientWidth||360,frames=0;
-var gl=FKView.attach(stage,W);
-if(!gl){var ve=FKView.error()||{};showErr(ve.code||'webgl_unavailable',ve.detail)}
-FKView.onLost(function(){gl=false;showErr('webgl_lost')});
-var dirtyView=false,queued=false;
-function invalidate(){
-  dirtyView=true;
-  if(!queued&&gl){queued=true;requestAnimationFrame(tick)}
+var stage=$('#stage'),W=stage.clientWidth||360;
+var gl=(typeof THREE!=='undefined'),renderer=null,scene=null,cam=null,group=null,frames=0;
+if(!gl)showErr('three_missing');
+if(gl){
+  try{
+    renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(W,W);stage.insertBefore(renderer.domElement,stage.firstChild);
+    scene=new THREE.Scene();cam=new THREE.PerspectiveCamera(35,1,.1,50);cam.position.set(0,0,3.9);cam.lookAt(0,0,0);
+    scene.add(new THREE.AmbientLight(0xffffff,.75));var dl=new THREE.DirectionalLight(0xffffff,.55);dl.position.set(2,4,3);scene.add(dl);
+    hiddenMat=new THREE.MeshBasicMaterial({visible:false});
+    group=new THREE.Group();group.rotation.set(.45,-.7,0);scene.add(group);
+  }catch(err){gl=false;renderer=null;showErr('webgl_unavailable',err.message)}
 }
-function tick(){
-  queued=false;
-  if(!dirtyView||S.mode!=='edit'||document.hidden)return;
-  dirtyView=false;
-  try{FKView.render();frames++}catch(err){showErr('render',err.message)}
+function texBuf(id){
+  var n=res,d=ctxOf(id).getImageData(0,0,n,n).data,buf=new Uint8Array(n*n*4),semi=false;
+  for(var y=0;y<n;y++){var s=y*n*4,t=(n-1-y)*n*4;for(var x=0;x<n*4;x++){var v=d[s+x];buf[t+x]=v;if((x&3)===3&&v>8&&v<248)semi=true}}
+  return {buf:buf,semi:semi};
+}
+function makeTex(id){
+  if(!gl)return null;
+  var r=texBuf(id),n=res;
+  var tx=new THREE.DataTexture(r.buf,n,n,THREE.RGBAFormat);
+  tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;tx.needsUpdate=true;tx.userData={semi:r.semi};return tx;
 }
 function refreshDoor(){
-  if(!gl||!mats.__door||shape!=='door')return;
+  if(!gl||!mats.__door)return;
+  if(shape!=='door')return;
   var L=faceMap.down,U=faceMap.north;
   if(!cv[L]||!cv[U])return;
-  var d=FKView.door(cv[L],cv[U],doorCv),t=tex.__door;
-  doorCv=d;
-  if(!t||t.image!==d||t.userData.h!==d.height){
-    if(t)t.dispose();
-    t=tex.__door=FKView.texture(d);t.userData={h:d.height};mats.__door.map=t;
-  }
-  t.needsUpdate=true;mats.__door.depthWrite=!FKView.semi(d);mats.__door.needsUpdate=true;
+  var n=res,a=texBuf(L),b=texBuf(U),buf=new Uint8Array(n*n*8);
+  buf.set(a.buf,0);buf.set(b.buf,n*n*4);
+  if(tex.__door)tex.__door.dispose();
+  var tx=new THREE.DataTexture(buf,n,2*n,THREE.RGBAFormat);
+  tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;tx.needsUpdate=true;
+  tex.__door=tx;mats.__door.map=tx;mats.__door.depthWrite=!(a.semi||b.semi);mats.__door.needsUpdate=true;
 }
 function refreshTex(id){
   if(!gl||!cv[id]||!mats[id])return;
-  var c=cv[id],t=tex[id];
-  if(!t||t.image.width!==c.width||t.image.height!==c.height){
-    if(t)t.dispose();
-    t=tex[id]=FKView.texture(c);mats[id].map=t;
-  }else t.image=c;
-  t.needsUpdate=true;mats[id].depthWrite=!FKView.semi(c);mats[id].needsUpdate=true;
-  refreshDoor();invalidate();
+  if(tex[id])tex[id].dispose();
+  tex[id]=makeTex(id);mats[id].map=tex[id];mats[id].depthWrite=!tex[id].userData.semi;mats[id].needsUpdate=true;
+  refreshDoor();
 }
 function rebuildTextures(){slots.forEach(function(s){refreshTex(s.id)});refreshDoor()}
-function isFlat(){return FKView.spec(cur,slot).flat}
+function clearModel(){
+  var geometries=[];
+  group.traverse(function(o){if(o.geometry&&geometries.indexOf(o.geometry)<0)geometries.push(o.geometry)});
+  geometries.forEach(function(g){g.dispose()});
+  while(group.children.length)group.remove(group.children[0]);
+}
+function isFlat(){return !!(FKShapes.flat&&FKShapes.flat(cur,slot))}
+var wasFlat=false;
 function build(){
   if(!gl)return;
-  FKView.clear();
-  FKView.setup(cur,slot);
-  if(slots.length)FKShapes.build({shape:shape,cur:cur,slot:slot,faceMap:faceMap,mats:mats,group:FKView.group(),hiddenMat:FKView.hidden(),SHAPES:SHAPES,refreshDoor:refreshDoor});
-  invalidate();
+  clearModel();
+  var fl=isFlat();
+  if(fl)group.rotation.set(0,0,0);else if(wasFlat)group.rotation.set(.45,-.7,0);
+  wasFlat=fl;
+  cam.position.z=3.9*FKShapes.view(cur);
+  if(!slots.length)return;
+  FKShapes.build({shape:shape,cur:cur,slot:slot,faceMap:faceMap,mats:mats,group:group,hiddenMat:hiddenMat,SHAPES:SHAPES,refreshDoor:refreshDoor});
 }
-var drag=null,renderCheckTimer=null;
-stage.addEventListener('pointerdown',function(e){if(!gl)return;drag={x:e.clientX,y:e.clientY};stage.setPointerCapture(e.pointerId)});
-stage.addEventListener('pointermove',function(e){
-  if(!drag||isFlat())return;
-  FKView.rotate((e.clientX-drag.x)*.01,(e.clientY-drag.y)*.01);
-  drag={x:e.clientX,y:e.clientY};invalidate();
-});
-function endDrag(){drag=null}
+var drag=null,idle=true,lastRenderTime=0,renderCheckTimer=null;
+stage.addEventListener('pointerdown',function(e){if(!gl)return;drag={x:e.clientX,y:e.clientY};idle=false;stage.setPointerCapture(e.pointerId)});
+stage.addEventListener('pointermove',function(e){if(!drag||isFlat())return;group.rotation.y+=(e.clientX-drag.x)*.01;group.rotation.x=Math.max(-1.4,Math.min(1.4,group.rotation.x+(e.clientY-drag.y)*.01));drag={x:e.clientX,y:e.clientY}});
+function endDrag(){drag=null;setTimeout(function(){if(!drag)idle=true},2500)}
 stage.addEventListener('pointerup',endDrag);stage.addEventListener('pointercancel',endDrag);
+var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function loop(t){
+  requestAnimationFrame(loop);
+  if(!gl)return;
+  var dt=lastRenderTime&&isFinite(t)?Math.max(0,Math.min(100,t-lastRenderTime)):0;
+  if(isFinite(t))lastRenderTime=t;
+  if(S.mode!=='edit'||document.hidden)return;
+  if(!isFinite(group.rotation.x)||!isFinite(group.rotation.y))group.rotation.set(.45,-.7,0);
+  if(idle&&!reduce&&!isFlat())group.rotation.y+=dt*.0004;
+  try{renderer.render(scene,cam);frames++}catch(err){showErr('render',err.message)}
+}
 function watchRender(){
   clearTimeout(renderCheckTimer);renderCheckTimer=null;
   if(!gl||S.mode!=='edit'||document.hidden)return;
   var start=frames;
   renderCheckTimer=setTimeout(function(){
     renderCheckTimer=null;
-    if(gl&&S.mode==='edit'&&!document.hidden&&frames-start<1)showErr('render_stalled');
+    if(gl&&S.mode==='edit'&&!document.hidden&&frames-start<2)showErr('render_stalled');
   },2500);
 }
-document.addEventListener('visibilitychange',function(){watchRender();invalidate()});
-addEventListener('resize',function(){if(!gl)return;var w=stage.clientWidth;if(w){FKView.size(w);invalidate()}});
+document.addEventListener('visibilitychange',watchRender);
+addEventListener('resize',function(){if(!gl)return;var w=stage.clientWidth;if(w)renderer.setSize(w,w)});
 function slotsOf(p){
   var list=[],seen={},fm={};
   FACES.forEach(function(f,i){var path=p[i];fm[f]=path;if(!seen[path]){seen[path]=1;list.push({id:path})}});
@@ -129,15 +150,14 @@ function slotsFor(m){
 }
 function pathsFor(m){
   if(catalog.sp&&catalog.sp[m])return catalog.sp[m].list.map(function(s){return s.id});
-  var o=[];catalog.b[m].forEach(function(x){if(o.indexOf(x)<0)o.push(x)});var q=catalog.cr&&catalog.cr[m];if(q&&o.indexOf(q)<0)o.push(q);
-  return o;
+  var o=[];catalog.b[m].forEach(function(x){if(o.indexOf(x)<0)o.push(x)});var q=catalog.cr&&catalog.cr[m];if(q&&o.indexOf(q)<0)o.push(q);return o;
 }
 function setupSlots(list,fm){
   applyGen++;
-  if(gl)FKView.clear();
+  if(gl)clearModel();
   Object.keys(tex).forEach(function(k){if(tex[k])tex[k].dispose()});
   Object.keys(mats).forEach(function(k){if(mats[k])mats[k].dispose()});
-  tex={};mats={};cv={};undoS={};redoS={};ph={};fr={};fi={};hs={};doorCv=null;
+  tex={};mats={};cv={};undoS={};redoS={};ph={};fr={};fi={};hs={};
   slots=list;faceMap=fm;
   var dbl=/leaves/.test(cur)||modelOf(cur)==='plant'||modelOf(cur)==='azalea';
   list.forEach(function(s){
@@ -145,9 +165,9 @@ function setupSlots(list,fm){
     for(var i=0;i<n;i++){var c=document.createElement('canvas');c.width=c.height=res;a.push(c)}
     fr[s.id]=a;fi[s.id]=0;hs[s.id]=[];cv[s.id]=a[0];
     undoS[s.id]=[];redoS[s.id]=[];
-    if(gl)mats[s.id]=FKView.material(dbl);
+    if(gl)mats[s.id]=new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:dbl?THREE.DoubleSide:THREE.FrontSide});
   });
-  if(gl)mats.__door=FKView.material(false);
+  if(gl)mats.__door=new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:THREE.FrontSide});
   slot=list[0].id;
   buildSlotUi();
 }
@@ -379,12 +399,11 @@ var API={
     document.body.classList.toggle('fk-search',m==='search');
     document.body.classList.toggle('fk-edit',m==='edit');
     try{scrollTo(0,0)}catch(e){}
-    if(m==='edit'){var w=stage.clientWidth;if(w)FKView.size(w)}
-    watchRender();invalidate();
+    watchRender();
     emit();
   },
   cur:function(){return cur},
-  files:function(){return curFiles().filter(function(f){return dirty[f.path.replace(/\\.png$/,'')]})},
+  files:function(){return curFiles().filter(function(f){return dirty[f.path.replace(/\.png$/,'')]})},
   loading:function(){API.busy=true;emit()},
   loaded:function(m){API.busy=false;API.pending='';API.block=m;var w=API.want;API.want=null;if(w&&cv[w])setSlot(w);emit()},
   openTexture:function(path,data){
@@ -427,5 +446,5 @@ ctx.syncHist=updHist;ctx.files=curFiles;ctx.say=say;
 window.FKAPI=API;
 FK.apply(document);
 loadCatalog();
-invalidate();
+requestAnimationFrame(loop);
 })();
