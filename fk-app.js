@@ -40,11 +40,6 @@ function editTitle(){
   return head(id?nice(id):T('title.editor'),FKE.busy()?T('title.loading'):((oi&&oi.file)||''));
 }
 function setTitle(h){if(h!==lastTitle){lastTitle=h;$('#title').innerHTML=h}}
-function headerY(){
-  var s=document.querySelector('.screen.on'),y=0;
-  if(s)y=(s.id==='s-add'&&hasFke())?FKE.scrollY():s.scrollTop;
-  document.documentElement.style.setProperty('--fkHeaderY',Math.max(8,24-y)+'px');
-}
 /* the shell header is hidden on the Find screen from the moment the screen opens, not after the editor has finished loading */
 function syncFind(){document.body.classList.toggle('findSearch',top()==='add'&&hasFke()&&FKE.getMode()==='search'&&!FKE.pendingEdit())}
 function refreshTitle(){
@@ -67,7 +62,7 @@ function render(){
   if(name==='add')loadEditor();
   if(name==='settings')fillSettings();
   if(name==='diag')$('#dReport').textContent=report();
-  syncFind();headerY();
+  syncFind();
   say('');
 }
 function go(n){stack.push(n);render()}
@@ -91,7 +86,6 @@ window.addEventListener('beforeunload',function(e){
 });
 document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});
 $('#addBtn').onclick=function(){if(!active()){say('msg.pick_pack_first');return}go('add')};
-$('#screens').addEventListener('scroll',function(e){if(e.target.classList&&e.target.classList.contains('on'))headerY()},true);
 
 /* packs */
 function renderPacks(){
@@ -270,7 +264,6 @@ function onMode(m){
   $('#ok').disabled=false;
   if(edit){lastTitle='';setTitle(editTitle())}
   else setTitle(screenTitle('add'));
-  headerY();
 }
 function loadEditor(){
   var err=$('#addErr');
@@ -279,8 +272,7 @@ function loadEditor(){
   FKE.open($('#editor'),settings.url||DEF_URL,{
     onMode:onMode,
     onState:refreshTitle,
-    onScroll:headerY,
-    onReady:function(){syncFind();headerY()},
+    onReady:syncFind,
     onError:function(code,url){
       err.innerHTML='<b>'+esc(T('editor.load_failed'))+'</b><br>'+esc(T('editor.not_editor',{url:url}))+'<br>'+esc(T('editor.load_hint'));
       err.style.display='block';
