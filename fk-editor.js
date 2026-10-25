@@ -33,7 +33,8 @@ function open(f,url,c){
     if(!a2||!a2.subscribe){loaded=null;if(cb.onError)cb.onError('not_editor',url);return}
     attach(a2);
     try{win().addEventListener('scroll',function(){if(cb.onScroll)cb.onScroll(win().scrollY)},{passive:true})}catch(e){}
-    a2.setMode(wantEdit?'edit':'search');
+    /* A card can be clicked before iframe load finishes; keep that user-selected mode. */
+    a2.setMode(wantEdit?'edit':(a2.state&&a2.state.mode)||'search');
     if(cb.onReady)cb.onReady();
   };
   f.src=url;
