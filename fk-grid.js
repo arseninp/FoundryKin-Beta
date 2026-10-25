@@ -9,6 +9,57 @@ var box=$('#fkGrid'),more=$('#fkMore'),qi=$('#q'),catLoad=$('#catLoad');
 var pv={},queue=[],active=false,pumpTimer=null,generation=0,imgCache={},lastPack=null,lastCat=null,lastSig='',prevMode='search',savedY=0,clicked=false;
 var ids=[],shown=0,st3=null,mode3d=null,fail3=0,migrated=null,tmr=null;
 
+/* Categories are object metadata, not guesses based on texture folders.
+   The current catalog contains blocks; future catalogs can supply category[id]. */
+var category='all',M=window.FKM;
+var categories=[
+  ['all','All','Всё'],['blocks','Blocks','Блоки'],['items','Items','Предметы'],
+  ['entities','Entities','Сущности'],['particles','Particles','Частицы'],
+  ['ui','UI','Интерфейс'],['environment','Environment','Окружение'],
+  ['colormap','Colormap','Карты цветов'],['paintings','Paintings','Картины'],
+  ['maps','Maps','Карты'],['equipment','Equipment','Экипировка'],['other','Other','Прочее']
+];
+function categoryLabel(row){return row[FK.lang()==='ru'?2:1]}
+function categoryOf(cat,id){return cat.category&&cat.category[id]||'blocks'}
+var filterHost=document.createElement('span'),filterButton=document.createElement('button');
+filterHost.className='fk-header-help';filterButton.type='button';filterButton.className='ghost fkHelpBtn';
+filterButton.innerHTML='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9m4 0h3M4 12h3m4 0h9M4 18h9m4 0h3"/><path d="M13 3v6M7 9v6m6 0v6"/></svg>';
+filterButton.setAttribute('aria-haspopup','menu');filterButton.setAttribute('aria-expanded','false');
+filterButton.setAttribute('aria-controls','fkCategoryMenu');filterHost.appendChild(filterButton);
+var helpSlot=$('#fkHelpSlot');helpSlot.parentNode.insertBefore(filterHost,helpSlot);
+var filterPanel=document.createElement('div');filterPanel.id='fkCategoryMenu';filterPanel.className='fkMenu';
+filterPanel.setAttribute('role','menu');filterPanel.style.width='224px';filterPanel.style.maxWidth='calc(100vw - 16px)';
+filterPanel.style.maxHeight='65vh';filterPanel.style.overflowY='auto';document.body.appendChild(filterPanel);
+function updateFilter(){
+  var row=categories.filter(function(x){return x[0]===category})[0];
+  var label=(FK.lang()==='ru'?'Категория: ':'Category: ')+categoryLabel(row);
+  filterButton.title=label;filterButton.setAttribute('aria-label',label);
+  filterButton.classList.toggle('on',category!=='all');
+}
+var filterMenu={triggers:[filterButton],show:function(){
+  filterPanel.innerHTML='';
+  categories.forEach(function(row){
+    var button=document.createElement('button');button.type='button';button.textContent=categoryLabel(row);
+    button.setAttribute('role','menuitemradio');button.setAttribute('aria-checked',String(category===row[0]));
+    button.classList.toggle('on',category===row[0]);
+    button.addEventListener('click',function(){
+      var changed=category!==row[0];category=row[0];updateFilter();M.close();
+      if(changed){clearTimeout(tmr);savedY=0;render();window.scrollTo(0,0)}
+      filterButton.focus({preventScroll:true});
+    });
+    filterPanel.appendChild(button);
+  });
+  var rect=filterButton.getBoundingClientRect();
+  filterPanel.style.left=Math.max(8,Math.min(innerWidth-232,rect.right-224))+'px';
+  filterPanel.style.top=(rect.bottom+6)+'px';filterPanel.style.display='block';
+  filterButton.setAttribute('aria-expanded','true');
+},hide:function(){filterPanel.style.display='none';filterButton.setAttribute('aria-expanded','false')}};
+filterButton.addEventListener('click',function(){M.toggle(filterMenu)});
+document.addEventListener('pointerdown',function(e){
+  if(M.cur===filterMenu&&!filterPanel.contains(e.target)&&!filterButton.contains(e.target))M.close();
+},true);
+updateFilter();
+
 /* One preview job at a time; yield to the event loop between jobs. */
 function pump(){
   if(active||pumpTimer!==null||!queue.length||A.state.mode!=='search'||document.hidden)return;
@@ -210,10 +261,10 @@ function render(){
   if(!c.catalog){note(statusNote(A.state));return}
   if(migrated!==c.catalog){migrated=c.catalog;try{if(parent.FKAPP)parent.FKAPP.migrate(c)}catch(e){}}
   var qv=qi.value.trim().toLowerCase().replace(/\s+/g,'_');
-  ids=c.catalog.ids.filter(function(id){return !qv||id.indexOf(qv)>=0});
+  ids=c.catalog.ids.filter(function(id){return (!qv||id.indexOf(qv)>=0)&&(category==='all'||categoryOf(c.catalog,id)===category)});
   lastCat=c.catalog;lastSig=sig(c);
   box.innerHTML='';
-  if(!ids.length){note(T('cat.none'));return}
+  if(!ids.length){if(category==='all'||category==='blocks')note(T('cat.none'));return}
   addPage();mobs.observe(more);
 }
 function refresh(){
@@ -255,7 +306,7 @@ $('#fkBack').addEventListener('click',function(){
 A.subscribe(function(s){
   var force=false,y=0;
   if(s.mode!==prevMode){
-    if(s.mode==='edit'){cancelJobs();if(!clicked)savedY=0;clicked=false}
+    if(s.mode==='edit'){if(M.cur===filterMenu)M.close();cancelJobs();if(!clicked)savedY=0;clicked=false}
     else if(prevMode==='edit'){discardEdits();force=true;y=savedY}
     prevMode=s.mode;
   }
