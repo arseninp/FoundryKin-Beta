@@ -1,18 +1,32 @@
-/* fk-grid.js: the Find screen of the editor: block search, card grid and the frozen frame of each card.
-   Works only through FKAPI (state, grid(), subscribe, setMode). Cards are single frames taken from the FKView stage. */
+/* fk-grid.js: the Find screen of the editor: block search, card grid and static 3D snapshots.
+   Works only through FKAPI (state, grid(), subscribe, setMode). Models come from FKShapes. */
 (function(){
 var FK=window.FK,A=window.FKAPI;
 function T(k,p){return FK.t(k,p)}
 function $(s){return document.querySelector(s)}
-var PAGE=60,MAX=6;
+var PAGE=60,MAX=6,S256=256;
 var box=$('#fkGrid'),more=$('#fkMore'),qi=$('#q'),catLoad=$('#catLoad');
 var pv={},queue=[],active=0,imgCache={},lastPack=null,lastCat=null,lastSig='',prevMode='search',savedY=0,clicked=false;
-var ids=[],shown=0,fail3=0,migrated=null,tmr=null;
+var ids=[],shown=0,st3=null,mode3d=null,fail3=0,migrated=null,tmr=null;
 
-/* job queue: a few image loads at a time; frames are taken only while the Find screen is open */
-function pump(){while(active<MAX&&queue.length&&A.state.mode==='search'){var j=queue.shift();active++;Promise.resolve().then(j).then(fin,fin)}}
+/* job queue: a few snapshots at a time */
+function pump(){while(active<MAX&&queue.length){var j=queue.shift();active++;Promise.resolve().then(j).then(fin,fin)}}
 function fin(){active--;pump()}
 function enqueue(j){queue.push(j);pump()}
+/* texture keys the model of a block needs; every key is a face of FKShapes faceMap */
+function need(shape,id){
+  if(id==='dried_ghast')return ['up','down','north','south','east','west','tent'];
+  if(shape==='plant'){
+    if(id==='bamboo')return ['north','up','south','east'];
+    if(id==='cave_vines')return ['up','down'];
+    if(id==='amethyst_cluster')return ['up','g1','g2','g3'];
+    return ['up'];
+  }
+  if(shape==='azalea')return ['plant','north','up'];
+  if(shape==='beacon')return ['down','up','east'];
+  if(shape==='door')return ['down','north'];
+  return ['up','down','north','south','east','west'];
+}
 
 /* active pack, read from the shell storage */
 function packData(){
@@ -32,48 +46,89 @@ function getImg(ctx,path){
   if(!imgCache[path])imgCache[path]=ctx.load(path).then(function(im){if(!im)delete imgCache[path];return im});
   return imgCache[path];
 }
-function dropFrames(){Object.keys(pv).forEach(function(k){URL.revokeObjectURL(pv[k].u)});pv={}}
 
-/* One frame of the shared stage: same model, light, angle and camera class as in the editor.
-   Every texture the editor model uses (all keys of the face map) is loaded once per path. */
-function snap(SH,shape,fm,keys,norm,id){
-  var dbl=/leaves/.test(id)||shape==='plant'||shape==='azalea'||shape==='candle';
-  return FKView.shot(id,function(g,hid){
-    var mats={},ids2={},byPath={},own=[];
-    function mk(c){var t=FKView.texture(c),m=FKView.material(dbl,t);m.depthWrite=!FKView.semi(c);own.push(t,m);return m}
-    keys.forEach(function(k){
-      var p=fm[k],c=norm[p];ids2[k]=k;
-      if(!c){mats[k]=hid;return}
-      mats[k]=byPath[p]||(byPath[p]=mk(c));
-    });
-    if(shape==='door'){
-      var L=norm[fm.down],U=norm[fm.north];
-      if(!L||!U)throw new Error('door');
-      mats.__door=mk(FKView.door(L,U));
-    }
-    FKShapes.build({shape:shape,cur:id,slot:'up',faceMap:ids2,mats:mats,group:g,hiddenMat:hid,SHAPES:SH,refreshDoor:function(){}});
-    return function(){own.forEach(function(x){x.dispose()})};
-  });
+/* offscreen WebGL renderer */
+function init3(){
+  var T3=window.THREE;if(!T3)return null;
+  try{
+    var cv=document.createElement('canvas');
+    var r=new T3.WebGLRenderer({canvas:cv,antialias:true,alpha:true,preserveDrawingBuffer:true});
+    r.setPixelRatio(1);r.setSize(S256,S256,false);r.setClearColor(0x000000,0);
+    var sc=new T3.Scene(),cam=new T3.OrthographicCamera(-.95,.95,.95,-.95,.1,50);
+    cam.position.set(0,0,3.9);cam.lookAt(0,0,0);
+    sc.add(new T3.AmbientLight(0xffffff,.75));
+    var dl=new T3.DirectionalLight(0xffffff,.55);dl.position.set(2,4,3);sc.add(dl);
+    var g=new T3.Group();g.rotation.set(.6155,-.7854,0);sc.add(g);
+    cv.addEventListener('webglcontextlost',function(e){e.preventDefault();mode3d=false});
+    return {T:T3,r:r,sc:sc,cam:cam,g:g,cv:cv,hidden:new T3.MeshBasicMaterial({visible:false})};
+  }catch(e){return null}
+}
+function semi(c){
+  var a=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+  for(var i=3;i<a.length;i+=4){var v=a[i];if(v>8&&v<248)return true}
+  return false;
+}
+/* One fixed camera per size class (FKShapes.view): no bounding-box fitting, no rescaling of the model. */
+function snap3d(o,SH,shape,im,dbl,id){
+  var T3=o.T,g=o.g,mats={},own=[],tex=[],fm={};
+  function matOf(key,canvas){
+    if(mats[key])return mats[key];
+    var c=canvas||im[key];if(!c)return null;
+    var t=new T3.CanvasTexture(c);t.magFilter=t.minFilter=T3.NearestFilter;t.generateMipmaps=false;t.needsUpdate=true;
+    var m=new T3.MeshLambertMaterial({transparent:true,alphaTest:.05,side:dbl?T3.DoubleSide:T3.FrontSide,map:t});
+    m.depthWrite=!semi(c);tex.push(t);own.push(m);mats[key]=m;return m;
+  }
+  ['up','down','north','south','east','west','plant','g1','g2','g3','tent'].forEach(function(k){fm[k]=k;if(!matOf(k))mats[k]=o.hidden});
+  if(shape==='door'){
+    var L=im.down,U=im.north;
+    if(!L||!U)throw new Error('door');
+    var R2=Math.max(L.width,U.width),dc=document.createElement('canvas');
+    dc.width=R2;dc.height=R2*2;var dg=dc.getContext('2d');dg.imageSmoothingEnabled=false;
+    dg.drawImage(U,0,0,U.width,U.height,0,0,R2,R2);dg.drawImage(L,0,0,L.width,L.height,0,R2,R2,R2);
+    matOf('__door',dc);
+  }
+  var fl=!!(FKShapes.flat&&FKShapes.flat(id));
+  g.rotation.set(fl?0:.6155,fl?0:-.7854,0);
+  o.cam.zoom=1/FKShapes.view(id);o.cam.updateProjectionMatrix();
+  FKShapes.build({shape:shape,cur:id,slot:'up',iso:true,faceMap:fm,mats:mats,group:g,hiddenMat:o.hidden,SHAPES:SH,refreshDoor:function(){}});
+  var url=null;
+  try{
+    o.r.render(o.sc,o.cam);url=o.cv.toDataURL('image/png');
+  }finally{
+    var gs=[];g.traverse(function(x){if(x.geometry&&gs.indexOf(x.geometry)<0)gs.push(x.geometry)});
+    gs.forEach(function(x){x.dispose()});
+    while(g.children.length)g.remove(g.children[0]);
+    own.forEach(function(x){x.dispose()});
+    tex.forEach(function(t){t.dispose()});
+  }
+  return url;
 }
 var TINT=/^(?:[a-z_]+_)?leaves2?$|^(?:waterlily|vine|fern|large_fern|short_grass|tallgrass|tall_grass|double_plant|bush|leaf_litter|seagrass)$/;
 function makePreview(ctx,id){
   var cat=ctx.catalog,b=cat.b[id],sp=cat.sp&&cat.sp[id];
   var fm=sp?sp.fm:{up:b[0],down:b[1],north:b[2],south:b[3],east:b[4],west:b[5]};
   if(cat.cr&&cat.cr[id]&&TINT.test(id)){var cp=cat.cr[id];fm={up:cp,down:cp,north:cp,south:cp,east:cp,west:cp}}
-  var shape=ctx.shapeFor(id),keys=Object.keys(fm).filter(function(k){return fm[k]}),paths=[];
-  keys.forEach(function(k){if(paths.indexOf(fm[k])<0)paths.push(fm[k])});
-  return Promise.all(paths.map(function(p){return getImg(ctx,p)})).then(function(arr){
+  var shape=ctx.shapeFor(id),keys=need(shape,id);
+  return Promise.all(keys.map(function(k){return fm[k]?getImg(ctx,fm[k]):null})).then(function(arr){
     var R=0;arr.forEach(function(im){if(im&&im.width>R)R=im.width});
-    if(!R||fail3>=3||A.state.mode!=='search')return null;
+    if(!R)return null;
     var norm={};
-    paths.forEach(function(p,i){
+    keys.forEach(function(k,i){
       var im=arr[i];if(!im)return;
       var c=document.createElement('canvas');c.width=c.height=R;
       var g=c.getContext('2d');g.imageSmoothingEnabled=false;
       g.drawImage(im,0,0,im.width,im.width,0,0,R,R);
-      norm[p]=c;
+      norm[k]=c;
     });
-    try{return snap(ctx.shapes,shape,fm,keys,norm,id)}catch(e){fail3++;return null}
+    if(mode3d===null){st3=init3();mode3d=!!st3}
+    if(mode3d&&st3){
+      try{
+        var dbl=/leaves/.test(id)||shape==='plant'||shape==='azalea'||shape==='candle';
+        var u3=snap3d(st3,ctx.shapes,shape,norm,dbl,id);
+        if(u3&&u3.length>200)return u3;
+      }catch(e){fail3++;if(fail3>=3)mode3d=false}
+    }
+    return null;
   });
 }
 
@@ -81,12 +136,12 @@ function makePreview(ctx,id){
 function applyPack(){
   var c=A.grid(),m=packMap();
   if(lastPack&&samePack(m,lastPack))return false;
-  lastPack=m;c.setPack(m);dropFrames();
+  lastPack=m;c.setPack(m);pv={};
   return true;
 }
 function discardEdits(){
   var c=A.grid();c.discard();
-  var m=packMap();lastPack=m;c.setPack(m);dropFrames();
+  var m=packMap();lastPack=m;c.setPack(m);pv={};
 }
 
 /* cards */
@@ -98,12 +153,7 @@ function paint(card){
   if(e&&e.ed===ed&&(!ed||e.e===edits)){setImg(card,e.u);return}
   enqueue(function(){
     if(!card.isConnected)return Promise.resolve();
-    return makePreview(c,id).then(function(u){
-      if(!u)return;
-      var o=pv[id];pv[id]={u:u,ed:ed,e:edits};
-      if(card.isConnected)setImg(card,u);
-      if(o)URL.revokeObjectURL(o.u);
-    },function(){});
+    return makePreview(c,id).then(function(u){if(u)pv[id]={u:u,ed:ed,e:edits};if(card.isConnected)setImg(card,u)},function(){});
   });
 }
 function setImg(card,u){var im=card.querySelector('img');if(im&&u)im.src=u}
@@ -183,7 +233,6 @@ A.subscribe(function(s){
   if(force||changed||c.catalog!==lastCat)render();
   else if(sig(c)!==lastSig){lastSig=sig(c);refresh()}
   if(y)restoreScroll(y);
-  pump();
 });
 applyPack();
 render();
