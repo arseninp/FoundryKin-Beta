@@ -96,14 +96,26 @@ function bamboo(E){
   leaves(E,f.up,.9,1,1);
 }
 function plant(E){
-  var f=E.faceMap,az=E.shape==='azalea';
+  var f=E.faceMap;
   if(E.cur==='bamboo')return bamboo(E);
   if(E.cur==='cave_vines'){cross(E,f.up,Math.SQRT2,1,.5);cross(E,f.down,Math.SQRT2,1,-.5);return}
   if(E.cur==='amethyst_cluster'){
     [[f.up,-1,-1],[f.g1,1,-1],[f.g2,-1,1],[f.g3,1,1]].forEach(function(a){if(a[0])cross(E,a[0],.7,.5,-.25,a[1]*.25,a[2]*.25)});return;
   }
-  cross(E,az?f.plant:f.up,Math.SQRT2,1,0);
-  if(az){var s=f.north;E.group.add(box(E,1,1,1,0,0,0,[s,s,f.up,null,s,s]))}
+  cross(E,f.up,Math.SQRT2,1,0);
+}
+/* Azalea: canopy top and four 11 px sides, open underside, internal diagonal plant.
+   Vanilla template geometry is a reference; Bedrock texture paths come from faceMap.
+   The internal planes end inside the canopy, independent of the generic plant cross. */
+function azalea(E){
+  var f=E.faceMap,side=[0,0,16,11],w=15.8*Math.SQRT2/16,h=15.9/16,y=(15.9/2-8)/16;
+  patch(E,f.up,1,1,0,.5,0,-Math.PI/2,0);
+  patch(E,f.north,1,11/16,0,5/32,-.5,0,Math.PI,side);
+  patch(E,f.south,1,11/16,0,5/32,.5,0,0,side);
+  patch(E,f.east,1,11/16,.5,5/32,0,0,Math.PI/2,side);
+  patch(E,f.west,1,11/16,-.5,5/32,0,0,-Math.PI/2,side);
+  patch(E,f.plant,w,h,0,y,0,0,PI4);
+  patch(E,f.plant,w,h,0,y,0,0,-PI4);
 }
 function beacon(E){
   var f=E.faceMap,g=f.east,b=f.down,c=f.up;
@@ -228,7 +240,8 @@ function build(E){
   if(typeof E.slot==='string'&&E.slot.indexOf('textures/items/')===0)return sprite(E);
   if(E.cur==='pointed_dripstone')return dripstone(E);
   if(E.cur==='brewing_stand')return brewing(E);
-  if(s==='plant'||s==='azalea')return plant(E);
+  if(s==='azalea')return azalea(E);
+  if(s==='plant')return plant(E);
   if(s==='beacon')return beacon(E);if(s==='door')return door(E);if(s==='pane')return pane(E);if(s==='anvil')return anvil(E);
   if(s==='bed')return bed(E);if(s==='bell')return bell(E);if(s==='dripleaf')return leaf(E);if(s==='rail')return flat(E);if(s==='decal')return decal(E);
   if(s==='candle')return candle(E);
