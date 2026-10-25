@@ -63,20 +63,6 @@ updateFilter();
 /* Invalidate late results without serializing independent texture downloads. */
 function invalidatePreviews(){generation++}
 function valid(gen){return gen===generation&&A.state.mode==='search'&&!document.hidden}
-/* texture keys the model of a block needs; every key is a face of FKShapes faceMap */
-function need(shape,id){
-  if(id==='dried_ghast')return ['up','down','north','south','east','west','tent'];
-  if(shape==='plant'){
-    if(id==='bamboo')return ['north','up','south','east'];
-    if(id==='cave_vines')return ['up','down'];
-    if(id==='amethyst_cluster')return ['up','g1','g2','g3'];
-    return ['up'];
-  }
-  if(shape==='azalea')return ['plant','north','up'];
-  if(shape==='beacon')return ['down','up','east'];
-  if(shape==='door')return ['down','north'];
-  return ['up','down','north','south','east','west'];
-}
 
 /* active pack, read from the shell storage */
 function packData(){
@@ -118,32 +104,33 @@ function semi(c){
   for(var i=3;i<a.length;i+=4){var v=a[i];if(v>8&&v<248)return true}
   return false;
 }
-/* One fixed camera per size class (FKShapes.view): no bounding-box fitting, no rescaling of the model. */
-function snap3d(o,SH,shape,im,dbl,id){
-  var T3=o.T,g=o.g,mats={},own=[],tex=[],fm={};
-  function matOf(key,canvas){
-    if(mats[key])return mats[key];
-    var c=canvas||im[key];if(!c)return null;
-    var t=new T3.CanvasTexture(c);t.magFilter=t.minFilter=T3.NearestFilter;t.generateMipmaps=false;t.needsUpdate=true;
-    var m=new T3.MeshLambertMaterial({transparent:true,alphaTest:.05,side:dbl?T3.DoubleSide:T3.FrontSide,map:t});
-    m.depthWrite=!semi(c);tex.push(t);own.push(m);mats[key]=m;return m;
+/* The model receives the catalog faceMap and real path keys, as in the editor. */
+function snap3d(o,SH,shape,im,dbl,id,fm,slot){
+  var T3=o.T,g=o.g,mats={},own=[],tex=[];
+  function matOf(path,canvas){
+    if(mats[path])return mats[path];
+    var c=canvas||im[path];if(!c)return null;
+    var isSemi=semi(c),t=new T3.CanvasTexture(c);tex.push(t);
+    t.magFilter=t.minFilter=T3.NearestFilter;t.generateMipmaps=false;t.needsUpdate=true;
+    var m=new T3.MeshLambertMaterial({transparent:true,alphaTest:.05,side:dbl?T3.DoubleSide:T3.FrontSide,map:t});own.push(m);
+    m.depthWrite=!isSemi;mats[path]=m;return m;
   }
-  ['up','down','north','south','east','west','plant','g1','g2','g3','tent'].forEach(function(k){fm[k]=k;if(!matOf(k))mats[k]=o.hidden});
-  if(shape==='door'){
-    var L=im.down,U=im.north;
-    if(!L||!U)throw new Error('door');
-    var R2=Math.max(L.width,U.width),dc=document.createElement('canvas');
-    dc.width=R2;dc.height=R2*2;var dg=dc.getContext('2d');dg.imageSmoothingEnabled=false;
-    dg.drawImage(U,0,0,U.width,U.height,0,0,R2,R2);dg.drawImage(L,0,0,L.width,L.height,0,R2,R2,R2);
-    matOf('__door',dc);
-  }
-  var fl=!!(FKShapes.flat&&FKShapes.flat(id));
-  g.rotation.set(fl?0:.6155,fl?0:-.7854,0);
-  o.cam.zoom=1/FKShapes.view(id);o.cam.updateProjectionMatrix();
-  FKShapes.build({shape:shape,cur:id,slot:'up',iso:true,faceMap:fm,mats:mats,group:g,hiddenMat:o.hidden,SHAPES:SH,refreshDoor:function(){}});
-  var url=null;
   try{
-    o.r.render(o.sc,o.cam);url=o.cv.toDataURL('image/png');
+    Object.keys(fm).forEach(function(k){var p=fm[k];if(typeof p==='string'&&!matOf(p))mats[p]=o.hidden});
+    if(shape==='door'){
+      var L=im[fm.down],U=im[fm.north];
+      if(!L||!U)throw new Error('door');
+      var R2=Math.max(L.width,U.width),dc=document.createElement('canvas');
+      dc.width=R2;dc.height=R2*2;var dg=dc.getContext('2d');dg.imageSmoothingEnabled=false;
+      dg.drawImage(U,0,0,U.width,U.height,0,0,R2,R2);dg.drawImage(L,0,0,L.width,L.height,0,R2,R2,R2);
+      matOf('__door',dc);
+    }
+    var fl=!!(FKShapes.flat&&FKShapes.flat(id,slot));
+    g.rotation.set(fl?0:.6155,fl?0:-.7854,0);
+    o.cam.zoom=1/FKShapes.view(id);o.cam.updateProjectionMatrix();
+    FKShapes.build({shape:shape,cur:id,slot:slot,iso:true,faceMap:fm,mats:mats,group:g,hiddenMat:o.hidden,SHAPES:SH,refreshDoor:function(){}});
+    o.r.render(o.sc,o.cam);
+    return o.cv.toDataURL('image/png');
   }finally{
     var gs=[];g.traverse(function(x){if(x.geometry&&gs.indexOf(x.geometry)<0)gs.push(x.geometry)});
     gs.forEach(function(x){x.dispose()});
@@ -151,31 +138,35 @@ function snap3d(o,SH,shape,im,dbl,id){
     own.forEach(function(x){x.dispose()});
     tex.forEach(function(t){t.dispose()});
   }
-  return url;
 }
 var TINT=/^(?:[a-z_]+_)?leaves2?$|^(?:waterlily|vine|fern|large_fern|short_grass|tallgrass|tall_grass|double_plant|bush|leaf_litter|seagrass)$/;
 function makePreview(ctx,id,isCurrent){
   var cat=ctx.catalog,b=cat.b[id],sp=cat.sp&&cat.sp[id];
   var fm=sp?sp.fm:{up:b[0],down:b[1],north:b[2],south:b[3],east:b[4],west:b[5]};
-  if(cat.cr&&cat.cr[id]&&TINT.test(id)){var cp=cat.cr[id];fm={up:cp,down:cp,north:cp,south:cp,east:cp,west:cp}}
-  var shape=ctx.shapeFor(id),keys=need(shape,id);
-  return Promise.all(keys.map(function(k){return fm[k]?getImg(ctx,fm[k]):null})).then(function(arr){
+  var first=sp&&sp.list&&sp.list[0],slot=first?first.id:fm.up;
+  if(cat.cr&&cat.cr[id]&&TINT.test(id)){
+    var cp=cat.cr[id];fm={up:cp,down:cp,north:cp,south:cp,east:cp,west:cp};slot=cp;
+  }
+  var shape=ctx.shapeFor(id),paths=[];
+  Object.keys(fm).forEach(function(k){var p=fm[k];if(typeof p==='string'&&paths.indexOf(p)<0)paths.push(p)});
+  return Promise.all(paths.map(function(p){return getImg(ctx,p)})).then(function(arr){
     if(!isCurrent())return null;
     var R=0;arr.forEach(function(im){if(im&&im.width>R)R=im.width});
     if(!R)return null;
     var norm={};
-    keys.forEach(function(k,i){
+    paths.forEach(function(path,i){
       var im=arr[i];if(!im)return;
       var c=document.createElement('canvas');c.width=c.height=R;
       var g=c.getContext('2d');g.imageSmoothingEnabled=false;
       g.drawImage(im,0,0,im.width,im.width,0,0,R,R);
-      norm[k]=c;
+      norm[path]=c;
     });
+    if(!norm[slot])slot=fm.up;
     if(mode3d===null){st3=init3();mode3d=!!st3}
     if(mode3d&&st3){
       try{
         var dbl=/leaves/.test(id)||shape==='plant'||shape==='azalea'||shape==='candle';
-        var u3=snap3d(st3,ctx.shapes,shape,norm,dbl,id);
+        var u3=snap3d(st3,ctx.shapes,shape,norm,dbl,id,fm,slot);
         if(u3&&u3.length>200)return u3;
       }catch(e){fail3++;if(fail3>=3)mode3d=false}
     }
