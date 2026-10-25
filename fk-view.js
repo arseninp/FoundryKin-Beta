@@ -1,4 +1,4 @@
-/* Shared view primitives. Not wired into the application yet. */
+/* One renderer and one view policy for the editor and Find. */
 var FKView=(function(){
 'use strict';
 var renderer=null,hidden=null,preview=null,lost=false;
@@ -67,7 +67,9 @@ function build(stage,entry,reset){
   try{FKShapes.build(env)}catch(err){clear(stage);throw err}
 }
 function render(stage,width,pixelRatio){
-  var r=getRenderer();r.setPixelRatio(pixelRatio||1);r.setSize(width,width,false);
+  var r=getRenderer(),ratio=pixelRatio||1,size=r.getSize(new THREE.Vector2());
+  if(r.getPixelRatio()!==ratio)r.setPixelRatio(ratio);
+  if(size.x!==width||size.y!==width)r.setSize(width,width,false);
   r.render(stage.scene,stage.camera);
 }
 function mount(host){
@@ -75,16 +77,16 @@ function mount(host){
   if(node.parentNode!==host)host.insertBefore(node,host.firstChild);
   return node;
 }
-/* Own scene and group: a card never rebuilds or rotates the editor's stage.
-   Capture stays synchronous, so independent image downloads remain independent. */
+/* The hidden editor keeps its scene and camera. Its next frame restores its size.
+   Consecutive cards reuse the same 256 px buffer instead of resizing it twice per card. */
 function capture(entry,size){
-  var r=getRenderer(),oldSize=r.getSize(new THREE.Vector2()),ratio=r.getPixelRatio(),target=r.getRenderTarget();
+  var r=getRenderer(),target=r.getRenderTarget();
   if(!preview)preview=createStage();
   try{
     build(preview,entry,true);r.setRenderTarget(null);render(preview,size||256,1);
     return r.domElement.toDataURL('image/png');
   }finally{
-    clear(preview);r.setPixelRatio(ratio);r.setSize(oldSize.x,oldSize.y,false);r.setRenderTarget(target);
+    clear(preview);r.setRenderTarget(target);
   }
 }
 return {createStage:createStage,clear:clear,texture:texture,material:material,mapMaterial:mapMaterial,doorTexture:doorTexture,build:build,render:render,mount:mount,capture:capture};
