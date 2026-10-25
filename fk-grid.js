@@ -4,15 +4,28 @@
 var FK=window.FK,A=window.FKAPI;
 function T(k,p){return FK.t(k,p)}
 function $(s){return document.querySelector(s)}
-var PAGE=60,MAX=6,S256=256;
+var PAGE=60,S256=256;
 var box=$('#fkGrid'),more=$('#fkMore'),qi=$('#q'),catLoad=$('#catLoad');
-var pv={},queue=[],active=0,imgCache={},lastPack=null,lastCat=null,lastSig='',prevMode='search',savedY=0,clicked=false;
+var pv={},queue=[],active=false,pumpTimer=null,generation=0,imgCache={},lastPack=null,lastCat=null,lastSig='',prevMode='search',savedY=0,clicked=false;
 var ids=[],shown=0,st3=null,mode3d=null,fail3=0,migrated=null,tmr=null;
 
-/* job queue: a few snapshots at a time */
-function pump(){while(active<MAX&&queue.length){var j=queue.shift();active++;Promise.resolve().then(j).then(fin,fin)}}
-function fin(){active--;pump()}
-function enqueue(j){queue.push(j);pump()}
+/* One preview job at a time; yield to the event loop between jobs. */
+function pump(){
+  if(active||pumpTimer!==null||!queue.length||A.state.mode!=='search'||document.hidden)return;
+  pumpTimer=setTimeout(function(){
+    pumpTimer=null;
+    if(active||!queue.length||A.state.mode!=='search'||document.hidden)return;
+    var job=queue.shift();active=true;
+    Promise.resolve().then(job).then(fin,fin);
+  },0);
+}
+function fin(){active=false;pump()}
+function enqueue(job){queue.push(job);pump()}
+function cancelJobs(){
+  generation++;queue=[];
+  if(pumpTimer!==null){clearTimeout(pumpTimer);pumpTimer=null}
+}
+function valid(gen){return gen===generation&&A.state.mode==='search'&&!document.hidden}
 /* texture keys the model of a block needs; every key is a face of FKShapes faceMap */
 function need(shape,id){
   if(id==='dried_ghast')return ['up','down','north','south','east','west','tent'];
@@ -104,12 +117,13 @@ function snap3d(o,SH,shape,im,dbl,id){
   return url;
 }
 var TINT=/^(?:[a-z_]+_)?leaves2?$|^(?:waterlily|vine|fern|large_fern|short_grass|tallgrass|tall_grass|double_plant|bush|leaf_litter|seagrass)$/;
-function makePreview(ctx,id){
+function makePreview(ctx,id,isCurrent){
   var cat=ctx.catalog,b=cat.b[id],sp=cat.sp&&cat.sp[id];
   var fm=sp?sp.fm:{up:b[0],down:b[1],north:b[2],south:b[3],east:b[4],west:b[5]};
   if(cat.cr&&cat.cr[id]&&TINT.test(id)){var cp=cat.cr[id];fm={up:cp,down:cp,north:cp,south:cp,east:cp,west:cp}}
   var shape=ctx.shapeFor(id),keys=need(shape,id);
   return Promise.all(keys.map(function(k){return fm[k]?getImg(ctx,fm[k]):null})).then(function(arr){
+    if(!isCurrent())return null;
     var R=0;arr.forEach(function(im){if(im&&im.width>R)R=im.width});
     if(!R)return null;
     var norm={};
@@ -136,24 +150,33 @@ function makePreview(ctx,id){
 function applyPack(){
   var c=A.grid(),m=packMap();
   if(lastPack&&samePack(m,lastPack))return false;
-  lastPack=m;c.setPack(m);pv={};
+  cancelJobs();lastPack=m;c.setPack(m);pv={};
   return true;
 }
 function discardEdits(){
+  cancelJobs();
   var c=A.grid();c.discard();
   var m=packMap();lastPack=m;c.setPack(m);pv={};
 }
 
 /* cards */
-var obs=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){obs.unobserve(e.target);paint(e.target)}})},{rootMargin:'250px'});
-var mobs=new IntersectionObserver(function(es){if(es[0].isIntersecting&&shown<ids.length){addPage();mobs.unobserve(more);mobs.observe(more)}},{rootMargin:'400px'});
+var obs=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting&&A.state.mode==='search'&&!document.hidden){obs.unobserve(e.target);paint(e.target)}})},{rootMargin:'250px'});
+var mobs=new IntersectionObserver(function(es){if(A.state.mode==='search'&&!document.hidden&&es[0].isIntersecting&&shown<ids.length){addPage();mobs.unobserve(more);mobs.observe(more)}},{rootMargin:'400px'});
 function paint(card){
-  var c=A.grid();if(!c.catalog)return;
-  var id=card.getAttribute('data-id'),ed=!!c.edited(id),edits=A.edits||0,e=pv[id];
+  var c=A.grid();if(!c.catalog||A.state.mode!=='search'||document.hidden)return;
+  var id=card.getAttribute('data-id'),ed=!!c.edited(id),edits=A.edits||0,e=pv[id],gen=generation;
   if(e&&e.ed===ed&&(!ed||e.e===edits)){setImg(card,e.u);return}
+  if(card.fkPending===gen)return;
+  card.fkPending=gen;
+  function current(){return valid(gen)&&card.isConnected&&A.grid().catalog===c.catalog}
   enqueue(function(){
-    if(!card.isConnected)return Promise.resolve();
-    return makePreview(c,id).then(function(u){if(u)pv[id]={u:u,ed:ed,e:edits};if(card.isConnected)setImg(card,u)},function(){});
+    if(!current())return;
+    return makePreview(c,id,current).then(function(u){
+      if(card.fkPending===gen)card.fkPending=null;
+      if(!current())return;
+      if(u)pv[id]={u:u,ed:ed,e:edits};
+      setImg(card,u);
+    },function(){if(card.fkPending===gen)card.fkPending=null});
   });
 }
 function setImg(card,u){var im=card.querySelector('img');if(im&&u)im.src=u}
@@ -172,7 +195,7 @@ function addPage(){
   shown=end;
 }
 function note(text){
-  box.innerHTML='';ids=[];
+  obs.disconnect();box.innerHTML='';ids=[];
   var m=document.createElement('div');m.id='fkEmpty';m.textContent=text;box.appendChild(m);
 }
 function statusNote(s){
@@ -182,6 +205,7 @@ function statusNote(s){
 }
 function sig(c){return Object.keys(c.dirty||{}).length+'|'+(A.edits||0)}
 function render(){
+  cancelJobs();obs.disconnect();
   var c=A.grid();mobs.unobserve(more);shown=0;
   if(!c.catalog){note(statusNote(A.state));return}
   if(migrated!==c.catalog){migrated=c.catalog;try{if(parent.FKAPP)parent.FKAPP.migrate(c)}catch(e){}}
@@ -193,10 +217,11 @@ function render(){
   addPage();mobs.observe(more);
 }
 function refresh(){
+  cancelJobs();obs.disconnect();
   var c=A.grid();
   Array.prototype.forEach.call(box.querySelectorAll('.fkc'),function(k){
     k.classList.toggle('fk-edited',!!c.edited(k.getAttribute('data-id')));
-    paint(k);
+    obs.observe(k);
   });
 }
 /* back from the editor: load enough cards to reach the saved position, then scroll once the layout is ready */
@@ -208,7 +233,15 @@ function restoreScroll(y){
 }
 
 /* events */
-qi.addEventListener('input',function(){clearTimeout(tmr);tmr=setTimeout(render,150)});
+qi.addEventListener('input',function(){cancelJobs();clearTimeout(tmr);tmr=setTimeout(render,150)});
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden)cancelJobs();
+  else if(A.state.mode==='search'){
+    var changed=applyPack();
+    if(changed||A.grid().catalog!==lastCat)render();else refresh();
+    mobs.unobserve(more);mobs.observe(more);
+  }
+});
 box.addEventListener('click',function(e){
   var b=e.target.closest?e.target.closest('.fkc'):null;if(!b)return;
   savedY=window.scrollY;clicked=true;
@@ -222,7 +255,7 @@ $('#fkBack').addEventListener('click',function(){
 A.subscribe(function(s){
   var force=false,y=0;
   if(s.mode!==prevMode){
-    if(s.mode==='edit'){if(!clicked)savedY=0;clicked=false}
+    if(s.mode==='edit'){cancelJobs();if(!clicked)savedY=0;clicked=false}
     else if(prevMode==='edit'){discardEdits();force=true;y=savedY}
     prevMode=s.mode;
   }
