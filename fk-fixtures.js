@@ -1,11 +1,25 @@
-/* Ladder, lectern, lever and complete two-block flowers. Load after fk-details.js. */
+/* Ladder, lectern, lever, shelves, wool families and complete two-block flowers. Load after fk-details.js. */
 (function(){
 var C=window.FKCatalog,H=window.FKShapes;if(!C||!H)return;
 var index=C.index,build=H.build,P='textures/blocks/',Q=Math.PI/2;
 var FLOWERS={sunflower:'sunflower',lilac:'syringa',rose_bush:'rose',peony:'paeonia'};
+var WOOL=['white','orange','magenta','light_blue','yellow','lime','pink','gray','light_gray','cyan','purple','blue','brown','green','red','black'];
 function flowerPath(id,part,existing){
   var a=P+'double_plant_'+FLOWERS[id]+'_'+part,b=P+id+'_'+part;
   return existing&&!existing[a]&&existing[b]?b:a;
+}
+function woolFamilies(cat,raw){
+  WOOL.forEach(function(color){
+    var id=color+'_carpet',base=color+'_wool',a=raw[id],b=cat.b[base];
+    if(!a||!b||!a.every(function(p,i){return p===b[i]}))return;
+    (cat.forms[base]=cat.forms[base]||{}).carpet=1;
+    var kids=cat.kids[base]=cat.kids[base]||[];if(kids.indexOf(id)<0)kids.push(id);
+    var visible=cat.ids.indexOf(id)>=0;
+    delete cat.b[id];delete cat.sp[id];delete cat.cr[id];delete cat.sig[id];
+    cat.mother[id]=base;cat.ids=cat.ids.filter(function(x){return x!==id});
+    Object.keys(cat.members).forEach(function(k){cat.members[k]=cat.members[k].filter(function(x){return x!==id});if(!cat.members[k].length)delete cat.members[k]});
+    if(visible)cat.hidden=(cat.hidden||0)+1;
+  });
 }
 C.index=function(c,existing){
   var data={b:Object.assign({},c.b),p:Object.assign({},c.p),cr:Object.assign({},c.cr)};
@@ -17,6 +31,7 @@ C.index=function(c,existing){
     delete data.p[id];delete data.cr[id];
   });
   var cat=index(data,existing);
+  woolFamilies(cat,data.b);
   Object.keys(FLOWERS).forEach(function(id){
     var b=cat.b[id];if(!b)return;
     var list=[],seen={};
@@ -48,6 +63,16 @@ function tiltedBox(E,a,b,F,R,p,angle){
   g.children.forEach(function(m){m.position.x-=x;m.position.y-=y;m.position.z-=z});
   g.position.set(x,y,z);g.rotation.x=angle;E.group.add(g);
 }
+/* Java template_shelf_body plus its unpowered inset; UVs are normalized to the full sheet.
+   The local half-turn presents the opening to the common view, identically on both screens. */
+function shelf(E){
+  var id=E.faceMap.up,g=new THREE.Group(),e=Object.create(E);e.group=g;
+  box(e,[0,0,13],[16,16,16],{east:id,south:id,west:id,up:id,down:id},{east:[8,0,9.5,8],south:[8,0,16,8],west:[14.5,0,16,8],up:[16,5,8,3.5],down:[16,6,8,4.5]});
+  box(e,[0,0,11],[16,4,13],{north:id,east:id,west:id,up:id,down:id},{north:[0,6,8,8],east:[1.5,6,2.5,8],west:[5.5,6,6.5,8],up:[8,3.5,16,4.5],down:[16,4.5,8,3.5]});
+  box(e,[0,12,11],[16,16,13],{north:id,east:id,west:id,up:id,down:id},{north:[0,0,8,2],east:[1.5,0,2.5,2],west:[5.5,0,6.5,2],up:[16,6,8,5],down:[8,5,16,6]});
+  box(e,[0,4,13],[16,12,13],{north:id},{north:[0,2,8,6]});
+  g.rotation.y=Math.PI;E.group.add(g);
+}
 function ladder(E){face(E,E.faceMap.up,1,1,0,0,7/16,0,0,null,true)}
 function lectern(E){
   var f=E.faceMap,B=f.east,S=f.south,F=f.north,D=f.down,T=f.up;
@@ -78,6 +103,7 @@ function flower(E){
 }
 H.build=function(E){
   if(typeof E.slot==='string'&&E.slot.indexOf('textures/items/')===0)return build(E);
+  if(/_shelf$/.test(E.cur))return shelf(E);
   if(E.cur==='ladder')return ladder(E);
   if(E.cur==='lectern')return lectern(E);
   if(E.cur==='lever')return lever(E);
