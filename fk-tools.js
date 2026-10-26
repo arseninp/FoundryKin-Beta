@@ -190,7 +190,7 @@ function build(root){
   [rep,dl,clr,gear].forEach(function(e){svc.appendChild(e)});svc.appendChild(file);
   [top,colors,tools,svc].forEach(function(e){root.appendChild(e)});
 
-  /* settings sheet: brush size and texture resolution */
+  /* settings sheet: brush size, texture resolution and optional pixel grid */
   var sg=sheet(T('set.title')),bs=mk('div','seg');UI.brushBtns=[];UI.resBtns=[];
   for(var n=1;n<=8;n++){var bb=mk('button','',String(n));bb.dataset.n=String(n);bs.appendChild(bb);UI.brushBtns.push(bb)}
   bs.addEventListener('click',function(e){var b=e.target.closest('button');if(b)setBrush(+b.dataset.n)});
@@ -198,6 +198,10 @@ function build(root){
   [16,32,64].forEach(function(v){var b=mk('button','',String(v));b.dataset.r=String(v);rs.appendChild(b);UI.resBtns.push(b)});
   rs.addEventListener('click',function(e){var b=e.target.closest('button');if(b)C.setRes(+b.dataset.r)});
   sg.body.appendChild(mk('p','lbl',T('set.brush')));sg.body.appendChild(bs);sg.body.appendChild(mk('p','lbl',T('set.res')));sg.body.appendChild(rs);
+  if(window.FKPixelGrid){
+    var gridLabels=FK.lang()==='ru'?{title:'Сетка пикселей',enabled:'Показывать сетку',step:'Шаг (px)'}:{title:'Pixel grid',enabled:'Show grid',step:'Step (px)'};
+    window.FKPixelGrid.create({canvas:C.el.ed,settings:sg.body,getResolution:C.res,labels:gridLabels});
+  }
   sg.ok.addEventListener('click',function(){FKM.close()});
   var setM={triggers:[gear],show:sg.show,hide:sg.hide};
   gear.addEventListener('click',function(){FKM.toggle(setM)});
