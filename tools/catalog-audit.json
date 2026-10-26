@@ -1,0 +1,389 @@
+{
+  "schema": 1,
+  "source": {
+    "repository": "Mojang/bedrock-samples",
+    "release": "v1.26.50.4",
+    "commit": "46ba6ea985fb5a92d79a9419198f10dda14c199d"
+  },
+  "registry": {
+    "topLevelKeys": [
+      "block_properties",
+      "data_items",
+      "module_type",
+      "name",
+      "vanilla_data_type"
+    ],
+    "schemaSupported": true,
+    "entryCount": 1463,
+    "uniqueNames": 1463,
+    "firstEntry": {
+      "name": "minecraft:acacia_button",
+      "properties": [
+        {
+          "name": "button_pressed_bit"
+        },
+        {
+          "name": "facing_direction"
+        }
+      ],
+      "raw_id": 395,
+      "serialization_id": "tile.acacia_button"
+    }
+  },
+  "resources": {
+    "texturedCount": 1331,
+    "resourceOnlyCount": 59,
+    "resourceOnlySample": [
+      "carpet",
+      "chain",
+      "concrete",
+      "concretePowder",
+      "coral",
+      "coral_block",
+      "coral_fan",
+      "coral_fan_dead",
+      "coral_fan_hang",
+      "coral_fan_hang2",
+      "coral_fan_hang3",
+      "deprecated_anvil",
+      "deprecated_purpur_block_1",
+      "deprecated_purpur_block_2",
+      "double_plant",
+      "double_stone_slab",
+      "double_stone_slab2",
+      "double_stone_slab3",
+      "double_stone_slab4",
+      "double_wooden_slab",
+      "end_gateway",
+      "fence",
+      "glowingobsidian",
+      "grass",
+      "info_update",
+      "info_update2",
+      "invisibleBedrock",
+      "lava_cauldron",
+      "leaves",
+      "leaves2",
+      "log",
+      "log2",
+      "monster_egg",
+      "movingBlock",
+      "netherreactor",
+      "pistonArmCollision",
+      "planks",
+      "red_flower",
+      "reserved6",
+      "sapling",
+      "seaLantern",
+      "shulker_box",
+      "skull",
+      "stained_glass",
+      "stained_glass_pane",
+      "stained_hardened_clay",
+      "stickyPistonArmCollision",
+      "stone_slab",
+      "stone_slab2",
+      "stone_slab3",
+      "stone_slab4",
+      "stonebrick",
+      "stonecutter",
+      "tallgrass",
+      "tripWire",
+      "wood",
+      "wooden_slab",
+      "wool",
+      "yellow_flower"
+    ]
+  },
+  "checks": [
+    {
+      "id": "planks",
+      "registry": null,
+      "resource": {
+        "sound": "wood",
+        "textures": "planks"
+      },
+      "terrain": {
+        "planks": {
+          "textures": [
+            "textures/blocks/planks_oak",
+            "textures/blocks/planks_spruce",
+            "textures/blocks/planks_birch",
+            "textures/blocks/planks_jungle",
+            "textures/blocks/planks_acacia",
+            "textures/blocks/planks_big_oak"
+          ]
+        }
+      }
+    },
+    {
+      "id": "oak_planks",
+      "registry": {
+        "name": "minecraft:oak_planks",
+        "properties": [],
+        "raw_id": 5,
+        "serialization_id": "tile.oak_planks"
+      },
+      "resource": {
+        "sound": "wood",
+        "textures": "oak_planks"
+      },
+      "terrain": {
+        "oak_planks": {
+          "textures": "textures/blocks/planks_oak"
+        }
+      }
+    },
+    {
+      "id": "wool",
+      "registry": null,
+      "resource": {
+        "sound": "cloth",
+        "textures": "wool"
+      },
+      "terrain": {
+        "wool": {
+          "textures": [
+            "textures/blocks/wool_colored_white",
+            "textures/blocks/wool_colored_orange",
+            "textures/blocks/wool_colored_magenta",
+            "textures/blocks/wool_colored_light_blue",
+            "textures/blocks/wool_colored_yellow",
+            "textures/blocks/wool_colored_lime",
+            "textures/blocks/wool_colored_pink",
+            "textures/blocks/wool_colored_gray",
+            "textures/blocks/wool_colored_silver",
+            "textures/blocks/wool_colored_cyan",
+            "textures/blocks/wool_colored_purple",
+            "textures/blocks/wool_colored_blue",
+            "textures/blocks/wool_colored_brown",
+            "textures/blocks/wool_colored_green",
+            "textures/blocks/wool_colored_red",
+            "textures/blocks/wool_colored_black"
+          ]
+        }
+      }
+    },
+    {
+      "id": "white_wool",
+      "registry": {
+        "name": "minecraft:white_wool",
+        "properties": [],
+        "raw_id": 35,
+        "serialization_id": "tile.wool.white"
+      },
+      "resource": {
+        "sound": "cloth",
+        "textures": "wool_colored_white"
+      },
+      "terrain": {
+        "wool_colored_white": {
+          "textures": "textures/blocks/wool_colored_white"
+        }
+      }
+    },
+    {
+      "id": "carpet",
+      "registry": null,
+      "resource": {
+        "sound": "cloth",
+        "textures": "wool"
+      },
+      "terrain": {
+        "wool": {
+          "textures": [
+            "textures/blocks/wool_colored_white",
+            "textures/blocks/wool_colored_orange",
+            "textures/blocks/wool_colored_magenta",
+            "textures/blocks/wool_colored_light_blue",
+            "textures/blocks/wool_colored_yellow",
+            "textures/blocks/wool_colored_lime",
+            "textures/blocks/wool_colored_pink",
+            "textures/blocks/wool_colored_gray",
+            "textures/blocks/wool_colored_silver",
+            "textures/blocks/wool_colored_cyan",
+            "textures/blocks/wool_colored_purple",
+            "textures/blocks/wool_colored_blue",
+            "textures/blocks/wool_colored_brown",
+            "textures/blocks/wool_colored_green",
+            "textures/blocks/wool_colored_red",
+            "textures/blocks/wool_colored_black"
+          ]
+        }
+      }
+    },
+    {
+      "id": "white_carpet",
+      "registry": {
+        "name": "minecraft:white_carpet",
+        "properties": [],
+        "raw_id": 171,
+        "serialization_id": "tile.carpet.white"
+      },
+      "resource": {
+        "sound": "cloth",
+        "textures": "wool_colored_white"
+      },
+      "terrain": {
+        "wool_colored_white": {
+          "textures": "textures/blocks/wool_colored_white"
+        }
+      }
+    },
+    {
+      "id": "camera",
+      "registry": {
+        "name": "minecraft:camera",
+        "properties": [],
+        "raw_id": 242,
+        "serialization_id": "tile.camera"
+      },
+      "resource": {
+        "isotropic": true,
+        "textures": {
+          "down": "camera_top",
+          "east": "camera_side",
+          "north": "camera_back",
+          "south": "camera_front",
+          "up": "camera_top",
+          "west": "camera_side"
+        }
+      },
+      "terrain": {
+        "camera_back": {
+          "textures": "textures/blocks/camera_back"
+        },
+        "camera_front": {
+          "textures": "textures/blocks/camera_front"
+        },
+        "camera_side": {
+          "textures": "textures/blocks/camera_side"
+        },
+        "camera_top": {
+          "textures": "textures/blocks/camera_top"
+        }
+      }
+    },
+    {
+      "id": "bone_block",
+      "registry": {
+        "name": "minecraft:bone_block",
+        "properties": [
+          {
+            "name": "deprecated"
+          },
+          {
+            "name": "pillar_axis"
+          }
+        ],
+        "raw_id": 216,
+        "serialization_id": "tile.bone_block"
+      },
+      "resource": {
+        "sound": "bone_block",
+        "textures": {
+          "down": "bone_block_top",
+          "side": "bone_block_side",
+          "up": "bone_block_top"
+        }
+      },
+      "terrain": {
+        "bone_block_side": {
+          "textures": "textures/blocks/bone_block_side"
+        },
+        "bone_block_top": {
+          "textures": "textures/blocks/bone_block_top"
+        }
+      }
+    },
+    {
+      "id": "moss_block",
+      "registry": {
+        "name": "minecraft:moss_block",
+        "properties": [],
+        "raw_id": 575,
+        "serialization_id": "tile.moss_block"
+      },
+      "resource": {
+        "sound": "moss_block",
+        "textures": "moss_block"
+      },
+      "terrain": {
+        "moss_block": {
+          "textures": "textures/blocks/moss_block"
+        }
+      }
+    },
+    {
+      "id": "moss_carpet",
+      "registry": {
+        "name": "minecraft:moss_carpet",
+        "properties": [],
+        "raw_id": 590,
+        "serialization_id": "tile.moss_carpet"
+      },
+      "resource": {
+        "sound": "moss_carpet",
+        "textures": "moss_block"
+      },
+      "terrain": {
+        "moss_block": {
+          "textures": "textures/blocks/moss_block"
+        }
+      }
+    },
+    {
+      "id": "pale_moss_block",
+      "registry": {
+        "name": "minecraft:pale_moss_block",
+        "properties": [],
+        "raw_id": 1264,
+        "serialization_id": "tile.pale_moss_block"
+      },
+      "resource": {
+        "sound": "moss_block",
+        "textures": "pale_moss_block"
+      },
+      "terrain": {
+        "pale_moss_block": {
+          "textures": "textures/blocks/pale_moss_block"
+        }
+      }
+    },
+    {
+      "id": "pale_moss_carpet",
+      "registry": {
+        "name": "minecraft:pale_moss_carpet",
+        "properties": [
+          {
+            "name": "pale_moss_carpet_side_east"
+          },
+          {
+            "name": "pale_moss_carpet_side_north"
+          },
+          {
+            "name": "pale_moss_carpet_side_south"
+          },
+          {
+            "name": "pale_moss_carpet_side_west"
+          },
+          {
+            "name": "upper_block_bit"
+          }
+        ],
+        "raw_id": 1265,
+        "serialization_id": "tile.pale_moss_carpet"
+      },
+      "resource": {
+        "carried_textures": "pale_moss_carpet_side",
+        "sound": "moss_carpet",
+        "textures": "pale_moss_block"
+      },
+      "terrain": {
+        "pale_moss_block": {
+          "textures": "textures/blocks/pale_moss_block"
+        }
+      }
+    }
+  ]
+}
