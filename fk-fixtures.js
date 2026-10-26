@@ -60,9 +60,10 @@ function lever(E){
   box(E,[5,-.02,4],[11,2.98,12],{north:B,south:B,east:B,west:B,up:B,down:B},{north:[5,0,11,3],south:[5,0,11,3],east:[4,0,12,3],west:[4,0,12,3],up:[5,4,11,12],down:[5,4,11,12]});
   tiltedBox(E,[7,1,7],[9,11,9],{north:L,south:L,east:L,west:L,up:L},{north:[7,6,9,16],south:[7,6,9,16],east:[7,6,9,16],west:[7,6,9,16],up:[7,6,9,8]},[8,1,8],-Math.PI/4);
 }
+/* Two planes along the block axes, the same in the editor and in Find (width sqrt(2) shows the square texture undistorted from the corner view). */
 function cross(E,id,y,h,r){
-  face(E,id,Math.SQRT2,h,0,y,0,0,Math.PI/4,r,true);
-  face(E,id,Math.SQRT2,h,0,y,0,0,-Math.PI/4,r,true);
+  face(E,id,Math.SQRT2,h,0,y,0,0,0,r,true);
+  face(E,id,Math.SQRT2,h,0,y,0,0,Q,r,true);
 }
 /* Height belongs to the whole plant, never just its selected texture or its card. */
 function flower(E){
