@@ -4,7 +4,7 @@ var FK=window.FK,V=window.FKView;
 function tt(k,p){return FK.t(k,p)}
 var res=16,shape='cube',slots=[],slot=null,faceMap={},cv={},tex={},mats={},undoS={},redoS={},ph={},applyGen=0,fr={},fi={},hs={};
 var files={},cur='',dirty={},catalog=null,existing=null,shapeKeys=['cube'],decoded={},sourceLoads={};
-var FACES=['up','down','north','south','east','west'],ALL_SHAPES=['cube','slab','stairs','wall','fence','gate','button','plate','pane'];
+var FACES=['up','down','north','south','east','west'],ALL_SHAPES=['cube','slab','stairs','wall','fence','gate','button','plate','pane','carpet'];
 var $=function(s){return document.querySelector(s)};
 try{var PD=parent.document.documentElement;var syncTheme=function(){document.documentElement.setAttribute('data-theme',PD.getAttribute('data-theme')||'light')};syncTheme();new MutationObserver(syncTheme).observe(PD,{attributes:true,attributeFilter:['data-theme']})}catch(e){}
 var ed=$('#ed'),ectx=ed.getContext('2d'),listeners=[];
@@ -17,24 +17,25 @@ function say(key,p){S.message=key?{key:key,params:p||{}}:null;$('#msg').textCont
 function rnd(x,y,s){var h=Math.sin(x*127.1+y*311.7+s*74.7)*43758.5453;return h-Math.floor(h)}
 function placeholder(g,r){for(var y=0;y<r;y++)for(var x=0;x<r;x++){var v=118+Math.round(rnd(Math.floor(x*16/r),Math.floor(y*16/r),5)*50);g.fillStyle='rgb('+v+','+v+','+v+')';g.fillRect(x,y,1,1)}}
 function ctxOf(k){return cv[k].getContext('2d')}
-function shapeOfId(id){return /_trapdoor$/.test(id)?'trapdoor':'cube'}
+function shapeOfId(id){var m=/_(slab|stairs|wall|fence_gate|fence|button|pressure_plate|pane|carpet)$/.exec(id),map={fence_gate:'gate',pressure_plate:'plate'};return /_trapdoor$/.test(id)?'trapdoor':m?(map[m[1]]||m[1]):'cube'}
 function isDoorBlock(m){return !!(catalog&&catalog.sp&&catalog.sp[m]&&catalog.sp[m].kind==='door')}
 function modelOf(m){if(m==='beacon')return 'beacon';if(m==='azalea'||m==='flowering_azalea')return 'azalea';return (m==='bamboo'||(catalog&&catalog.p&&catalog.p[m]))?'plant':null}
 function doubleSided(m){var mo=modelOf(m);return /leaves/.test(m)||mo==='plant'||mo==='azalea'}
 function shapeKeysFor(m){
+  var base=catalog.familyOf&&catalog.familyOf[m],fe=base&&catalog.formEntries[base];if(fe)return Object.keys(fe).sort(function(a,b){return ALL_SHAPES.indexOf(a)-ALL_SHAPES.indexOf(b)});
   if(isDoorBlock(m))return ['door'];if(m==='anvil')return ['anvil'];if(m==='cake')return ['cake'];if(m==='bell')return ['bell'];
   if(m==='big_dripleaf'||m==='small_dripleaf_block')return ['dripleaf'];if(/_bed$/.test(m))return ['bed'];
   if(/(^|_)candle$/.test(m))return ['candle'];if(/(^|_)carpet$/.test(m))return ['carpet'];
   if(/(^|_)rail$/.test(m)||m==='waterlily'||m==='leaf_litter'||m==='frog_spawn')return ['rail'];
   if(m==='vine'||m==='glow_lichen'||m==='sculk_vein'||m==='resin_clump')return ['decal'];
   var mo=modelOf(m);if(mo)return [mo];if(/_trapdoor$/.test(m))return ['trapdoor'];
-  var ks=['cube'],f=catalog.forms&&catalog.forms[m];if(f)Object.keys(f).forEach(function(k){if(ks.indexOf(k)<0)ks.push(k)});
+  var ks=[shapeOfId(m)],f=catalog.forms&&catalog.forms[m];if(f)Object.keys(f).forEach(function(k){if(ks.indexOf(k)<0)ks.push(k)});
   ks.sort(function(a,b){return ALL_SHAPES.indexOf(a)-ALL_SHAPES.indexOf(b)});return ks;
 }
 function slotsOf(p){var list=[],seen={},fm={};FACES.forEach(function(f,i){var path=p[i];fm[f]=path;if(!seen[path]){seen[path]=1;list.push({id:path})}});return {list:list,fm:fm}}
 function slotsFor(m){if(catalog.sp&&catalog.sp[m])return {list:catalog.sp[m].list,fm:catalog.sp[m].fm};var so=slotsOf(catalog.b[m]),cp=catalog.cr&&catalog.cr[m];if(cp&&!so.list.some(function(s){return s.id===cp}))so.list.push({id:cp,carried:true});return so}
 function pathsFor(m){if(catalog.sp&&catalog.sp[m])return catalog.sp[m].list.map(function(s){return s.id});var o=[];catalog.b[m].forEach(function(x){if(o.indexOf(x)<0)o.push(x)});var q=catalog.cr&&catalog.cr[m];if(q&&o.indexOf(q)<0)o.push(q);return o}
-function describe(id){var m=catalog.mother[id]||id,mo=modelOf(m),keys=shapeKeysFor(m),want=isDoorBlock(m)?'door':(mo||shapeOfId(id));return {id:m,model:mo,keys:keys,shape:keys.indexOf(want)>=0?want:keys[0],so:slotsFor(m)}}
+function describe(id){var m=catalog.mother[id]||id,mo=modelOf(m),keys=shapeKeysFor(m),want=(catalog.variantForm&&catalog.variantForm[m])||(isDoorBlock(m)?'door':(mo||shapeOfId(id)));return {id:m,model:mo,keys:keys,shape:keys.indexOf(want)>=0?want:keys[0],so:slotsFor(m)}}
 var stage=$('#stage'),W=stage.clientWidth||360,gl=typeof THREE!=='undefined'&&!!V,view=null,group=null,frames=0,renderFrame=null,resetView=true;
 if(!gl)showErr('three_missing');
 if(gl){try{view=V.createStage();group=view.group;V.mount(stage)}catch(err){gl=false;showErr('webgl_unavailable',err.message)}}
@@ -74,7 +75,7 @@ function resetHist(){slots.forEach(function(s){undoS[s.id]=[];redoS[s.id]=[];hs[
 function drawEd(){ed.width=ed.height=res;ed.style.backgroundSize=(200/res)+'% '+(200/res)+'%';ectx.clearRect(0,0,res,res);if(cv[slot])ectx.drawImage(cv[slot],0,0);updHist()}
 function touched(){dirty[slot]=true;delete ph[slot];API.edits++;refreshTex(slot);drawEd()}
 function seg(sel,attr,fn){$(sel).addEventListener('click',function(e){var b=e.target.closest('button');if(!b||b.disabled||API.busy)return;$(sel).querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});fn(b.dataset[attr])})}
-seg('#shapes','s',function(v){shape=v;build()});
+seg('#shapes','s',function(v){var base=catalog.familyOf&&catalog.familyOf[cur],target=base&&catalog.formEntries[base][v];if(target&&target!==cur){selectBlock(target);return}shape=v;build()});
 function setShapeUi(){$('#shapes').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.s===shape)})}
 function updShapeUi(list){shapeKeys=list;var bx=$('#shapes');bx.innerHTML='';shapeKeys.forEach(function(k){var b=document.createElement('button');FKShapes.icon(b,tt('shape.'+k),k);b.dataset.s=k;bx.appendChild(b)});if(shapeKeys.indexOf(shape)<0)shape=shapeKeys[0]||'cube';$('#shapesRow').style.display=shapeKeys.length>1?'flex':'none';setShapeUi()}
 function setRes(n){if(API.busy||n===res)return;var old={};slots.forEach(function(s){old[s.id]=fr[s.id].map(function(f){var c=document.createElement('canvas');c.width=c.height=res;c.getContext('2d').drawImage(f,0,0);return c})});res=n;slots.forEach(function(s){fr[s.id].forEach(function(f,k){f.width=f.height=res;var g=f.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(old[s.id][k],0,0,res,res)})});resetHist();rebuildTextures();drawEd();slots.forEach(function(s){dirty[s.id]=true});API.edits++;if(ctx.onRes)ctx.onRes(res)}
@@ -90,20 +91,28 @@ function applyEntry(e,done){
   var gen=++applyGen,list=slots,frs=fr,phNow=ph,n=e.res||16;res=n;if(ctx.onRes)ctx.onRes(res);
   Promise.all(list.map(function(s){return readImage(s.id,e.slots&&e.slots[s.id])})).then(function(imgs){if(gen!==applyGen)return;list.forEach(function(s,i){frs[s.id].forEach(function(c,k){drawFrame(c,imgs[i],k,n)});if(!imgs[i])phNow[s.id]=true});rebuildTextures();drawEd();resetHist();if(done)done()});
 }
-var CAT_KEY='foundrykin.catalog.v4',lastB=null,lastTerrain=null;
+var CAT_KEY='foundrykin.catalog.v5',lastB=null,lastTerrain=null,lastFamilies={};
 function catalogReady(src){S.status='ready';S.source=src;S.count=catalog.ids.length;S.filtered=!!catalog.filtered;S.refreshing=false;S.refreshFailed='';S.error=null;emit()}
 function catalogFailed(code,detail){S.status='failed';S.error={code:code,detail:detail||''};S.refreshing=false;emit()}
-function useCatalog(B,Tx,src){if(B)lastB=B;if(Tx)lastTerrain=Tx;if(!lastB)return false;var c=FKCatalog.build(lastB,lastTerrain);if(!Object.keys(c.b).length){if(catalog)say('msg.catalog_empty');else{S.status='empty';S.error=null;S.refreshing=false;emit()}return false}if(src!=='file')try{localStorage.setItem(CAT_KEY,JSON.stringify({commit:window.FKCatalogData.commit,version:API.version,b:c.b,p:c.p,cr:c.cr,existing:existing}));localStorage.removeItem('foundrykin.catalog.v3');localStorage.removeItem('foundrykin.exist.v2')}catch(err){}catalog=FKCatalog.index(c,existing);catalogReady(src);return true}
+function useCatalog(B,Tx,src){
+ if(B)lastB=B;if(Tx)lastTerrain=Tx;if(!lastB)return false;
+ var c=FKCatalog.build(lastB,lastTerrain);
+ if(!Object.keys(c.b).length){if(catalog)say('msg.catalog_empty');else{S.status='empty';S.error=null;S.refreshing=false;emit()}return false}
+ var plan=src==='file'?{}:lastFamilies;
+ var prepared=FKCatalog.bindFamilies(FKCatalog.index(c,existing),plan);
+ if(src!=='file')try{localStorage.setItem(CAT_KEY,JSON.stringify({commit:window.FKCatalogData.commit,version:API.version,b:c.b,p:c.p,cr:c.cr,existing:existing,familyPlan:plan}))}catch(err){}
+ catalog=prepared;catalogReady(src);return true;
+}
 function loadCatalog(){
   try{
     var cached=JSON.parse(localStorage.getItem(CAT_KEY));
-    if(cached&&cached.commit===window.FKCatalogData.commit&&cached.version===API.version&&cached.b&&cached.existing){
-      var restored=FKCatalog.index(cached,cached.existing);
+    if(cached&&cached.commit===window.FKCatalogData.commit&&cached.version===API.version&&cached.b&&cached.existing&&cached.familyPlan){
+      lastFamilies=cached.familyPlan;var restored=FKCatalog.bindFamilies(FKCatalog.index(cached,cached.existing),lastFamilies);
       if(restored.ids.length){existing=cached.existing;catalog=restored;catalogReady('cache');S.refreshing=true;emit()}
     }
   }catch(err){}
   FKCatalog.load().then(function(data){
-    existing=data.existing;
+    existing=data.existing;lastFamilies=data.families;
     useCatalog(data.blocks,data.terrain,'bundled');
   }).catch(function(err){
     if(!catalog)catalogFailed('catalog_fetch',err.message);
@@ -111,7 +120,9 @@ function loadCatalog(){
   });
 }
 $('#catfile').onchange=function(e){var inp=e.target,fl=[].slice.call(inp.files),left=fl.length,B=null,Tx=null;if(!left)return;fl.forEach(function(f){var fr=new FileReader();fr.onload=function(){try{var j=FKCatalog.parseLoose(fr.result);if(j&&j.texture_data)Tx=j;else B=j}catch(err){say('msg.file_not_json',{name:f.name,detail:err.message})}if(--left===0){if(!useCatalog(B,Tx,'file')&&!lastB&&!catalog)catalogFailed('catalog_no_blocks')}};fr.onerror=function(){if(--left===0)say('msg.file_unreadable')};fr.readAsText(f)});inp.value=''};
-function isEdited(id){return pathsFor(id).some(function(p){return dirty[p]})}
+function familyPaths(id){var base=catalog.familyOf&&catalog.familyOf[id],entries=base&&catalog.formEntries[base],out=[];(entries?Object.keys(entries).map(function(k){return entries[k]}):[id]).forEach(function(x){pathsFor(x).forEach(function(p){if(out.indexOf(p)<0)out.push(p)})});return out}
+function isEdited(id){return familyPaths(id).some(function(p){return dirty[p]})}
+function familyFiles(){packCur();return familyPaths(cur).filter(function(p){return dirty[p]&&files[p]}).map(function(p){return {path:p+'.png',data:files[p].data}})}
 function setBlockInfo(id,m,note,mo){var grp=catalog.members[catalog.sig[m]],fo=catalog.forms&&catalog.forms[m];S.info={id:id,files:pathsFor(m),shared:grp.filter(function(x){return x!==m}),forms:fo?Object.keys(fo):[],note:note,kind:isDoorBlock(m)?'door':(mo||'shape')};emit()}
 function fcount(w,h){var n=Math.round(h/w);return n>1&&Math.abs(h/w-n)<.01?n:1}
 function loadSource(path){if(!sourceLoads[path])sourceLoads[path]=FKCatalog.loadAny(path).then(function(im){if(!im)delete sourceLoads[path];return im},function(err){delete sourceLoads[path];throw err});return sourceLoads[path]}
@@ -146,14 +157,14 @@ var API={
   edits:0,busy:false,want:null,block:'',pending:'',state:S,ctx:ctx,
   version:(function(){try{return parent.FK_V||'?'}catch(e){return '?'}})(),subscribe:function(f){listeners.push(f)},
   setMode:function(m){S.mode=m;document.body.classList.toggle('fk-search',m==='search');document.body.classList.toggle('fk-edit',m==='edit');try{scrollTo(0,0)}catch(e){}if(m==='edit')resizeStage();else{endDrag();cancelRender()}emit()},
-  cur:function(){return cur},files:function(){return curFiles().filter(function(f){return dirty[f.path.replace(/\.png$/,'')]})},
+  cur:function(){return cur},files:function(){return cur?familyFiles():[]},
   loading:function(){API.busy=true;loadingUi(true);emit()},
   loaded:function(m){API.busy=false;API.pending='';API.block=m;loadingUi(false);var w=API.want;API.want=null;if(w&&cv[w])setSlot(w);emit()},
-  openTexture:function(path,data){var key='textures/'+path;if(!catalog)return null;var hit=null,alt=null,base=path.split('/').pop();for(var i=0;i<catalog.ids.length&&!hit;i++){var cid=catalog.ids[i];if(pathsFor(cid).indexOf(key)>=0)hit=cid;else if(!alt&&cid===base)alt=cid}if(!hit&&alt){hit=alt;key=pathsFor(alt)[0]}if(!hit)return false;files[key]=mkFile(data);dirty[key]=true;API.want=key;selectBlock(hit);return hit},
+  openTexture:function(path,data){var key='textures/'+path;if(!catalog)return null;var hit=null,alt=null,base=path.split('/').pop(),allIds=Object.keys(catalog.b);for(var i=0;i<allIds.length&&!hit;i++){var cid=allIds[i];if(pathsFor(cid).indexOf(key)>=0)hit=cid;else if(!alt&&cid===base)alt=cid}if(!hit&&alt){hit=alt;key=pathsFor(alt)[0]}if(!hit)return false;files[key]=mkFile(data);dirty[key]=true;API.want=key;selectBlock(hit);return hit},
   stats:function(){return {frames:frames,webgl:gl,res:res,slots:slots.length}},
   grid:function(){return {catalog:catalog,files:files,dirty:dirty,shapes:FKShapes.SHAPES,load:FKCatalog.loadAny,select:selectBlock,edited:isEdited,preview:previewBlock,
     discard:function(){slots.forEach(function(s){ph[s.id]=true})},
-    obj:function(){return API.busy?{id:API.pending||null,paths:[]}:{id:cur||null,paths:slots.map(function(s){return s.id})}},
+    obj:function(){return API.busy?{id:API.pending||null,paths:[]}:{id:(catalog.familyOf&&catalog.familyOf[cur])||cur||null,paths:cur?familyPaths(cur):[]}},
     setPack:function(map){Object.keys(dirty).forEach(function(k){if(!(k in map)){delete dirty[k];delete files[k];delete decoded[k]}});Object.keys(map).forEach(function(k){if(!files[k]||files[k].data!==map[k]){files[k]=mkFile(map[k]);delete decoded[k]}dirty[k]=true})},
     shapeFor:function(id){return describe(id).shape}}}
 };
