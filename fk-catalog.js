@@ -1,10 +1,10 @@
 /* FKCatalog: Bedrock block catalog logic without editor state: data loading, indexing, vanilla texture images. */
 var FKCatalog=(function(){
-var URLS_B=['https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/blocks.json','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/blocks.json'];
-var URLS_T=['https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/textures/terrain_texture.json','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/textures/terrain_texture.json'];
-var URLS_F=['https://data.jsdelivr.com/v1/package/gh/Mojang/bedrock-samples@main/flat','https://api.github.com/repos/Mojang/bedrock-samples/git/trees/main?recursive=1'];
-var VAN1='https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/';
-var VAN2='https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/';
+/* Block data comes from the reviewed catalog in data/catalog-candidate/ (one pinned Mojang release); textures come from the same pinned release. */
+var PIN='46ba6ea985fb5a92d79a9419198f10dda14c199d',DATA='data/catalog-candidate/';
+var URLS_B=['local:blocks'],URLS_T=['local:terrain'],URLS_F=['local:existing'];
+var VAN1='https://raw.githubusercontent.com/Mojang/bedrock-samples/'+PIN+'/resource_pack/';
+var VAN2='https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@'+PIN+'/resource_pack/';
 function parseLoose(t){
   t=String(t).replace(/^\uFEFF/,'');
   try{return JSON.parse(t)}catch(e){}
@@ -12,7 +12,34 @@ function parseLoose(t){
   t=t.replace(/,(\s*[}\]])/g,'$1');
   return JSON.parse(t);
 }
+function sha256(text){
+  if(!(window.crypto&&crypto.subtle&&window.TextEncoder))return Promise.resolve('');
+  return crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)).then(function(b){return Array.prototype.map.call(new Uint8Array(b),function(x){return ('0'+x.toString(16)).slice(-2)}).join('')});
+}
+function readPart(f){
+  return fetch(DATA+f.name,{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error(f.name+': HTTP '+r.status);return r.text()}).then(function(t){
+    return sha256(t).then(function(h){if(h&&h!==f.sha256)throw new Error(f.name+': checksum mismatch');return {name:f.name,json:JSON.parse(t)}});
+  });
+}
+var localData=null;
+function local(){
+  if(!localData)localData=fetch(DATA+'manifest.json',{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error('manifest: HTTP '+r.status);return r.json()}).then(function(m){
+    if(!m||!Array.isArray(m.files))throw new Error('manifest: unknown format');
+    return Promise.all(m.files.map(readPart));
+  }).then(function(parts){
+    var d={blocks:{},terrain:{texture_data:{}},existing:{}};
+    parts.forEach(function(p){
+      if(p.name.indexOf('blocks-')===0)Object.assign(d.blocks,p.json);
+      else if(p.name.indexOf('terrain-')===0)Object.assign(d.terrain.texture_data,p.json);
+      else if(p.name.indexOf('existing-')===0)Object.assign(d.existing,p.json);
+    });
+    if(!Object.keys(d.blocks).length)throw new Error('catalog data is empty');
+    return d;
+  }).catch(function(err){localData=null;throw err});
+  return localData;
+}
 function fetchJson(urls,i,errs2){
+  if(/^local:/.test(urls[0]))return local().then(function(d){return d[urls[0].slice(6)]});
   i=i||0;errs2=errs2||[];
   if(i>=urls.length)return Promise.reject(new Error(errs2.join('; ')||'no response'));
   return fetch(urls[i]).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}).then(parseLoose)
@@ -166,12 +193,9 @@ function indexCatalog(c,existing){
   return {b:b,cr:cr2,p:c.p||{},sp:sp,forms:forms,kids:kids,sig:sig,members:members,mother:mother,ids:Object.keys(b).sort(),filtered:filtered,hidden:Object.keys(raw).length-Object.keys(b).length};
 }
 function fetchExisting(){
-  return fetchJson(URLS_F).then(function(j){
-    var s={},n=0;
-    (j.files||[]).forEach(function(f){var nm=f.name;if(/^\/resource_pack\/textures\/.+\.(png|tga)$/.test(nm)){s[nm.slice(15,-4)]=1;n++}});
-    (j.tree||[]).forEach(function(f){var nm=f.path;if(/^resource_pack\/textures\/.+\.(png|tga)$/.test(nm)){s[nm.slice(14,-4)]=1;n++}});
-    if(!n)throw new Error('empty file list');
-    return s;
+  return local().then(function(d){
+    if(!Object.keys(d.existing).length)throw new Error('empty file list');
+    return d.existing;
   });
 }
 function loadImg(u){return new Promise(function(ok){var im=new Image();im.crossOrigin='anonymous';im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=u})}
