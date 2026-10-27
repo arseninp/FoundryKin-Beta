@@ -93,6 +93,27 @@ function paleMoss(E){
   g.rotation.y={north:0,east:-Q,south:Math.PI,west:Q}[d];E.group.add(g);
  });
 }
+/* Custom atlas UVs: Java custom_fence_post, custom_fence_side_east/west and
+ template_custom_fence_gate are geometry references. Bedrock paths remain catalog-owned. */
+function bambooFence(E){
+  var id=E.faceMap.up,F={north:id,south:id,east:id,west:id,up:id,down:id},side=[0,0,4,16];
+  box(E,[6,0,6],[10,16,10],F,{north:side,south:side,east:side,west:side,up:[4,0,8,4],down:[4,0,8,4]});
+  [6,12].forEach(function(y){
+    box(E,[7,y,7],[16,y+3,9],{north:id,east:id,south:id,up:id,down:id},{north:[4,4,13,7],east:[13,4,15,7],south:[4,4,13,7],up:[13,7,15,16,270],down:[13,7,15,16,90]});
+    box(E,[0,y,7],[9,y+3,9],{north:id,south:id,west:id,up:id,down:id},{north:[4,4,13,7],south:[4,4,13,7],west:[15,4,13,7],up:[13,7,15,16,270],down:[13,7,15,16,90]});
+  });
+}
+function bambooGate(E){
+  var id=E.faceMap.up,F={north:id,south:id,east:id,west:id,up:id,down:id},a=[14,2,16,13],b=[0,2,2,13];
+  box(E,[0,5,7],[2,16,9],F,{north:a,east:a,south:a,west:a,up:[14,0,16,2],down:[16,13,14,15]});
+  box(E,[14,5,7],[16,16,9],F,{north:b,east:b,south:b,west:b,up:[0,0,2,2],down:[2,13,0,15]});
+  box(E,[6,6,7],[8,15,9],{north:id,south:id,west:id,up:id,down:id},{north:[8,3,10,12],south:[6,3,8,12],west:[8,3,10,12],up:[8,1,10,3],down:[8,14,10,12]});
+  box(E,[8,6,7],[10,15,9],{north:id,east:id,south:id,up:id,down:id},{north:[6,3,8,12],east:[6,3,8,12],south:[8,3,10,12],up:[6,1,8,3],down:[6,14,8,12]});
+  [6,12].forEach(function(y){
+    box(E,[2,y,7],[6,y+3,9],{north:id,south:id,up:id,down:id},{north:[10,3,14,6],south:[10,9,14,12],up:[10,1,14,3],down:[10,14,14,12]});
+    box(E,[10,y,7],[14,y+3,9],{north:id,south:id,up:id,down:id},{north:[2,3,6,6],south:[2,9,6,12],up:[2,1,6,3],down:[2,14,6,12]});
+  });
+}
 function ladder(E){face(E,E.faceMap.up,1,1,0,0,7/16,0,0,null,true)}
 function lectern(E){
   var f=E.faceMap,B=f.east,S=f.south,F=f.north,D=f.down,T=f.up;
@@ -123,6 +144,8 @@ function flower(E){
 }
 H.build=function(E){
   if(typeof E.slot==='string'&&E.slot.indexOf('textures/items/')===0)return build(E);
+  if(E.cur==='bamboo_fence')return bambooFence(E);
+  if(E.cur==='bamboo_fence_gate')return bambooGate(E);
   if(E.cur==='pale_moss_carpet')return paleMoss(E);
   if(/_shelf$/.test(E.cur))return shelf(E);
   if(E.cur==='ladder')return ladder(E);
