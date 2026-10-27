@@ -1,0 +1,34 @@
+name: Apply explicit catalog loader migration
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/migrate-catalog-loader.yml'
+      - 'tools/migrate-catalog-loader.mjs'
+permissions:
+  contents: write
+concurrency:
+  group: migrate-catalog-loader
+  cancel-in-progress: false
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test loader against actual pinned catalog before migration
+        run: node --test tools/*.test.mjs
+      - name: Apply guarded source migration
+        run: node tools/migrate-catalog-loader.mjs
+      - name: Validate resulting JavaScript and tests
+        run: |
+          for file in fk-*.js; do node --check "$file"; done
+          node --test tools/*.test.mjs
+      - name: Save only the four approved application files
+        run: |
+          git add -- fk-core.js fk-catalog.js app.html index.html
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'v0.8.86: activate explicit catalog loader and revision-scoped cache'
+          git push origin HEAD:main
