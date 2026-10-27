@@ -1,14 +1,14 @@
-# ARCHITECTURE — FoundryKin 0.8.80
+# ARCHITECTURE — FoundryKin 0.8.88
 
-Актуально для `main` после merge-коммита `4e99c4b` (PR №7). 0.8.80 визуально принята владельцем. Это не означает, что проведены отдельные тесты настоящего браузерного WebGL, Android, памяти или экспорта. Имена символов надёжнее номеров строк.
+Актуально после d2e9f0627567ff1089effd466f57c9be3d60870b. Владелец принял видимую работу на телефоне. Автоматические проверки не являются полноценным браузерным WebGL/Android-аудитом.
 
 ## Загрузка
 
 `app.html`: оболочка, `FK_V`, стили, `fk-i18n.js` → `fk-editor.js` → `fk-app.js` → JSZip 3.10.1. FKE загружает `index.html` в iframe.
 
-`index.html`: стили; `fk-i18n.js` → Three.js r128 → `fk-catalog.js` → `fk-shapes.js` → `fk-sculk.js` → `fk-lights.js` → `fk-details.js` → `fk-fixtures.js` → `fk-view.js` → `fk-core.js` → `fk-tools.js` → `fk-grid.js` → `fk-help.js`.
+`index.html`: стили; `fk-i18n.js` → Three.js r128 → `fk-catalog-data.js` → `fk-catalog.js` → `fk-shapes.js` → `fk-sculk.js` → `fk-lights.js` → `fk-details.js` → `fk-fixtures.js` → `fk-view.js` → `fk-model-state.js` → `fk-core.js` → `fk-pixel-grid.js` → `fk-tools.js` → `fk-grid.js` → `fk-help.js`.
 
-Порядок важен: расширения моделей оборачивают `FKCatalog.index` и `FKShapes.build`; `FKView` должен быть определён до ядра. `FK_V` и собственные `?v=` согласованы на 0.8.80.
+Порядок важен: расширения моделей оборачивают `FKCatalog.index` и `FKShapes.build`; `FKView` должен быть определён до ядра. `FK_V` и собственные `?v=` согласованы на 0.8.88.
 
 ## Ответственность файлов
 
@@ -17,22 +17,35 @@
 | `app.html`, `fk-app.js` | Оболочка, навигация, паки, Save/Add, импорт/экспорт и диагностика |
 | `fk-editor.js` | Мост FKE между оболочкой и редактором в iframe |
 | `fk-i18n.js`, `fk-base.css`, `fk-style.css` | Переводы, темы, шапки и компоновка |
-| `fk-catalog.js` | Данные блоков, семейства и формы, пути ресурсов, загрузка PNG/TGA |
+| `fk-catalog-data.js` | Проверенные данные закреплённого каталога, манифест, SHA-256 и проверки схемы |
+| `fk-catalog.js` | Подготовка путей и extra-ресурсов, загрузка связей семейств, bindFamilies, PNG/TGA |
 | `fk-shapes.js` | Общая геометрия, формы, размерные классы камеры и иконки форм |
 | `fk-sculk.js`, `fk-lights.js`, `fk-details.js`, `fk-fixtures.js` | Специализированные общие построители и расширения каталога |
 | `fk-view.js` | Единственный WebGL-рендерер, камеры/свет, текстуры/материалы, build/clear/render/capture |
 | `fk-core.js` | FKAPI, состояние редактора, общая подготовка объектов и API снимков для Find |
 | `fk-grid.js` | Find UI: поиск, категории, карточки, видимость, кэш снимков, пак и прокрутка |
 | `fk-tools.js`, `fk-help.js` | Инструменты рисования, палитра, справка и сведения об объектах |
+| `fk-model-state.js` | Общие переключатели состояния просмотра по FKShapes.stateSchema; без записи PNG/паков |
+| `fk-pixel-grid.js` | Сетка над холстом: отдельный SVG-слой без перехвата касаний |
 
 ## Поток просмотра
 
-1. `FKCatalog.build/index` строит каталог, семейства, `forms`, `kids`, пути и специальные карты граней.
-2. Ядро `describe(id)` разрешает основной блок, форму, список текстурных слотов и `faceMap`.
+1. FKCatalogData читает data/catalog-candidate; FKCatalog.load дополнительно проверяет data/catalog-families. build/index подготавливают пути и специальные модели, bindFamilies применяет готовые связи. Дочерние определения остаются в b; ids содержит самостоятельные карточки.
+2. Ядро describe(id) выбирает конкретный вариант, его слоты и faceMap. familyOf/variantForm/formEntries связывают варианты; переключение формы вызывает selectBlock нужного ID, а не только заменяет геометрию.
 3. `ensureFiles` загружает отсутствующие источники в общую карту `files[path]`; `readImage` декодирует по пути и данным, `drawFrame` выбирает кадр или рисует заглушку.
 4. Редактор проходит `selectBlock` → `setupSlots` → `applyEntry` → `FKView.build`. Холсты, история undo/redo, выбранный кадр и ручной поворот принадлежат редактору.
 5. Find использует `IntersectionObserver` и `grid().preview()` → `previewBlock` → тот же путь подготовки материалов → `FKView.capture`. Снимок строится из исходного состояния блока и не забирает группу/поворот редактора.
-6. Рисование идёт через `FKAPI.ctx`; `touched` обновляет текстуру через `FKView.texture/mapMaterial` и планирует кадр по запросу. Add/Save читает только изменённые файлы через `FKAPI.files()`.
+6. Рисование идёт через `FKAPI.ctx`; `touched` обновляет текстуру через `FKView.texture/mapMaterial` и планирует кадр по запросу. Add/Save читает изменённые ресурсы всего выбранного семейства через FKAPI.files(). familyPaths объединяет пути вариантов; текущий холст сначала переносится в files.
+
+## Закреплённые данные и состояния
+
+Источник — Mojang/bedrock-samples 46ba6ea985fb5a92d79a9419198f10dda14c199d, а не меняющийся main. PNG/TGA берутся с того же коммита. Имя data/catalog-candidate историческое: данные подключены. build-family-data использует compileFamilies и реальные пути через terrain atlas; отдельная carried-текстура не запрещает объединение. Неоднозначности сохраняются в отчёте.
+
+Кэш foundrykin.catalog.v6 хранит b/p/cr/extra, existing и familyPlan, проверяет версию приложения и коммит источника. Паки fk070_packs и настройки редактора этим кэшем не заменяются.
+
+Бледный ковёр использует pale_moss_block, pale_moss_carpet_side_base и pale_moss_carpet_side_tip. FKShapes.stateSchema задаёт четыре стороны none/short/tall и upper_block_bit. FKModelState хранит выбор в памяти; FKView передаёт state общему построителю. Переключатели не меняют пиксели, dirty и содержимое mcpack. Карточка использует исходное состояние, не текущее состояние редактора. Геометрия боковин опирается на Java-справку; точность всех UV не доказана одними тестами.
+
+Постоянные проверки: node --test tools/*.test.mjs и node --check fk-*.js (в shell — по одному файлу). validate.yml читает репозиторий и не делает автокоммитов. Генераторы и их workflow сохранены; исходные миграции удалены после принятия результата.
 
 ## Общий просмотр
 
