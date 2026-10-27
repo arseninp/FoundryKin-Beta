@@ -1,0 +1,247 @@
+{
+ "schema": 1,
+ "admitted": 1275,
+ "rejectedChecked": 59,
+ "resolved": [
+  {
+   "id": "carpet",
+   "successor": "white_carpet"
+  },
+  {
+   "id": "chain",
+   "successor": "iron_chain"
+  },
+  {
+   "id": "concrete",
+   "successor": "white_concrete"
+  },
+  {
+   "id": "concretePowder",
+   "successor": "white_concrete_powder"
+  },
+  {
+   "id": "coral",
+   "successor": "tube_coral"
+  },
+  {
+   "id": "coral_block",
+   "successor": "tube_coral_block"
+  },
+  {
+   "id": "coral_fan",
+   "successor": "tube_coral_fan"
+  },
+  {
+   "id": "coral_fan_dead",
+   "successor": "dead_tube_coral_fan"
+  },
+  {
+   "id": "coral_fan_hang",
+   "successor": "tube_coral_wall_fan"
+  },
+  {
+   "id": "coral_fan_hang2",
+   "successor": "brain_coral_wall_fan"
+  },
+  {
+   "id": "coral_fan_hang3",
+   "successor": "fire_coral_wall_fan"
+  },
+  {
+   "id": "deprecated_anvil",
+   "successor": "anvil"
+  },
+  {
+   "id": "deprecated_purpur_block_1",
+   "successor": "purpur_block"
+  },
+  {
+   "id": "deprecated_purpur_block_2",
+   "successor": "purpur_pillar"
+  },
+  {
+   "id": "double_plant",
+   "successor": "sunflower"
+  },
+  {
+   "id": "double_stone_slab",
+   "successor": "smooth_stone_slab"
+  },
+  {
+   "id": "double_stone_slab2",
+   "successor": "red_sandstone_slab"
+  },
+  {
+   "id": "double_stone_slab3",
+   "successor": "end_stone_brick_slab"
+  },
+  {
+   "id": "double_stone_slab4",
+   "successor": "mossy_cobblestone_slab"
+  },
+  {
+   "id": "double_wooden_slab",
+   "successor": "oak_double_slab"
+  },
+  {
+   "id": "fence",
+   "successor": "oak_fence"
+  },
+  {
+   "id": "glowingobsidian",
+   "successor": "crying_obsidian"
+  },
+  {
+   "id": "grass",
+   "successor": "grass_block"
+  },
+  {
+   "id": "leaves",
+   "successor": "oak_leaves"
+  },
+  {
+   "id": "leaves2",
+   "successor": "acacia_leaves"
+  },
+  {
+   "id": "log",
+   "successor": "oak_log"
+  },
+  {
+   "id": "log2",
+   "successor": "acacia_log"
+  },
+  {
+   "id": "monster_egg",
+   "successor": "infested_stone"
+  },
+  {
+   "id": "planks",
+   "successor": "oak_planks"
+  },
+  {
+   "id": "red_flower",
+   "successor": "poppy"
+  },
+  {
+   "id": "sapling",
+   "successor": "oak_sapling"
+  },
+  {
+   "id": "seaLantern",
+   "successor": "sea_lantern"
+  },
+  {
+   "id": "shulker_box",
+   "successor": "undyed_shulker_box"
+  },
+  {
+   "id": "skull",
+   "successor": "skeleton_skull"
+  },
+  {
+   "id": "stained_glass",
+   "successor": "white_stained_glass"
+  },
+  {
+   "id": "stained_glass_pane",
+   "successor": "white_stained_glass_pane"
+  },
+  {
+   "id": "stained_hardened_clay",
+   "successor": "white_terracotta"
+  },
+  {
+   "id": "stone_slab",
+   "successor": "smooth_stone_slab"
+  },
+  {
+   "id": "stone_slab2",
+   "successor": "red_sandstone_slab"
+  },
+  {
+   "id": "stone_slab3",
+   "successor": "end_stone_brick_slab"
+  },
+  {
+   "id": "stone_slab4",
+   "successor": "mossy_cobblestone_slab"
+  },
+  {
+   "id": "stonebrick",
+   "successor": "stone_bricks"
+  },
+  {
+   "id": "stonecutter",
+   "successor": "stonecutter_block"
+  },
+  {
+   "id": "tallgrass",
+   "successor": "short_grass"
+  },
+  {
+   "id": "tripWire",
+   "successor": "trip_wire"
+  },
+  {
+   "id": "wood",
+   "successor": "oak_wood"
+  },
+  {
+   "id": "wooden_slab",
+   "successor": "oak_slab"
+  },
+  {
+   "id": "wool",
+   "successor": "white_wool"
+  },
+  {
+   "id": "yellow_flower",
+   "successor": "dandelion"
+  }
+ ],
+ "missing": [],
+ "internal": [
+  {
+   "id": "end_gateway",
+   "reason": "kept as auxiliary render resource"
+  },
+  {
+   "id": "info_update",
+   "reason": "internal placeholder block"
+  },
+  {
+   "id": "info_update2",
+   "reason": "internal placeholder block"
+  },
+  {
+   "id": "invisibleBedrock",
+   "reason": "internal placeholder block"
+  },
+  {
+   "id": "lava_cauldron",
+   "reason": "kept as auxiliary render resource"
+  },
+  {
+   "id": "movingBlock",
+   "reason": "technical block"
+  },
+  {
+   "id": "netherreactor",
+   "reason": "removed from the game"
+  },
+  {
+   "id": "pistonArmCollision",
+   "reason": "technical block"
+  },
+  {
+   "id": "reserved6",
+   "reason": "reserved id"
+  },
+  {
+   "id": "stickyPistonArmCollision",
+   "reason": "technical block"
+  }
+ ],
+ "unknown": []
+}
