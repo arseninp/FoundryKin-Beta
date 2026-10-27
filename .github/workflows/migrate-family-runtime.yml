@@ -1,0 +1,34 @@
+name: Activate resource-preserving families
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/migrate-family-runtime.yml'
+      - 'tools/migrate-family-runtime.mjs'
+permissions:
+  contents: write
+concurrency:
+  group: migrate-family-runtime
+  cancel-in-progress: false
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test before migration
+        run: node --test tools/*.test.mjs
+      - name: Apply complete source transition
+        run: node tools/migrate-family-runtime.mjs
+      - name: Check syntax and integration tests
+        run: |
+          for file in fk-*.js; do node --check "$file"; done
+          node --test tools/*.test.mjs
+      - name: Commit only approved transition files
+        run: |
+          git add -- fk-catalog.js fk-core.js fk-fixtures.js app.html index.html tools/family-runtime.test.mjs
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'v0.8.87: activate resource-preserving families and remove legacy grouping'
+          git push origin HEAD:main
