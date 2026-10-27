@@ -1,95 +1,11 @@
-name: Correct bamboo gate Bedrock UVs
+name: Retired bamboo gate migration
 on:
-  push:
-    branches: [main]
-    paths: ['.github/workflows/fix-bamboo-gate-bedrock.yml']
+  workflow_dispatch:
 permissions:
-  contents: write
-concurrency:
-  group: fix-bamboo-gate-bedrock
-  cancel-in-progress: false
+  contents: read
 jobs:
-  fix:
+  retired:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Test baseline
-        run: node --test tools/*.test.mjs
-      - name: Read exact pinned Bedrock PNG
-        uses: actions/checkout@v4
-        with:
-          repository: Mojang/bedrock-samples
-          ref: 46ba6ea985fb5a92d79a9419198f10dda14c199d
-          path: .bedrock-gate-source
-          persist-credentials: false
-          sparse-checkout-cone-mode: false
-          sparse-checkout: resource_pack/textures/blocks/bamboo_fence_gate.png
-      - name: Verify actual alpha and replace only the failed gate function
-        run: |
-          node --input-type=module <<'NODE'
-          import {readFile,writeFile} from 'node:fs/promises';
-          import {inflateSync} from 'node:zlib';
-          import {createHash} from 'node:crypto';
-          import vm from 'node:vm';
-          import assert from 'node:assert/strict';
-          function once(s,a,b){assert.equal(s.split(a).length,2,'Anchor mismatch: '+a);return s.replace(a,b)}
-          const png=await readFile('.bedrock-gate-source/resource_pack/textures/blocks/bamboo_fence_gate.png');
-          assert.equal(png.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
-          let width,height,bits,type,trans=null,idat=[];
-          for(let p=8;p<png.length;){const n=png.readUInt32BE(p),name=png.toString('ascii',p+4,p+8),data=png.subarray(p+8,p+8+n);if(name==='IHDR'){width=data.readUInt32BE(0);height=data.readUInt32BE(4);bits=data[8];type=data[9];assert.equal(data[12],0,'Interlaced PNG unsupported')}if(name==='tRNS')trans=data;if(name==='IDAT')idat.push(data);p+=n+12}
-          assert.equal(width,16);assert.equal(height,16);
-          const channels={0:1,2:3,3:1,4:2,6:4}[type];assert.ok(channels);assert.ok(bits===8||(type===3&&[1,2,4].includes(bits)));
-          const stride=Math.ceil(width*channels*bits/8),bpp=Math.max(1,Math.ceil(channels*bits/8)),raw=inflateSync(Buffer.concat(idat)),rows=[];let offset=0;
-          function paeth(a,b,c){const p=a+b-c,aa=Math.abs(p-a),bb=Math.abs(p-b),cc=Math.abs(p-c);return aa<=bb&&aa<=cc?a:bb<=cc?b:c}
-          for(let y=0;y<height;y++){const filter=raw[offset++],row=Buffer.from(raw.subarray(offset,offset+stride)),prev=rows[y-1];offset+=stride;assert.ok(filter<=4);for(let x=0;x<stride;x++){const a=x>=bpp?row[x-bpp]:0,b=prev?prev[x]:0,c=prev&&x>=bpp?prev[x-bpp]:0;row[x]=(row[x]+(filter===0?0:filter===1?a:filter===2?b:filter===3?Math.floor((a+b)/2):paeth(a,b,c)))&255}rows.push(row)}
-          const mask=rows.map(row=>Array.from({length:width},(_,x)=>{let alpha=255;if(type===6)alpha=row[x*4+3];if(type===4)alpha=row[x*2+1];if(type===3){const index=bits===8?row[x]:(row[Math.floor(x*bits/8)]>>(8-bits-(x*bits%8)))&((1<<bits)-1);alpha=trans&&index<trans.length?trans[index]:255}if(type===2&&trans&&trans.length===6&&row[x*3]===trans.readUInt16BE(0)&&row[x*3+1]===trans.readUInt16BE(2)&&row[x*3+2]===trans.readUInt16BE(4))alpha=0;if(type===0&&trans&&row[x]===trans.readUInt16BE(0))alpha=0;return alpha>0?'#':'.'}).join(''));
-          function inspect(source,mask){
-            const ctx={FKCatalog:{index(){}},FKShapes:{build(){throw new Error('Unexpected generic model fallback')}},THREE:{PlaneGeometry:class{constructor(){this.uvs=[];this.attributes={uv:{count:4,getX:i=>i%2,getY:i=>i<2?1:0,setXY:(i,u,v)=>this.uvs.push([u,v])}}}},Mesh:class{constructor(g,m){this.geometry=g;this.material=m;this.position={set(){}};this.rotation={set(){}}}}}};ctx.window=ctx;vm.createContext(ctx);vm.runInContext(source,ctx);
-            const group={children:[],add(m){this.children.push(m)}},material={};ctx.FKShapes.build({cur:'bamboo_fence_gate',faceMap:{up:'gate'},mats:{gate:material},group});
-            let badFaces=0;for(const m of group.children){const u=m.geometry.uvs.map(p=>p[0]*16),v=m.geometry.uvs.map(p=>(1-p[1])*16);let bad=false;for(let y=Math.floor(Math.min(...v)+1e-7);y<Math.ceil(Math.max(...v)-1e-7);y++)for(let x=Math.floor(Math.min(...u)+1e-7);x<Math.ceil(Math.max(...u)-1e-7);x++)if(!mask[y]||mask[y][x]!=='#')bad=true;if(bad)badFaces++}return {faces:group.children.length,badFaces};
-          }
-          const old=await readFile('fk-fixtures.js','utf8'),a=old.indexOf('function bambooGate(E){'),b=old.indexOf('function ladder(E){',a);assert.ok(a>=0&&b>a);assert.equal(old.indexOf('function bambooGate(E){',a+1),-1);
-          const before=inspect(old,mask);assert.ok(before.badFaces>0,'Must reproduce old transparent UV failure');
-          const gate=String.raw`function bambooGate(E){
-            /* Bedrock atlas: post strip x0..2, bars x3..7, inner strips x8..10 and x11..13. */
-            var id=E.faceMap.up,F={north:id,south:id,east:id,west:id,up:id,down:id};
-            function R(side,cap){return {north:side,south:side,east:side,west:side,up:cap,down:[cap[2],cap[3],cap[0],cap[1]]}}
-            var post=R([0,1,2,12],[0,0,2,2]);
-            box(E,[0,5,7],[2,16,9],F,post);box(E,[14,5,7],[16,16,9],F,post);
-            var left=[8,1,10,10],right=[11,1,13,10];
-            box(E,[6,6,7],[8,15,9],{north:id,south:id,west:id,up:id,down:id},{north:left,south:right,west:left,up:[8,10,10,12],down:[10,12,8,10]});
-            box(E,[8,6,7],[10,15,9],{north:id,east:id,south:id,up:id,down:id},{north:right,east:right,south:left,up:[11,10,13,12],down:[13,12,11,10]});
-            [6,12].forEach(function(y){var low=y===6,side=low?[3,9,7,12]:[3,1,7,4],cap=low?[3,12,7,14]:[3,4,7,6],uv=R(side,cap),faces={north:id,south:id,up:id,down:id};box(E,[2,y,7],[6,y+3,9],faces,uv);box(E,[10,y,7],[14,y+3,9],faces,uv)});
-          }
-          `;
-          const next=old.slice(0,a)+gate+old.slice(b),after=inspect(next,mask);assert.equal(after.faces,38);assert.equal(after.badFaces,0,'New gate must not sample transparent atlas cells');
-          const fenceStart=old.indexOf('function bambooFence(E){');assert.ok(fenceStart>=0);assert.equal(old.slice(fenceStart,a),next.slice(fenceStart,next.indexOf('function bambooGate(E){')),'Accepted fence must stay byte-identical');
-          assert.ok(Buffer.byteLength(next)<=25000);await writeFile('fk-fixtures.js',next);
-          const test="import test from 'node:test';\nimport assert from 'node:assert/strict';\nimport vm from 'node:vm';\nimport {readFile} from 'node:fs/promises';\n"+inspect.toString()+"\nconst mask="+JSON.stringify(mask)+";\n// Alpha fixture from pinned Mojang PNG SHA-256: "+createHash('sha256').update(png).digest('hex')+"\ntest('Bedrock bamboo gate faces never sample transparent atlas cells',async()=>{const result=inspect(await readFile(new URL('../fk-fixtures.js',import.meta.url),'utf8'),mask);assert.equal(result.faces,38);assert.equal(result.badFaces,0)});\n";
-          await writeFile('tools/bamboo-gate-alpha.test.mjs',test);
-          for(const n of ['app.html','index.html']){const s=await readFile(n,'utf8');assert.ok(s.includes('0.8.89'));await writeFile(n,s.replaceAll('0.8.89','0.8.90'))}
-          for(const n of ['CONTEXT.md','TODO.md','ARCHITECTURE.md','README.md','ROADMAP.md']){
-            let s=await readFile(n,'utf8');
-            if(n==='CONTEXT.md')s=once(s,'Версия приложения 0.8.89 — кандидат исправления бамбуковых оград; требует визуальной проверки.','Версия приложения 0.8.90 — кандидат исправления калитки по Bedrock-атласу. Забор 0.8.89 принят владельцем, калитка 0.8.89 отвергнута и заменена. Новая калитка требует визуальной проверки.');
-            if(n==='TODO.md')s=once(s,'# TODO — FoundryKin 0.8.89','# TODO — FoundryKin 0.8.90');
-            if(n==='ARCHITECTURE.md')s=once(s,'# ARCHITECTURE — FoundryKin 0.8.89','# ARCHITECTURE — FoundryKin 0.8.90');
-            if(n==='README.md')s=once(s,'Текущая версия main: 0.8.89 (бета, исправление бамбуковых оград ожидает визуальной проверки).','Текущая версия main: 0.8.90 (бета, проверяется новая развёртка бамбуковой калитки; забор уже принят).');
-            if(n==='ROADMAP.md')s=once(s,'Текущая версия 0.8.89','Текущая версия 0.8.90');
-            s+='\n## Уточнение 0.8.90\n\nВладелец принял бамбуковый забор 0.8.89, но отверг калитку. Неудачная bambooGate заменена целиком: Java UV попадали в прозрачные клетки Bedrock PNG. Новая раскладка проверяется по альфа-маске закреплённого PNG; тест воспроизводит старые пропадающие грани и требует отсутствия таких выборок после замены. Это не полная визуальная проверка UV и оттенков. Функция bambooFence сохранена побайтно; пути ресурсов и семейства не меняются. Калитка 0.8.90 пока ожидает проверки владельцем.\n';assert.ok(Buffer.byteLength(s)<=25000);await writeFile(n,s);
-          }
-          console.log(JSON.stringify({before,after}));
-          NODE
-      - name: Check syntax and all regression tests
-        run: |
-          for file in fk-*.js; do node --check "$file"; done
-          node --test tools/*.test.mjs
-      - name: Remove one-shot workflow and commit bounded correction
-        run: |
-          rm -- .github/workflows/fix-bamboo-gate-bedrock.yml
-          git add -A -- fk-fixtures.js app.html index.html tools/bamboo-gate-alpha.test.mjs CONTEXT.md TODO.md ARCHITECTURE.md README.md ROADMAP.md .github/workflows/fix-bamboo-gate-bedrock.yml
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'v0.8.90: replace bamboo gate UVs with verified Bedrock atlas regions'
-          git push origin HEAD:main
+      - name: No automatic source writes
+        run: echo 'Retired. Bamboo gate is now edited directly in the application source.'

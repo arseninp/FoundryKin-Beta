@@ -104,14 +104,19 @@ function bambooFence(E){
   });
 }
 function bambooGate(E){
-  var id=E.faceMap.up,F={north:id,south:id,east:id,west:id,up:id,down:id},a=[14,2,16,13],b=[0,2,2,13];
-  box(E,[0,5,7],[2,16,9],F,{north:a,east:a,south:a,west:a,up:[14,0,16,2],down:[16,13,14,15]});
-  box(E,[14,5,7],[16,16,9],F,{north:b,east:b,south:b,west:b,up:[0,0,2,2],down:[2,13,0,15]});
-  box(E,[6,6,7],[8,15,9],{north:id,south:id,west:id,up:id,down:id},{north:[8,3,10,12],south:[6,3,8,12],west:[8,3,10,12],up:[8,1,10,3],down:[8,14,10,12]});
-  box(E,[8,6,7],[10,15,9],{north:id,east:id,south:id,up:id,down:id},{north:[6,3,8,12],east:[6,3,8,12],south:[8,3,10,12],up:[6,1,8,3],down:[6,14,8,12]});
+  /* Bedrock atlas regions, not the incompatible Java gate atlas. */
+  var id=E.faceMap.up,F={north:id,south:id,east:id,west:id,up:id,down:id};
+  function R(side,cap){return {north:side,south:side,east:side,west:side,up:cap,down:[cap[2],cap[3],cap[0],cap[1]]}}
+  var post=R([0,1,2,12],[0,0,2,2]);
+  box(E,[0,5,7],[2,16,9],F,post);
+  box(E,[14,5,7],[16,16,9],F,post);
+  var left=[8,1,10,10],right=[11,1,13,10];
+  box(E,[6,6,7],[8,15,9],{north:id,south:id,west:id,up:id,down:id},{north:left,south:right,west:left,up:[8,10,10,12],down:[10,12,8,10]});
+  box(E,[8,6,7],[10,15,9],{north:id,east:id,south:id,up:id,down:id},{north:right,east:right,south:left,up:[11,10,13,12],down:[13,12,11,10]});
   [6,12].forEach(function(y){
-    box(E,[2,y,7],[6,y+3,9],{north:id,south:id,up:id,down:id},{north:[10,3,14,6],south:[10,9,14,12],up:[10,1,14,3],down:[10,14,14,12]});
-    box(E,[10,y,7],[14,y+3,9],{north:id,south:id,up:id,down:id},{north:[2,3,6,6],south:[2,9,6,12],up:[2,1,6,3],down:[2,14,6,12]});
+    var side=y===6?[3,9,7,12]:[3,1,7,4],uv=R(side,[3,4,7,6]),faces={north:id,south:id,up:id,down:id};
+    box(E,[2,y,7],[6,y+3,9],faces,uv);
+    box(E,[10,y,7],[14,y+3,9],faces,uv);
   });
 }
 function ladder(E){face(E,E.faceMap.up,1,1,0,0,7/16,0,0,null,true)}
