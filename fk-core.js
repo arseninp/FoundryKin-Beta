@@ -90,11 +90,26 @@ function applyEntry(e,done){
   var gen=++applyGen,list=slots,frs=fr,phNow=ph,n=e.res||16;res=n;if(ctx.onRes)ctx.onRes(res);
   Promise.all(list.map(function(s){return readImage(s.id,e.slots&&e.slots[s.id])})).then(function(imgs){if(gen!==applyGen)return;list.forEach(function(s,i){frs[s.id].forEach(function(c,k){drawFrame(c,imgs[i],k,n)});if(!imgs[i])phNow[s.id]=true});rebuildTextures();drawEd();resetHist();if(done)done()});
 }
-var CAT_KEY='foundrykin.catalog.v3',EX_KEY='foundrykin.exist.v2',lastB=null,lastTerrain=null;
+var CAT_KEY='foundrykin.catalog.v4',lastB=null,lastTerrain=null;
 function catalogReady(src){S.status='ready';S.source=src;S.count=catalog.ids.length;S.filtered=!!catalog.filtered;S.refreshing=false;S.refreshFailed='';S.error=null;emit()}
 function catalogFailed(code,detail){S.status='failed';S.error={code:code,detail:detail||''};S.refreshing=false;emit()}
-function useCatalog(B,Tx,src){if(B)lastB=B;if(Tx)lastTerrain=Tx;if(!lastB)return false;var c=FKCatalog.build(lastB,lastTerrain);if(!Object.keys(c.b).length){if(catalog)say('msg.catalog_empty');else{S.status='empty';S.error=null;S.refreshing=false;emit()}return false}try{localStorage.setItem(CAT_KEY,JSON.stringify({b:c.b,p:c.p}))}catch(err){}catalog=FKCatalog.index(c,existing);catalogReady(src);return true}
-function loadCatalog(){var cached=null,cex=null;try{cached=JSON.parse(localStorage.getItem(CAT_KEY))}catch(err){}try{cex=JSON.parse(localStorage.getItem(EX_KEY))}catch(err){}if(cex&&cex.length){existing={};cex.forEach(function(p){existing[p]=1})}if(cached&&cached.b){catalog=FKCatalog.index(cached,existing);catalogReady('cache');S.refreshing=true;emit()}var eB='',eT='',eF='';Promise.all([FKCatalog.fetchJson(FKCatalog.URLS_B).catch(function(e){eB=e.message;return null}),FKCatalog.fetchJson(FKCatalog.URLS_T).catch(function(e){eT=e.message;return null}),FKCatalog.fetchExisting().catch(function(e){eF=e.message;return null})]).then(function(r){if(r[2]){existing=r[2];try{localStorage.setItem(EX_KEY,JSON.stringify(Object.keys(existing).filter(function(p){return p.indexOf('textures/blocks/')===0||p.indexOf('textures/items/')===0||p.indexOf('textures/entity/bed/')===0})))}catch(err){}}else if(!existing)say('msg.files_list_failed',{detail:eF});if(!r[0]){if(!catalog)catalogFailed('catalog_fetch',eB);else{S.refreshing=false;S.refreshFailed=eB;emit()}return}if(!r[1])say('msg.terrain_failed',{detail:eT});useCatalog(r[0],r[1],'network')})}
+function useCatalog(B,Tx,src){if(B)lastB=B;if(Tx)lastTerrain=Tx;if(!lastB)return false;var c=FKCatalog.build(lastB,lastTerrain);if(!Object.keys(c.b).length){if(catalog)say('msg.catalog_empty');else{S.status='empty';S.error=null;S.refreshing=false;emit()}return false}if(src!=='file')try{localStorage.setItem(CAT_KEY,JSON.stringify({commit:window.FKCatalogData.commit,version:API.version,b:c.b,p:c.p,cr:c.cr,existing:existing}));localStorage.removeItem('foundrykin.catalog.v3');localStorage.removeItem('foundrykin.exist.v2')}catch(err){}catalog=FKCatalog.index(c,existing);catalogReady(src);return true}
+function loadCatalog(){
+  try{
+    var cached=JSON.parse(localStorage.getItem(CAT_KEY));
+    if(cached&&cached.commit===window.FKCatalogData.commit&&cached.version===API.version&&cached.b&&cached.existing){
+      var restored=FKCatalog.index(cached,cached.existing);
+      if(restored.ids.length){existing=cached.existing;catalog=restored;catalogReady('cache');S.refreshing=true;emit()}
+    }
+  }catch(err){}
+  FKCatalog.load().then(function(data){
+    existing=data.existing;
+    useCatalog(data.blocks,data.terrain,'bundled');
+  }).catch(function(err){
+    if(!catalog)catalogFailed('catalog_fetch',err.message);
+    else{S.refreshing=false;S.refreshFailed=err.message;emit()}
+  });
+}
 $('#catfile').onchange=function(e){var inp=e.target,fl=[].slice.call(inp.files),left=fl.length,B=null,Tx=null;if(!left)return;fl.forEach(function(f){var fr=new FileReader();fr.onload=function(){try{var j=FKCatalog.parseLoose(fr.result);if(j&&j.texture_data)Tx=j;else B=j}catch(err){say('msg.file_not_json',{name:f.name,detail:err.message})}if(--left===0){if(!useCatalog(B,Tx,'file')&&!lastB&&!catalog)catalogFailed('catalog_no_blocks')}};fr.onerror=function(){if(--left===0)say('msg.file_unreadable')};fr.readAsText(f)});inp.value=''};
 function isEdited(id){return pathsFor(id).some(function(p){return dirty[p]})}
 function setBlockInfo(id,m,note,mo){var grp=catalog.members[catalog.sig[m]],fo=catalog.forms&&catalog.forms[m];S.info={id:id,files:pathsFor(m),shared:grp.filter(function(x){return x!==m}),forms:fo?Object.keys(fo):[],note:note,kind:isDoorBlock(m)?'door':(mo||'shape')};emit()}

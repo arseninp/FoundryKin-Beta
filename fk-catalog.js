@@ -1,8 +1,6 @@
 /* FKCatalog: Bedrock block catalog logic without editor state: data loading, indexing, vanilla texture images. */
 var FKCatalog=(function(){
-/* Block data comes from the reviewed catalog in data/catalog-candidate/ (one pinned Mojang release); textures come from the same pinned release. */
-var PIN='46ba6ea985fb5a92d79a9419198f10dda14c199d',DATA='data/catalog-candidate/';
-var URLS_B=['local:blocks'],URLS_T=['local:terrain'],URLS_F=['local:existing'];
+var PIN='46ba6ea985fb5a92d79a9419198f10dda14c199d';
 var VAN1='https://raw.githubusercontent.com/Mojang/bedrock-samples/'+PIN+'/resource_pack/';
 var VAN2='https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@'+PIN+'/resource_pack/';
 function parseLoose(t){
@@ -11,39 +9,6 @@ function parseLoose(t){
   t=t.replace(/("(?:\\.|[^"\\])*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g,function(m,s){return s||''});
   t=t.replace(/,(\s*[}\]])/g,'$1');
   return JSON.parse(t);
-}
-function sha256(text){
-  if(!(window.crypto&&crypto.subtle&&window.TextEncoder))return Promise.resolve('');
-  return crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)).then(function(b){return Array.prototype.map.call(new Uint8Array(b),function(x){return ('0'+x.toString(16)).slice(-2)}).join('')});
-}
-function readPart(f){
-  return fetch(DATA+f.name,{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error(f.name+': HTTP '+r.status);return r.text()}).then(function(t){
-    return sha256(t).then(function(h){if(h&&h!==f.sha256)throw new Error(f.name+': checksum mismatch');return {name:f.name,json:JSON.parse(t)}});
-  });
-}
-var localData=null;
-function local(){
-  if(!localData)localData=fetch(DATA+'manifest.json',{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error('manifest: HTTP '+r.status);return r.json()}).then(function(m){
-    if(!m||!Array.isArray(m.files))throw new Error('manifest: unknown format');
-    return Promise.all(m.files.map(readPart));
-  }).then(function(parts){
-    var d={blocks:{},terrain:{texture_data:{}},existing:{}};
-    parts.forEach(function(p){
-      if(p.name.indexOf('blocks-')===0)Object.assign(d.blocks,p.json);
-      else if(p.name.indexOf('terrain-')===0)Object.assign(d.terrain.texture_data,p.json);
-      else if(p.name.indexOf('existing-')===0)Object.assign(d.existing,p.json);
-    });
-    if(!Object.keys(d.blocks).length)throw new Error('catalog data is empty');
-    return d;
-  }).catch(function(err){localData=null;throw err});
-  return localData;
-}
-function fetchJson(urls,i,errs2){
-  if(/^local:/.test(urls[0]))return local().then(function(d){return d[urls[0].slice(6)]});
-  i=i||0;errs2=errs2||[];
-  if(i>=urls.length)return Promise.reject(new Error(errs2.join('; ')||'no response'));
-  return fetch(urls[i]).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}).then(parseLoose)
-    .catch(function(err){errs2.push((err&&err.message?err.message:String(err))+' ['+urls[i].split('/')[2]+']');return fetchJson(urls,i+1,errs2)});
 }
 var FORM_RE=/_(slab|stairs|wall|fence_gate|fence|button|pressure_plate|pane)\d*$/;
 var FORM_OF={slab:'slab',stairs:'stairs',wall:'wall',fence_gate:'gate',fence:'fence',button:'button',pressure_plate:'plate',pane:'pane'};
@@ -192,15 +157,9 @@ function indexCatalog(c,existing){
   Object.keys(b).forEach(function(id){var sg=b[id].join('|');sig[id]=sg;(members[sg]=members[sg]||[]).push(id);mother[id]=id});
   return {b:b,cr:cr2,p:c.p||{},sp:sp,forms:forms,kids:kids,sig:sig,members:members,mother:mother,ids:Object.keys(b).sort(),filtered:filtered,hidden:Object.keys(raw).length-Object.keys(b).length};
 }
-function fetchExisting(){
-  return local().then(function(d){
-    if(!Object.keys(d.existing).length)throw new Error('empty file list');
-    return d.existing;
-  });
-}
 function loadImg(u){return new Promise(function(ok){var im=new Image();im.crossOrigin='anonymous';im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=u})}
 function fkTga(buf){var b=new Uint8Array(buf),idl=b[0],ct=b[1],it=b[2],w=b[12]|(b[13]<<8),h=b[14]|(b[15]<<8),bpp=b[16],desc=b[17];if(ct!==0||(it!==2&&it!==10&&it!==3&&it!==11)||!(bpp===24||bpp===32||bpp===8)||!w||!h)return null;var by=bpp>>3,off=18+idl,px=new Uint8Array(w*h*by),n=0,i,k;if(it===2||it===3){px.set(b.subarray(off,off+w*h*by))}else{while(n<w*h&&off<b.length){var hd=b[off++],c=(hd&127)+1;if(hd&128){for(i=0;i<c&&n<w*h;i++){for(k=0;k<by;k++)px[n*by+k]=b[off+k];n++}off+=by}else{for(i=0;i<c&&n<w*h;i++){for(k=0;k<by;k++)px[n*by+k]=b[off++];n++}}}}var out=new Uint8ClampedArray(w*h*4),top=(desc&32)!==0;for(var y=0;y<h;y++){var sy=top?y:(h-1-y);for(var x=0;x<w;x++){var si=(sy*w+x)*by,di=(y*w+x)*4;if(bpp===8){out[di]=out[di+1]=out[di+2]=px[si];out[di+3]=255}else{out[di]=px[si+2];out[di+1]=px[si+1];out[di+2]=px[si];out[di+3]=bpp===32?px[si+3]:255}}}return {w:w,h:h,data:out}}
 function loadTga(u){return fetch(u).then(function(r){if(!r.ok)throw 0;return r.arrayBuffer()}).then(function(buf){var t=fkTga(buf);if(!t)return null;var c=document.createElement('canvas');c.width=t.w;c.height=t.h;c.getContext('2d').putImageData(new ImageData(t.data,t.w,t.h),0,0);return new Promise(function(ok){var im=new Image();im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=c.toDataURL('image/png')})}).catch(function(){return null})}
 function loadAny(p){return loadImg(VAN1+p+'.png').then(function(im){return im||loadImg(VAN2+p+'.png')}).then(function(im){return im||loadTga(VAN1+p+'.tga')}).then(function(im){return im||loadTga(VAN2+p+'.tga')})}
-return {URLS_B:URLS_B,URLS_T:URLS_T,URLS_F:URLS_F,parseLoose:parseLoose,fetchJson:fetchJson,fetchExisting:fetchExisting,build:buildCatalog,index:indexCatalog,loadAny:loadAny};
+return {load:function(){return window.FKCatalogData.load()},parseLoose:parseLoose,build:buildCatalog,index:indexCatalog,loadAny:loadAny};
 })();
