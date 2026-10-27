@@ -1,0 +1,98 @@
+name: Fix bamboo fixture models
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/fix-bamboo-fixtures.yml']
+permissions:
+  contents: write
+concurrency:
+  group: fix-bamboo-fixtures
+  cancel-in-progress: false
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check accepted baseline
+        run: node --test tools/*.test.mjs
+      - name: Apply bounded model correction
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFile,writeFile} from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          function once(s,a,b){assert.equal(s.split(a).length,2,'Anchor mismatch: '+a.slice(0,70));return s.replace(a,b)}
+          const models=String.raw`/* Custom atlas UVs: Java custom_fence_post, custom_fence_side_east/west and
+           template_custom_fence_gate are geometry references. Bedrock paths remain catalog-owned. */
+          function bambooFence(E){
+            var id=E.faceMap.up,F={north:id,south:id,east:id,west:id,up:id,down:id},side=[0,0,4,16];
+            box(E,[6,0,6],[10,16,10],F,{north:side,south:side,east:side,west:side,up:[4,0,8,4],down:[4,0,8,4]});
+            [6,12].forEach(function(y){
+              box(E,[7,y,7],[16,y+3,9],{north:id,east:id,south:id,up:id,down:id},{north:[4,4,13,7],east:[13,4,15,7],south:[4,4,13,7],up:[13,7,15,16,270],down:[13,7,15,16,90]});
+              box(E,[0,y,7],[9,y+3,9],{north:id,south:id,west:id,up:id,down:id},{north:[4,4,13,7],south:[4,4,13,7],west:[15,4,13,7],up:[13,7,15,16,270],down:[13,7,15,16,90]});
+            });
+          }
+          function bambooGate(E){
+            var id=E.faceMap.up,F={north:id,south:id,east:id,west:id,up:id,down:id},a=[14,2,16,13],b=[0,2,2,13];
+            box(E,[0,5,7],[2,16,9],F,{north:a,east:a,south:a,west:a,up:[14,0,16,2],down:[16,13,14,15]});
+            box(E,[14,5,7],[16,16,9],F,{north:b,east:b,south:b,west:b,up:[0,0,2,2],down:[2,13,0,15]});
+            box(E,[6,6,7],[8,15,9],{north:id,south:id,west:id,up:id,down:id},{north:[8,3,10,12],south:[6,3,8,12],west:[8,3,10,12],up:[8,1,10,3],down:[8,14,10,12]});
+            box(E,[8,6,7],[10,15,9],{north:id,east:id,south:id,up:id,down:id},{north:[6,3,8,12],east:[6,3,8,12],south:[8,3,10,12],up:[6,1,8,3],down:[6,14,8,12]});
+            [6,12].forEach(function(y){
+              box(E,[2,y,7],[6,y+3,9],{north:id,south:id,up:id,down:id},{north:[10,3,14,6],south:[10,9,14,12],up:[10,1,14,3],down:[10,14,14,12]});
+              box(E,[10,y,7],[14,y+3,9],{north:id,south:id,up:id,down:id},{north:[2,3,6,6],south:[2,9,6,12],up:[2,1,6,3],down:[2,14,6,12]});
+            });
+          }
+          `;
+          let fx=await readFile('fk-fixtures.js','utf8');
+          fx=once(fx,'function ladder(E){',models+'function ladder(E){');
+          fx=once(fx,"  if(E.cur==='pale_moss_carpet')return paleMoss(E);","  if(E.cur==='bamboo_fence')return bambooFence(E);\n  if(E.cur==='bamboo_fence_gate')return bambooGate(E);\n  if(E.cur==='pale_moss_carpet')return paleMoss(E);");
+          assert.ok(Buffer.byteLength(fx)<=25000);await writeFile('fk-fixtures.js',fx);
+          for(const n of ['app.html','index.html']){const s=await readFile(n,'utf8');assert.ok(s.includes('0.8.88'));await writeFile(n,s.replaceAll('0.8.88','0.8.89'))}
+          const test=String.raw`import test from 'node:test';
+          import assert from 'node:assert/strict';
+          import vm from 'node:vm';
+          import {readFile,readdir} from 'node:fs/promises';
+          test('bamboo fixtures use their own catalog material and bounded atlas UVs',async()=>{
+            const dir=new URL('../data/catalog-candidate/',import.meta.url),B=JSON.parse(await readFile(new URL('blocks-000.json',dir),'utf8')),T={texture_data:{}};
+            for(const n of (await readdir(dir)).filter(n=>/^terrain-\d+\.json$/.test(n)))Object.assign(T.texture_data,JSON.parse(await readFile(new URL(n,dir),'utf8')));
+            let fallback=0;const ctx={FKShapes:{build(){fallback++}},THREE:{PlaneGeometry:class{constructor(w,h){this.w=w;this.h=h;this.uvs=[];this.attributes={uv:{count:4,getX:i=>i%2,getY:i=>i<2?1:0,setXY:(i,u,v)=>this.uvs.push([u,v])}}}},Mesh:class{constructor(g,m){this.geometry=g;this.material=m;this.position={set(){}};this.rotation={set(){}}}}}};
+            ctx.window=ctx;vm.createContext(ctx);
+            for(const n of ['fk-catalog.js','fk-fixtures.js'])vm.runInContext(await readFile(new URL('../'+n,import.meta.url),'utf8'),ctx);
+            const raw=ctx.FKCatalog.build(B,T);
+            for(const [id,count] of [['bamboo_fence',26],['bamboo_fence_gate',38]]){
+              const path=raw.b[id][0];let expected=T.texture_data[B[id].textures].textures;if(Array.isArray(expected))expected=expected[0];if(typeof expected==='object')expected=expected.path;
+              assert.equal(path,expected);assert.notEqual(path,raw.b.bamboo_planks[0]);
+              const material={},group={children:[],add(m){this.children.push(m)}};
+              ctx.FKShapes.build({cur:id,faceMap:{up:path},mats:{[path]:material},group});
+              assert.equal(group.children.length,count,id);
+              for(const m of group.children){assert.equal(m.material,material);assert.ok(m.geometry.w>0&&m.geometry.h>0);for(const uv of m.geometry.uvs)for(const v of uv)assert.ok(v>=0&&v<=1)}
+            }
+            assert.equal(fallback,0);ctx.FKShapes.build({cur:'oak_fence'});assert.equal(fallback,1);
+          });
+          `;
+          await writeFile('tools/bamboo-fixtures.test.mjs',test);
+          for(const n of ['CONTEXT.md','TODO.md','ARCHITECTURE.md','README.md','ROADMAP.md']){
+            let s=await readFile(n,'utf8');
+            if(n==='CONTEXT.md')s=once(s,'Версия приложения 0.8.88, кодовый коммит d2e9f0627567ff1089effd466f57c9be3d60870b.','Версия приложения 0.8.89 — кандидат исправления бамбуковых оград; требует визуальной проверки. Последний принятый кодовый этап — 0.8.88, d2e9f0627567ff1089effd466f57c9be3d60870b.');
+            if(n==='TODO.md')s=once(s,'# TODO — FoundryKin 0.8.88','# TODO — FoundryKin 0.8.89');
+            if(n==='ARCHITECTURE.md')s=once(s,'# ARCHITECTURE — FoundryKin 0.8.88','# ARCHITECTURE — FoundryKin 0.8.89');
+            if(n==='README.md')s=once(s,'Текущая версия main: 0.8.88 (бета).','Текущая версия main: 0.8.89 (бета, исправление бамбуковых оград ожидает визуальной проверки).');
+            if(n==='ROADMAP.md')s=once(s,'Текущая версия 0.8.88','Текущая версия 0.8.89');
+            s+='\n## Кандидат исправления бамбуковых оград 0.8.89\n\nТолько bamboo_fence и bamboo_fence_gate получили собственную геометрию и UV в общем FKShapes.build через fk-fixtures.js. Пути ресурсов, правила семейств, прочие ограды, камера и просмотр бледного мха не меняются. Тест проверяет собственные материалы, число граней и границы UV; Java-шаблоны — справка, не доказательство Bedrock UV. Визуальная проверка на телефоне ещё нужна; старый пункт дефекта пока не закрывать.\n';
+            assert.ok(Buffer.byteLength(s)<=25000,n+' exceeds limit');await writeFile(n,s);
+          }
+          NODE
+      - name: Validate resulting application
+        run: |
+          for file in fk-*.js; do node --check "$file"; done
+          node --test tools/*.test.mjs
+      - name: Remove this one-shot workflow and save only approved files
+        run: |
+          rm -- .github/workflows/fix-bamboo-fixtures.yml
+          git add -A -- fk-fixtures.js app.html index.html tools/bamboo-fixtures.test.mjs CONTEXT.md TODO.md ARCHITECTURE.md README.md ROADMAP.md .github/workflows/fix-bamboo-fixtures.yml
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'v0.8.89: correct bamboo fence and gate atlas geometry'
+          git push origin HEAD:main
