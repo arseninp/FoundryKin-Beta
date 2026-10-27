@@ -1,17 +1,20 @@
-/* Ladder, lectern, lever, shelves, wool families and complete two-block flowers. Load after fk-details.js. */
+/* Ladder, lectern, lever, shelves, carpet families and complete two-block flowers. Load after fk-details.js. */
 (function(){
 var C=window.FKCatalog,H=window.FKShapes;if(!C||!H)return;
 var index=C.index,build=H.build,P='textures/blocks/',Q=Math.PI/2;
 var FLOWERS={sunflower:'sunflower',lilac:'syringa',rose_bush:'rose',peony:'paeonia'};
 var WOOL=['white','orange','magenta','light_blue','yellow','lime','pink','gray','light_gray','cyan','purple','blue','brown','green','red','black'];
+/* carpet id, block that owns it as a form */
+var CARPETS=WOOL.map(function(c){return [c+'_carpet',c+'_wool']}).concat([['moss_carpet','moss_block'],['pale_moss_carpet','pale_moss_block']]);
 function flowerPath(id,part,existing){
   var a=P+'double_plant_'+FLOWERS[id]+'_'+part,b=P+id+'_'+part;
   return existing&&!existing[a]&&existing[b]?b:a;
 }
-function woolFamilies(cat,raw){
-  WOOL.forEach(function(color){
-    var id=color+'_carpet',base=color+'_wool',a=raw[id],b=cat.b[base];
-    if(!a||!b||!a.every(function(p,i){return p===b[i]}))return;
+/* A carpet joins its block only when it uses exactly the same textures and has no extra carried texture of its own. */
+function carpetFamilies(cat,data){
+  CARPETS.forEach(function(pair){
+    var id=pair[0],base=pair[1],a=data.b[id],b=cat.b[base];
+    if(!a||!b||data.cr[id]||!a.every(function(p,i){return p===b[i]}))return;
     (cat.forms[base]=cat.forms[base]||{}).carpet=1;
     var kids=cat.kids[base]=cat.kids[base]||[];if(kids.indexOf(id)<0)kids.push(id);
     var visible=cat.ids.indexOf(id)>=0;
@@ -31,7 +34,7 @@ C.index=function(c,existing){
     delete data.p[id];delete data.cr[id];
   });
   var cat=index(data,existing);
-  woolFamilies(cat,data.b);
+  carpetFamilies(cat,data);
   Object.keys(FLOWERS).forEach(function(id){
     var b=cat.b[id];if(!b)return;
     var list=[],seen={};
