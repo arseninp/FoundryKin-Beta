@@ -1,0 +1,33 @@
+name: Build family data
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/family-data.yml'
+      - 'tools/build-family-data.mjs'
+      - 'tools/catalog-families.mjs'
+      - 'tools/catalog-families.test.mjs'
+permissions:
+  contents: write
+concurrency:
+  group: family-data-build
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test all tools and real catalog
+        run: node --test tools/*.test.mjs
+      - name: Generate family records and decision report
+        run: node tools/build-family-data.mjs
+      - name: Save only generated family data
+        run: |
+          git add -A -- data/catalog-families
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'build: record resource-preserving families and decisions'
+          git push origin HEAD:main
