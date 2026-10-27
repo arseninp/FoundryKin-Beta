@@ -8,18 +8,18 @@ const input=resolve('data/catalog-candidate'),output=resolve('data/catalog-famil
 const sha=t=>createHash('sha256').update(t).digest('hex');
 const text=await readFile(resolve(input,'manifest.json'),'utf8'),manifest=JSON.parse(text);
 if(manifest.schema!==1||manifest.source?.commit!=='46ba6ea985fb5a92d79a9419198f10dda14c199d')throw new Error('Unexpected source catalog');
-const blocks={};
-for(const f of manifest.files.filter(f=>/^blocks-\d{3}\.json$/.test(f.name))){
+const blocks={},terrain={texture_data:{}};
+for(const f of manifest.files.filter(f=>/^(blocks|terrain)-\d{3}\.json$/.test(f.name))){
  const t=await readFile(resolve(input,f.name),'utf8');
  if(sha(t)!==f.sha256)throw new Error('Source checksum mismatch: '+f.name);
- for(const [id,value] of Object.entries(JSON.parse(t))){if(Object.hasOwn(blocks,id))throw new Error('Duplicate source block: '+id);blocks[id]=value}
+ const target=f.name.startsWith('blocks-')?blocks:terrain.texture_data;
+ for(const [id,value] of Object.entries(JSON.parse(t))){if(Object.hasOwn(target,id))throw new Error('Duplicate source key: '+id);target[id]=value}
 }
-if(Object.keys(blocks).length!==manifest.counts.blocks)throw new Error('Source block count mismatch');
-const result=compileFamilies(blocks),documents=[];
+if(Object.keys(blocks).length!==manifest.counts.blocks||Object.keys(terrain.texture_data).length!==manifest.counts.terrain)throw new Error('Source count mismatch');
+const result=compileFamilies(blocks,terrain),documents=[];
 function add(name,value){const text=JSON.stringify(value)+'\n';if(Buffer.byteLength(text)>25000)throw new Error('Oversized generated file: '+name);documents.push({name,text,sha256:sha(text)})}
 function section(name,value){chunks(value,22000).forEach((part,i)=>add(name+'-'+String(i).padStart(3,'0')+'.json',part))}
-section('families',result.families);
-section('owners',result.owner);
+section('families',result.families);section('owners',result.owner);
 const decisions={};
 for(const kind of ['grouped','ambiguous','standalone'])for(const row of result.report[kind])decisions[row.id]={kind,...row};
 section('decisions',decisions);
