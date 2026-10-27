@@ -24,6 +24,13 @@ C.index=function(c,existing){
     cat.sp[id]={kind:'fixtures',list:list,fm:{up:b[0],down:b[1],north:b[2],south:b[3],east:b[4],west:b[5]}};
     delete cat.cr[id];
   });
+  var pm=cat.b.pale_moss_carpet;
+  if(pm){
+    var ex=(c.extra&&c.extra.pale_moss_carpet)||[],base=ex.filter(function(p){return /_side_base$/.test(p)})[0],tip=ex.filter(function(p){return /_side_tip$/.test(p)})[0];
+    if(!base||!tip||!existing||!existing[base]||!existing[tip])throw new Error('Pale moss side resources are incomplete');
+    var paths=[];pm.concat([base,tip]).forEach(function(p){if(paths.indexOf(p)<0)paths.push(p)});
+    cat.sp.pale_moss_carpet={kind:'pale_moss',list:paths.map(function(p){return {id:p}}),fm:{up:pm[0],down:pm[1],north:pm[2],south:pm[3],east:pm[4],west:pm[5],sideBase:base,sideTip:tip}};
+  }
   return cat;
 };
 function face(E,id,w,h,x,y,z,rx,ry,r,dbl){
@@ -58,6 +65,34 @@ function shelf(E){
   box(e,[0,4,13],[16,12,13],{north:id},{north:[0,2,8,6]});
   g.rotation.y=Math.PI;E.group.add(g);
 }
+var MOSS_DIRS=['north','south','east','west'];
+function paleState(input){
+ input=input||{};var upper=input.upper_block_bit===undefined?false:input.upper_block_bit,sides={};
+ if(typeof upper!=='boolean')throw new Error('Invalid upper_block_bit');
+ MOSS_DIRS.forEach(function(d){var v=input['pale_moss_carpet_side_'+d]||'none';if(['none','short','tall'].indexOf(v)<0)throw new Error('Invalid moss side');sides[d]=v});
+ return {upper:upper,sides:sides};
+}
+H.paleMossState=paleState;
+H.stateSchema=function(id){
+ if(id!=='pale_moss_carpet')return null;
+ var schema=[{key:'upper_block_bit',label:['Upper part','Верхняя часть'],values:[{value:false,label:['No','Нет']},{value:true,label:['Yes','Да']}]}];
+ MOSS_DIRS.forEach(function(d,i){schema.push({key:'pale_moss_carpet_side_'+d,label:[['North','South','East','West'][i],['Север','Юг','Восток','Запад'][i]],values:[{value:'none',label:['None','Нет']},{value:'short',label:['Short','Короткая']},{value:'tall',label:['Tall','Высокая']}]})});return schema;
+};
+/* Full-height inset side planes; transparent pixels define the visible outline.
+ Java mossy_carpet_side is a geometry reference, Bedrock uses base/tip images. */
+function paleMoss(E){
+ var s=paleState(E.state),f=E.faceMap;
+ if(!s.upper){var F={up:f.up,down:f.down,north:f.north,south:f.south,east:f.east,west:f.west},R={up:[0,0,16,16],down:[0,0,16,16],north:[0,15,16,16],south:[0,15,16,16],east:[0,15,16,16],west:[0,15,16,16]};box(E,[0,0,0],[16,1,16],F,R)}
+ MOSS_DIRS.forEach(function(d){
+  var level=s.sides[d];if(level==='none')return;
+  var id=s.upper||level==='short'?f.sideTip:f.sideBase;
+  if(!id||!E.mats[id])throw new Error('Missing pale moss side material');
+  var g=new THREE.Group(),e=Object.create(E);e.group=g;
+  face(e,id,1,1,0,0,-7.9/16,0,Math.PI,[16,0,0,16]);
+  face(e,id,1,1,0,0,-7.9/16,0,0,[0,0,16,16]);
+  g.rotation.y={north:0,east:-Q,south:Math.PI,west:Q}[d];E.group.add(g);
+ });
+}
 function ladder(E){face(E,E.faceMap.up,1,1,0,0,7/16,0,0,null,true)}
 function lectern(E){
   var f=E.faceMap,B=f.east,S=f.south,F=f.north,D=f.down,T=f.up;
@@ -88,6 +123,7 @@ function flower(E){
 }
 H.build=function(E){
   if(typeof E.slot==='string'&&E.slot.indexOf('textures/items/')===0)return build(E);
+  if(E.cur==='pale_moss_carpet')return paleMoss(E);
   if(/_shelf$/.test(E.cur))return shelf(E);
   if(E.cur==='ladder')return ladder(E);
   if(E.cur==='lectern')return lectern(E);

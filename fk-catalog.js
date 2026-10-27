@@ -32,7 +32,10 @@ function buildCatalog(B,T){
     b[id]=paths;if(miss)unres[id]=1;if(typeof e.carried_textures==='string'){var cr0=resolve(e.carried_textures);if(cr0&&cr0!==paths[0])cr[id]=cr0}
     if(typeof t==='string'&&e.sound==='grass'&&!e.isotropic&&!e.carried_textures&&!e.ambient_occlusion_exponent)p[id]=1;if(/^(?:sapling|(?:[a-z_]+_)?sapling|(?:[a-z_]+_)?propagule|tallgrass|short_grass|tall_grass|fern|large_fern|deadbush|dead_bush|double_plant|yellow_flower|red_flower|dandelion|poppy|blue_orchid|allium|azure_bluet|(?:red|orange|white|pink)_tulip|oxeye_daisy|cornflower|lily_of_the_valley|wither_rose|torchflower|open_eyeblossom|closed_eyeblossom|sunflower|lilac|rose_bush|peony|pitcher_plant|pink_petals|wildflowers|cactus_flower|(?:[a-z_]+_)?bush|brown_mushroom|red_mushroom|(?:crimson|warped)_(?:fungus|roots)|nether_sprouts|hanging_roots|spore_blossom|wheat|carrots|potatoes|beetroot|beetroots|nether_wart|(?:attached_)?(?:melon|pumpkin)_stem|torchflower_crop|pitcher_crop|reeds|sugar_cane|seagrass|sea_pickle|kelp|(?:dead_)?(?:tube|brain|bubble|fire|horn)_coral(?:_wall_fan|_fan)?|coral_fan(?:_dead|_hang\d?)?|coral|coral_plant(?:_[a-z_]+)?|(?:small|medium|large)_amethyst_bud|amethyst_cluster|web|cobweb|cave_vines(?:_body_with_berries|_head_with_berries)?|weeping_vines|twisting_vines)$/.test(id))p[id]=1;
   });
-  return {b:b,p:p,cr:cr};
+  var extra={};
+  function collect(value,paths){if(typeof value==='string'){if(paths.indexOf(value)<0)paths.push(value)}else if(Array.isArray(value))value.forEach(function(v){collect(v,paths)});else if(value&&typeof value.path==='string')collect(value.path,paths)}
+  Object.keys(b).forEach(function(id){var e=B[id],t=e.textures,keys=typeof t==='string'?[t]:Object.keys(t).map(function(k){return t[k]}),paths=[];if(typeof e.carried_textures==='string')keys.push(e.carried_textures);keys.forEach(function(k){if(td[k])collect(td[k].textures,paths)});extra[id]=paths});
+  return {b:b,p:p,cr:cr,extra:extra};
 }
 function doorPaths(id,existing){
   var N=(id==='wooden_door')?'wood':id.replace(/_door$/,'');
