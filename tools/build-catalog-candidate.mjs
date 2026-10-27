@@ -8,16 +8,36 @@ import { admitBlocks, parseJsonc } from './prepare-catalog-inputs.mjs';
 const COMMIT = '46ba6ea985fb5a92d79a9419198f10dda14c199d';
 const LIMIT = 22000;
 const POLICY = { exclude: { camera: 'outside-current-editor-scope' } };
+const ALIASES = {
+  grass_block: { from: 'grass', rationale: 'active registry id uses the legacy grass resource record' },
+  iron_chain: { from: 'chain', rationale: 'active registry id uses the legacy chain resource record' },
+  sea_lantern: { from: 'seaLantern', rationale: 'canonicalize legacy resource id casing' },
+  trip_wire: { from: 'tripWire', rationale: 'canonicalize legacy resource id casing' }
+};
 const AUXILIARY = ['end_gateway', 'lava_cauldron'];
 function textureKeys(value, result) {
   if (typeof value === 'string') result.add(value);
   else if (Array.isArray(value)) value.forEach(v => textureKeys(v, result));
   else if (value && typeof value === 'object') Object.values(value).forEach(v => textureKeys(v, result));
 }
+function normalizeLegacyAliases(definitions, registry) {
+  const active = new Set((registry.data_items || []).map(e => e && typeof e.name === 'string' ? e.name.replace(/^minecraft:/, '') : ''));
+  const normalized = { ...definitions }, applied = [];
+  for (const [target, mapping] of Object.entries(ALIASES)) {
+    if (!active.has(target)) throw new Error('Alias target is absent from pinned registry: ' + target);
+    if (Object.hasOwn(definitions, target)) { applied.push({ target, from: null, reason: 'native-resource-definition-present' }); continue; }
+    const source = definitions[mapping.from];
+    if (!source || !source.textures) throw new Error('Required legacy resource alias source is missing: ' + mapping.from);
+    normalized[target] = structuredClone(source);
+    applied.push({ target, from: mapping.from, rationale: mapping.rationale });
+  }
+  return { definitions: normalized, applied };
+}
 export function snapshot(definitions, registry, terrain, paths, commit) {
   if (commit !== COMMIT) throw new Error('Unexpected Mojang source commit');
   if (!terrain || !terrain.texture_data) throw new Error('Missing terrain texture data');
-  const admitted = admitBlocks(definitions, registry, POLICY, { commit });
+  const aliases = normalizeLegacyAliases(definitions, registry);
+  const admitted = admitBlocks(aliases.definitions, registry, POLICY, { commit });
   const auxiliary = Object.fromEntries(AUXILIARY.filter(id => definitions[id]).map(id => [id, structuredClone(definitions[id])]));
   const keys = new Set();
   for (const entry of [...Object.values(admitted.blocks), ...Object.values(auxiliary)]) {
@@ -33,7 +53,7 @@ export function snapshot(definitions, registry, terrain, paths, commit) {
     terrain: selectedTerrain,
     existing,
     auxiliary,
-    report: { ...admitted.report, missingTerrainKeys, auxiliaryResources: Object.keys(auxiliary), excludedByPolicy: POLICY.exclude }
+    report: { ...admitted.report, legacyAliases: aliases.applied, missingTerrainKeys, auxiliaryResources: Object.keys(auxiliary), excludedByPolicy: POLICY.exclude }
   };
 }
 export function chunks(object, limit = LIMIT) {
