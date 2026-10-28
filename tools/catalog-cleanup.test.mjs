@@ -5,9 +5,32 @@ import {readFile} from 'node:fs/promises';
 const curation=await readFile(new URL('../fk-curation.js',import.meta.url),'utf8');
 const fixtures=await readFile(new URL('../fk-fixtures.js',import.meta.url),'utf8');
 const P='textures/blocks/';
-function setup(b,extra={}){const ctx={FKCatalog:{index:()=>({b:{...b},ids:Object.keys(b),sp:{},cr:{},sig:{},members:{},mother:{},hidden:0}),bindFamilies(cat){cat.familyOf={};cat.variantForm={};cat.formEntries={};return cat}},FKShapes:{build(){},view(){return 1}}};ctx.window=ctx;vm.createContext(ctx);vm.runInContext(curation,ctx);return {ctx,cat:ctx.FKCatalog.index({extra},undefined)}}
-test('all pumpkin resources belong to one pumpkin card',()=>{const b=[P+'pumpkin_top',P+'pumpkin_top',P+'pumpkin_side',P+'pumpkin_face_off',P+'pumpkin_side',P+'pumpkin_side'];const {cat}=setup({pumpkin:b,carved_pumpkin:b,lit_pumpkin:b},{pumpkin:[P+'pumpkin_face_off',P+'pumpkin_face_on',P+'pumpkin_side',P+'pumpkin_top']});assert.deepEqual(cat.ids,['pumpkin']);assert.deepEqual(Array.from(cat.sp.pumpkin.list,s=>s.id),[P+'pumpkin_face_off',P+'pumpkin_face_on',P+'pumpkin_top',P+'pumpkin_side']);assert.equal(cat.hidden,2);assert.ok(!cat.b.carved_pumpkin&&!cat.b.lit_pumpkin)});
-test('a carved-only imported catalog keeps its pumpkin resources',()=>{const b=[P+'pumpkin_top',P+'pumpkin_top',P+'pumpkin_side',P+'pumpkin_face_off',P+'pumpkin_side',P+'pumpkin_side'];const {cat}=setup({carved_pumpkin:b,lit_pumpkin:b},{lit_pumpkin:[P+'pumpkin_face_on']});assert.deepEqual(cat.ids,['carved_pumpkin']);assert.equal(cat.sp.carved_pumpkin.fm.on,P+'pumpkin_face_on')});
-test('plain trapdoor uses the existing trapdoor shape through family metadata',()=>{const {ctx,cat}=setup({trapdoor:Array(6).fill(P+'trapdoor'),stone:Array(6).fill(P+'stone')});ctx.FKCatalog.bindFamilies(cat,{});assert.equal(cat.familyOf.trapdoor,'trapdoor');assert.equal(cat.variantForm.trapdoor,'trapdoor');assert.deepEqual(Object.keys(cat.formEntries.trapdoor),['trapdoor']);assert.equal(cat.familyOf.stone,undefined);assert.ok(cat.ids.includes('trapdoor'))});
-test('sunflower has one geometry implementation',()=>{assert.equal((curation.match(/function sunflower\\(/g)||[]).length,1);assert.ok(!fixtures.includes('Math.cos(Math.PI/8)'));assert.ok(fixtures.includes(\"E.cur!=='sunflower'&&Object.prototype.hasOwnProperty.call(FLOWERS,E.cur)\"))});
-"}]}}
+function setup(b,extra={}){
+ const ctx={FKCatalog:{index:()=>({b:{...b},ids:Object.keys(b),sp:{},cr:{},sig:{},members:{},mother:{},hidden:0}),bindFamilies(cat){cat.familyOf={};cat.variantForm={};cat.formEntries={};return cat}},FKShapes:{build(){},view(){return 1}}};
+ ctx.window=ctx;vm.createContext(ctx);vm.runInContext(curation,ctx);
+ return {ctx,cat:ctx.FKCatalog.index({extra},undefined)};
+}
+test('all pumpkin resources belong to one pumpkin card',()=>{
+ const b=[P+'pumpkin_top',P+'pumpkin_top',P+'pumpkin_side',P+'pumpkin_face_off',P+'pumpkin_side',P+'pumpkin_side'];
+ const {cat}=setup({pumpkin:b,carved_pumpkin:b,lit_pumpkin:b},{pumpkin:[P+'pumpkin_face_off',P+'pumpkin_face_on',P+'pumpkin_side',P+'pumpkin_top']});
+ assert.deepEqual(cat.ids,['pumpkin']);
+ assert.deepEqual(Array.from(cat.sp.pumpkin.list,s=>s.id),[P+'pumpkin_face_off',P+'pumpkin_face_on',P+'pumpkin_top',P+'pumpkin_side']);
+ assert.equal(cat.hidden,2);assert.ok(!cat.b.carved_pumpkin&&!cat.b.lit_pumpkin);
+});
+test('a carved-only imported catalog keeps its pumpkin resources',()=>{
+ const b=[P+'pumpkin_top',P+'pumpkin_top',P+'pumpkin_side',P+'pumpkin_face_off',P+'pumpkin_side',P+'pumpkin_side'];
+ const {cat}=setup({carved_pumpkin:b,lit_pumpkin:b},{lit_pumpkin:[P+'pumpkin_face_on']});
+ assert.deepEqual(cat.ids,['carved_pumpkin']);assert.equal(cat.sp.carved_pumpkin.fm.on,P+'pumpkin_face_on');
+});
+test('plain trapdoor uses the existing trapdoor shape through family metadata',()=>{
+ const {ctx,cat}=setup({trapdoor:Array(6).fill(P+'trapdoor'),stone:Array(6).fill(P+'stone')});
+ ctx.FKCatalog.bindFamilies(cat,{});
+ assert.equal(cat.familyOf.trapdoor,'trapdoor');assert.equal(cat.variantForm.trapdoor,'trapdoor');
+ assert.deepEqual(Object.keys(cat.formEntries.trapdoor),['trapdoor']);assert.equal(cat.familyOf.stone,undefined);
+ assert.ok(cat.ids.includes('trapdoor'));
+});
+test('sunflower has one geometry implementation',()=>{
+ assert.equal((curation.match(/function sunflower\(/g)||[]).length,1);
+ assert.ok(!fixtures.includes('Math.cos(Math.PI/8)'));
+ assert.ok(fixtures.includes("E.cur!=='sunflower'&&Object.prototype.hasOwnProperty.call(FLOWERS,E.cur)"));
+});
