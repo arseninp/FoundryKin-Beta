@@ -1,45 +1,54 @@
+/* Independent transfer contract: no legacy source or hardcoded legacy-view callback. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import vm from 'node:vm';
-import {readFile} from 'node:fs/promises';
 import {createModelRegistry} from '../models/registry.mjs';
 import {createStrandModels} from '../models/strands.mjs';
-const legacySource = await readFile(new URL('../fk-strands.js', import.meta.url), 'utf8');
-function three() {
-  return {DoubleSide: 2, PlaneGeometry: class {constructor(width, height) {this.width = width;this.height = height;}}, Mesh: class {
-    constructor(geometry, material) {this.geometry = geometry;this.material = material;this.rotation = {y: 0};this.position = {set: (x, y, z) => {this.x = x;this.y = y;this.z = z;}};}
+const parts = ['base', 'middle', 'frustum', 'tip', 'tip_merge'];
+function setup() {
+  const Three = {DoubleSide: 2, PlaneGeometry: class {constructor(w, h) {this.width = w;this.height = h;}}, Mesh: class {
+    constructor(geometry, material) {this.geometry = geometry;this.material = material;this.rotation = {};this.position = {set: (...values) => {this.xyz = values;}};}
   }};
+  const registry = createModelRegistry();registry.register(createStrandModels(Three));registry.seal();return registry;
 }
-function env(id, slot) {
-  const names = id === 'pale_hanging_moss' ? ['middle', 'tip'] : ['down', 'up'].flatMap(direction => ['base', 'middle', 'frustum', 'tip', 'tip_merge'].map(part => direction + '_' + part));
-  const faceMap = Object.fromEntries(names.map(name => [name, 'textures/blocks/' + id + '_' + name]));
-  return {cur: id, slot: faceMap[slot] ?? faceMap[names[0]], faceMap, mats: Object.fromEntries(Object.values(faceMap).map(path => [path, {path}])), hiddenMat: {}, group: {children: [], add(mesh) {this.children.push(mesh);}}};
+function environment(id, selected) {
+  const keys = id === 'pale_hanging_moss' ? ['middle', 'tip'] : ['down', 'up'].flatMap(d => parts.map(p => d + '_' + p));
+  const faceMap = Object.fromEntries(keys.map(key => [key, 'textures/blocks/' + id + '_' + key]));
+  return {slot: faceMap[selected ?? keys[0]], faceMap, mats: Object.fromEntries(Object.values(faceMap).map(path => [path, {path}])), hiddenMat: {}, group: {children: [], add(mesh) {this.children.push(mesh);}}};
 }
-function snapshot(environment) {
-  return environment.group.children.map(mesh => ({width: mesh.geometry.width, height: mesh.geometry.height, position: [mesh.x, mesh.y, mesh.z], rotation: mesh.rotation.y, material: mesh.material.path, side: mesh.material.side, update: mesh.material.needsUpdate}));
-}
-test('migrated geometry matches legacy output for both moss slots and all ten spike slots', () => {
-  const Three = three(), context = {THREE: Three, FKCatalog: {index() {}}, FKShapes: {build() {throw new Error('Unexpected fallback');}, view() {return 1.4;}}};
-  context.window = context;vm.runInNewContext(legacySource, context);
-  const registry = createModelRegistry();registry.register(createStrandModels(Three));registry.seal();
-  for (const id of ['pale_hanging_moss', 'sulfur_spike']) {
-    const slots = Object.keys(env(id).faceMap);
-    for (const slot of slots) {
-      const previous = env(id, slot), next = env(id, slot);
-      context.FKShapes.build(previous);registry.build(id, next);
-      assert.deepEqual(snapshot(next), snapshot(previous), id + ':' + slot);
+function check(env, sections, width, height) {
+  assert.equal(env.group.children.length, sections.length * 2);
+  sections.forEach(([key, y], index) => {
+    for (const side of [0, 1]) {
+      const mesh = env.group.children[index * 2 + side];
+      assert.equal(mesh.material.path, env.faceMap[key]);assert.equal(mesh.material, env.mats[env.faceMap[key]]);
+      assert.equal(mesh.geometry.width, width);assert.equal(mesh.geometry.height, height);
+      assert.deepEqual(mesh.xyz, [0, y, 0]);assert.equal(mesh.rotation.y, side === 0 ? 0 : Math.PI / 2);
+      assert.equal(mesh.material.side, 2);assert.equal(mesh.material.needsUpdate, true);
     }
-    assert.equal(registry.get(id).scale, context.FKShapes.view(id));
+  });
+}
+test('moss keeps the full middle and lower tip for both selected resources', () => {
+  const registry = setup();
+  for (const slot of ['middle', 'tip']) {const env = environment('pale_hanging_moss', slot);registry.build('pale_hanging_moss', env);check(env, [['middle', .5], ['tip', -.5]], Math.SQRT2, 1);}
+});
+test('all ten sulfur selections have independent expected heights and materials', () => {
+  const registry = setup();
+  for (const direction of ['down', 'up']) for (const selected of parts) {
+    const env = environment('sulfur_spike', direction + '_' + selected);registry.build('sulfur_spike', env);
+    const heights = direction === 'up' ? [-.75, -.25, .25, .75] : [.75, .25, -.25, -.75];
+    const keys = [direction + '_base', direction + '_middle', direction + '_frustum', direction + (selected === 'tip_merge' ? '_tip_merge' : '_tip')];
+    check(env, keys.map((key, i) => [key, heights[i]]), Math.SQRT2 / 2, .5);
   }
 });
-test('missing materials reject rendering instead of inventing geometry', () => {
-  const registry = createModelRegistry();registry.register(createStrandModels(three()));
-  const state = env('pale_hanging_moss');delete state.mats[state.faceMap.middle];
-  assert.throws(() => registry.build('pale_hanging_moss', state), /Missing segmented material/);
+test('view metadata is explicit and does not depend on the texture directory', () => {
+  const registry = setup();assert.deepEqual(registry.ids(), ['pale_hanging_moss', 'sulfur_spike']);
+  for (const id of registry.ids()) {assert.equal(registry.get(id).scale, 1.4);assert.equal(registry.get(id).mode, 'volume');}
 });
-test('model creation does not mutate global dispatch or the catalog', () => {
+test('missing and hidden materials are rejected; Three is an explicit dependency', () => {
+  for (const hidden of [false, true]) {
+    const env = environment('pale_hanging_moss');
+    if (hidden) env.mats[env.faceMap.middle] = env.hiddenMat;else delete env.mats[env.faceMap.middle];
+    assert.throws(() => setup().build('pale_hanging_moss', env), /Missing segmented material/);
+  }
   assert.throws(() => createStrandModels({}), /require Three/);
-  const registrations = createStrandModels(three());
-  assert.deepEqual(registrations.map(row => row.id), ['pale_hanging_moss', 'sulfur_spike']);
-  assert.ok(registrations.every(row => row.mode === 'volume'));
 });

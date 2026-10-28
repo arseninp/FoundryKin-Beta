@@ -1,46 +1,47 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createModelRegistry} from '../models/registry.mjs';
-test('explicit keys dispatch to exactly one builder', () => {
-  const registry = createModelRegistry(), env = {group: {}}, calls = [];
-  registry.register([{id: 'cube', build: e => {calls.push(e);return 'cube';}}, {id: 'stairs', build: () => 'stairs', scale: 1.4}]);
-  assert.equal(registry.build('cube', env), 'cube');assert.equal(calls[0], env);
-  assert.equal(registry.get('stairs').scale, 1.4);assert.deepEqual(registry.ids(), ['cube', 'stairs']);
-});
-test('a duplicate cannot override the accepted model', () => {
-  const registry = createModelRegistry();registry.register([{id: 'cube', build: () => 'original'}]);
-  assert.throws(() => registry.register([{id: 'cube', build: () => 'replacement'}]), /Duplicate/);
-  assert.equal(registry.build('cube', {}), 'original');
-});
-test('batch registration is atomic', () => {
-  const registry = createModelRegistry();registry.register([{id: 'cube', build() {}}]);
-  assert.throws(() => registry.register([{id: 'stairs', build() {}}, {id: 'cube', build() {}}]));
-  assert.equal(registry.has('stairs'), false);
-  assert.throws(() => registry.register([{id: 'stairs', build() {}}, {id: 'bad', build: null}]));
-  assert.equal(registry.has('stairs'), false);
-});
-test('unknown models and missing object assignments never fall back to a cube', () => {
-  const registry = createModelRegistry();registry.register([{id: 'cube', build() {}}]);
-  assert.throws(() => registry.build('unknown', {}), /Unknown/);
-  assert.throws(() => registry.validate({stone: {model: 'unknown'}}), /Unknown/);
-  assert.throws(() => registry.validate({stone: {}}), /Missing model/);
-  registry.validate({stone: {model: 'cube'}});
-});
-test('sprite view policy is metadata, not a texture folder heuristic', () => {
-  const registry = createModelRegistry();registry.register([{id: 'item-sprite', mode: 'sprite', build: e => e.path}]);
-  assert.equal(registry.get('item-sprite').mode, 'sprite');
-  assert.equal(registry.build('item-sprite', {path: 'textures/entity/shield'}), 'textures/entity/shield');
-});
-test('registration copies metadata and sealing prevents later changes', () => {
-  const registry = createModelRegistry(), entry = {id: 'cube', scale: 1, build() {}};
-  registry.register([entry]);entry.scale = 9;assert.equal(registry.get('cube').scale, 1);
-  registry.seal();assert.throws(() => registry.register([{id: 'stairs', build() {}}]), /sealed/);
-  assert.ok(Object.isFrozen(registry.get('cube')));assert.ok(Object.isFrozen(registry));
-});
-test('invalid view definitions, repeated keys and missing environments fail', () => {
-  for (const entry of [{id: 'cube', scale: 0}, {id: 'cube', scale: Infinity}, {id: 'cube', mode: 'unknown'}, {id: '../cube'}]) {
-    assert.throws(() => createModelRegistry().register([{build() {}, ...entry}]));
+const entry = (id, extra = {}) => ({id, build: env => env, ...extra});
+test('keys require actual strings, without coercion or inherited ids', () => {
+  for (const id of [undefined, null, false, 12, {}, [], new String('cube'), {toString() {return 'cube';}}, Symbol('cube'), '', '../cube']) {
+    const registry = createModelRegistry();
+    assert.throws(() => registry.register([entry(id)]));
+    assert.deepEqual(registry.ids(), []);
+    assert.equal(registry.has(id), false);
   }
-  const registry = createModelRegistry();assert.throws(() => registry.register([{id: 'cube', build() {}}, {id: 'cube', build() {}}]));
-  assert.deepEqual(registry.ids(), []);registry.register([{id: 'cube', build() {}}]);assert.throws(() => registry.build('cube', null));
+  const registry = createModelRegistry();
+  assert.throws(() => registry.register([{build() {}}]));
+  assert.throws(() => registry.register([Object.assign(Object.create({id: 'cube'}), {build() {}})]));
+});
+test('dispatch preserves the supplied environment and return value', () => {
+  const registry = createModelRegistry(), env = {group: {}}, result = {};
+  registry.register([entry('cube', {build: received => {assert.equal(received, env);return result;}})]);
+  assert.equal(registry.build('cube', env), result);
+  assert.deepEqual(registry.ids(), ['cube']);
+});
+test('all invalid batch forms, duplicate keys and descriptors are atomic', () => {
+  const registry = createModelRegistry();registry.register([entry('cube')]);
+  for (const batch of [null, {}, [entry('stairs'), entry('cube')], [entry('stairs'), entry('stairs')], [entry('stairs'), entry('bad', {build: null})], [entry('stairs'), null]]) {
+    assert.throws(() => registry.register(batch));
+    assert.deepEqual(registry.ids(), ['cube']);
+  }
+});
+test('view fields have strict types and finite positive scales', () => {
+  for (const scale of [null, '1', 0, -1, Infinity, NaN]) assert.throws(() => createModelRegistry().register([entry('cube', {scale})]));
+  for (const mode of [null, 1, 'unknown']) assert.throws(() => createModelRegistry().register([entry('cube', {mode})]));
+  const registry = createModelRegistry();registry.register([entry('cube'), entry('icon', {mode: 'sprite', scale: 1.4})]);
+  assert.equal(registry.get('cube').scale, 1);assert.equal(registry.get('icon').mode, 'sprite');
+});
+test('invalid assignments and unknown models never become cubes', () => {
+  const registry = createModelRegistry();registry.register([entry('cube')]);
+  for (const records of [null, [], {stone: null}, {stone: {}}, {stone: {model: null}}, {stone: {model: 'missing'}}]) assert.throws(() => registry.validate(records));
+  registry.validate({stone: {model: 'cube'}});
+  assert.throws(() => registry.get('missing'));
+  for (const env of [null, [], false]) assert.throws(() => registry.build('cube', env));
+});
+test('metadata is copied and frozen; sealing prevents every later registration', () => {
+  const registry = createModelRegistry(), source = entry('cube');registry.register([source]);source.scale = 9;
+  assert.equal(registry.get('cube').scale, 1);assert.ok(Object.isFrozen(registry.get('cube')));
+  registry.seal();registry.seal();assert.throws(() => registry.register([]));assert.throws(() => registry.register([entry('stairs')]));
+  const ids = registry.ids();ids.push('fake');assert.equal(registry.has('fake'), false);
 });
