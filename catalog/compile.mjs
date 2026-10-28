@@ -1,6 +1,8 @@
 /* Pure catalog assembly. No DOM, network, storage, or model registration side effects. */
-import {normalizeBlock, resourcePaths} from './resources.mjs';
+import {normalizeBlock} from './resources.mjs';
 import {compileAliases} from './identity.mjs';
+import {indexItems, resolveIcons} from './items.mjs';
+import {blockIconLinks} from './rules/icons.mjs';
 import {duplicateRules} from './rules/duplicates.mjs';
 const own = (object, key) => Object.hasOwn(object, key);
 function object(value, label) {
@@ -13,25 +15,18 @@ export function compileCatalog(input) {
   const inventory = object(input.existing, 'resource inventory');
   const models = object(input.models, 'model assignments');
   const atlas = object(input.items ?? {}, 'item atlas');
-  const links = object(input.icons ?? {}, 'icon links');
+  const explicitLinks = object(input.icons ?? {}, 'icon links');
+  const defaults = input.items === undefined ? {} : blockIconLinks(blocks, atlas);
+  const links = Object.fromEntries([...Object.entries(defaults), ...Object.entries(explicitLinks)]);
   const rules = duplicateRules(blocks, object(input.aliases ?? {}, 'duplicate rules'));
-  const items = Object.fromEntries(Object.keys(atlas).sort().map(id => {
-    const paths = resourcePaths(atlas[id].textures);
-    if (!paths.length) throw new Error('Empty item resource: ' + id);
-    for (const path of paths) if (!own(inventory, path)) throw new Error('Missing item resource: ' + path);
-    return [id, {id, kind: 'sprite', paths}];
-  }));
+  const items = indexItems(atlas, inventory);
   for (const id of Object.keys(links)) if (!own(blocks, id)) throw new Error('Icon owner is missing: ' + id);
   const records = Object.fromEntries(Object.keys(blocks).sort().map(id => {
     const assignment = models[id];
     if (!own(models, id) || !assignment || typeof assignment.model !== 'string' || !assignment.model.trim()) throw new Error('Missing model assignment: ' + id);
     const iconOwner = own(rules, id) ? rules[id].target : id;
-    const keys = links[id] ?? links[iconOwner] ?? [];
-    if (!Array.isArray(keys)) throw new Error('Invalid icon links: ' + id);
-    const icons = keys.flatMap(key => {
-      if (!own(items, key)) throw new Error('Unknown item icon: ' + key);
-      return items[key].paths;
-    });
+    const references = links[id] ?? links[iconOwner] ?? [];
+    const icons = resolveIcons(items, references);
     return [id, normalizeBlock(id, blocks[id], terrain, {model: assignment.model, states: assignment.states, icons, existing: inventory})];
   }));
   const identity = compileAliases(records, rules);
