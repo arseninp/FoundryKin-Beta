@@ -2,9 +2,9 @@
 (function(){
 'use strict';
 var C=window.FKCatalog,H=window.FKShapes;if(!C||!H)return;
-var oldIndex=C.index,oldBuild=H.build,oldView=H.view,Q=Math.PI/2;
+var oldIndex=C.index,oldBind=C.bindFamilies,oldBuild=H.build,oldView=H.view,Q=Math.PI/2;
 var HIDDEN=['normal_stone_slab','normal_stone_stairs','petrified_oak_slab','stone_stairs','wooden_button','wooden_pressure_plate','end_stone_brick_slab','end_stone_brick_wall','heavy_weighted_pressure_plate','light_weighted_pressure_plate','prismarine_stairs','lit_redstone_ore','lit_deepslate_redstone_ore'];
-var TALL=['pitcher_plant','pitcher_crop'];
+var TALL=['pitcher_plant'];
 /* Every coral wall fan repeats its coral fan (same texture), so the whole class is hidden. */
 function isHidden(id){return HIDDEN.indexOf(id)>=0||/_coral_wall_fan$/.test(id)}
 function drop(cat,id){
@@ -49,14 +49,15 @@ C.index=function(c,existing){
   cat.sp.pitcher_plant={kind:'segmented',list:list,fm:fm};
   drop(cat,'pitcher_crop');removed++;
  }
- /* Jack o'lantern: the carved pumpkin with the lit face as its second texture. */
- var cp=cat.b.carved_pumpkin;
- if(cp&&cat.b.lit_pumpkin){
-  var onFace=named((c.extra&&(c.extra.lit_pumpkin||c.extra.carved_pumpkin))||[],'pumpkin_face_on');
-  if(onFace&&(!existing||existing[onFace])){
-   cat.sp.carved_pumpkin={kind:'details',list:[{id:cp[3]},{id:onFace},{id:cp[0]},{id:cp[2]}],fm:{up:cp[0],down:cp[1],north:cp[2],south:cp[3],east:cp[4],west:cp[5],on:onFace}};
-   drop(cat,'lit_pumpkin');removed++;
-  }
+ /* One pumpkin entry owns plain sides, the carved face and the lit face. The carved-only case supports imported catalogs without a pumpkin entry. */
+ var pumpkinId=cat.b.pumpkin?'pumpkin':'carved_pumpkin',cp=cat.b[pumpkinId];
+ if(cp){
+  var pumpkinPaths=['pumpkin','carved_pumpkin','lit_pumpkin'].reduce(function(a,id){return a.concat((c.extra&&c.extra[id])||[])},[]);
+  var onFace=named(pumpkinPaths,'pumpkin_face_on'),offFace=named(pumpkinPaths,'pumpkin_face_off')||cp[3],pumpkinSlots=[],seenPumpkin={};
+  if(onFace&&existing&&!existing[onFace])onFace=null;
+  [offFace,onFace,cp[0],cp[2]].forEach(function(p){if(p&&!seenPumpkin[p]){seenPumpkin[p]=1;pumpkinSlots.push({id:p})}});
+  cat.sp[pumpkinId]={kind:'details',list:pumpkinSlots,fm:{up:cp[0],down:cp[1],north:cp[2],south:offFace,east:cp[4],west:cp[5],on:onFace}};
+  ['carved_pumpkin','lit_pumpkin'].forEach(function(id){if(id!==pumpkinId&&cat.b[id]){drop(cat,id);removed++}});
  }
  /* Repeaters and comparators: one block each, the powered and unpowered tops are texture slots of a 2 px slab; the item picture is the last slot. */
  [['unpowered_repeater','powered_repeater','repeater'],['unpowered_comparator','powered_comparator','comparator']].forEach(function(pair){
@@ -80,8 +81,15 @@ C.index=function(c,existing){
   wl.forEach(function(s,i){var r=tk[i].filter(function(w){return com.indexOf(w)<0});s.label=(r.length?r:[tk[i][tk[i].length-1]]).join(' ')});
   cat.sp.redstone_wire={kind:'labels',list:wl,fm:{up:rw[0],down:rw[1],north:rw[2],south:rw[3],east:rw[4],west:rw[5]}};
  }
+ resign(cat);
  cat.hidden=(cat.hidden||0)+removed;
  return cat;
+};
+/* Plain trapdoor lacks the underscore required by suffix-based shape detection. A one-form family supplies the existing trapdoor shape without another renderer. */
+C.bindFamilies=function(cat,plan){
+ var out=oldBind(cat,plan);
+ if(out.b.trapdoor&&!out.familyOf.trapdoor){out.familyOf.trapdoor='trapdoor';out.variantForm.trapdoor='trapdoor';out.formEntries.trapdoor={trapdoor:'trapdoor'}}
+ return out;
 };
 function face(E,id,w,h,x,y,z,rx,ry,r,dbl){
  var mat=E.mats[id];if(!mat||mat===E.hiddenMat)return;
@@ -105,77 +113,20 @@ function sides(f,top,height){
  return {F:F,R:{up:top,down:[0,0,16,16],north:cut,south:cut,east:cut,west:cut}};
 }
 function six(id){return {up:id,down:id,north:id,south:id,east:id,west:id}}
-/* Dirt path: 15/16 high, the side image starts one pixel down (Java dirt_path model as geometry reference). */
 function dirtPath(E){var s=sides(E.faceMap,[0,0,16,16],15);box(E,[0,0,0],[16,15,16],s.F,s.R)}
-/* Enchanting table: 12/16 high (Java enchanting_table model as geometry reference). */
 function enchantingTable(E){var s=sides(E.faceMap,[0,0,16,16],12);box(E,[0,0,0],[16,12,16],s.F,s.R)}
-/* Redstone lamp: one cube; the second texture slot shows the lit state. */
 function lamp(E){var f=E.faceMap,id=E.slot===f.west?f.west:f.up;box(E,[0,0,0],[16,16,16],six(id),{up:[0,0,16,16],down:[0,0,16,16],north:[0,0,16,16],south:[0,0,16,16],east:[0,0,16,16],west:[0,0,16,16]})}
-/* Redstone torch: the same 2x10x2 post as the other torches; the second slot shows the unlit torch. */
 function redstoneTorch(E){var f=E.faceMap,id=E.slot===f.west?f.west:f.up,s=[7,6,9,16];box(E,[7,0,7],[9,10,9],six(id),{north:s,south:s,east:s,west:s,up:[7,6,9,8],down:[7,13,9,15]})}
-/* Redstone wire: a flat sheet on the floor, the same construction as the rails. */
 function wire(E){var f=E.faceMap,id=E.slot===f.up?f.up:f.down;face(E,id,1,1,0,0,0,-Q,0,null,true)}
-/* Stonecutter: Java model as geometry reference (16x9x16 base, 14x7 saw plane in the middle). */
-function stonecutter(E){
- var f=E.faceMap,side=[0,7,16,16];
- box(E,[0,0,0],[16,9,16],{up:f.up,down:f.down,north:f.north,south:f.south,east:f.north,west:f.north},{up:[0,0,16,16],down:[0,0,16,16],north:side,south:side,east:side,west:side});
- face(E,f.east,14/16,7/16,0,(12.5-8)/16,0,0,Math.PI,[1,9,15,16]);
- face(E,f.east,14/16,7/16,0,(12.5-8)/16,0,0,0,[15,9,1,16]);
-}
-/* Sniffer egg: 14x16x12 box (Java sniffer_egg model as geometry reference). */
-function snifferEgg(E){
- var f=E.faceMap;
- box(E,[1,0,2],[15,16,14],{up:f.up,down:f.down,north:f.north,south:f.south,east:f.east,west:f.west},{up:[0,0,14,12],down:[0,0,14,12],north:[0,0,14,16],south:[0,0,14,16],east:[0,0,12,16],west:[0,0,12,16]});
-}
-/* Sea pickle: one pickle, a 4x6x4 body and two leaf planes (Java sea_pickle model as geometry reference). */
-function seaPickle(E){
- var id=E.faceMap.up;
- box(E,[6,0,6],[10,6,10],six(id),{down:[8,1,12,5],up:[4,1,8,5],north:[4,5,8,11],south:[0,5,4,11],west:[8,5,12,11],east:[12,5,16,11]});
- var s=Math.SQRT2/16,y=(6.95-8)/16;
- face(E,id,s,3.5/16,0,y,0,0,Math.PI/4,[1,0,3,5],true);
- face(E,id,s,3.5/16,0,y,0,0,-Math.PI/4,[13,0,15,5],true);
-}
-/* Spore blossom: base sheet at the ceiling and four petals that droop by 22.5 degrees (Java spore_blossom model). */
-function sporeBlossom(E){
- var f=E.faceMap;
- face(E,f.up,14/16,14/16,0,(15.9-8)/16,0,-Q,0,[1,1,15,15],true);
- [0,Q,Math.PI,-Q].forEach(function(angle){
-  var outer=new THREE.Group(),inner=new THREE.Group(),e=Object.create(E);
-  e.group=inner;face(e,f.down,1,1,.5,-.01875,0,-Q,0,[0,0,16,16,90],true);
-  inner.rotation.z=-Math.PI/8;outer.rotation.y=angle;outer.position.set(0,.5,0);outer.add(inner);E.group.add(outer);
- });
-}
-/* Pitcher plant, built from the Java pitcher_crop models in one frame: the lower block spans y -1..0, the upper block 0..1 (world units), so a pixel p of the lower block is at world -1+p/16.
-   The pitcher body is 10x6x10 from pixel -1 to 5 of the lower block. Stages 1 and 2: one cross of planes from pixel 5 to 21, standing on top of the body. Stages 3 and 4: a cross from pixel 0 to 16 in the lower block (the body is inside its base, as in the model) and a second cross from 16 to 32 in the upper block. A bud texture (top, bottom, side) shows the body alone. */
-function pitcherPlant(E){
- var f=E.faceMap,m=/_stage_(\d)$/.exec(E.slot||''),n=m?+m[1]:4,side=[3,10,13,16],pt=f.pt||f.up,pb=f.pb||f.down,ps=f.ps||f.north;
- box(E,[3,-9,3],[13,-3,13],{up:pt,down:pb,north:ps,south:ps,east:ps,west:ps},{up:[3,3,13,13],down:[3,3,13,13],north:side,south:side,east:side,west:side});
- if(E.slot===f.pt||E.slot===f.pb||E.slot===f.ps)return;
- cross(E,f['b'+n]||(n===4?f.down:null),1,n<=2?-.1875:-.5);
- if(n>=3)cross(E,f['t'+n]||(n===4?f.up:null),1,.5);
-}
-/* Jack o'lantern: a pumpkin cube; the second slot shows the lit face. */
-function pumpkin(E){var f=E.faceMap,lit=E.slot===f.on?f.on:f.south,full=[0,0,16,16];box(E,[0,0,0],[16,16,16],{up:f.up,down:f.down,north:f.north,south:lit,east:f.east,west:f.west},{up:full,down:full,north:full,south:full,east:full,west:full})}
-/* Repeater and comparator: a 2 px slab; the selected top texture shows the powered or unpowered state. */
-function slab(E){
- var f=E.faceMap,id=f.up,i,full=[0,0,16,16],edge=[0,14,16,16];
- for(i=0;i<8&&f['t'+i];i++)if(E.slot===f['t'+i])id=f['t'+i];
- box(E,[0,0,0],[16,2,16],{up:id,down:f.down,north:f.down,south:f.down,east:f.down,west:f.down},{up:full,down:full,north:edge,south:edge,east:edge,west:edge});
-}
-/* Sunflower: the stem crosses stay on the block axes, the head plane is turned 45 degrees so it stands between them. */
-function sunflower(E){
- var f=E.faceMap,s=1/Math.cos(Math.PI/8);
- cross(E,f.down,1,-.5);cross(E,f.up,.5,.25,[0,8,16,16]);
- var outer=new THREE.Group(),g=new THREE.Group(),e=Object.create(E);e.group=g;
- face(e,f.north,14/16,s,.1*s,-s/16,0,0,Q);
- face(e,f.south,14/16,s,.1*s,-s/16,0,0,-Q);
- g.position.set(0,.5,0);g.rotation.z=Math.PI/8;outer.rotation.y=-Math.PI/4;outer.add(g);E.group.add(outer);
-}
-var MODELS={grass_path:dirtPath,enchanting_table:enchantingTable,redstone_lamp:lamp,redstone_torch:redstoneTorch,redstone_wire:wire,stonecutter_block:stonecutter,sniffer_egg:snifferEgg,sea_pickle:seaPickle,spore_blossom:sporeBlossom,pitcher_plant:pitcherPlant,carved_pumpkin:pumpkin,unpowered_repeater:slab,unpowered_comparator:slab,sunflower:sunflower};
-H.build=function(E){
- if(typeof E.slot==='string'&&E.slot.indexOf('textures/items/')===0)return oldBuild(E);
- if(Object.prototype.hasOwnProperty.call(MODELS,E.cur))return MODELS[E.cur](E);
- return oldBuild(E);
-};
+function stonecutter(E){var f=E.faceMap,side=[0,7,16,16];box(E,[0,0,0],[16,9,16],{up:f.up,down:f.down,north:f.north,south:f.south,east:f.north,west:f.north},{up:[0,0,16,16],down:[0,0,16,16],north:side,south:side,east:side,west:side});face(E,f.east,14/16,7/16,0,(12.5-8)/16,0,0,Math.PI,[1,9,15,16]);face(E,f.east,14/16,7/16,0,(12.5-8)/16,0,0,0,[15,9,1,16])}
+function snifferEgg(E){var f=E.faceMap;box(E,[1,0,2],[15,16,14],{up:f.up,down:f.down,north:f.north,south:f.south,east:f.east,west:f.west},{up:[0,0,14,12],down:[0,0,14,12],north:[0,0,14,16],south:[0,0,14,16],east:[0,0,12,16],west:[0,0,12,16]})}
+function seaPickle(E){var id=E.faceMap.up;box(E,[6,0,6],[10,6,10],six(id),{down:[8,1,12,5],up:[4,1,8,5],north:[4,5,8,11],south:[0,5,4,11],west:[8,5,12,11],east:[12,5,16,11]});var s=Math.SQRT2/16,y=(6.95-8)/16;face(E,id,s,3.5/16,0,y,0,0,Math.PI/4,[1,0,3,5],true);face(E,id,s,3.5/16,0,y,0,0,-Math.PI/4,[13,0,15,5],true)}
+function sporeBlossom(E){var f=E.faceMap;face(E,f.up,14/16,14/16,0,(15.9-8)/16,0,-Q,0,[1,1,15,15],true);[0,Q,Math.PI,-Q].forEach(function(a){var o=new THREE.Group(),i=new THREE.Group(),e=Object.create(E);e.group=i;face(e,f.down,1,1,.5,-.01875,0,-Q,0,[0,0,16,16,90],true);i.rotation.z=-Math.PI/8;o.rotation.y=a;o.position.set(0,.5,0);o.add(i);E.group.add(o)})}
+function pitcherPlant(E){var f=E.faceMap,m=/_stage_(\d)$/.exec(E.slot||''),n=m?+m[1]:4,side=[3,10,13,16],pt=f.pt||f.up,pb=f.pb||f.down,ps=f.ps||f.north;box(E,[3,-9,3],[13,-3,13],{up:pt,down:pb,north:ps,south:ps,east:ps,west:ps},{up:[3,3,13,13],down:[3,3,13,13],north:side,south:side,east:side,west:side});if(E.slot===f.pt||E.slot===f.pb||E.slot===f.ps)return;cross(E,f['b'+n]||(n===4?f.down:null),1,n<=2?-.1875:-.5);if(n>=3)cross(E,f['t'+n]||(n===4?f.up:null),1,.5)}
+function pumpkin(E){var f=E.faceMap,lit=E.slot===f.on?f.on:(E.slot===f.north?f.north:f.south),full=[0,0,16,16];box(E,[0,0,0],[16,16,16],{up:f.up,down:f.down,north:f.north,south:lit,east:f.east,west:f.west},{up:full,down:full,north:full,south:full,east:full,west:full})}
+function slab(E){var f=E.faceMap,id=f.up,i,full=[0,0,16,16],edge=[0,14,16,16];for(i=0;i<8&&f['t'+i];i++)if(E.slot===f['t'+i])id=f['t'+i];box(E,[0,0,0],[16,2,16],{up:id,down:f.down,north:f.down,south:f.down,east:f.down,west:f.down},{up:full,down:full,north:edge,south:edge,east:edge,west:edge})}
+function sunflower(E){var f=E.faceMap,s=1/Math.cos(Math.PI/8);cross(E,f.down,1,-.5);cross(E,f.up,.5,.25,[0,8,16,16]);var outer=new THREE.Group(),g=new THREE.Group(),e=Object.create(E);e.group=g;face(e,f.north,14/16,s,.1*s,-s/16,0,0,Q);face(e,f.south,14/16,s,.1*s,-s/16,0,0,-Q);g.position.set(0,.5,0);g.rotation.z=Math.PI/8;outer.rotation.y=-Math.PI/4;outer.add(g);E.group.add(outer)}
+var MODELS={grass_path:dirtPath,enchanting_table:enchantingTable,redstone_lamp:lamp,redstone_torch:redstoneTorch,redstone_wire:wire,stonecutter_block:stonecutter,sniffer_egg:snifferEgg,sea_pickle:seaPickle,spore_blossom:sporeBlossom,pitcher_plant:pitcherPlant,pumpkin:pumpkin,carved_pumpkin:pumpkin,unpowered_repeater:slab,unpowered_comparator:slab,sunflower:sunflower};
+H.build=function(E){if(typeof E.slot==='string'&&E.slot.indexOf('textures/items/')===0)return oldBuild(E);if(Object.prototype.hasOwnProperty.call(MODELS,E.cur))return MODELS[E.cur](E);return oldBuild(E)};
 H.view=function(id){return oldView(TALL.indexOf(id)>=0?'pointed_dripstone':id)};
 })();
