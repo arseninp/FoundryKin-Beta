@@ -145,12 +145,13 @@ function sporeBlossom(E){
   inner.rotation.z=-Math.PI/8;outer.rotation.y=angle;outer.position.set(0,.5,0);outer.add(inner);E.group.add(outer);
  });
 }
-/* Pitcher plant as it grows (Java pitcher_crop models, checked against the game): the pitcher body (10x6x10, from y -1 to 5) always stands in the ground and the plant planes rise from the block floor out of it. Stage 1 is the body alone, stage 2 adds the lower plane, stages 3 and 4 add the upper plane in the block above. The bud textures (top, bottom, side) show the body alone. */
+/* Pitcher plant, built from the Java pitcher_crop models in one frame: the lower block spans y -1..0, the upper block 0..1 (world units), so a pixel p of the lower block is at world -1+p/16.
+   The pitcher body is 10x6x10 from pixel -1 to 5 of the lower block. Stages 1 and 2: one cross of planes from pixel 5 to 21, standing on top of the body. Stages 3 and 4: a cross from pixel 0 to 16 in the lower block (the body is inside its base, as in the model) and a second cross from 16 to 32 in the upper block. A bud texture (top, bottom, side) shows the body alone. */
 function pitcherPlant(E){
  var f=E.faceMap,m=/_stage_(\d)$/.exec(E.slot||''),n=m?+m[1]:4,side=[3,10,13,16],pt=f.pt||f.up,pb=f.pb||f.down,ps=f.ps||f.north;
- box(E,[3,-1,3],[13,5,13],{up:pt,down:pb,north:ps,south:ps,east:ps,west:ps},{up:[3,3,13,13],down:[3,3,13,13],north:side,south:side,east:side,west:side});
- if(E.slot===f.pt||E.slot===f.pb||E.slot===f.ps||n<2)return;
- cross(E,f['b'+n]||(n===4?f.down:null),1,-.5);
+ box(E,[3,-9,3],[13,-3,13],{up:pt,down:pb,north:ps,south:ps,east:ps,west:ps},{up:[3,3,13,13],down:[3,3,13,13],north:side,south:side,east:side,west:side});
+ if(E.slot===f.pt||E.slot===f.pb||E.slot===f.ps)return;
+ cross(E,f['b'+n]||(n===4?f.down:null),1,n<=2?-.1875:-.5);
  if(n>=3)cross(E,f['t'+n]||(n===4?f.up:null),1,.5);
 }
 /* Jack o'lantern: a pumpkin cube; the second slot shows the lit face. */

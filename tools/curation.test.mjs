@@ -30,25 +30,29 @@ test('redstone lamp and redstone torch are one block with two textures',()=>{
 function pitcherSetup(withIcon){
  const names=['bottom_stage_1','bottom_stage_2','bottom_stage_3','bottom_stage_4','top_stage_3','top_stage_4'],extra=names.map(n=>P+'pitcher_crop_'+n),bud=['top','bottom','side'].map(n=>P+'pitcher_crop_'+n);
  const b={pitcher_crop:[bud[0],bud[1],bud[2],extra[0],extra[4],extra[4]],pitcher_plant:[extra[5],extra[3],extra[3],extra[3],extra[3],extra[3]]},all=extra.concat(bud).concat(withIcon?[I+'pitcher_pod']:[]),existing=Object.fromEntries(all.map(p=>[p,1]));
- const {ctx}=setup([],b),cat=ctx.FKCatalog.index({extra:{pitcher_crop:extra}},existing);return {ctx,cat,sp:cat.sp.pitcher_plant,extra,bud};
+ const {ctx}=setup([],b),cat=ctx.FKCatalog.index({extra:{pitcher_crop:extra}},existing);return {ctx,cat,sp:cat.sp.pitcher_plant};
 }
-const bodyOf=m=>m.filter(x=>Math.abs(x.geometry.h-6/16)<1e-9);
 test('pitcher crop and pitcher plant are one flower with stage slots and an icon',()=>{
  const {cat,sp}=pitcherSetup(true);
  assert.deepEqual(cat.ids,['pitcher_plant']);assert.ok(!cat.b.pitcher_crop);
  assert.equal(sp.list.length,10);assert.equal(new Set(Array.from(sp.list,s=>s.id)).size,10);assert.equal(sp.list[0].id,P+'pitcher_crop_bottom_stage_4');assert.equal(sp.list[9].id,I+'pitcher_pod');
  assert.equal(pitcherSetup(false).sp.list.length,9);
 });
-test('pitcher growth stages follow the game: body in the ground, planes rise from the block floor out of it',()=>{
- const {ctx,sp}=pitcherSetup(false),pth=n=>P+'pitcher_crop_'+n;
- const s1=flat(render(ctx,'pitcher_plant',sp.fm,pth('bottom_stage_1')));assert.equal(s1.length,6);
- const s2=flat(render(ctx,'pitcher_plant',sp.fm,pth('bottom_stage_2')));assert.equal(s2.length,8);assert.ok(s2.some(m=>m.material.path===pth('bottom_stage_2')));
- const s3=flat(render(ctx,'pitcher_plant',sp.fm,pth('top_stage_3')));assert.equal(s3.length,10);
- const s4=flat(render(ctx,'pitcher_plant',sp.fm,sp.list[0].id)),planes=s4.filter(m=>m.geometry.h===1);
- assert.equal(s4.length,10);assert.deepEqual(Array.from(planes,m=>m.y),[-.5,-.5,.5,.5]);
- assert.deepEqual(Array.from(planes,m=>m.material.path).filter((p,i)=>i%2===0),[pth('bottom_stage_4'),pth('top_stage_4')]);
- for(const s of [s1,s2,s3,s4]){const body=bodyOf(s);assert.equal(body.length,4);assert.ok(body.every(m=>Math.abs(m.y-(2-8)/16)<1e-9))}
- const bud=flat(render(ctx,'pitcher_plant',sp.fm,pth('side')));assert.equal(bud.length,6);assert.ok(bud.every(m=>m.material.path.indexOf('stage')<0));
+test('pitcher geometry matches the Java models in one frame (lower block -1..0, upper block 0..1)',()=>{
+ const {ctx,sp}=pitcherSetup(false),pth=n=>P+'pitcher_crop_'+n,world=p=>-1+p/16;
+ const body=m=>m.filter(x=>Math.abs(x.geometry.h-6/16)<1e-9),planes=m=>m.filter(x=>x.geometry.h===1);
+ const bodyOk=m=>{const b=body(m);assert.equal(b.length,4);for(const x of b){assert.ok(Math.abs(x.y-world(2))<1e-9);assert.ok(Math.abs((x.y-3/16)-world(-1))<1e-9);assert.ok(Math.abs((x.y+3/16)-world(5))<1e-9)}};
+ for(const [slot,planeY,top] of [[pth('bottom_stage_1'),world(13),false],[pth('bottom_stage_2'),world(13),false]]){
+  const s=flat(render(ctx,'pitcher_plant',sp.fm,slot)),pl=planes(s);bodyOk(s);assert.equal(s.length,8);assert.deepEqual(Array.from(pl,x=>x.y),[planeY,planeY]);
+  assert.ok(Math.abs((pl[0].y-.5)-world(5))<1e-9,'plane starts on top of the body');
+ }
+ const s3=flat(render(ctx,'pitcher_plant',sp.fm,pth('top_stage_3'))),p3=planes(s3);bodyOk(s3);
+ assert.deepEqual(Array.from(p3,x=>x.y),[world(8),world(8),world(24),world(24)]);
+ assert.deepEqual(Array.from(p3,x=>x.material.path).filter((p,i)=>i%2===0),[pth('bottom_stage_3'),pth('top_stage_3')]);
+ const s4=flat(render(ctx,'pitcher_plant',sp.fm,sp.list[0].id)),p4=planes(s4);bodyOk(s4);
+ assert.deepEqual(Array.from(p4,x=>x.y),[-.5,-.5,.5,.5]);
+ assert.deepEqual(Array.from(p4,x=>x.material.path).filter((p,i)=>i%2===0),[pth('bottom_stage_4'),pth('top_stage_4')]);
+ const bud=flat(render(ctx,'pitcher_plant',sp.fm,pth('side')));assert.equal(bud.length,6);bodyOk(bud);assert.ok(bud.every(x=>x.material.path.indexOf('stage')<0));
  assert.equal(ctx.FKShapes.view('pitcher_plant'),1.4);assert.equal(ctx.FKShapes.view('stone'),1);
 });
 test('jack o\'lantern is merged into the carved pumpkin with the lit face as a slot',()=>{
