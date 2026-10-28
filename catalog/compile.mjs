@@ -1,6 +1,7 @@
 /* Pure catalog assembly. No DOM, network, storage, or model registration side effects. */
 import {normalizeBlock, resourcePaths} from './resources.mjs';
 import {compileAliases} from './identity.mjs';
+import {duplicateRules} from './rules/duplicates.mjs';
 const own = (object, key) => Object.hasOwn(object, key);
 function object(value, label) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid ' + label);
@@ -13,6 +14,7 @@ export function compileCatalog(input) {
   const models = object(input.models, 'model assignments');
   const atlas = object(input.items ?? {}, 'item atlas');
   const links = object(input.icons ?? {}, 'icon links');
+  const rules = duplicateRules(blocks, object(input.aliases ?? {}, 'duplicate rules'));
   const items = Object.fromEntries(Object.keys(atlas).sort().map(id => {
     const paths = resourcePaths(atlas[id].textures);
     if (!paths.length) throw new Error('Empty item resource: ' + id);
@@ -23,7 +25,8 @@ export function compileCatalog(input) {
   const records = Object.fromEntries(Object.keys(blocks).sort().map(id => {
     const assignment = models[id];
     if (!own(models, id) || !assignment || typeof assignment.model !== 'string' || !assignment.model.trim()) throw new Error('Missing model assignment: ' + id);
-    const keys = links[id] ?? [];
+    const iconOwner = own(rules, id) ? rules[id].target : id;
+    const keys = links[id] ?? links[iconOwner] ?? [];
     if (!Array.isArray(keys)) throw new Error('Invalid icon links: ' + id);
     const icons = keys.flatMap(key => {
       if (!own(items, key)) throw new Error('Unknown item icon: ' + key);
@@ -31,17 +34,25 @@ export function compileCatalog(input) {
     });
     return [id, normalizeBlock(id, blocks[id], terrain, {model: assignment.model, states: assignment.states, icons, existing: inventory})];
   }));
-  const identity = compileAliases(records, input.aliases ?? {});
-  const families = {}, owners = new Map(), hidden = new Set(Object.keys(identity.aliases));
-  for (const [base, forms] of Object.entries(input.families ?? {})) {
+  const identity = compileAliases(records, rules);
+  const families = Object.create(null), owners = new Map();
+  const canonical = id => own(identity.aliases, id) ? identity.aliases[id] : id;
+  for (const [sourceBase, forms] of Object.entries(input.families ?? {})) {
     object(forms, 'family forms');
-    if (!own(records, base) || hidden.has(base)) throw new Error('Invalid family base: ' + base);
-    const entries = {native: base};
+    if (!own(records, sourceBase)) throw new Error('Invalid family base: ' + sourceBase);
+    const base = canonical(sourceBase);
+    const entries = families[base] ?? {native: base};
     if (own(forms, 'native')) throw new Error('Reserved family form: native');
-    for (const [form, id] of Object.entries(forms)) {
-      if (!/^[a-z][a-z0-9_]*$/.test(form) || !own(records, id) || hidden.has(id) || id === base) throw new Error('Invalid family variant: ' + id);
+    for (const [form, sourceId] of Object.entries(forms)) {
+      if (!/^[a-z][a-z0-9_]*$/.test(form) || !own(records, sourceId)) throw new Error('Invalid family variant: ' + sourceId);
+      const id = canonical(sourceId);
+      if (id === base) throw new Error('Family variant equals base: ' + id);
+      if (own(entries, form)) {
+        if (entries[form] !== id) throw new Error('Conflicting family form: ' + base + ':' + form);
+        continue;
+      }
       if (owners.has(id)) throw new Error('Variant belongs to multiple forms: ' + id);
-      owners.set(id, base); entries[form] = id;
+      owners.set(id, base);entries[form] = id;
     }
     families[base] = entries;
   }
