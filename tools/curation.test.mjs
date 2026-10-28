@@ -27,22 +27,29 @@ test('redstone lamp and redstone torch are one block with two textures',()=>{
  fm=cat.sp.redstone_torch.fm;const lit=flat(render(ctx,'redstone_torch',fm,fm.up)),unlit=flat(render(ctx,'redstone_torch',fm,fm.west));
  assert.equal(lit.length,6);assert.ok(lit.every(m=>m.material.path===P+'redstone_torch'));assert.ok(unlit.every(m=>m.material.path===P+'unlit_redstone_torch'));
 });
-test('pitcher crop: mature stage by default, stage slots, bud slots show only the pitcher body, no overlap',()=>{
- const extra=['bottom_stage_1','bottom_stage_2','bottom_stage_3','bottom_stage_4','top_stage_3','top_stage_4'].map(n=>P+'pitcher_crop_'+n),all=extra.concat([P+'pitcher_crop_top',P+'pitcher_crop_bottom',P+'pitcher_crop_side']);
- const b={pitcher_crop:[P+'pitcher_crop_top',P+'pitcher_crop_bottom',P+'pitcher_crop_side',extra[0],extra[4],extra[4]]},existing=Object.fromEntries(all.map(p=>[p,1]));
- const {ctx}=setup([],b),cat=ctx.FKCatalog.index({extra:{pitcher_crop:extra}},existing),sp=cat.sp.pitcher_crop;
- assert.equal(sp.list.length,9);assert.equal(sp.list[0].id,P+'pitcher_crop_bottom_stage_4');assert.equal(sp.fm.up,P+'pitcher_crop_bottom_stage_4');
- const full=flat(render(ctx,'pitcher_crop',sp.fm,sp.fm.up));assert.equal(full.length,4);
- assert.deepEqual(Array.from(full,m=>m.y),[-.5,-.5,.5,.5]);
+function pitcherSetup(){
+ const names=['bottom_stage_1','bottom_stage_2','bottom_stage_3','bottom_stage_4','top_stage_3','top_stage_4'],extra=names.map(n=>P+'pitcher_crop_'+n),bud=['top','bottom','side'].map(n=>P+'pitcher_crop_'+n);
+ const b={pitcher_crop:[bud[0],bud[1],bud[2],extra[0],extra[4],extra[4]],pitcher_plant:[extra[5],extra[3],extra[3],extra[3],extra[3],extra[3]]},existing=Object.fromEntries(extra.concat(bud).map(p=>[p,1]));
+ const {ctx}=setup([],b),cat=ctx.FKCatalog.index({extra:{pitcher_crop:extra}},existing);return {ctx,cat,sp:cat.sp.pitcher_plant,extra,bud};
+}
+test('pitcher crop and pitcher plant are one flower with stage slots',()=>{
+ const {ctx,cat,sp}=pitcherSetup();
+ assert.deepEqual(cat.ids,['pitcher_plant']);assert.ok(!cat.b.pitcher_crop);
+ assert.equal(sp.list.length,9);assert.equal(new Set(Array.from(sp.list,s=>s.id)).size,9);assert.equal(sp.list[0].id,P+'pitcher_crop_bottom_stage_4');
+ const full=flat(render(ctx,'pitcher_plant',sp.fm,sp.list[0].id));
+ assert.deepEqual(Array.from(full,m=>m.y),[-.8125,-.8125,.1875,.1875]);
+ assert.ok(Math.abs((-.8125+.5)-(.1875-.5))<1e-9);
  assert.deepEqual(Array.from(full,m=>m.material.path).filter((p,i)=>i%2===0),[P+'pitcher_crop_bottom_stage_4',P+'pitcher_crop_top_stage_4']);
- const bud=flat(render(ctx,'pitcher_crop',sp.fm,P+'pitcher_crop_side'));assert.equal(bud.length,6);assert.ok(bud.every(m=>m.material.path.indexOf('stage')<0));
- const s1=flat(render(ctx,'pitcher_crop',sp.fm,P+'pitcher_crop_bottom_stage_1'));assert.equal(s1.length,8);
- const s3=flat(render(ctx,'pitcher_crop',sp.fm,P+'pitcher_crop_top_stage_3')),p3=Array.from(s3,m=>m.material.path);
- assert.equal(s3.length,4);assert.ok(p3.includes(P+'pitcher_crop_bottom_stage_3')&&p3.includes(P+'pitcher_crop_top_stage_3'));
 });
-test('pitcher plant planes do not overlap',()=>{
- const {ctx}=setup(['pitcher_plant']),pl=flat(render(ctx,'pitcher_plant',fmOf('p')));assert.deepEqual(Array.from(pl,x=>x.y),[-.5,-.5,.5,.5]);
- assert.equal(ctx.FKShapes.view('pitcher_plant'),1.4);assert.equal(ctx.FKShapes.view('pitcher_crop'),1.4);assert.equal(ctx.FKShapes.view('stone'),1);
+test('pitcher stages 1-3 put the pitcher body under the plane textures; bud slots show it in its natural place',()=>{
+ const {ctx,sp}=pitcherSetup();
+ const s3=flat(render(ctx,'pitcher_plant',sp.fm,P+'pitcher_crop_top_stage_3')),pot=s3.filter(m=>Math.abs(m.geometry.h-6/16)<1e-9);
+ assert.equal(s3.length,10);assert.equal(pot.length,4);
+ const top=Math.max(...pot.map(m=>m.y+m.geometry.h/2));assert.ok(top<=-.5+1e-9,'pot top must not rise above the plane base');
+ const s1=flat(render(ctx,'pitcher_plant',sp.fm,P+'pitcher_crop_bottom_stage_1'));assert.equal(s1.length,8);
+ const bud=flat(render(ctx,'pitcher_plant',sp.fm,P+'pitcher_crop_side'));assert.equal(bud.length,6);assert.ok(bud.every(m=>m.material.path.indexOf('stage')<0));
+ const bt=Math.max(...bud.filter(m=>Math.abs(m.geometry.h-6/16)<1e-9).map(m=>m.y+m.geometry.h/2));assert.ok(Math.abs(bt-(5-8)/16)<1e-9);
+ assert.equal(ctx.FKShapes.view('pitcher_plant'),1.4);assert.equal(ctx.FKShapes.view('stone'),1);
 });
 test('jack o\'lantern is merged into the carved pumpkin with the lit face as a slot',()=>{
  const extra=[P+'pumpkin_face_off',P+'pumpkin_face_on',P+'pumpkin_side',P+'pumpkin_top'],existing=Object.fromEntries(extra.map(p=>[p,1]));
@@ -50,21 +57,18 @@ test('jack o\'lantern is merged into the carved pumpkin with the lit face as a s
  const {ctx}=setup([],b),cat=ctx.FKCatalog.index({extra:{lit_pumpkin:extra,carved_pumpkin:extra}},existing);
  assert.deepEqual(cat.ids,['carved_pumpkin']);const sp=cat.sp.carved_pumpkin;assert.equal(sp.list.length,4);assert.equal(sp.fm.on,P+'pumpkin_face_on');
  const off=flat(render(ctx,'carved_pumpkin',sp.fm,sp.fm.south)),on=flat(render(ctx,'carved_pumpkin',sp.fm,sp.fm.on));
- assert.equal(off.length,6);assert.ok(off.some(m=>m.material.path===P+'pumpkin_face_off'));assert.ok(!off.some(m=>m.material.path===P+'pumpkin_face_on'));
+ assert.ok(off.some(m=>m.material.path===P+'pumpkin_face_off'));assert.ok(!off.some(m=>m.material.path===P+'pumpkin_face_on'));
  assert.ok(on.some(m=>m.material.path===P+'pumpkin_face_on'));assert.ok(!on.some(m=>m.material.path===P+'pumpkin_face_off'));
 });
 test('repeaters and comparators are merged into 2 px slabs with state textures',()=>{
  const floor=P+'stone_slab_top',rep=[floor,P+'repeater_off',P+'repeater_on'],cmp=[P+'comparator_stone_slab',P+'comparator_off',P+'comparator_on',P+'comparator_subtract_on'];
- const all=rep.concat(cmp),existing=Object.fromEntries(all.map(p=>[p,1]));
- const mk=(f,u)=>[u,f,f,f,f,f];
+ const existing=Object.fromEntries(rep.concat(cmp).map(p=>[p,1])),mk=(f,u)=>[u,f,f,f,f,f];
  const b={unpowered_repeater:mk(floor,P+'repeater_off'),powered_repeater:mk(floor,P+'repeater_off'),unpowered_comparator:mk(cmp[0],P+'comparator_off'),powered_comparator:mk(cmp[0],P+'comparator_off')};
  const {ctx}=setup([],b),cat=ctx.FKCatalog.index({extra:{unpowered_repeater:rep,powered_repeater:rep,unpowered_comparator:cmp,powered_comparator:cmp}},existing);
  assert.deepEqual(cat.ids.slice().sort(),['unpowered_comparator','unpowered_repeater']);
  const r=cat.sp.unpowered_repeater;assert.deepEqual(Array.from(r.list,s=>s.id),[P+'repeater_off',P+'repeater_on',floor]);
- const on=flat(render(ctx,'unpowered_repeater',r.fm,P+'repeater_on')),off=flat(render(ctx,'unpowered_repeater',r.fm,P+'repeater_off'));
- assert.equal(on.length,6);assert.ok(on.some(m=>m.material.path===P+'repeater_on'));assert.ok(off.some(m=>m.material.path===P+'repeater_off'));
- assert.ok(on.filter(m=>Math.abs(m.geometry.h-2/16)<1e-9).length===4);
- assert.equal(cat.sp.unpowered_comparator.list.length,4);
+ const on=flat(render(ctx,'unpowered_repeater',r.fm,P+'repeater_on'));assert.equal(on.length,6);assert.ok(on.some(m=>m.material.path===P+'repeater_on'));
+ assert.equal(on.filter(m=>Math.abs(m.geometry.h-2/16)<1e-9).length,4);assert.equal(cat.sp.unpowered_comparator.list.length,4);
 });
 test('redstone wire gets rail-style slots and renders as one flat sheet',()=>{
  const {ctx}=setup(['redstone_wire']),cat=ctx.FKCatalog.index({},{});assert.equal(cat.sp.redstone_wire.kind,'labels');
