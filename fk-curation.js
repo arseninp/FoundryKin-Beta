@@ -20,6 +20,7 @@ function resign(cat){
 function named(paths,name){return paths.filter(function(p){return p.split('/').pop()===name})[0]}
 C.index=function(c,existing){
  var cat=oldIndex(c,existing),removed=0;
+ var icon=function(path){return path&&(!existing||existing[path])?path:null};
  Object.keys(cat.b).filter(isHidden).forEach(function(id){drop(cat,id);removed++});
  /* Redstone lamp: one block, off and on are two textures of it. */
  var off=cat.b.redstone_lamp,on=cat.b.lit_redstone_lamp;
@@ -44,6 +45,7 @@ C.index=function(c,existing){
   add(named(paths,'pitcher_crop_bottom_stage_3'),'b3');add(named(paths,'pitcher_crop_top_stage_3'),'t3');
   add(named(paths,'pitcher_crop_bottom_stage_2'),'b2');add(named(paths,'pitcher_crop_bottom_stage_1'),'b1');
   add(pc[0]);add(pc[1]);add(pc[2]);
+  var pod=icon('textures/items/pitcher_pod');if(pod){list.push({id:pod});fm.icon=pod}
   cat.sp.pitcher_plant={kind:'segmented',list:list,fm:fm};
   drop(cat,'pitcher_crop');removed++;
  }
@@ -56,13 +58,14 @@ C.index=function(c,existing){
    drop(cat,'lit_pumpkin');removed++;
   }
  }
- /* Repeaters and comparators: one block each, the powered and unpowered tops are texture slots of a 2 px slab. */
- [['unpowered_repeater','powered_repeater'],['unpowered_comparator','powered_comparator']].forEach(function(pair){
+ /* Repeaters and comparators: one block each, the powered and unpowered tops are texture slots of a 2 px slab; the item picture is the last slot. */
+ [['unpowered_repeater','powered_repeater','repeater'],['unpowered_comparator','powered_comparator','comparator']].forEach(function(pair){
   var a=cat.b[pair[0]];if(!a)return;
   var floor=a[1],tops=((c.extra&&c.extra[pair[0]])||[]).filter(function(p){return p!==floor&&(!existing||existing[p])});
   if(!tops.length)return;
   var fmS={up:tops[0],down:floor,north:floor,south:floor,east:floor,west:floor},lst=tops.map(function(p){return {id:p}});
   tops.forEach(function(p,i){fmS['t'+i]=p});lst.push({id:floor});
+  var ic=icon('textures/items/'+pair[2]);if(ic){lst.push({id:ic});fmS.icon=ic}
   cat.sp[pair[0]]={kind:'details',list:lst,fm:fmS};
   cat.b[pair[0]]=[tops[0],floor,floor,floor,floor,floor];
   if(cat.b[pair[1]]){drop(cat,pair[1]);removed++}
@@ -142,15 +145,13 @@ function sporeBlossom(E){
   inner.rotation.z=-Math.PI/8;outer.rotation.y=angle;outer.position.set(0,.5,0);outer.add(inner);E.group.add(outer);
  });
 }
-/* Pitcher plant. Stage 4 is the grown two-block plant: in the Java pitcher_plant models both planes are lowered by 5 px, so the lower one covers y -5..11 and the upper one 11..27, and they join without overlap. Stages 1-3 follow the Java pitcher_crop models: planes from the block floor and the pitcher body (10x6x10), which is put under the plane textures instead of inside them. A bud texture (top, bottom, side) shows the pitcher body alone in its natural place. */
+/* Pitcher plant as it grows (Java pitcher_crop models, checked against the game): the pitcher body (10x6x10, from y -1 to 5) always stands in the ground and the plant planes rise from the block floor out of it. Stage 1 is the body alone, stage 2 adds the lower plane, stages 3 and 4 add the upper plane in the block above. The bud textures (top, bottom, side) show the body alone. */
 function pitcherPlant(E){
- var f=E.faceMap,m=/_stage_(\d)$/.exec(E.slot||''),n=m?+m[1]:4,bud=E.slot===f.pt||E.slot===f.pb||E.slot===f.ps;
- var side=[3,10,13,16],pt=f.pt||f.up,pb=f.pb||f.down,ps=f.ps||f.north,F=function(y0,y1){box(E,[3,y0,3],[13,y1,13],{up:pt,down:pb,north:ps,south:ps,east:ps,west:ps},{up:[3,3,13,13],down:[3,3,13,13],north:side,south:side,east:side,west:side})};
- if(bud){F(-1,5);return}
- if(n>=4){cross(E,f.b4||f.down,1,-.8125);cross(E,f.t4||f.up,1,.1875);return}
- F(-6,0);
- cross(E,f['b'+n],1,-.5);
- if(n>=3)cross(E,f['t'+n],1,.5);
+ var f=E.faceMap,m=/_stage_(\d)$/.exec(E.slot||''),n=m?+m[1]:4,side=[3,10,13,16],pt=f.pt||f.up,pb=f.pb||f.down,ps=f.ps||f.north;
+ box(E,[3,-1,3],[13,5,13],{up:pt,down:pb,north:ps,south:ps,east:ps,west:ps},{up:[3,3,13,13],down:[3,3,13,13],north:side,south:side,east:side,west:side});
+ if(E.slot===f.pt||E.slot===f.pb||E.slot===f.ps||n<2)return;
+ cross(E,f['b'+n]||(n===4?f.down:null),1,-.5);
+ if(n>=3)cross(E,f['t'+n]||(n===4?f.up:null),1,.5);
 }
 /* Jack o'lantern: a pumpkin cube; the second slot shows the lit face. */
 function pumpkin(E){var f=E.faceMap,lit=E.slot===f.on?f.on:f.south,full=[0,0,16,16];box(E,[0,0,0],[16,16,16],{up:f.up,down:f.down,north:f.north,south:lit,east:f.east,west:f.west},{up:full,down:full,north:full,south:full,east:full,west:full})}
