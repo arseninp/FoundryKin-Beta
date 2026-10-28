@@ -3,7 +3,7 @@
 'use strict';
 var C=window.FKCatalog,H=window.FKShapes;if(!C||!H)return;
 var oldIndex=C.index,oldBuild=H.build,oldView=H.view,Q=Math.PI/2;
-var HIDDEN=['normal_stone_slab','normal_stone_stairs','petrified_oak_slab','stone_stairs','wooden_button','wooden_pressure_plate','end_stone_brick_slab','end_stone_brick_wall','heavy_weighted_pressure_plate','light_weighted_pressure_plate','prismarine_stairs'];
+var HIDDEN=['normal_stone_slab','normal_stone_stairs','petrified_oak_slab','stone_stairs','wooden_button','wooden_pressure_plate','end_stone_brick_slab','end_stone_brick_wall','heavy_weighted_pressure_plate','light_weighted_pressure_plate','prismarine_stairs','lit_redstone_ore','lit_deepslate_redstone_ore','lit_pumpkin'];
 var TALL=['pitcher_plant','pitcher_crop'];
 /* Every coral wall fan repeats its coral fan (same texture), so the whole class is hidden. */
 function isHidden(id){return HIDDEN.indexOf(id)>=0||/_coral_wall_fan$/.test(id)}
@@ -17,6 +17,7 @@ function resign(cat){
  cat.sig={};cat.members={};cat.mother={};
  cat.ids.forEach(function(id){var sg=cat.b[id].join('|');cat.sig[id]=sg;(cat.members[sg]=cat.members[sg]||[]).push(id);cat.mother[id]=id});
 }
+function named(paths,name){return paths.filter(function(p){return p.split('/').pop()===name})[0]}
 C.index=function(c,existing){
  var cat=oldIndex(c,existing),removed=0;
  Object.keys(cat.b).filter(isHidden).forEach(function(id){drop(cat,id);removed++});
@@ -25,16 +26,35 @@ C.index=function(c,existing){
  if(off&&on){
   cat.sp.redstone_lamp={kind:'details',list:[{id:off[0]},{id:on[0]}],fm:{up:off[0],down:off[1],north:off[2],south:off[3],east:off[4],west:on[0]}};
   cat.b.redstone_lamp=[off[0],off[1],off[2],off[3],off[4],on[0]];
-  drop(cat,'lit_redstone_lamp');removed++;resign(cat);
+  drop(cat,'lit_redstone_lamp');removed++;
  }
+ /* Redstone torch: one block, the unlit torch is its second texture. */
+ var tOn=cat.b.redstone_torch,tOff=cat.b.unlit_redstone_torch;
+ if(tOn&&tOff){
+  cat.sp.redstone_torch={kind:'lights',list:[{id:tOn[0],t:'torch'},{id:tOff[0],t:'unlit'}],fm:{up:tOn[0],down:tOn[1],north:tOn[2],south:tOn[3],east:tOn[4],west:tOff[0]}};
+  cat.b.redstone_torch=[tOn[0],tOn[1],tOn[2],tOn[3],tOn[4],tOff[0]];
+  drop(cat,'unlit_redstone_torch');removed++;
+ }
+ /* Pitcher crop: every growth stage is a texture slot. */
+ var pc=cat.b.pitcher_crop;
+ if(pc){
+  var paths=(c.extra&&c.extra.pitcher_crop)||[],fm={up:pc[0],down:pc[1],north:pc[2],south:pc[3],east:pc[4],west:pc[5]},list=[],seenP={};
+  function add(p,key){if(!p||(existing&&!existing[p]))return;if(key)fm[key]=p;if(!seenP[p]){seenP[p]=1;list.push({id:p})}}
+  add(pc[0]);add(pc[1]);add(pc[2]);
+  [1,2,3,4].forEach(function(n){add(named(paths,'pitcher_crop_bottom_stage_'+n),'b'+n)});
+  [3,4].forEach(function(n){add(named(paths,'pitcher_crop_top_stage_'+n),'t'+n)});
+  if(fm.b4)fm.south=fm.b4;if(fm.t4)fm.east=fm.t4;
+  cat.sp.pitcher_crop={kind:'segmented',list:list,fm:fm};
+ }
+ resign(cat);
  /* Redstone wire: a flat sheet like the rails, texture slots for the cross and the line. */
  var rw=cat.b.redstone_wire;
  if(rw&&!cat.sp.redstone_wire){
-  var list=[],seen={};
-  [rw[0],rw[1]].forEach(function(p){if(!seen[p]){seen[p]=1;list.push({id:p,label:''})}});
-  var tk=list.map(function(s){return s.id.split('/').pop().split('_')}),com=tk[0].filter(function(w){return tk.every(function(x){return x.indexOf(w)>=0})});
-  list.forEach(function(s,i){var r=tk[i].filter(function(w){return com.indexOf(w)<0});s.label=(r.length?r:[tk[i][tk[i].length-1]]).join(' ')});
-  cat.sp.redstone_wire={kind:'labels',list:list,fm:{up:rw[0],down:rw[1],north:rw[2],south:rw[3],east:rw[4],west:rw[5]}};
+  var wl=[],seen={};
+  [rw[0],rw[1]].forEach(function(p){if(!seen[p]){seen[p]=1;wl.push({id:p,label:''})}});
+  var tk=wl.map(function(s){return s.id.split('/').pop().split('_')}),com=tk[0].filter(function(w){return tk.every(function(x){return x.indexOf(w)>=0})});
+  wl.forEach(function(s,i){var r=tk[i].filter(function(w){return com.indexOf(w)<0});s.label=(r.length?r:[tk[i][tk[i].length-1]]).join(' ')});
+  cat.sp.redstone_wire={kind:'labels',list:wl,fm:{up:rw[0],down:rw[1],north:rw[2],south:rw[3],east:rw[4],west:rw[5]}};
  }
  cat.hidden=(cat.hidden||0)+removed;
  return cat;
@@ -55,7 +75,7 @@ function box(E,a,b,F,R){
  var p={north:[w,h,x,y,(a[2]-8)/16,0,Math.PI],south:[w,h,x,y,(b[2]-8)/16,0,0],east:[d,h,(b[0]-8)/16,y,z,0,Q],west:[d,h,(a[0]-8)/16,y,z,0,-Q],up:[w,d,x,(b[1]-8)/16,z,-Q,0],down:[w,d,x,(a[1]-8)/16,z,Q,0]};
  Object.keys(F).forEach(function(k){face.apply(null,[E,F[k]].concat(p[k],[R[k]]))});
 }
-function cross(E,id,h,y,r){face(E,id,Math.SQRT2,h,0,y,0,0,0,r,true);face(E,id,Math.SQRT2,h,0,y,0,0,Q,r,true)}
+function cross(E,id,h,y,r){if(!id)return;face(E,id,Math.SQRT2,h,0,y,0,0,0,r,true);face(E,id,Math.SQRT2,h,0,y,0,0,Q,r,true)}
 function sides(f,top,height){
  var F={up:f.up,down:f.down,north:f.north,south:f.south,east:f.east,west:f.west},cut=[0,16-height,16,16];
  return {F:F,R:{up:top,down:[0,0,16,16],north:cut,south:cut,east:cut,west:cut}};
@@ -67,6 +87,8 @@ function dirtPath(E){var s=sides(E.faceMap,[0,0,16,16],15);box(E,[0,0,0],[16,15,
 function enchantingTable(E){var s=sides(E.faceMap,[0,0,16,16],12);box(E,[0,0,0],[16,12,16],s.F,s.R)}
 /* Redstone lamp: one cube; the second texture slot shows the lit state. */
 function lamp(E){var f=E.faceMap,id=E.slot===f.west?f.west:f.up;box(E,[0,0,0],[16,16,16],six(id),{up:[0,0,16,16],down:[0,0,16,16],north:[0,0,16,16],south:[0,0,16,16],east:[0,0,16,16],west:[0,0,16,16]})}
+/* Redstone torch: the same 2x10x2 post as the other torches; the second slot shows the unlit torch. */
+function redstoneTorch(E){var f=E.faceMap,id=E.slot===f.west?f.west:f.up,s=[7,6,9,16];box(E,[7,0,7],[9,10,9],six(id),{north:s,south:s,east:s,west:s,up:[7,6,9,8],down:[7,13,9,15]})}
 /* Redstone wire: a flat sheet on the floor, the same construction as the rails. */
 function wire(E){var f=E.faceMap,id=E.slot===f.up?f.up:f.down;face(E,id,1,1,0,0,0,-Q,0,null,true)}
 /* Stonecutter: Java model as geometry reference (16x9x16 base, 14x7 saw plane in the middle). */
@@ -101,11 +123,12 @@ function sporeBlossom(E){
 }
 /* Pitcher plant: two blocks high; the top plane sits 5 px lower than the block (Java pitcher_plant_top). */
 function pitcherPlant(E){var f=E.faceMap;cross(E,f.down,1,-.5);cross(E,f.up,1,.1875)}
-/* Pitcher crop: the pitcher body in the ground and the grown lower and upper planes (Java pitcher_crop models). */
+/* Pitcher crop: the pitcher body in the ground plus the planes of the growth stage chosen by the selected slot (stage 4 by default). */
 function pitcherCrop(E){
- var f=E.faceMap,side=[3,10,13,16];
+ var f=E.faceMap,side=[3,10,13,16],m=/_stage_(\d)$/.exec(E.slot||''),n=m?+m[1]:4;
  box(E,[3,-1,3],[13,5,13],{up:f.up,down:f.down,north:f.north,south:f.north,east:f.north,west:f.north},{up:[3,3,13,13],down:[3,3,13,13],north:side,south:side,east:side,west:side});
- cross(E,f.south,1,-.5);cross(E,f.east,1,.1875);
+ cross(E,f['b'+n]||(f.b4?null:f.south),1,-.5);
+ if(n>=3)cross(E,f['t'+n]||(f.t4?null:f.east),1,.1875);
 }
 /* Sunflower: the stem crosses stay on the block axes, the head plane is turned 45 degrees so it stands between them. */
 function sunflower(E){
@@ -116,7 +139,7 @@ function sunflower(E){
  face(e,f.south,14/16,s,.1*s,-s/16,0,0,-Q);
  g.position.set(0,.5,0);g.rotation.z=Math.PI/8;outer.rotation.y=-Math.PI/4;outer.add(g);E.group.add(outer);
 }
-var MODELS={grass_path:dirtPath,enchanting_table:enchantingTable,redstone_lamp:lamp,redstone_wire:wire,stonecutter_block:stonecutter,sniffer_egg:snifferEgg,sea_pickle:seaPickle,spore_blossom:sporeBlossom,pitcher_plant:pitcherPlant,pitcher_crop:pitcherCrop,sunflower:sunflower};
+var MODELS={grass_path:dirtPath,enchanting_table:enchantingTable,redstone_lamp:lamp,redstone_torch:redstoneTorch,redstone_wire:wire,stonecutter_block:stonecutter,sniffer_egg:snifferEgg,sea_pickle:seaPickle,spore_blossom:sporeBlossom,pitcher_plant:pitcherPlant,pitcher_crop:pitcherCrop,sunflower:sunflower};
 H.build=function(E){
  if(typeof E.slot==='string'&&E.slot.indexOf('textures/items/')===0)return oldBuild(E);
  if(Object.prototype.hasOwnProperty.call(MODELS,E.cur))return MODELS[E.cur](E);
