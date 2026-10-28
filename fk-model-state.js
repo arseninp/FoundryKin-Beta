@@ -6,7 +6,7 @@ function create(anchor,changed){
  host.className='fk-edit-part';host.style.cssText='margin:12px 0;padding:8px;border:1px solid var(--line);border-radius:10px';anchor.parentNode.insertBefore(host,anchor.nextSibling);
  function visible(){host.hidden=blocked||!schema;host.inert=blocked}
  function select(id,spec){
-  current=id;schema=spec;host.textContent='';visible();if(!schema)return;
+  current=id;schema=spec||(root.FKShapes&&root.FKShapes.previewStates&&root.FKShapes.previewStates[id])||null;host.textContent='';visible();if(!schema)return;
   var ru=root.FK.lang()==='ru',title=doc.createElement('p');title.className='lbl';title.textContent=ru?'Состояние модели — только просмотр':'Model state — preview only';host.appendChild(title);
   var state=values[id]||(values[id]={});
   schema.forEach(function(item){
