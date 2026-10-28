@@ -3,11 +3,12 @@
 'use strict';
 var C=window.FKCatalog,H=window.FKShapes;if(!C||!H)return;
 var oldIndex=C.index,oldBuild=H.build,Q=Math.PI/2;
-var HIDDEN=['horn_coral_wall_fan','normal_stone_slab','normal_stone_stairs','petrified_oak_slab','stone_stairs','wooden_button','wooden_pressure_plate','end_stone_brick_slab','end_stone_brick_wall','heavy_weighted_pressure_plate','light_weighted_pressure_plate','prismarine_stairs'];
+var HIDDEN=['normal_stone_slab','normal_stone_stairs','petrified_oak_slab','stone_stairs','wooden_button','wooden_pressure_plate','end_stone_brick_slab','end_stone_brick_wall','heavy_weighted_pressure_plate','light_weighted_pressure_plate','prismarine_stairs'];
+/* Every coral wall fan repeats its coral fan (same texture), so the whole class is hidden. */
+function isHidden(id){return HIDDEN.indexOf(id)>=0||/_coral_wall_fan$/.test(id)}
 C.index=function(c,existing){
  var cat=oldIndex(c,existing),removed=0;
- HIDDEN.forEach(function(id){
-  if(!cat.b[id])return;
+ Object.keys(cat.b).filter(isHidden).forEach(function(id){
   var sg=cat.sig&&cat.sig[id];
   if(sg&&cat.members&&cat.members[sg]){cat.members[sg]=cat.members[sg].filter(function(x){return x!==id});if(!cat.members[sg].length)delete cat.members[sg]}
   delete cat.b[id];if(cat.sp)delete cat.sp[id];if(cat.cr)delete cat.cr[id];if(cat.sig)delete cat.sig[id];if(cat.mother)delete cat.mother[id];
@@ -41,5 +42,4 @@ H.build=function(E){
  if(E.cur==='enchanting_table')return enchantingTable(E);
  return oldBuild(E);
 };
-H.hiddenIds=HIDDEN.slice();
 })();

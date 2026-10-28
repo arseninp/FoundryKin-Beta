@@ -10,11 +10,17 @@ function setup(ids){
  ctx.window=ctx;vm.createContext(ctx);vm.runInContext(code,ctx);return {ctx,fallbacks:()=>fallback};
 }
 function render(ctx,cur){const ids=['up','down','north','south','east','west'],fm={},mats={};ids.forEach(k=>{fm[k]='t_'+k;mats['t_'+k]={}});const meshes=[];ctx.FKShapes.build({cur,slot:'t_up',faceMap:fm,mats,hiddenMat:{},group:{add:m=>meshes.push(m)}});return meshes}
-test('hidden ids leave the catalog and keep other data consistent',()=>{
- const {ctx}=setup(['stone','horn_coral_wall_fan','horn_coral_fan','normal_stone_slab','normal_stone_stairs','petrified_oak_slab','bamboo_fence']);
+test('leftover forms leave the catalog and keep other data consistent',()=>{
+ const {ctx}=setup(['stone','horn_coral_fan','normal_stone_slab','normal_stone_stairs','petrified_oak_slab','bamboo_fence']);
  const cat=ctx.FKCatalog.index({}, {});
- for(const id of ['horn_coral_wall_fan','normal_stone_slab','normal_stone_stairs','petrified_oak_slab']){assert.ok(!cat.b[id]);assert.ok(!cat.ids.includes(id));assert.ok(!cat.sig[id]);assert.ok(!cat.mother[id])}
- assert.deepEqual(cat.ids,['stone','horn_coral_fan','bamboo_fence']);assert.equal(cat.hidden,4);
+ for(const id of ['normal_stone_slab','normal_stone_stairs','petrified_oak_slab']){assert.ok(!cat.b[id]);assert.ok(!cat.ids.includes(id));assert.ok(!cat.sig[id]);assert.ok(!cat.mother[id])}
+ assert.deepEqual(cat.ids,['stone','horn_coral_fan','bamboo_fence']);assert.equal(cat.hidden,3);
+});
+test('every coral wall fan is hidden while fans and corals stay',()=>{
+ const wall=['horn','brain','bubble','fire','tube'].flatMap(k=>[k+'_coral_wall_fan','dead_'+k+'_coral_wall_fan']),keep=['horn_coral_fan','dead_tube_coral_fan','brain_coral','fire_coral_block'];
+ const {ctx}=setup(wall.concat(keep)),cat=ctx.FKCatalog.index({},{});
+ for(const id of wall){assert.ok(!cat.b[id]);assert.ok(!cat.ids.includes(id))}
+ assert.deepEqual(cat.ids,keep);assert.equal(cat.hidden,10);
 });
 test('dirt path is 15 pixels high with the side image cut one pixel from the top',()=>{
  const {ctx}=setup(['grass_path']),meshes=render(ctx,'grass_path');assert.equal(meshes.length,6);
