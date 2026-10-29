@@ -2,6 +2,18 @@
 import {createCatalogAccess} from './access.mjs';
 const own = (value, key) => Object.hasOwn(value, key);
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+function segmentedBindings(record) {
+ let names;
+ if (record.model==='pale_hanging_moss') names={middle:'pale_hanging_moss_middle',tip:'pale_hanging_moss_tip'};
+ else if (record.model==='sulfur_spike') {
+  names=Object.fromEntries(['down','up'].flatMap(direction=>['base','middle','frustum','tip','tip_merge'].map(part=>[direction+'_'+part,'sulfur_spike_'+direction+'_'+part])));
+ } else return null;
+ return Object.fromEntries(Object.entries(names).map(([role,name])=>{
+  const found=record.paths.filter(path=>path.split('/').pop()===name);
+  if(found.length!==1)throw new Error('Missing or ambiguous model resource: '+name);
+  return [role,[found[0]]];
+ }));
+}
 export function createPreviewResolver(catalog, registry) {
  const access = createCatalogAccess(catalog);
  if (!registry || typeof registry.get !== 'function' || typeof registry.build !== 'function') throw new Error('Invalid preview registry');
@@ -33,9 +45,10 @@ export function createPreviewResolver(catalog, registry) {
   const model=view==='sprite'?'sprite':record.model, descriptor=registry.get(model);
   const faceMap={};
   if (view==='model') {
-   if (!dictionary(record.faces)) throw new Error('Missing model faces');
-   for (const face of Object.keys(choices)) if (!own(record.faces,face)) throw new Error('Unknown face choice: '+face);
-   for (const [face,paths] of Object.entries(record.faces)) {
+   const bindings=segmentedBindings(record)??record.faces;
+   if (!dictionary(bindings)) throw new Error('Missing model faces');
+   for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
+   for (const [face,paths] of Object.entries(bindings)) {
     if (!Array.isArray(paths)||!paths.length) throw new Error('Missing face resources: '+face);
     const path=own(choices,face)?choices[face]:paths.length===1?paths[0]:null;
     if (typeof path!=='string'||!paths.includes(path)) throw new Error('Explicit face variant required: '+face);
@@ -43,6 +56,10 @@ export function createPreviewResolver(catalog, registry) {
    }
   }
   const previewState={...selected.state,...state};
+  if (model==='sulfur_spike') {
+   previewState.direction??='down';previewState.merged??=false;
+   if (!['down','up'].includes(previewState.direction)||typeof previewState.merged!=='boolean') throw new Error('Invalid sulfur preview state');
+  }
   return {object:selected,model,slot,paths:available,faceMap,state:previewState,scale:descriptor.scale,mode:descriptor.mode,
    build(environment) {
     if (!dictionary(environment)) throw new Error('Invalid preview environment');

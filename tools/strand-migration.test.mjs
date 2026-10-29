@@ -1,54 +1,35 @@
-/* Independent transfer contract: no legacy source or hardcoded legacy-view callback. */
+/* Independent geometry contract for explicit preview states. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createModelRegistry} from '../models/registry.mjs';
 import {createStrandModels} from '../models/strands.mjs';
-const parts = ['base', 'middle', 'frustum', 'tip', 'tip_merge'];
-function setup() {
-  const Three = {DoubleSide: 2, PlaneGeometry: class {constructor(w, h) {this.width = w;this.height = h;}}, Mesh: class {
-    constructor(geometry, material) {this.geometry = geometry;this.material = material;this.rotation = {};this.position = {set: (...values) => {this.xyz = values;}};}
-  }};
-  const registry = createModelRegistry();registry.register(createStrandModels(Three));registry.seal();return registry;
+function setup(id,state,slot) {
+ const Three={DoubleSide:2,PlaneGeometry:class{constructor(w,h){this.width=w;this.height=h;}},Mesh:class{constructor(geometry,material){this.geometry=geometry;this.material=material;this.rotation={};this.position={set:(...v)=>{this.xyz=v;}};}}};
+ const keys=id==='pale_hanging_moss'?['middle','tip']:['down','up'].flatMap(d=>['base','middle','frustum','tip','tip_merge'].map(p=>d+'_'+p));
+ const faceMap=Object.fromEntries(keys.map(k=>[k,k]));
+ const env={slot,state,faceMap,mats:Object.fromEntries(keys.map(k=>[k,{path:k}])),hiddenMat:{},group:{children:[],add(mesh){this.children.push(mesh);}}};
+ return {env,build:()=>createStrandModels(Three).find(m=>m.id===id).build(env)};
 }
-function environment(id, selected) {
-  const keys = id === 'pale_hanging_moss' ? ['middle', 'tip'] : ['down', 'up'].flatMap(d => parts.map(p => d + '_' + p));
-  const faceMap = Object.fromEntries(keys.map(key => [key, 'textures/blocks/' + id + '_' + key]));
-  return {slot: faceMap[selected ?? keys[0]], faceMap, mats: Object.fromEntries(Object.values(faceMap).map(path => [path, {path}])), hiddenMat: {}, group: {children: [], add(mesh) {this.children.push(mesh);}}};
-}
-function check(env, sections, width, height) {
-  assert.equal(env.group.children.length, sections.length * 2);
-  sections.forEach(([key, y], index) => {
-    for (const side of [0, 1]) {
-      const mesh = env.group.children[index * 2 + side];
-      assert.equal(mesh.material.path, env.faceMap[key]);assert.equal(mesh.material, env.mats[env.faceMap[key]]);
-      assert.equal(mesh.geometry.width, width);assert.equal(mesh.geometry.height, height);
-      assert.deepEqual(mesh.xyz, [0, y, 0]);assert.equal(mesh.rotation.y, side === 0 ? 0 : Math.PI / 2);
-      assert.equal(mesh.material.side, 2);assert.equal(mesh.material.needsUpdate, true);
-    }
-  });
-}
-test('moss keeps the full middle and lower tip for both selected resources', () => {
-  const registry = setup();
-  for (const slot of ['middle', 'tip']) {const env = environment('pale_hanging_moss', slot);registry.build('pale_hanging_moss', env);check(env, [['middle', .5], ['tip', -.5]], Math.SQRT2, 1);}
+function snapshot(env){return env.group.children.map(m=>[m.material.path,m.geometry.width,m.geometry.height,m.xyz,m.rotation.y,m.material.side]);}
+test('moss preserves both parts regardless of selected PNG',()=>{
+ for(const slot of ['middle','tip']){const s=setup('pale_hanging_moss',{},slot);s.build();assert.equal(s.env.group.children.length,4);assert.deepEqual(s.env.group.children.map(m=>m.xyz[1]),[.5,.5,-.5,-.5]);assert.ok(s.env.group.children.every(m=>m.geometry.width===Math.SQRT2&&m.geometry.height===1));}
 });
-test('all ten sulfur selections have independent expected heights and materials', () => {
-  const registry = setup();
-  for (const direction of ['down', 'up']) for (const selected of parts) {
-    const env = environment('sulfur_spike', direction + '_' + selected);registry.build('sulfur_spike', env);
-    const heights = direction === 'up' ? [-.75, -.25, .25, .75] : [.75, .25, -.25, -.75];
-    const keys = [direction + '_base', direction + '_middle', direction + '_frustum', direction + (selected === 'tip_merge' ? '_tip_merge' : '_tip')];
-    check(env, keys.map((key, i) => [key, heights[i]]), Math.SQRT2 / 2, .5);
-  }
+test('all four sulfur states keep their coordinates and ignore every texture slot',()=>{
+ const keys=['down','up'].flatMap(d=>['base','middle','frustum','tip','tip_merge'].map(p=>d+'_'+p));
+ for(const direction of ['down','up'])for(const merged of [false,true]){
+  let expected;
+  for(const slot of keys){const s=setup('sulfur_spike',{direction,merged},slot);s.build();const shot=snapshot(s.env);expected??=shot;assert.deepEqual(shot,expected);assert.equal(shot.length,8);}
+  const ys=direction==='up'?[-.75,-.25,.25,.75]:[.75,.25,-.25,-.75];
+  const parts=['base','middle','frustum',merged?'tip_merge':'tip'];
+  expected.forEach((m,i)=>{assert.equal(m[0],direction+'_'+parts[Math.floor(i/2)]);assert.equal(m[1],Math.SQRT2/2);assert.equal(m[2],.5);assert.deepEqual(m[3],[0,ys[Math.floor(i/2)],0]);assert.equal(m[4],i%2?Math.PI/2:0);assert.equal(m[5],2);});
+ }
 });
-test('view metadata is explicit and does not depend on the texture directory', () => {
-  const registry = setup();assert.deepEqual(registry.ids(), ['pale_hanging_moss', 'sulfur_spike']);
-  for (const id of registry.ids()) {assert.equal(registry.get(id).scale, 1.4);assert.equal(registry.get(id).mode, 'volume');}
+test('invalid sulfur parameters and missing materials fail',()=>{
+ for(const state of [{direction:'sideways'},{merged:'yes'}])assert.throws(()=>setup('sulfur_spike',state).build(),/Invalid sulfur/);
+ const s=setup('pale_hanging_moss',{});delete s.env.mats.middle;assert.throws(()=>s.build(),/Missing segmented/);
+ const hidden=setup('pale_hanging_moss',{});hidden.env.mats.middle=hidden.env.hiddenMat;assert.throws(()=>hidden.build(),/Missing segmented/);
+ assert.throws(()=>createStrandModels({}),/require Three/);
 });
-test('missing and hidden materials are rejected; Three is an explicit dependency', () => {
-  for (const hidden of [false, true]) {
-    const env = environment('pale_hanging_moss');
-    if (hidden) env.mats[env.faceMap.middle] = env.hiddenMat;else delete env.mats[env.faceMap.middle];
-    assert.throws(() => setup().build('pale_hanging_moss', env), /Missing segmented material/);
-  }
-  assert.throws(() => createStrandModels({}), /require Three/);
+test('view metadata stays explicit',()=>{
+ const Three={Mesh:class{},PlaneGeometry:class{},DoubleSide:2},models=createStrandModels(Three);
+ assert.deepEqual(models.map(m=>m.id),['pale_hanging_moss','sulfur_spike']);assert.ok(models.every(m=>m.scale===1.4&&m.mode==='volume'));
 });

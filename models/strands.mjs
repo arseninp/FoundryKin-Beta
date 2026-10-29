@@ -1,5 +1,4 @@
-/* Geometry only. Texture assignment belongs to the catalog; Three is injected. */
-const PARTS = ['base', 'middle', 'frustum', 'tip', 'tip_merge'];
+/* Geometry only. Segmented resources are bound by the preview resolver; Three is injected. */
 export function createStrandModels(Three) {
   if (!Three || typeof Three.Mesh !== 'function' || typeof Three.PlaneGeometry !== 'function' || Three.DoubleSide === undefined) throw new Error('Strand models require Three');
   function cross(env, id, width, height, y) {
@@ -19,10 +18,9 @@ export function createStrandModels(Three) {
     cross(env, env.faceMap.tip, Math.SQRT2, 1, -.5);
   }
   function sulfur(env) {
-    const faces = env.faceMap;
-    const up = PARTS.some(part => env.slot === faces['up_' + part]);
-    const direction = up ? 'up' : 'down';
-    const end = env.slot === faces[direction + '_tip_merge'] ? 'tip_merge' : 'tip';
+    const faces = env.faceMap, direction = env.state?.direction ?? 'down', merged = env.state?.merged ?? false;
+    if (!['down', 'up'].includes(direction) || typeof merged !== 'boolean') throw new Error('Invalid sulfur preview state');
+    const up = direction === 'up', end = merged ? 'tip_merge' : 'tip';
     ['base', 'middle', 'frustum', end].forEach((part, index) => {
       cross(env, faces[direction + '_' + part], Math.SQRT2 * .5, .5, up ? -.75 + index * .5 : .75 - index * .5);
     });
