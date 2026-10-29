@@ -1,4 +1,4 @@
-/* Single registration point for migrated builders. No global dispatch or catalog mutation. */
+/* Model registration, coverage and the compiler admission boundary. */
 import {createModelRegistry} from './registry.mjs';
 import {createPrimitiveModels} from './primitives.mjs';
 import {createStrandModels} from './strands.mjs';
@@ -47,7 +47,15 @@ export function compileModelCatalog(input, Three) {
   const error = new Error('Model plan is incomplete: ' + plan.unresolved.length + ' unresolved objects, ' + Object.keys(known.missing).length + ' missing builders');
   error.coverage = coverage;throw error;
  }
- const catalog = compileCatalog({...input, models: plan.assignments});
+ const unwrap = (atlas, label) => {
+  if (!dictionary(atlas)) throw new Error('Invalid ' + label + ' atlas');
+  if (!Object.hasOwn(atlas, 'texture_data')) return atlas;
+  if (!dictionary(atlas.texture_data)) throw new Error('Invalid ' + label + ' texture_data');
+  return atlas.texture_data;
+ };
+ const prepared = {...input, models: plan.assignments, terrain: unwrap(input.terrain, 'terrain')};
+ if (input.items !== undefined) prepared.items = unwrap(input.items, 'item');
+ const catalog = compileCatalog(prepared);
  registry.validate(catalog.records);
  return Object.freeze({catalog, registry, coverage});
 }
