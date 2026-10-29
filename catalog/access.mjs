@@ -1,10 +1,12 @@
-/* Queries for compiled catalogs. Never guess an object from the first shared PNG. */
+/* Queries retain the source object, family form and explicit preview state. */
 const own = (object, key) => Object.hasOwn(object, key);
 function dictionary(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 export function createCatalogAccess(catalog) {
   if (!catalog || catalog.schema !== 1 || !['records', 'items', 'aliases', 'families', 'resources'].every(key => dictionary(catalog[key]))) throw new Error('Invalid compiled catalog');
+  const routes = catalog.stateRoutes ?? {}, groups = catalog.stateGroups ?? {};
+  if (!dictionary(routes) || !dictionary(groups)) throw new Error('Invalid state tables');
   const family = new Map();
   for (const [base, forms] of Object.entries(catalog.families)) {
     if (!dictionary(forms) || forms.native !== base) throw new Error('Invalid family: ' + base);
@@ -24,13 +26,25 @@ export function createCatalogAccess(catalog) {
     return own(catalog.records, id) ? id : null;
   }
   for (const id of Object.keys(catalog.aliases)) if (!canonical(id)) throw new Error('Missing alias target: ' + id);
+  for (const [id, route] of Object.entries(routes)) {
+    if (!dictionary(route) || !own(catalog.records, id) || typeof route.card !== 'string' || !own(catalog.records, route.card) || !dictionary(route.state) || !own(groups, route.card)) throw new Error('Invalid state route: ' + id);
+    const group = groups[route.card];
+    if (!dictionary(group) || typeof group.parameter !== 'string' || !dictionary(group.variants) || !own(route.state, group.parameter) || Object.keys(route.state).length !== 1 || !own(group.variants, route.state[group.parameter]) || group.variants[route.state[group.parameter]] !== id) throw new Error('State route disagrees with group: ' + id);
+  }
+  for (const [card, group] of Object.entries(groups)) {
+    if (!dictionary(group) || !dictionary(group.variants) || !own(group.variants, group.default) || !Object.values(group.variants).includes(card)) throw new Error('Invalid state group: ' + card);
+    for (const id of Object.values(group.variants)) if (!own(routes, id) || routes[id].card !== card) throw new Error('Missing state route: ' + id);
+  }
   function describe(id, kind = 'block') {
     if (kind !== 'block' && kind !== 'item') throw new Error('Invalid catalog category');
     if (kind === 'item') return typeof id === 'string' && own(catalog.items, id) ? {kind, id, card: id, form: null} : null;
     const target = canonical(id);
     if (!target) return null;
-    const owner = family.get(target);
-    return {kind, id: target, card: owner?.card ?? target, form: owner?.form ?? 'native'};
+    const route = own(routes, target) ? routes[target] : null;
+    const member = route ? route.card : target, owner = family.get(member);
+    const result = {kind, id: target, card: owner?.card ?? member, form: owner?.form ?? 'native'};
+    if (route) result.state = {...route.state};
+    return result;
   }
   function locate(path, options = {}) {
     const kind = options.kind ?? 'block';
