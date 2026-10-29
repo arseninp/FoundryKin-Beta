@@ -2,6 +2,17 @@
 import {createCatalogAccess} from './access.mjs';
 const own = (value, key) => Object.hasOwn(value, key);
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+function candleBindings(record,state) {
+ if(record.model!=='candle')return null;
+ state.lit??=false;
+ if(typeof state.lit!=='boolean')throw new Error('Invalid candle preview state');
+ const name=record.id+(state.lit?'_lit':'');
+ return Object.fromEntries(Object.entries(record.faces).map(([face,paths])=>{
+  const found=paths.filter(path=>path.split('/').pop()===name);
+  if(found.length!==1)throw new Error('Missing or ambiguous candle resource: '+name);
+  return [face,found];
+ }));
+}
 function segmentedBindings(record) {
  let names;
  if (record.model==='pale_hanging_moss') names={middle:'pale_hanging_moss_middle',tip:'pale_hanging_moss_tip'};
@@ -43,9 +54,10 @@ export function createPreviewResolver(catalog, registry) {
    if (!Array.isArray(iconPaths)||!iconPaths.includes(slot)) throw new Error('Resource has no declared icon role');
   }
   const model=view==='sprite'?'sprite':record.model, descriptor=registry.get(model);
+  const previewState={...selected.state,...state};
   const faceMap={};
   if (view==='model') {
-   const bindings=segmentedBindings(record)??record.faces;
+   const bindings=candleBindings(record,previewState)??segmentedBindings(record)??record.faces;
    if (!dictionary(bindings)) throw new Error('Missing model faces');
    for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
    for (const [face,paths] of Object.entries(bindings)) {
@@ -55,7 +67,6 @@ export function createPreviewResolver(catalog, registry) {
     faceMap[face]=path;
    }
   }
-  const previewState={...selected.state,...state};
   if (model==='sulfur_spike') {
    previewState.direction??='down';previewState.merged??=false;
    if (!['down','up'].includes(previewState.direction)||typeof previewState.merged!=='boolean') throw new Error('Invalid sulfur preview state');
