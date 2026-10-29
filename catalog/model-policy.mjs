@@ -4,7 +4,7 @@ const dictionary = value => value !== null && typeof value === 'object' && !Arra
 const CUBES = new Set(['stone','cobblestone','bedrock','dirt','sand','gravel','glass','obsidian','netherrack','end_stone','clay','ice','packed_ice','blue_ice','magma','furnace','lit_furnace','blast_furnace','lit_blast_furnace','smoker','lit_smoker','redstone_lamp','lit_redstone_lamp','sea_lantern']);
 const CROSS = new Set(['bamboo_sapling','oak_sapling','spruce_sapling','birch_sapling','jungle_sapling','acacia_sapling','dark_oak_sapling','cherry_sapling','pale_oak_sapling','dandelion','poppy','blue_orchid','allium','azure_bluet','red_tulip','orange_tulip','white_tulip','pink_tulip','oxeye_daisy','cornflower','lily_of_the_valley','wither_rose','brown_mushroom','red_mushroom']);
 const EXACT = {
- brewing_stand:'brewing',
+ brewing_stand:'brewing',beacon:'beacon',anvil:'anvil',chipped_anvil:'anvil',damaged_anvil:'anvil',
  pale_hanging_moss:'pale_hanging_moss',sulfur_spike:'sulfur_spike',bamboo:'bamboo',azalea:'azalea',flowering_azalea:'azalea',
  bamboo_fence:'bamboo_fence',bamboo_fence_gate:'bamboo_gate',pale_moss_carpet:'pale_moss_carpet',
  redstone_torch:'redstone_torch',unlit_redstone_torch:'redstone_torch',piston:'piston',sticky_piston:'piston',

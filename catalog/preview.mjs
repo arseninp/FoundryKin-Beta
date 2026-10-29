@@ -2,6 +2,14 @@
 import {createCatalogAccess} from './access.mjs';
 const own = (value, key) => Object.hasOwn(value, key);
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+function pumpkinBindings(record) {
+ if(record.model!=='pumpkin')return null;
+ const names={pumpkin:'pumpkin_side',carved_pumpkin:'pumpkin_face_off',lit_pumpkin:'pumpkin_face_on'};
+ if(!own(names,record.id))throw new Error('Unknown pumpkin variant');
+ const found=record.faces.south.filter(path=>path.split('/').pop()===names[record.id]);
+ if(found.length!==1)throw new Error('Missing or ambiguous pumpkin resource');
+ return {...record.faces,south:found};
+}
 function candleBindings(record,state) {
  if(record.model!=='candle')return null;
  state.lit??=false;
@@ -57,7 +65,7 @@ export function createPreviewResolver(catalog, registry) {
   const previewState={...selected.state,...state};
   const faceMap={};
   if (view==='model') {
-   const bindings=candleBindings(record,previewState)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
+   const bindings=pumpkinBindings(record)??candleBindings(record,previewState)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
    if (!dictionary(bindings)||!Object.keys(bindings).length) throw new Error('Missing model bindings');
    for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
    for (const [face,paths] of Object.entries(bindings)) {

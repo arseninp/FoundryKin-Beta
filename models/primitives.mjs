@@ -1,4 +1,4 @@
-/* Accepted primitive geometry from FKShapes, with an injected Three dependency and explicit registrations. */
+/* Accepted geometry and UVs; all materials are resolved before attaching meshes. */
 const PARTS = {
  cube: {parts: [[1,1,1,0,0,0]], shift: 0},
  slab: {parts: [[1,.5,1,0,-.25,0]], shift: .25},
@@ -15,9 +15,9 @@ const PARTS = {
 const GLAZED = {north:270, east:0, south:90, west:180, up:180, down:180};
 export function createPrimitiveModels(Three) {
  if (!Three || typeof Three.BoxGeometry !== 'function' || typeof Three.Mesh !== 'function') throw new Error('Primitive models require Three');
- function buildPart(env, part, rotation) {
+ function buildPart(env, part, rotation, ids) {
   const [w,h,d,x,y,z] = part;
-  const f = env.faceMap, ids = [f.east,f.west,f.up,f.down,f.south,f.north];
+  const f = env.faceMap;ids=ids??[f.east,f.west,f.up,f.down,f.south,f.north];
   const materials = ids.map(id => {
    if (id === null && env.hiddenMat) return env.hiddenMat;
    if (!env.mats[id]) throw new Error('Missing primitive material: ' + id);
@@ -40,9 +40,17 @@ export function createPrimitiveModels(Three) {
   }
   const mesh = new Three.Mesh(geometry, materials);mesh.position.set(x,y,z);return mesh;
  }
- return Object.entries(PARTS).map(([id, spec]) => ({id, scale:1, mode:'volume', build(env) {
+ const models=Object.entries(PARTS).map(([id, spec]) => ({id, scale:1, mode:'volume', build(env) {
   const rotation=id==='cube' && /_glazed_terracotta$/.test(env.cur) ? GLAZED : null;
   const prepared=spec.parts.map(part => buildPart(env,part,rotation));
   for (const mesh of prepared) {mesh.position.y+=spec.shift;env.group.add(mesh);}
  }}));
+ function solid(id,parts,materials){return {id,scale:1,mode:'volume',build(env){
+  const prepared=parts.map((part,index)=>buildPart(env,part,null,materials(env.faceMap,index)));
+  for(const mesh of prepared)env.group.add(mesh);
+ }};}
+ models.push(solid('anvil',[[.75,.25,.75,0,-.375,0],[.5,.0625,.625,0,-.21875,0],[.25,.3125,.5,0,-.03125,0],[.625,.375,1,0,.3125,0]],(f,i)=>i===3?[f.down,f.down,f.up,f.down,f.down,f.down]:Array(6).fill(f.down)));
+ models.push(solid('beacon',[[.75,.1875,.75,0,-.40625,0],[.625,.625,.625,0,0,0],[1,1,1,0,0,0]],(f,i)=>Array(6).fill([f.down,f.up,f.east][i])));
+ models.push(solid('pumpkin',[[1,1,1,0,0,0]],f=>[f.east,f.west,f.up,f.down,f.south,f.north]));
+ return models;
 }
