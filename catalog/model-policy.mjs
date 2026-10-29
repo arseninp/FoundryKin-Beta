@@ -1,7 +1,26 @@
-/* Conservative presentation policy. Unknown objects remain unresolved; there is no default cube. */
+/* Explicit presentation policy. Unknown objects never receive a fallback cube. */
 const own = (o,k) => Object.hasOwn(o,k);
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
-const CUBES = new Set(['stone','cobblestone','bedrock','dirt','sand','gravel','glass','obsidian','netherrack','end_stone','clay','ice','packed_ice','blue_ice','magma','furnace','lit_furnace','blast_furnace','lit_blast_furnace','smoker','lit_smoker','redstone_lamp','lit_redstone_lamp','sea_lantern']);
+const CUBES = new Set([
+ 'stone','cobblestone','bedrock','dirt','sand','gravel','glass','obsidian','netherrack','end_stone','clay','ice','packed_ice','blue_ice','magma',
+ 'furnace','lit_furnace','blast_furnace','lit_blast_furnace','smoker','lit_smoker','redstone_lamp','lit_redstone_lamp','sea_lantern',
+ 'amethyst_block','ancient_debris','andesite','azalea_leaves_flowered','bamboo_block','bamboo_mosaic','basalt','blackstone','bone_block','bookshelf','brick_block',
+ 'brown_mushroom_block','budding_amethyst','calcite','cartography_table','chain_command_block','chiseled_bookshelf','chiseled_cinnabar','chiseled_deepslate',
+ 'chiseled_nether_bricks','chiseled_polished_blackstone','chiseled_quartz_block','chiseled_red_sandstone','chiseled_resin_bricks','chiseled_sandstone',
+ 'chiseled_stone_bricks','chiseled_sulfur','chiseled_tuff','chiseled_tuff_bricks','cinnabar','cinnabar_bricks','coal_block','coarse_dirt','cobbled_deepslate',
+ 'command_block','cracked_deepslate_bricks','cracked_deepslate_tiles','cracked_nether_bricks','cracked_polished_blackstone_bricks','cracked_stone_bricks',
+ 'crafting_table','creaking_heart','crimson_nylium','crying_obsidian','cut_red_sandstone','cut_sandstone','dark_prismarine','deepslate','deepslate_bricks','deepslate_tiles',
+ 'diamond_block','diorite','dirt_with_roots','dispenser','dried_kelp_block','dripstone_block','dropper','emerald_block','end_bricks','fletching_table','frosted_ice',
+ 'gilded_blackstone','glowstone','gold_block','granite','grass_block','hardened_clay','hay_block','honeycomb_block','iron_block','jigsaw','jukebox','lapis_block',
+ 'lodestone','loom','mangrove_roots','melon_block','mob_spawner','moss_block','mossy_cobblestone','mossy_stone_bricks','mud','mud_bricks','muddy_mangrove_roots',
+ 'mushroom_stem','mycelium','nether_brick','nether_wart_block','netherite_block','noteblock','observer','ochre_froglight','packed_mud','pale_moss_block',
+ 'pearlescent_froglight','podzol','polished_andesite','polished_basalt','polished_blackstone','polished_blackstone_bricks','polished_cinnabar','polished_deepslate',
+ 'polished_diorite','polished_granite','polished_sulfur','polished_tuff','potent_sulfur','powder_snow','prismarine','prismarine_bricks','purpur_block','purpur_pillar',
+ 'quartz_block','quartz_bricks','quartz_pillar','raw_copper_block','raw_gold_block','raw_iron_block','red_nether_brick','red_sand','red_sandstone','redstone_block',
+ 'reinforced_deepslate','repeating_command_block','resin_block','resin_bricks','respawn_anchor','sandstone','sculk','shroomlight','slime','smithing_table',
+ 'smooth_basalt','smooth_quartz','smooth_red_sandstone','smooth_sandstone','smooth_stone','snow','soul_sand','soul_soil','sponge','stone_bricks','structure_block',
+ 'stripped_bamboo_block','sulfur','sulfur_bricks','target','tinted_glass','tnt','tuff','tuff_bricks','verdant_froglight','warped_nylium','warped_wart_block','wet_sponge'
+]);
 const CROSS = new Set(['bamboo_sapling','oak_sapling','spruce_sapling','birch_sapling','jungle_sapling','acacia_sapling','dark_oak_sapling','cherry_sapling','pale_oak_sapling','dandelion','poppy','blue_orchid','allium','azure_bluet','red_tulip','orange_tulip','white_tulip','pink_tulip','oxeye_daisy','cornflower','lily_of_the_valley','wither_rose','brown_mushroom','red_mushroom']);
 const EXACT = {
  brewing_stand:'brewing',beacon:'beacon',anvil:'anvil',chipped_anvil:'anvil',damaged_anvil:'anvil',
@@ -27,7 +46,10 @@ function classify(id) {
  if (/(^|_)double_/.test(id)&&/_slab$/.test(id)) return {model:'cube',reason:'double-slab'};
  const form=/_(slab|stairs|wall|fence_gate|fence|button|pressure_plate|pane|carpet|trapdoor)$/.exec(id);
  if(form) return {model:({fence_gate:'gate',pressure_plate:'plate'})[form[1]]??form[1],reason:'form-suffix'};
- if(/_(planks|wool|concrete|terracotta|ore|log|wood)$/.test(id)) return {model:'cube',reason:'material-class'};
+ if(/_(planks|wool|concrete|terracotta|ore|log|wood|leaves|stained_glass|concrete_powder)$/.test(id)) return {model:'cube',reason:'material-class'};
+ if(/^(?:stripped_)?(?:crimson|warped)_(?:stem|hyphae)$/.test(id)) return {model:'cube',reason:'nether-wood-material'};
+ if(/^(?:dead_)?(?:tube|brain|bubble|fire|horn)_coral_block$/.test(id)) return {model:'cube',reason:'coral-solid-material'};
+ if(/^(?:(?:exposed|weathered|oxidized)_)?(?:copper|copper_block|cut_copper|chiseled_copper|copper_grate|copper_bulb)$/.test(id)) return {model:'cube',reason:'copper-solid-material'};
  return null;
 }
 export function planModelAssignments(blocks, overrides={}) {
