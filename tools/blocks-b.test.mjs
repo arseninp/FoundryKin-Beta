@@ -13,27 +13,36 @@ function setup(b,extra,existingList,cr){
  const existing=existingList?Object.fromEntries(existingList.map(p=>[p,1])):undefined;
  return {ctx,cat:ctx.FKCatalog.index({extra},existing),fallbacks:()=>fallback};
 }
-function render(ctx,cur,fm,slot){const mats={};Object.values(fm).forEach(p=>{mats[p]={path:p}});const root=new ctx.THREE.Group();ctx.FKShapes.build({cur,slot:slot||fm.up,faceMap:fm,mats,hiddenMat:{},group:root});return root}
+function render(ctx,cur,fm,slot,state){const mats={};Object.values(fm).forEach(p=>{mats[p]={path:p}});const root=new ctx.THREE.Group();ctx.FKShapes.build({cur,slot:slot||fm.up,faceMap:fm,mats,hiddenMat:{},group:root,state});return root}
 function flat(root){const out=[];(function walk(n){n.children.forEach(c=>{if(c.children)walk(c);else out.push(c)})})(root);return out}
 const six=p=>[p,p,p,p,p,p];
-test('pistons: head is the main picture, the hole texture selects the extended piston',()=>{
+test('pistons: the head is the main picture; the Extended state, not the selected texture, shows the extended piston',()=>{
  const inner=P+'piston_inner',bottom=P+'piston_bottom',side=P+'piston_side',head=P+'piston_top_normal',sticky=P+'piston_top_sticky';
  const {ctx,cat}=setup({piston:[inner,bottom,side,side,side,side],sticky_piston:[inner,bottom,side,side,side,side]},{},[inner,bottom,side,head,sticky]);
  assert.equal(cat.sp.piston.list[0].id,head);assert.equal(cat.sp.sticky_piston.list[0].id,sticky);assert.equal(cat.sp.piston.list.length,4);
- const fm=cat.sp.piston.fm,closed=flat(render(ctx,'piston',fm,head)),open=flat(render(ctx,'piston',fm,inner));
+ const fm=cat.sp.piston.fm,closed=flat(render(ctx,'piston',fm,head)),open=flat(render(ctx,'piston',fm,head,{extended:true}));
  assert.equal(closed.length,6);assert.ok(closed.some(m=>m.material.path===head));assert.ok(!closed.some(m=>m.material.path===inner));
+ assert.equal(flat(render(ctx,'piston',fm,inner)).length,6);assert.equal(flat(render(ctx,'piston',fm,inner,{extended:false})).length,6);
  assert.equal(open.length,15);assert.ok(open.some(m=>m.material.path===inner)&&open.some(m=>m.material.path===head));
+ assert.equal(flat(render(ctx,'piston',fm,side,{extended:true})).length,15);
  assert.ok(Math.max(...open.map(m=>m.y+m.geometry.h/2))>.5);
+ assert.deepEqual(JSON.parse(JSON.stringify(ctx.FKShapes.previewStates.sticky_piston)),JSON.parse(JSON.stringify(ctx.FKShapes.previewStates.piston)));
  assert.equal(setup({piston:[inner,bottom,side,side,side,side]},{},[inner,bottom,side]).cat.sp.piston,undefined);
 });
-test('wheat, carrots, potatoes, beetroot and turtle egg get a slot per stage',()=>{
+test('wheat, carrots, potatoes, beetroot and turtle egg get a slot and a preview stage per growth step',()=>{
  const st=n=>Array.from({length:n},(_,i)=>P+'s'+i),b={wheat:six(st(8)[0]),carrots:six(st(4)[0]),turtle_egg:six(st(3)[0])};
  const {ctx,cat}=setup(b,{wheat:st(8),carrots:st(4),turtle_egg:st(3)},st(8));
  assert.equal(cat.sp.wheat.list.length,8);assert.equal(cat.sp.carrots.list.length,4);assert.equal(cat.sp.turtle_egg.list.length,3);
- const w=flat(render(ctx,'wheat',cat.sp.wheat.fm,P+'s5'));assert.equal(w.length,4);assert.ok(w.every(m=>m.material.path===P+'s5'));
+ const w=flat(render(ctx,'wheat',cat.sp.wheat.fm,P+'s5',{stage:5}));assert.equal(w.length,4);assert.ok(w.every(m=>m.material.path===P+'s5'));
  assert.deepEqual(Array.from(w,m=>Math.abs(m.x||0)+Math.abs(m.z||0)),[.25,.25,.25,.25]);
- const egg=flat(render(ctx,'turtle_egg',cat.sp.turtle_egg.fm,P+'s2'));assert.equal(egg.length,6);assert.ok(egg.some(m=>Math.abs(m.geometry.w-4/16)<1e-9&&Math.abs(m.geometry.h-7/16)<1e-9));
+ assert.ok(flat(render(ctx,'wheat',cat.sp.wheat.fm,P+'s5')).every(m=>m.material.path===P+'s0'));
+ assert.ok(flat(render(ctx,'wheat',cat.sp.wheat.fm,P+'s5',{stage:2})).every(m=>m.material.path===P+'s2'));
+ assert.ok(flat(render(ctx,'wheat',cat.sp.wheat.fm,P+'s5',{stage:99})).every(m=>m.material.path===P+'s0'));
+ const egg=flat(render(ctx,'turtle_egg',cat.sp.turtle_egg.fm,P+'s0',{stage:2}));assert.equal(egg.length,6);assert.ok(egg.some(m=>Math.abs(m.geometry.w-4/16)<1e-9&&Math.abs(m.geometry.h-7/16)<1e-9));
  assert.ok(egg.every(m=>m.material.path===P+'s2'));
+ const schema=ctx.FKShapes.stateSchema('wheat');assert.equal(schema.length,1);assert.equal(schema[0].key,'stage');
+ assert.deepEqual(Array.from(schema[0].values,v=>v.value),[0,1,2,3,4,5,6,7]);assert.equal(ctx.FKShapes.stateSchema('turtle_egg')[0].values.length,3);
+ assert.equal(ctx.FKShapes.stateSchema('stone'),null);
 });
 test('pink petals and wildflowers: four petal quadrants and eight crossed stems',()=>{
  const {ctx,cat}=setup({pink_petals:six(P+'pp'),wildflowers:six(P+'wf')},{pink_petals:[P+'pp',P+'pp_stem'],wildflowers:[P+'wf',P+'wf_stem']},[P+'pp',P+'pp_stem',P+'wf',P+'wf_stem']);
@@ -47,17 +56,20 @@ test('pink petals and wildflowers: four petal quadrants and eight crossed stems'
  const quad=(x,z)=>x<0?(z<0?0:1):(z>0?2:3),perQuad=[0,0,0,0];for(let i=0;i<stem.length;i+=2)perQuad[quad(stem[i].x,stem[i].z)]++;
  assert.deepEqual(perQuad,[3,1,3,1]);
  const only=flat(render(ctx,'pink_petals',{...cat.sp.pink_petals.fm,s1:undefined}));assert.equal(only.length,4);
+ assert.equal(ctx.FKShapes.stateSchema('pink_petals'),null);
 });
-test('tripwire hook: bare hook, and with the string slot the hook with its string attached; tripwire is a thin strip',()=>{
+test('tripwire hook: the String state, not the selected texture, attaches the string; tripwire is a thin strip',()=>{
  const src=P+'trip_wire_source',base=P+'planks_oak',str=P+'trip_wire';
  const {ctx,cat}=setup({tripwire_hook:[src,base,src,str,str,str],trip_wire:six(str)},{},[src,base,str]);
  assert.equal(cat.sp.tripwire_hook.list.length,3);const fm=cat.sp.tripwire_hook.fm;
- const bare=render(ctx,'tripwire_hook',fm,src),groups=bare.children.filter(c=>c.children);
+ const bare=render(ctx,'tripwire_hook',fm,str),groups=bare.children.filter(c=>c.children);
  assert.equal(bare.children.filter(c=>!c.children).length,6);assert.deepEqual(Array.from(groups,g=>g.rotation.x),[Math.PI/4,-Math.PI/4]);
  assert.ok(!flat(bare).some(m=>m.material.path===str));
- const att=render(ctx,'tripwire_hook',fm,str),ag=att.children.filter(c=>c.children);
+ assert.equal(render(ctx,'tripwire_hook',fm,src,{attached:false}).children.length,bare.children.length);
+ const att=render(ctx,'tripwire_hook',fm,src,{attached:true}),ag=att.children.filter(c=>c.children);
  assert.equal(att.children.filter(c=>!c.children).length,12);assert.deepEqual(Array.from(ag,g=>g.rotation.x),[-Math.PI/8,-Math.PI/8]);
  const strip=flat(att).filter(m=>m.material.path===str);assert.equal(strip.length,1);assert.ok(Math.abs(strip[0].geometry.h-6.7/16)<1e-9&&Math.abs(strip[0].geometry.w-.5/16)<1e-9);
+ assert.equal(ctx.FKShapes.previewStates.tripwire_hook[0].key,'attached');
  const w=flat(render(ctx,'trip_wire',{up:str,down:str,north:str,south:str,east:str,west:str}));assert.equal(w.length,1);
  assert.ok(Math.abs(w[0].geometry.w-.5/16)<1e-9&&w[0].geometry.h===1&&Math.abs(w[0].y-(1.5-8)/16)<1e-9);
 });
@@ -74,14 +86,26 @@ test('nether portal is one flat sheet; end portal is left to the original sprite
  assert.equal(ctx.FKShapes.flat('end_portal'),true);assert.equal(ctx.FKShapes.flat('end_gateway'),true);
  const {ctx:c2,fallbacks}=setup({},{});c2.FKShapes.build({cur:'end_portal'});assert.equal(fallbacks(),1);
 });
-test('end portal frame: a 13 px body and the eye on top for the eye slot',()=>{
+test('end portal frame: a 13 px body; the Eye state, not the selected texture, adds the eye on top',()=>{
  const top=P+'endframe_top',side=P+'endframe_side',bottom=P+'endframe_bottom',eye=P+'endframe_eye';
  const {ctx,cat}=setup({end_portal_frame:[top,bottom,side,side,side,side]},{},[top,side,bottom,eye],{end_portal_frame:eye});
  assert.equal(cat.sp.end_portal_frame.list.length,4);assert.equal(cat.cr.end_portal_frame,undefined);
- const fm=cat.sp.end_portal_frame.fm,empty=flat(render(ctx,'end_portal_frame',fm,top)),full=flat(render(ctx,'end_portal_frame',fm,eye));
+ const fm=cat.sp.end_portal_frame.fm,empty=flat(render(ctx,'end_portal_frame',fm,eye)),full=flat(render(ctx,'end_portal_frame',fm,top,{eye:true}));
  assert.equal(empty.length,6);assert.ok(empty.some(m=>Math.abs(m.geometry.h-13/16)<1e-9));assert.equal(full.length,11);
  const e=full.filter(m=>m.material.path===eye);assert.equal(e.length,5);assert.ok(Math.abs(Math.max(...e.filter(m=>Math.abs(m.geometry.h-3/16)<1e-9).map(m=>m.y+m.geometry.h/2))-.5)<1e-9);
  assert.equal(setup({end_portal_frame:[top,bottom,side,side,side,side]},{},[top,side,bottom],{end_portal_frame:eye}).cat.sp.end_portal_frame,undefined);
+});
+test('state schemas are valid for the shared preview panel and chain to an earlier schema hook',()=>{
+ const {ctx}=setup({},{});
+ for(const id of ['piston','sticky_piston','tripwire_hook','end_portal_frame']){
+  const schema=ctx.FKShapes.previewStates[id];assert.equal(schema.length,1);
+  assert.match(schema[0].key,/^[a-z][a-z0-9_]*$/);assert.equal(schema[0].values.length,2);
+  assert.deepEqual(Array.from(schema[0].values,v=>v.value),[false,true]);
+  for(const o of schema[0].values)assert.ok(Array.isArray(o.label)&&o.label.length===2&&o.label.every(t=>typeof t==='string'&&t));
+ }
+ class G{constructor(){this.children=[]}}
+ const own={marker:1},c2={FKCatalog:{index:()=>({b:{},sp:{},cr:{},ids:[],sig:{},members:{},mother:{}})},FKShapes:{build(){},view:()=>1,stateSchema:id=>id==='other'?own:null},THREE:{Group:G}};
+ c2.window=c2;vm.createContext(c2);vm.runInContext(code,c2);assert.equal(c2.FKShapes.stateSchema('other'),own);assert.equal(c2.FKShapes.stateSchema('wheat'),null);
 });
 test('other models and item sprites delegate unchanged',()=>{
  const {ctx,fallbacks}=setup({},{});ctx.FKShapes.build({cur:'stone'});ctx.FKShapes.build({cur:'wheat',slot:'textures/items/x'});assert.equal(fallbacks(),2);
