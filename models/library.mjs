@@ -2,10 +2,11 @@
 import {createModelRegistry} from './registry.mjs';
 import {createPrimitiveModels} from './primitives.mjs';
 import {createStrandModels} from './strands.mjs';
+import {createLightModels} from './lights.mjs';
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 export function createModelLibrary(Three) {
  const registry = createModelRegistry();
- registry.register([...createPrimitiveModels(Three), ...createStrandModels(Three)]);
+ registry.register([...createPrimitiveModels(Three), ...createStrandModels(Three), ...createLightModels(Three)]);
  registry.seal();
  return registry;
 }
