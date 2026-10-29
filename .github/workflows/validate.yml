@@ -2,19 +2,23 @@ name: Validate application and catalog
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, refactor-0.9]
     paths:
-      - '*.js'
-      - '*.html'
+      - '**/*.js'
+      - '**/*.mjs'
+      - '**/*.html'
+      - '**/*.css'
+      - 'data/**'
       - 'tools/**'
-      - 'data/catalog-candidate/**'
       - '.github/workflows/validate.yml'
   pull_request:
     paths:
-      - '*.js'
-      - '*.html'
+      - '**/*.js'
+      - '**/*.mjs'
+      - '**/*.html'
+      - '**/*.css'
+      - 'data/**'
       - 'tools/**'
-      - 'data/catalog-candidate/**'
       - '.github/workflows/validate.yml'
 permissions:
   contents: read
@@ -32,10 +36,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check application JavaScript syntax
-        run: |
-          for file in fk-*.js; do
-            node --check "$file"
-          done
-      - name: Run all tool and catalog loader tests
-        run: node --test tools/*.test.mjs
+      - name: Check tracked source syntax, file limits and all tests
+        run: node tools/validate.mjs
