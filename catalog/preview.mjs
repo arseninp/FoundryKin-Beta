@@ -1,4 +1,4 @@
-/* Resolve editor selection without coupling the edited PNG to model state. */
+/* Selection and model resources are independent of the edited PNG. */
 import {createCatalogAccess} from './access.mjs';
 const own = (value, key) => Object.hasOwn(value, key);
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -48,7 +48,7 @@ export function createPreviewResolver(catalog, registry) {
   if (typeof slot!=='string'||!available.includes(slot)) throw new Error('Texture is outside the selected object');
   const view=request.view??(kind==='item'?'sprite':'model');
   if (view!=='model'&&view!=='sprite') throw new Error('Invalid preview view');
-  if (kind==='item'&&view!=='sprite') throw new Error('Item model view is not assigned');
+  if (kind==='item'&&view==='model'&&(!own(record,'model')||typeof record.model!=='string'||!record.model||!dictionary(record.bindings))) throw new Error('Item model view is not assigned');
   if (kind==='block'&&view==='sprite') {
    const iconPaths=group?Object.values(group.variants).flatMap(id=>catalog.records[id].icons):record.icons;
    if (!Array.isArray(iconPaths)||!iconPaths.includes(slot)) throw new Error('Resource has no declared icon role');
@@ -57,11 +57,12 @@ export function createPreviewResolver(catalog, registry) {
   const previewState={...selected.state,...state};
   const faceMap={};
   if (view==='model') {
-   const bindings=candleBindings(record,previewState)??segmentedBindings(record)??record.faces;
-   if (!dictionary(bindings)) throw new Error('Missing model faces');
+   const bindings=candleBindings(record,previewState)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
+   if (!dictionary(bindings)||!Object.keys(bindings).length) throw new Error('Missing model bindings');
    for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
    for (const [face,paths] of Object.entries(bindings)) {
-    if (!Array.isArray(paths)||!paths.length) throw new Error('Missing face resources: '+face);
+    if (!/^[a-z][a-z0-9_]*$/.test(face)||!Array.isArray(paths)||!paths.length) throw new Error('Invalid model binding: '+face);
+    if(paths.some(path=>typeof path!=='string'||!record.paths.includes(path)))throw new Error('Binding resource is outside the selected record: '+face);
     const path=own(choices,face)?choices[face]:paths.length===1?paths[0]:null;
     if (typeof path!=='string'||!paths.includes(path)) throw new Error('Explicit face variant required: '+face);
     faceMap[face]=path;
@@ -71,10 +72,11 @@ export function createPreviewResolver(catalog, registry) {
    previewState.direction??='down';previewState.merged??=false;
    if (!['down','up'].includes(previewState.direction)||typeof previewState.merged!=='boolean') throw new Error('Invalid sulfur preview state');
   }
-  return {object:selected,model,slot,paths:available,faceMap,state:previewState,scale:descriptor.scale,mode:descriptor.mode,
+  const buildFaces={...faceMap},buildState={...previewState};
+  return {object:selected,model,slot,paths:available,faceMap:{...faceMap},bindings:{...faceMap},state:{...previewState},scale:descriptor.scale,mode:descriptor.mode,
    build(environment) {
     if (!dictionary(environment)) throw new Error('Invalid preview environment');
-    return registry.build(model,{...environment,cur:selected.id,slot,faceMap:{...faceMap},state:{...previewState}});
+    return registry.build(model,{...environment,cur:selected.id,slot,faceMap:{...buildFaces},bindings:{...buildFaces},state:{...buildState}});
    }
   };
  };
