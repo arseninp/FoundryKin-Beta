@@ -6,12 +6,13 @@ import {createLightModels} from './lights.mjs';
 import {createPlanarModels} from './planar.mjs';
 import {createFixtureModels} from './fixtures.mjs';
 import {createDoorModels} from './doors.mjs';
+import {createAmethystModels} from './amethyst.mjs';
 import {compileCatalog} from '../catalog/compile.mjs';
 import {planModelAssignments} from '../catalog/model-policy.mjs';
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 export function createModelLibrary(Three) {
  const registry = createModelRegistry();
- registry.register([...createPrimitiveModels(Three), ...createStrandModels(Three), ...createLightModels(Three), ...createPlanarModels(Three), ...createFixtureModels(Three), ...createDoorModels(Three)]);
+ registry.register([...createPrimitiveModels(Three), ...createStrandModels(Three), ...createLightModels(Three), ...createPlanarModels(Three), ...createFixtureModels(Three), ...createDoorModels(Three), ...createAmethystModels(Three)]);
  registry.seal();
  return registry;
 }

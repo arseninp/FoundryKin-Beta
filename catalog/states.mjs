@@ -14,7 +14,8 @@ export function powerRules(records) {
  }));
  for(const rule of [
   {card:'pumpkin',parameter:'variant',default:'plain',variants:{plain:'pumpkin',carved:'carved_pumpkin',lit:'lit_pumpkin'}},
-  {card:'anvil',parameter:'damage',default:'undamaged',variants:{undamaged:'anvil',chipped:'chipped_anvil',damaged:'damaged_anvil'}}
+  {card:'anvil',parameter:'damage',default:'undamaged',variants:{undamaged:'anvil',chipped:'chipped_anvil',damaged:'damaged_anvil'}},
+  {card:'amethyst_cluster',parameter:'growth',default:'cluster',variants:{small:'small_amethyst_bud',medium:'medium_amethyst_bud',large:'large_amethyst_bud',cluster:'amethyst_cluster'}}
  ])if(Object.values(rule.variants).every(id=>own(records,id)))rules.push(rule);
  return rules;
 }
