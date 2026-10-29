@@ -2,6 +2,12 @@
 import {createCatalogAccess} from './access.mjs';
 const own = (value, key) => Object.hasOwn(value, key);
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+function azaleaBindings(record) {
+ if(record.model!=='azalea')return null;
+ const bindings=own(record,'bindings')?record.bindings:{top:record.faces?.up,side:record.faces?.north,plant:record.faces?.east};
+ if(!dictionary(bindings)||Object.keys(bindings).length!==3||!['top','side','plant'].every(role=>Array.isArray(bindings[role])&&bindings[role].length===1))throw new Error('Missing or ambiguous azalea parts');
+ return bindings;
+}
 function doorBindings(record) {
  if(record.model!=='door')return null;
  const bindings=own(record,'bindings')?record.bindings:{lower:record.faces?.down,upper:record.faces?.north};
@@ -71,7 +77,7 @@ export function createPreviewResolver(catalog, registry) {
   const previewState={...selected.state,...state};
   const faceMap={};
   if (view==='model') {
-   const bindings=doorBindings(record)??pumpkinBindings(record)??candleBindings(record,previewState)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
+   const bindings=azaleaBindings(record)??doorBindings(record)??pumpkinBindings(record)??candleBindings(record,previewState)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
    if (!dictionary(bindings)||!Object.keys(bindings).length) throw new Error('Missing model bindings');
    for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
    for (const [face,paths] of Object.entries(bindings)) {
