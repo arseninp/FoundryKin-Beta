@@ -63,7 +63,7 @@ function build(stage,entry,reset){
   else if(reset||stage.flat)stage.group.rotation.set(ANGLE_X,ANGLE_Y,0);
   stage.flat=flat;
   stage.camera.zoom=1/FKShapes.view(entry.cur);stage.camera.updateProjectionMatrix();
-  var env={shape:entry.shape,cur:entry.cur,slot:entry.slot,faceMap:entry.faceMap,mats:entry.mats,group:stage.group,hiddenMat:hidden,SHAPES:FKShapes.SHAPES,refreshDoor:entry.refreshDoor||function(){}};
+  var env={shape:entry.shape,cur:entry.cur,slot:entry.slot,faceMap:entry.faceMap,mats:entry.mats,group:stage.group,hiddenMat:hidden,SHAPES:FKShapes.SHAPES,refreshDoor:entry.refreshDoor||function(){},state:entry.state||{}};
   try{FKShapes.build(env)}catch(err){clear(stage);throw err}
 }
 function render(stage,width,pixelRatio){

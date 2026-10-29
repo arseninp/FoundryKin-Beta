@@ -1,0 +1,47 @@
+name: Build catalog candidate
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/catalog-candidate.yml'
+      - 'tools/build-catalog-candidate.mjs'
+      - 'tools/build-catalog-candidate.test.mjs'
+permissions:
+  contents: write
+concurrency:
+  group: catalog-candidate-build
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test catalog tools
+        run: node --test tools/*.test.mjs
+      - name: Read pinned official sources
+        uses: actions/checkout@v4
+        with:
+          repository: Mojang/bedrock-samples
+          ref: 46ba6ea985fb5a92d79a9419198f10dda14c199d
+          path: .catalog-source
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            resource_pack/blocks.json
+            resource_pack/textures/terrain_texture.json
+            metadata/vanilladata_modules/mojang-blocks.json
+      - name: Build review-only catalog candidate
+        run: node tools/build-catalog-candidate.mjs .catalog-source data/catalog-candidate
+      - name: Save only generated candidate data
+        run: |
+          git add -A -- data/catalog-candidate
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'build: record pinned catalog candidate for review'
+          git push origin HEAD:main

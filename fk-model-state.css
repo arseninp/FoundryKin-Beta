@@ -1,0 +1,6 @@
+/* State controls reuse the editor's sheet, backdrop, buttons and theme variables. */
+.fkStatePanel{margin:12px 0;padding:8px;border:1px solid var(--line);border-radius:var(--fk-header-radius)}
+.fkStatePanel .fkStateRow{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin:6px 0;padding:8px 10px;min-height:var(--fk-header-height);font:inherit;text-align:left}
+.fkStateValue{font-weight:500;color:var(--mute);text-align:right;overflow-wrap:anywhere}
+.fkStateOptions{display:flex;flex-direction:column;gap:6px}
+.fkStateOptions .fkStateOption{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:var(--fk-header-height);padding:10px 12px;font:inherit;text-align:left}

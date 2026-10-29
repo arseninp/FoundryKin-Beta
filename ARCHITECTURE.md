@@ -1,57 +1,97 @@
-# ARCHITECTURE — общий просмотр 0.8.80
+# ARCHITECTURE — FoundryKin
 
-Карта реализации в refactor-shared-view после кодового коммита 88519be. Публикацию в main проверять отдельно. Визуальная и браузерная приёмка не проведены. Имена символов надёжнее номеров строк.
+Состояние на 2026-10-29, `main` = `353ee09` (0.9.1). Не результат нового полного CI или WebGL-аудита. Ветка `refactor-0.9` (`c9423ef`) описана отдельно и в приложении не используется.
 
-## Загрузка
+## Порядок загрузки
 
-app.html: fk-style.css, fk-base.css, FK_V, fk-i18n.js → fk-editor.js → fk-app.js → JSZip 3.10.1. FKE загружает index.html внутри iframe.
+Оболочка `app.html`: FK_V (0.9.1), стили, `fk-i18n.js` → `fk-editor.js` → `fk-app.js`, JSZip 3.10.1; FKE открывает `index.html` в iframe.
 
-index.html: fk-base.css; fk-i18n.js → Three.js r128 → fk-catalog.js → fk-shapes.js → fk-sculk.js → fk-lights.js → fk-details.js → fk-fixtures.js → fk-view.js → fk-core.js → fk-tools.js → fk-grid.js → fk-help.js.
+Редактор (`index.html`, стили `fk-base.css` и `fk-model-state.css`):
 
-Расширения моделей оборачивают FKCatalog.index и FKShapes.build, поэтому идут до ядра. FKView должен быть определён до fk-core. Собственные ?v= и FK_V согласованы на 0.8.80; CDN-версии не менялись.
+```text
+fk-i18n.js → Three.js r128 → fk-catalog-data.js → fk-catalog.js
+→ fk-shapes.js → fk-sculk.js → fk-lights.js → fk-details.js
+→ fk-fixtures.js → fk-strands.js → fk-curation.js → fk-blocks-b.js
+→ fk-view.js → fk-model-state.js → fk-core.js → fk-pixel-grid.js
+→ fk-tools.js → fk-grid.js → fk-help.js
+```
 
-## Владение и ответственность
+Расширения оборачивают `FKCatalog.index`, `FKShapes.build/view`; curation оборачивает `bindFamilies`. Поздняя обёртка может перекрывать раннюю. Общий реестр в `main` не внедрён (прототип — в `refactor-0.9`).
 
-| Файлы | Ответственность |
+## Карта модулей
+
+| Модуль | Ответственность |
 |---|---|
-| fk-app.js, app.html | Навигация, Save/Add, импорт/экспорт, паки, диагностика, оболочка |
-| fk-editor.js | FKE: загрузка iframe и мост к FKAPI, dirtyNow и сведения о текущем объекте |
-| fk-i18n.js; fk-base.css, fk-style.css | EN/RU, темы, шапки и компоновка |
-| fk-catalog.js | Каталог, семейства, пути, загрузка PNG/TGA и fallback источников |
-| fk-shapes.js | Общая геометрия, SHAPES, VIEW_SCALE/view, иконки форм; inkRect удалён |
-| fk-sculk.js, fk-lights.js, fk-details.js, fk-fixtures.js | Дополнительная геометрия и расширения каталога; FKShapes.flat определён в details; экранный iso-разворот удалён |
-| fk-view.js | Единственный renderer, камеры/свет, texture/material/mapMaterial, doorTexture, build/clear, render/mount/capture |
-| fk-core.js | FKAPI, состояние редактора и общая подготовка объекта для обоих потребителей |
-| fk-grid.js | Только Find UI: поиск, категории, карточки, наблюдатели, кэш снимков, активный пак и прокрутка |
-| fk-tools.js, fk-help.js | Инструменты через FKAPI.ctx; справка, сведения о блоке и ошибки |
+| app.html, fk-app.js | Паки, навигация, Save/Add, импорт/экспорт, диагностика |
+| fk-editor.js | Мост оболочки и iframe |
+| fk-i18n.js, fk-base.css, fk-style.css, стили index.html | Переводы, темы, компоновка, шапки |
+| fk-model-state.css | Оформление панели состояний |
+| fk-catalog-data.js | Закреплённые данные, манифест, SHA-256, инвентарь ресурсов |
+| fk-catalog.js | build/index, extra-пути, семейства, загрузка PNG/TGA |
+| fk-shapes.js | Общие формы, базовые модели (включая четыре кристалла аметиста), иконки форм |
+| fk-sculk.js, fk-lights.js, fk-details.js | Специализированные модели и слоты |
+| fk-fixtures.js | Полки, лестница, кафедра, рычаг, бамбуковые ограды, бледный ковёр, подготовка высоких цветов |
+| fk-strands.js | Pale hanging moss и sulfur spike |
+| fk-curation.js | Фильтрация дублей, слияния состояний/тыкв/pitcher, trapdoor; модели лампы, факела, repeater/comparator (redstoneDevice), sunflower; `H.previewStates` для механизмов |
+| fk-blocks-b.js | Поршни, культуры, turtle egg, flowerbeds, крючок/леска, лозы, Nether portal, рамка Края |
+| fk-view.js | Один рендерер, сцены, камеры, свет, материалы/текстуры, build/clear/render/capture |
+| fk-core.js | FKAPI, редактор, слоты/холсты, подготовка моделей и снимков |
+| fk-grid.js | Find, категории, поиск, видимость, кэш карточек |
+| fk-model-state.js | Панель состояний просмотра: схема `previewStates[id]`, тематическое окно через `FKM`, значения в памяти |
+| fk-pixel-grid.js | SVG-сетка над холстом, не входит в PNG |
+| fk-tools.js, fk-help.js | Рисование, палитра, менеджер окон FKM, справка |
 
-## Единый путь
+## Данные и выбор объектов
 
-1. Ядро describe(id) разрешает mother, форму, список слотов и faceMap. Оба экрана используют это описание; стандартный слот — первый настоящий путь списка, не символ up.
-2. ensureFiles загружает отсутствующие оригиналы через loadSource, формирует files[path]={res,data,frames,aspect}. Поздний оригинал не перезаписывает уже присутствующий файл пака. sourceLoads объединяет повторные запросы одного пути, но не выстраивает карточки в последовательную очередь.
-3. readImage кэширует декодирование по пути и содержимому; drawFrame одинаково извлекает кадр или рисует заглушку. entryFor задаёт общее разрешение.
-4. Редактор: selectBlock → setupSlots → applyEntry → build → FKView.build. Холсты, undo/redo, выбор кадра и carried-слота принадлежат редактору.
-5. Find: IntersectionObserver → paint → grid().preview(id,current) → previewBlock → общие подготовка/материалы → FKView.capture → img.src. Используется исходное состояние и первый кадр. Текущий холст/поворот редактора не захватывается.
-6. Рисование: fk-tools → FKAPI.ctx → touched → refreshTex → FKView.texture/mapMaterial → requestRender. Add/Save получает только dirty-файлы через FKAPI.files().
+1. FKCatalogData и FKCatalog.load читают `data/catalog-candidate/` и `data/catalog-families/`.
+2. build разрешает terrain-ключи в пути. Для массива primary берёт первый элемент; extra сохраняет все пути, поэтому равные primary не доказывают равенство состояний.
+3. Цепочка index добавляет списки `sp[id]={kind,list,fm}`, фильтрует дубли, объединяет ресурсы. `sp` вытесняет обычный carried-слот; принимается только строковая форма `carried_textures`.
+4. bindFamilies скрывает дочерние карточки и задаёт familyOf/variantForm/formEntries.
+5. describe выбирает ID, shape, слоты и faceMap; slotsFor/pathsFor используют sp.
+6. ensureFiles → readImage → drawFrame готовят данные для редактора и Find. Редактор: selectBlock → setupSlots → applyEntry → FKView.build. Find: grid().preview → previewBlock → FKView.capture.
+7. Add собирает изменённые пути всего выбранного семейства. Состояния модели не подменяют игровые block states в паке.
 
-## Просмотр и ресурсы
+`openTexture` игнорирует переданный ID объекта и ищет первый подходящий по пути (известный дефект).
 
-- Один WebGLRenderer создаётся лениво в FKView. Его canvas смонтирован в #stage. Сцены, камеры и группы редактора и снимка разные; параметры их создания одинаковые.
-- Камера ортографическая ±0.95, z=3.9; начальный угол (.6155,-PI/4,0); zoom=1/FKShapes.view(id). Общие размерные классы сохранены. Front-спрайты используют FKShapes.flat.
-- Свет: Ambient .75 и Directional .55 в (2,4,3).
-- Материалы индексируются реальными путями. Политика двусторонности общая в ядре, дополнительные требования граней задают сами общие построители. AlphaTest .05, nearest-фильтры, без mipmaps; полупрозрачность определяет depthWrite.
-- Текстуры идут через DataTexture с общим вертикальным переворотом. Дверной атлас собирает одна doorTexture: верх сверху, низ снизу до переворота.
-- TINT-подмена только в Find удалена. Carried — явный выбор слота редактора; это не реализованный общий biome tint.
-- Редактор рисует по запросу с объединением событий в RAF, не постоянно; вручную вращается, в фоне/Find кадры не запрашиваются.
-- Снимок синхронный, toDataURL. Последовательные карточки переиспользуют буфер 256 px; размер/DPR редактора выставляет его следующая render. capture очищает только свою геометрию; материалы/текстуры снимка освобождает previewBlock в finally.
-- FKView.build очищает геометрию также при исключении. Потерянный WebGL-контекст блокирует обращения; событие восстановления снимает флаг. Реальное восстановление на устройстве не проверено.
+## Состояния просмотра
 
-## Данные и оставшиеся ограничения
+Схема: массив полей `{key, label:[en,ru], values:[{value,label}]}`, ключ `[a-z][a-z0-9_]*`, значения string/boolean/конечное число. Репитер: `power` (auto/off/on), `delay` 1–4. Компаратор: `power`, `subtract`. `E.state` читается моделью `redstoneDevice`. Режим `auto` связывает питание с выбранным PNG-слотом — это остаточная скрытая связь.
 
-Хранилища не переименованы: fk070_packs, fk070_settings, fk_hist, fk_brush; foundrykin.catalog.v3 хранит b/p без cr, foundrykin.exist.v2 имеет неполный охват entity-путей.
+Также управление моделью через выбранный слот осталось у поршней (inner → выдвинут), sulfur spike (направление, `tip_merge`), pale moss (из-за слотов). Согласовано перевести на явные параметры панели.
 
-ensureFiles сохраняет старое ограничение оригиналов 16/32/64. frames/aspect и packCur/mkFile не означают полной поддержки произвольных атласов. small_dripleaf_block пока не включён в размерный класс 2: проверить кадрирование.
+## Общий просмотр
 
-pv, sourceLoads и decoded не имеют общего лимита. Кэш снимков сбрасывается целиком при смене/восстановлении пака; toBlob/revokeObjectURL и точечная инвалидация не внедрены. Скорость и память на Android не измерены.
+- Один ленивый WebGLRenderer; отдельные сцены редактора и снимка.
+- Ортографическая камера ±0.95, z=3.9, стартовый поворот (.6155, -PI/4, 0).
+- Ambient .75, Directional .55 в (2,4,3). Nearest, alphaTest .05.
+- Рендер по запросу, без idle. Снимки синхронные toDataURL.
+- End portal/gateway и textures/items/ — фронтальные спрайты. Nether portal — вертикальная плоскость. End portal frame — корпус 13 px с глазом.
+- Общий biome tint не реализован.
+- Факел: `torchPost` — у включённого варианта две перпендикулярные плоскости с полной областью PNG.
 
-Обёртки построителей и дубликаты face/box/plane/patch/ubox пока остаются. Их объединение — отдельная стабилизация, не часть завершённой чистки карточного рендера. Тесты на заглушках не доказывают корректность WebGL, Android или экспорта в игру.
+## Кэш, хранение
+
+`foundrykin.catalog.v6`: b/p/cr/extra, existing, familyPlan, версия, source commit. Паки `fk070_packs` и настройки — отдельно. Сброс кэша не удаляет паки. Оригиналы с Mojang `46ba6ea985fb5a92d79a9419198f10dda14c199d`. Холст 16/32/64.
+
+## Ветка refactor-0.9 (не в приложении)
+
+- `catalog/resources.mjs` — нормализация путей и граней, carried в обеих формах, иконки.
+- `catalog/identity.mjs` — алиасы с проверкой, что дубль не теряет модель/состояние/ресурс.
+- `catalog/rules/duplicates.mjs` — waxed_/infested_ → обычный блок.
+- `catalog/items.mjs`, `catalog/rules/icons.mjs` — индексация item-атласа, связи блок→иконка (двери, кровати bed_silver, таблички, и др.).
+- `catalog/compile.mjs` — единый сборщик; `catalog/access.mjs` — выбор объекта по сохранённому ID без угадывания.
+- `models/registry.mjs`, `models/strands.mjs` — явный реестр и перенесённая геометрия.
+- `tools/validate.mjs`, `.github/workflows/validate.yml` для ветки.
+
+## Проверки
+
+```sh
+for file in fk-*.js; do node --check "$file"; done
+node --test tools/*.test.mjs
+```
+
+validate.yml: Node 22, contents: read. Есть тесты strands, curation, blocks-b, catalog-cleanup, сборщиков, данных, семейств и `tools/model-state-ui.test.mjs`. Многие на заглушках; цепочка загрузки целиком не проверяется. Gate-layout тест использует частичную маску.
+
+## Ограничения и долг
+
+Entity pipeline, головы, таблички, полный items-каталог — впереди. Проигрыватель кадров не реализован. Лимиты кэшей, точечная инвалидация, toBlob/revokeObjectURL, общие помощники, большие атласы и транзакционное хранение отложены. Полный аудит мёртвого кода не выполнен.

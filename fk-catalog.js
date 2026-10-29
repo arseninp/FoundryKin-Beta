@@ -1,10 +1,8 @@
 /* FKCatalog: Bedrock block catalog logic without editor state: data loading, indexing, vanilla texture images. */
 var FKCatalog=(function(){
-var URLS_B=['https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/blocks.json','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/blocks.json'];
-var URLS_T=['https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/textures/terrain_texture.json','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/textures/terrain_texture.json'];
-var URLS_F=['https://data.jsdelivr.com/v1/package/gh/Mojang/bedrock-samples@main/flat','https://api.github.com/repos/Mojang/bedrock-samples/git/trees/main?recursive=1'];
-var VAN1='https://raw.githubusercontent.com/Mojang/bedrock-samples/main/resource_pack/';
-var VAN2='https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@main/resource_pack/';
+var PIN='46ba6ea985fb5a92d79a9419198f10dda14c199d';
+var VAN1='https://raw.githubusercontent.com/Mojang/bedrock-samples/'+PIN+'/resource_pack/';
+var VAN2='https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@'+PIN+'/resource_pack/';
 function parseLoose(t){
   t=String(t).replace(/^\uFEFF/,'');
   try{return JSON.parse(t)}catch(e){}
@@ -12,21 +10,6 @@ function parseLoose(t){
   t=t.replace(/,(\s*[}\]])/g,'$1');
   return JSON.parse(t);
 }
-function fetchJson(urls,i,errs2){
-  i=i||0;errs2=errs2||[];
-  if(i>=urls.length)return Promise.reject(new Error(errs2.join('; ')||'no response'));
-  return fetch(urls[i]).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text()}).then(parseLoose)
-    .catch(function(err){errs2.push((err&&err.message?err.message:String(err))+' ['+urls[i].split('/')[2]+']');return fetchJson(urls,i+1,errs2)});
-}
-var FORM_RE=/_(slab|stairs|wall|fence_gate|fence|button|pressure_plate|pane)\d*$/;
-var FORM_OF={slab:'slab',stairs:'stairs',wall:'wall',fence_gate:'gate',fence:'fence',button:'button',pressure_plate:'plate',pane:'pane'};
-function isDerived(id){return FORM_RE.test(id)||/^double_/.test(id)||/_double_/.test(id)}
-function baseFor(id,m,raw){
-  var pre=id.slice(0,m.index),cands=[pre,pre+'_block',pre+'_planks',pre+'_wool',pre+'_concrete',pre+'s',pre+'_bricks',pre+'_brick'];
-  for(var i=0;i<cands.length;i++){var c=cands[i];if(raw[c]&&!isDerived(c))return c}
-  return null;
-}
-var BASE=/_(double_slab|slab|stairs|wall|fence_gate|fence|button|pressure_plate)$/;
 function buildCatalog(B,T){
   var td=(T&&T.texture_data)||{};
   function resolve(k){
@@ -49,7 +32,10 @@ function buildCatalog(B,T){
     b[id]=paths;if(miss)unres[id]=1;if(typeof e.carried_textures==='string'){var cr0=resolve(e.carried_textures);if(cr0&&cr0!==paths[0])cr[id]=cr0}
     if(typeof t==='string'&&e.sound==='grass'&&!e.isotropic&&!e.carried_textures&&!e.ambient_occlusion_exponent)p[id]=1;if(/^(?:sapling|(?:[a-z_]+_)?sapling|(?:[a-z_]+_)?propagule|tallgrass|short_grass|tall_grass|fern|large_fern|deadbush|dead_bush|double_plant|yellow_flower|red_flower|dandelion|poppy|blue_orchid|allium|azure_bluet|(?:red|orange|white|pink)_tulip|oxeye_daisy|cornflower|lily_of_the_valley|wither_rose|torchflower|open_eyeblossom|closed_eyeblossom|sunflower|lilac|rose_bush|peony|pitcher_plant|pink_petals|wildflowers|cactus_flower|(?:[a-z_]+_)?bush|brown_mushroom|red_mushroom|(?:crimson|warped)_(?:fungus|roots)|nether_sprouts|hanging_roots|spore_blossom|wheat|carrots|potatoes|beetroot|beetroots|nether_wart|(?:attached_)?(?:melon|pumpkin)_stem|torchflower_crop|pitcher_crop|reeds|sugar_cane|seagrass|sea_pickle|kelp|(?:dead_)?(?:tube|brain|bubble|fire|horn)_coral(?:_wall_fan|_fan)?|coral_fan(?:_dead|_hang\d?)?|coral|coral_plant(?:_[a-z_]+)?|(?:small|medium|large)_amethyst_bud|amethyst_cluster|web|cobweb|cave_vines(?:_body_with_berries|_head_with_berries)?|weeping_vines|twisting_vines)$/.test(id))p[id]=1;
   });
-  return {b:b,p:p,cr:cr};
+  var extra={};
+  function collect(value,paths){if(typeof value==='string'){if(paths.indexOf(value)<0)paths.push(value)}else if(Array.isArray(value))value.forEach(function(v){collect(v,paths)});else if(value&&typeof value.path==='string')collect(value.path,paths)}
+  Object.keys(b).forEach(function(id){var e=B[id],t=e.textures,keys=typeof t==='string'?[t]:Object.keys(t).map(function(k){return t[k]}),paths=[];if(typeof e.carried_textures==='string')keys.push(e.carried_textures);keys.forEach(function(k){if(td[k])collect(td[k].textures,paths)});extra[id]=paths});
+  return {b:b,p:p,cr:cr,extra:extra};
 }
 function doorPaths(id,existing){
   var N=(id==='wooden_door')?'wood':id.replace(/_door$/,'');
@@ -66,17 +52,7 @@ function doorPaths(id,existing){
 }
 function indexCatalog(c,existing){
   var raw=c.b,all={},sp={},forms={},kids={};
-  Object.keys(raw).forEach(function(id){
-    if(isDerived(id)){
-      if(/^double_/.test(id)||/_double_/.test(id))return;
-      var m=FORM_RE.exec(id);if(!m)return;
-      var base=baseFor(id,m,raw);if(!base)return;
-      var f=FORM_OF[m[1]];
-      (forms[base]=forms[base]||{})[f]=1;(kids[base]=kids[base]||[]).push(id);
-      return;
-    }
-    all[id]=raw[id];
-  });
+  Object.keys(raw).forEach(function(id){if(!/^double_/.test(id)&&!/_double_/.test(id))all[id]=raw[id]});
   Object.keys(raw).forEach(function(id){
     if(!all[id]||!/_door$/.test(id))return;
     var d=doorPaths(id,existing);
@@ -115,11 +91,6 @@ function indexCatalog(c,existing){
     sp.amethyst_cluster={kind:'pick',list:al,fm:{up:ac[0],down:ac[1],north:ac[2],south:ac[3],east:ac[4],west:ac[5],g1:gm.g1,g2:gm.g2,g3:gm.g3}};
     AM.slice(1).forEach(function(x){delete all[x]});
   }
-  Object.keys(kids).forEach(function(bs){
-    var pk=kids[bs].filter(function(k){return /_pane$/.test(k)})[0],gp=all[bs],pt=pk&&raw[pk][4];
-    if(!pt||!gp||pt===gp[0]||sp[bs])return;
-    sp[bs]={kind:'labels',list:[{id:gp[0],k:['slot.glass']},{id:pt,k:['slot.edge']}],fm:{up:gp[0],down:gp[1],north:gp[2],south:gp[3],east:gp[4],west:gp[5],edge:pt}};
-  });
   if(all.anvil){
     var an=all.anvil,al2=[{id:an[0],k:['slot.top']},{id:an[1],k:['slot.base']}],ag={};
     [['chipped_anvil',1],['damaged_anvil',2]].forEach(function(x){var a=all[x[0]];if(a){al2.push({id:a[0],k:['slot.'+x[0]]});ag['g'+x[1]]=a[0]}});
@@ -165,18 +136,55 @@ function indexCatalog(c,existing){
   Object.keys(b).forEach(function(id){var sg=b[id].join('|');sig[id]=sg;(members[sg]=members[sg]||[]).push(id);mother[id]=id});
   return {b:b,cr:cr2,p:c.p||{},sp:sp,forms:forms,kids:kids,sig:sig,members:members,mother:mother,ids:Object.keys(b).sort(),filtered:filtered,hidden:Object.keys(raw).length-Object.keys(b).length};
 }
-function fetchExisting(){
-  return fetchJson(URLS_F).then(function(j){
-    var s={},n=0;
-    (j.files||[]).forEach(function(f){var nm=f.name;if(/^\/resource_pack\/textures\/.+\.(png|tga)$/.test(nm)){s[nm.slice(15,-4)]=1;n++}});
-    (j.tree||[]).forEach(function(f){var nm=f.path;if(/^resource_pack\/textures\/.+\.(png|tga)$/.test(nm)){s[nm.slice(14,-4)]=1;n++}});
-    if(!n)throw new Error('empty file list');
-    return s;
+var familyPending=null;
+function readFamilyFile(name,expected){
+ return fetch('data/catalog-families/'+name,{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error('Family data: HTTP '+r.status);return r.text()}).then(function(t){
+  return window.crypto.subtle.digest('SHA-256',new window.TextEncoder().encode(t)).then(function(buf){
+   var h=Array.prototype.map.call(new Uint8Array(buf),function(x){return ('0'+x.toString(16)).slice(-2)}).join('');
+   if(expected&&h!==expected)throw new Error('Family checksum mismatch: '+name);return JSON.parse(t);
   });
+ });
+}
+function loadFamilies(){
+ if(!familyPending)familyPending=readFamilyFile('manifest.json').then(function(m){
+  if(m.schema!==1||!m.source||m.source.commit!==PIN||!m.counts||!Array.isArray(m.files))throw new Error('Invalid family manifest');
+  var seen={},parts=m.files.filter(function(f){return /^families-/.test(f.name)});
+  if(!parts.length)throw new Error('Missing family records');
+  return Promise.all(parts.map(function(f){
+   if(!/^families-[0-9]{3}\.json$/.test(f.name)||!/^[0-9a-f]{64}$/.test(f.sha256)||seen[f.name])throw new Error('Invalid family file');
+   seen[f.name]=1;return readFamilyFile(f.name,f.sha256);
+  })).then(function(chunks){
+   var plan={},owners={},total=0;
+   chunks.forEach(function(chunk){Object.keys(chunk).forEach(function(base){
+    var f=chunk[base];if(plan[base]||!f||f.id!==base||!Array.isArray(f.variants))throw new Error('Invalid family record');
+    var native=0;plan[base]=f.variants.map(function(v){
+     if(!v||typeof v.id!=='string'||owners[v.id])throw new Error('Duplicate family variant');
+     owners[v.id]=base;total++;if(v.id===base&&v.form==='native')native++;return {id:v.id,form:v.form};
+    });
+    if(native!==1)throw new Error('Missing native family variant');
+   })});
+   if(Object.keys(plan).length!==m.counts.families||total!==m.counts.blocks)throw new Error('Family counts mismatch');return plan;
+  });
+ }).catch(function(e){familyPending=null;throw e});return familyPending;
+}
+function loadCatalogData(){return Promise.all([window.FKCatalogData.load(),loadFamilies()]).then(function(r){return {blocks:r[0].blocks,terrain:r[0].terrain,existing:r[0].existing,source:r[0].source,families:r[1]}})}
+function bindFamilies(cat,plan){
+ cat.familyOf={};cat.variantForm={};cat.formEntries={};
+ var hidden={},allowed={slab:1,stairs:1,wall:1,gate:1,fence:1,button:1,plate:1,pane:1,carpet:1};
+ Object.keys(plan||{}).forEach(function(base){
+  if(!cat.b[base]||cat.ids.indexOf(base)<0)return;
+  var rows=plan[base],counts={},entries={cube:base};
+  rows.forEach(function(v){if(v.id!==base&&allowed[v.form]&&cat.b[v.id])counts[v.form]=(counts[v.form]||0)+1});
+  rows.forEach(function(v){if(v.id!==base&&allowed[v.form]&&counts[v.form]===1&&cat.b[v.id])entries[v.form]=v.id});
+  var keys=Object.keys(entries);if(keys.length<2)return;
+  cat.formEntries[base]=entries;cat.forms[base]={};cat.kids[base]=[];
+  keys.forEach(function(form){var id=entries[form];cat.familyOf[id]=base;cat.variantForm[id]=form;if(id!==base){hidden[id]=1;cat.forms[base][form]=1;cat.kids[base].push(id)}});
+ });
+ var before=cat.ids.length;cat.ids=cat.ids.filter(function(id){return !hidden[id]});cat.hidden+=(before-cat.ids.length);return cat;
 }
 function loadImg(u){return new Promise(function(ok){var im=new Image();im.crossOrigin='anonymous';im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=u})}
 function fkTga(buf){var b=new Uint8Array(buf),idl=b[0],ct=b[1],it=b[2],w=b[12]|(b[13]<<8),h=b[14]|(b[15]<<8),bpp=b[16],desc=b[17];if(ct!==0||(it!==2&&it!==10&&it!==3&&it!==11)||!(bpp===24||bpp===32||bpp===8)||!w||!h)return null;var by=bpp>>3,off=18+idl,px=new Uint8Array(w*h*by),n=0,i,k;if(it===2||it===3){px.set(b.subarray(off,off+w*h*by))}else{while(n<w*h&&off<b.length){var hd=b[off++],c=(hd&127)+1;if(hd&128){for(i=0;i<c&&n<w*h;i++){for(k=0;k<by;k++)px[n*by+k]=b[off+k];n++}off+=by}else{for(i=0;i<c&&n<w*h;i++){for(k=0;k<by;k++)px[n*by+k]=b[off++];n++}}}}var out=new Uint8ClampedArray(w*h*4),top=(desc&32)!==0;for(var y=0;y<h;y++){var sy=top?y:(h-1-y);for(var x=0;x<w;x++){var si=(sy*w+x)*by,di=(y*w+x)*4;if(bpp===8){out[di]=out[di+1]=out[di+2]=px[si];out[di+3]=255}else{out[di]=px[si+2];out[di+1]=px[si+1];out[di+2]=px[si];out[di+3]=bpp===32?px[si+3]:255}}}return {w:w,h:h,data:out}}
 function loadTga(u){return fetch(u).then(function(r){if(!r.ok)throw 0;return r.arrayBuffer()}).then(function(buf){var t=fkTga(buf);if(!t)return null;var c=document.createElement('canvas');c.width=t.w;c.height=t.h;c.getContext('2d').putImageData(new ImageData(t.data,t.w,t.h),0,0);return new Promise(function(ok){var im=new Image();im.onload=function(){ok(im)};im.onerror=function(){ok(null)};im.src=c.toDataURL('image/png')})}).catch(function(){return null})}
 function loadAny(p){return loadImg(VAN1+p+'.png').then(function(im){return im||loadImg(VAN2+p+'.png')}).then(function(im){return im||loadTga(VAN1+p+'.tga')}).then(function(im){return im||loadTga(VAN2+p+'.tga')})}
-return {URLS_B:URLS_B,URLS_T:URLS_T,URLS_F:URLS_F,parseLoose:parseLoose,fetchJson:fetchJson,fetchExisting:fetchExisting,build:buildCatalog,index:indexCatalog,loadAny:loadAny};
+return {load:loadCatalogData,bindFamilies:bindFamilies,parseLoose:parseLoose,build:buildCatalog,index:indexCatalog,loadAny:loadAny};
 })();

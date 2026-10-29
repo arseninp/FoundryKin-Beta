@@ -1,0 +1,47 @@
+name: Audit catalog source
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/catalog-audit.yml'
+      - 'tools/audit-catalog-source.mjs'
+      - 'tools/audit-catalog-source.test.mjs'
+permissions:
+  contents: write
+concurrency:
+  group: catalog-source-audit
+  cancel-in-progress: true
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test preparation tools
+        run: node --test tools/*.test.mjs
+      - name: Read official release sources
+        uses: actions/checkout@v4
+        with:
+          repository: Mojang/bedrock-samples
+          ref: v1.26.50.4
+          path: .catalog-source
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            resource_pack/blocks.json
+            resource_pack/textures/terrain_texture.json
+            metadata/vanilladata_modules/mojang-blocks.json
+      - name: Create diagnostic report
+        run: node tools/audit-catalog-source.mjs .catalog-source tools/catalog-audit.json
+      - name: Save only the diagnostic report
+        run: |
+          git add -- tools/catalog-audit.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'build: record catalog source audit for v1.26.50.4'
+          git push origin HEAD:main

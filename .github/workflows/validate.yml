@@ -1,0 +1,41 @@
+name: Validate application and catalog
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '*.js'
+      - '*.html'
+      - 'tools/**'
+      - 'data/catalog-candidate/**'
+      - '.github/workflows/validate.yml'
+  pull_request:
+    paths:
+      - '*.js'
+      - '*.html'
+      - 'tools/**'
+      - 'data/catalog-candidate/**'
+      - '.github/workflows/validate.yml'
+permissions:
+  contents: read
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check application JavaScript syntax
+        run: |
+          for file in fk-*.js; do
+            node --check "$file"
+          done
+      - name: Run all tool and catalog loader tests
+        run: node --test tools/*.test.mjs

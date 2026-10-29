@@ -1,0 +1,35 @@
+name: Check legacy successors
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/legacy-check.yml'
+      - 'tools/check-legacy-successors.mjs'
+      - 'tools/check-legacy-successors.test.mjs'
+permissions:
+  contents: write
+concurrency:
+  group: legacy-successor-check
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test tools
+        run: node --test tools/*.test.mjs
+      - name: Create successor report
+        run: node tools/check-legacy-successors.mjs data/catalog-candidate tools/legacy-successors.json
+      - name: Save only the report
+        run: |
+          git add -- tools/legacy-successors.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'build: record legacy successor report'
+          git push origin HEAD:main
