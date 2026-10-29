@@ -1,6 +1,7 @@
 /* Resource normalization shared by catalog compilation and validation. */
 const own = (value, key) => Object.hasOwn(value, key);
 const faces = ['up', 'down', 'north', 'south', 'east', 'west'];
+const DOORS = Object.freeze({wooden_door: 'wood', spruce_door: 'spruce', birch_door: 'birch', jungle_door: 'jungle', acacia_door: 'acacia', dark_oak_door: 'dark_oak', iron_door: 'iron'});
 export function resourcePaths(value) {
   if (typeof value === 'string') {
     if (!/^textures\/[A-Za-z0-9_./-]+$/.test(value) || value.split('/').some(p => p === '..' || p === '.' || !p)) throw new Error('Invalid resource path: ' + value);
@@ -14,19 +15,28 @@ export function resolveTexture(key, atlas) {
   if (typeof key !== 'string' || !own(atlas, key)) throw new Error('Unresolved texture key: ' + key);
   return resourcePaths(atlas[key].textures);
 }
-function resolveFaces(value, atlas) {
-  if (typeof value === 'string') return Object.fromEntries(faces.map(face => [face, resolveTexture(value, atlas)]));
+function blockTexture(id, key, atlas) {
+  const paths = resolveTexture(key, atlas);
+  if (key !== 'door_lower' && key !== 'door_upper') return paths;
+  if (!own(DOORS, id)) throw new Error('Unassigned shared door atlas: ' + id);
+  const half = key === 'door_lower' ? 'lower' : 'upper';
+  const path = 'textures/blocks/door_' + DOORS[id] + '_' + half;
+  if (!paths.includes(path)) throw new Error('Missing assigned door texture: ' + id + ': ' + path);
+  return [path];
+}
+function resolveFaces(value, atlas, id) {
+  if (typeof value === 'string') return Object.fromEntries(faces.map(face => [face, blockTexture(id, value, atlas)]));
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid block texture definition');
   return Object.fromEntries(faces.map(face => {
     const key = value[face] ?? value.side;
     if (key === undefined) throw new Error('Missing block face: ' + face);
-    return [face, resolveTexture(key, atlas)];
+    return [face, blockTexture(id, key, atlas)];
   }));
 }
 export function normalizeBlock(id, definition, atlas, options = {}) {
-  if (!/^[a-z0-9_]+$/.test(id)) throw new Error('Invalid block id: ' + id);
-  const modelFaces = resolveFaces(definition.textures, atlas);
-  const carriedFaces = definition.carried_textures === undefined ? null : resolveFaces(definition.carried_textures, atlas);
+  if (typeof id !== 'string' || !/^[a-z0-9_]+$/.test(id)) throw new Error('Invalid block id');
+  const modelFaces = resolveFaces(definition.textures, atlas, id);
+  const carriedFaces = definition.carried_textures === undefined ? null : resolveFaces(definition.carried_textures, atlas, id);
   const icons = [...new Set((options.icons ?? []).flatMap(resourcePaths))].sort();
   const paths = [...new Set([...Object.values(modelFaces).flat(), ...Object.values(carriedFaces ?? {}).flat(), ...icons])].sort();
   if (options.existing) for (const path of paths) if (!own(options.existing, path)) throw new Error('Missing resource file: ' + path);
