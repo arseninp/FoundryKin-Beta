@@ -4,6 +4,8 @@ import {createPrimitiveModels} from './primitives.mjs';
 import {createStrandModels} from './strands.mjs';
 import {createLightModels} from './lights.mjs';
 import {createPlanarModels} from './planar.mjs';
+import {compileCatalog} from '../catalog/compile.mjs';
+import {planModelAssignments} from '../catalog/model-policy.mjs';
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 export function createModelLibrary(Three) {
  const registry = createModelRegistry();
@@ -35,4 +37,17 @@ export function bindCatalogModels(catalog, Three) {
  }
  registry.validate(catalog.records);
  return Object.freeze({registry, coverage});
+}
+export function compileModelCatalog(input, Three) {
+ if (!dictionary(input) || !dictionary(input.blocks)) throw new Error('Invalid catalog input');
+ const registry = createModelLibrary(Three), plan = planModelAssignments(input.blocks, input.models ?? {});
+ const known = inspectModelCoverage(plan.assignments, registry);
+ const coverage = {...known, total: Object.keys(input.blocks).length, unresolved: plan.unresolved, ready: known.ready && plan.unresolved.length === 0};
+ if (!coverage.ready) {
+  const error = new Error('Model plan is incomplete: ' + plan.unresolved.length + ' unresolved objects, ' + Object.keys(known.missing).length + ' missing builders');
+  error.coverage = coverage;throw error;
+ }
+ const catalog = compileCatalog({...input, models: plan.assignments});
+ registry.validate(catalog.records);
+ return Object.freeze({catalog, registry, coverage});
 }
