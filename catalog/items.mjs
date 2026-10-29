@@ -1,12 +1,9 @@
-/* Item atlas alternatives keep their original indices, even for repeated paths. */
-import {resourcePaths} from './resources.mjs';
+/* Item variants share the same index-preserving parser as block resources. */
+import {resourceVariants} from './resources.mjs';
 const own = (object, key) => Object.hasOwn(object, key);
-function variants(value) {
-  return Array.isArray(value) ? value.flatMap(variants) : resourcePaths(value);
-}
 export function indexItems(atlas, inventory) {
   return Object.fromEntries(Object.keys(atlas).sort().map(id => {
-    const alternatives = variants(atlas[id].textures);
+    const alternatives = resourceVariants(atlas[id].textures);
     const paths = [...new Set(alternatives)];
     if (!paths.length) throw new Error('Empty item resource: ' + id);
     for (const path of paths) if (!own(inventory, path)) throw new Error('Missing item resource: ' + path);
