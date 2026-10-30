@@ -1,9 +1,15 @@
-/* Named resources for cauldron, cocoa and daylight detector previews. */
+/* Named resources for utility models, independent of edited slots. */
 export function utilityBindings(record) {
  const single=(paths,label)=>{
   if(!Array.isArray(paths)||paths.length!==1||typeof paths[0]!=='string'||!record.paths.includes(paths[0]))throw new Error('Missing or ambiguous '+label);
   return [...paths];
  };
+ if(record.model==='decorated_pot') {
+  if(record.id!=='decorated_pot')throw new Error('Unknown decorated pot object');
+  const paths=[...new Set(Object.values(record.faces??{}).flat())];
+  const find=part=>single(paths.filter(path=>typeof path==='string'&&path.split('/').pop()==='decorated_pot_'+part),'decorated pot '+part);
+  return {side:find('side'),base:find('base')};
+ }
  if(record.model==='cauldron') {
   if(record.id!=='cauldron')throw new Error('Unknown cauldron object');
   const f=record.faces??{};
