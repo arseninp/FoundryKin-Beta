@@ -1,6 +1,7 @@
 /* Explicit model assignments for special objects. Add new migrated models here; unknown objects stay unresolved instead of becoming cubes. */
 export const SPECIAL_MODELS = Object.freeze({
   ladder: 'ladder', lectern: 'lectern', lever: 'lever',
+  hopper: 'hopper', grindstone: 'grindstone', frame: 'frame', glow_frame: 'frame',
   lilac: 'flower', rose_bush: 'flower', peony: 'flower',
   sunflower: 'sunflower',
   spore_blossom: 'spore_blossom',
