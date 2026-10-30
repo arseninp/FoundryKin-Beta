@@ -31,5 +31,5 @@ test('invalid sulfur parameters and missing materials fail',()=>{
 });
 test('view metadata stays explicit',()=>{
  const Three={Mesh:class{},PlaneGeometry:class{},DoubleSide:2},models=createStrandModels(Three);
- assert.deepEqual(models.map(m=>m.id),['pale_hanging_moss','sulfur_spike']);assert.ok(models.every(m=>m.scale===1.4&&m.mode==='volume'));
+ assert.deepEqual(models.map(m=>m.id),['pale_hanging_moss','sulfur_spike','pointed_dripstone']);assert.ok(models.every(m=>m.scale===1.4&&m.mode==='volume'));
 });

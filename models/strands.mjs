@@ -1,4 +1,5 @@
 /* Geometry only. Segmented resources are bound by the preview resolver; Three is injected. */
+import {composeShape,requireRoles} from './shapes.mjs';
 export function createStrandModels(Three) {
   if (!Three || typeof Three.Mesh !== 'function' || typeof Three.PlaneGeometry !== 'function' || Three.DoubleSide === undefined) throw new Error('Strand models require Three');
   function cross(env, id, width, height, y) {
@@ -25,8 +26,20 @@ export function createStrandModels(Three) {
       cross(env, faces[direction + '_' + part], Math.SQRT2 * .5, .5, up ? -.75 + index * .5 : .75 - index * .5);
     });
   }
+  function dripstone(env) {
+    const direction=env?.state?.direction??'down',merged=env?.state?.merged??false;
+    if(!['down','up'].includes(direction)||typeof merged!=='boolean')throw new Error('Invalid dripstone preview state');
+    const roles=['base','middle','frustum',merged?'tip_merge':'tip'].map(part=>direction+'_'+part),f=requireRoles(env,roles,'pointed dripstone');
+    composeShape(Three,env,p=>{
+      roles.forEach((role,index)=>{
+        const y=direction==='up'?-.75+index*.5:.75-index*.5;
+        for(const angle of [0,Math.PI/2])p.face(f[role],Math.SQRT2*.5,.5,0,y,0,0,angle,null,true);
+      });
+    });
+  }
   return [
     {id: 'pale_hanging_moss', scale: 1.4, mode: 'volume', build: hangingMoss},
-    {id: 'sulfur_spike', scale: 1.4, mode: 'volume', build: sulfur}
+    {id: 'sulfur_spike', scale: 1.4, mode: 'volume', build: sulfur},
+    {id: 'pointed_dripstone', scale: 1.4, mode: 'volume', build: dripstone}
   ];
 }

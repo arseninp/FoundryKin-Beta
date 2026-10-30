@@ -5,6 +5,10 @@ export function utilityBindings(record) {
   return [...paths];
  };
  const named=(paths,name)=>single([...new Set(paths??[])].filter(path=>typeof path==='string'&&path.split('/').pop()===name),name);
+ if(record.model==='pointed_dripstone') {
+  if(record.id!=='pointed_dripstone')throw new Error('Unknown pointed dripstone object');
+  return Object.fromEntries(['down','up'].flatMap(direction=>['base','middle','frustum','tip','tip_merge'].map(part=>[direction+'_'+part,named(record.paths,'pointed_dripstone_'+direction+'_'+(part==='tip_merge'?'merge':part))])));
+ }
  if(record.model==='sculk_sensor') {
   if(!['sculk_sensor','calibrated_sculk_sensor'].includes(record.id))throw new Error('Unknown sensor object');
   const f=record.faces??{},c=record.carried??{},parts={top:single(f.up,'sensor top'),bottom:single(f.down,'sensor bottom'),side:single(f.north,'sensor side'),tendril_off:named(c.up,'sculk_sensor_tendril_inactive'),tendril_on:named(c.north,'sculk_sensor_tendril_active')};
