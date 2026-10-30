@@ -7,6 +7,7 @@ export const SPECIAL_MODELS = Object.freeze({
   pink_petals: 'flowerbed', wildflowers: 'flowerbed',
   golden_dandelion: 'cross', torchflower: 'cross', poplar_sapling: 'cross', deadbush: 'cross',
   short_dry_grass: 'cross', tall_dry_grass: 'cross', crimson_fungus: 'cross', warped_fungus: 'cross',
+  iron_bars: 'bars', end_rod: 'end_rod', heavy_core: 'heavy_core',
   grass_path: 'grass_path', enchanting_table: 'enchanting_table', stonecutter_block: 'stonecutter', sea_pickle: 'sea_pickle',
   wheat: 'crop', carrots: 'crop', potatoes: 'crop', beetroot: 'crop', turtle_egg: 'turtle_egg',
   sniffer_egg: 'sniffer_egg',
@@ -17,5 +18,7 @@ export const SPECIAL_MODELS = Object.freeze({
   portal: 'portal', end_portal_frame: 'end_portal_frame', trip_wire: 'tripwire', tripwire_hook: 'tripwire_hook'
 });
 export const SPECIAL_PATTERNS = Object.freeze([
-  [/_shelf$/, 'shelf']
+  [/_shelf$/, 'shelf'],
+  [/^(?:waxed_)?(?:(?:exposed|weathered|oxidized)_)?copper_bars$/, 'bars'],
+  [/^(?:waxed_)?(?:(?:exposed|weathered|oxidized)_)?lightning_rod$/, 'lightning_rod']
 ].map(pair => Object.freeze(pair)));

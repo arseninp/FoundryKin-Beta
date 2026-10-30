@@ -6,8 +6,8 @@ function three() {
 }
 test('single library registers all migrated builders exactly once and seals the registry',()=>{
  const library=createModelLibrary(three());
- assert.equal(library.ids().length,62);assert.ok(library.has('cube'));assert.ok(library.has('sulfur_spike'));
- for(const id of ['lantern','chain','torch','campfire','cross','sprite','rail','decal','pane','candle','brewing','anvil','beacon','pumpkin','door','amethyst','azalea','potted_azalea','bamboo','bamboo_fence','bamboo_gate','pale_moss_carpet','piston','redstone_torch','repeater','comparator','ladder','lectern','lever','shelf','flower','grass_path','enchanting_table','stonecutter','sea_pickle','crop','turtle_egg','vines','portal','end_portal_frame','tripwire','tripwire_hook','spore_blossom','flowerbed','sunflower','sniffer_egg','pitcher','redstone_wire','track'])assert.ok(library.has(id));
+ assert.equal(library.ids().length,66);assert.ok(library.has('cube'));assert.ok(library.has('sulfur_spike'));
+ for(const id of ['lantern','chain','torch','campfire','cross','sprite','rail','decal','pane','candle','brewing','anvil','beacon','pumpkin','door','amethyst','azalea','potted_azalea','bamboo','bamboo_fence','bamboo_gate','pale_moss_carpet','piston','redstone_torch','repeater','comparator','ladder','lectern','lever','shelf','flower','grass_path','enchanting_table','stonecutter','sea_pickle','crop','turtle_egg','vines','portal','end_portal_frame','tripwire','tripwire_hook','spore_blossom','flowerbed','sunflower','sniffer_egg','pitcher','redstone_wire','track','bars','lightning_rod','end_rod','heavy_core'])assert.ok(library.has(id));
  assert.equal(library.get('door').scale,1.4);assert.equal(library.get('bamboo').scale,1.8);assert.equal(library.get('piston').scale,1.4);assert.equal(library.get('flower').scale,1.4);assert.equal(library.get('vines').scale,1.4);assert.equal(library.get('sprite').mode,'sprite');
  assert.throws(()=>library.register([{id:'cube',build(){}}]),/sealed/);
  assert.throws(()=>library.build('unknown',{}),/Unknown/);

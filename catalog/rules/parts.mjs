@@ -1,6 +1,11 @@
 /* Named model parts are declared from owned resources, independently of edited slots. */
 import {pitcherBindings} from './pitcher-parts.mjs';
 export function modelPartBindings(record) {
+ if(record.model==='lightning_rod') {
+  const paths=record.variants?.up;
+  if(!Array.isArray(paths)||paths.length!==2||paths.some(path=>typeof path!=='string'||!record.paths.includes(path)))throw new Error('Missing or invalid lightning rod variants');
+  return {off:[paths[0]],on:[paths[1]]};
+ }
  if(record.model==='pitcher')return pitcherBindings(record);
  if(record.model==='sniffer_egg') {
   if(record.id!=='sniffer_egg')throw new Error('Unknown sniffer egg object');
