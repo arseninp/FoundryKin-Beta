@@ -5,6 +5,8 @@ export const SPECIAL_MODELS = Object.freeze({
   sunflower: 'sunflower',
   spore_blossom: 'spore_blossom',
   pink_petals: 'flowerbed', wildflowers: 'flowerbed',
+  golden_dandelion: 'cross', torchflower: 'cross', poplar_sapling: 'cross', deadbush: 'cross',
+  short_dry_grass: 'cross', tall_dry_grass: 'cross', crimson_fungus: 'cross', warped_fungus: 'cross',
   grass_path: 'grass_path', enchanting_table: 'enchanting_table', stonecutter_block: 'stonecutter', sea_pickle: 'sea_pickle',
   wheat: 'crop', carrots: 'crop', potatoes: 'crop', beetroot: 'crop', turtle_egg: 'turtle_egg',
   sniffer_egg: 'sniffer_egg',
