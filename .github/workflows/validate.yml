@@ -38,3 +38,15 @@ jobs:
           node-version: '22'
       - name: Check tracked source syntax, file limits and all tests
         run: node tools/validate.mjs
+      - name: Report pinned catalog model assignments
+        id: coverage
+        if: ${{ !cancelled() }}
+        run: node tools/model-coverage.mjs --chunks data/catalog-candidate --out model-coverage.json
+      - name: Preserve model coverage diagnostics
+        if: ${{ !cancelled() && steps.coverage.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-coverage-${{ github.sha }}
+          path: model-coverage.json
+          if-no-files-found: error
+          retention-days: 7
