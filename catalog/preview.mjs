@@ -49,6 +49,13 @@ function mossBindings(record) {
  };
  return {...record.faces,side_base:find('pale_moss_carpet_side_base'),side_tip:find('pale_moss_carpet_side_tip')};
 }
+function pistonBindings(record) {
+ if(record.model!=='piston')return null;
+ const faces=dictionary(record.faces)?record.faces:{},carried=dictionary(record.carried)?record.carried:{};
+ const parts={head:carried.up,inner:faces.up,bottom:faces.down,side:faces.north};
+ for(const [role,paths] of Object.entries(parts))if(!Array.isArray(paths)||paths.length!==1)throw new Error('Missing or ambiguous piston '+role);
+ return parts;
+}
 function segmentedBindings(record) {
  let names;
  if (record.model==='pale_hanging_moss') names={middle:'pale_hanging_moss_middle',tip:'pale_hanging_moss_tip'};
@@ -94,10 +101,14 @@ export function createPreviewResolver(catalog, registry) {
    previewState.potted??=false;
    if (typeof previewState.potted!=='boolean') throw new Error('Invalid azalea preview state');
   }
+  if (base==='piston') {
+   previewState.extended??=false;
+   if (typeof previewState.extended!=='boolean') throw new Error('Invalid piston preview state');
+  }
   const model=base==='azalea'&&previewState.potted?'potted_azalea':base, descriptor=registry.get(model);
   const faceMap={}, shared=dictionary(record.dependencies)?record.dependencies:{};
   if (view==='model') {
-   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??candleBindings(record,previewState)??mossBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
+   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??candleBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
    if (!dictionary(bindings)||!Object.keys(bindings).length) throw new Error('Missing model bindings');
    for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
    for (const [face,paths] of Object.entries(bindings)) {
