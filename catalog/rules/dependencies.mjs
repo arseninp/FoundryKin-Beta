@@ -3,7 +3,12 @@ import {resourceVariants} from '../resources.mjs';
 const own = (object, key) => Object.hasOwn(object, key);
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const ROLE = /^[a-z][a-z0-9_]*$/;
-const BY_MODEL = Object.freeze({azalea: Object.freeze({pot: 'textures/blocks/flower_pot', soil: 'textures/blocks/dirt'})});
+const TORCHES = Object.freeze({torch_on: 'textures/blocks/redstone_torch_on', torch_off: 'textures/blocks/redstone_torch_off'});
+const BY_MODEL = Object.freeze({
+  azalea: Object.freeze({pot: 'textures/blocks/flower_pot', soil: 'textures/blocks/dirt'}),
+  repeater: TORCHES,
+  comparator: TORCHES
+});
 export function declaredDependencies(assignments) {
   if (!dictionary(assignments)) throw new Error('Invalid model assignments');
   const result = {};

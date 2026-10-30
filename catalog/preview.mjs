@@ -56,6 +56,21 @@ function pistonBindings(record) {
  for(const [role,paths] of Object.entries(parts))if(!Array.isArray(paths)||paths.length!==1)throw new Error('Missing or ambiguous piston '+role);
  return parts;
 }
+function deviceBindings(record) {
+ if(record.model!=='repeater'&&record.model!=='comparator')return null;
+ const name=record.model,faces=dictionary(record.faces)?record.faces:{},shared=dictionary(record.dependencies)?record.dependencies:{};
+ const find=(suffix,optional)=>{
+  const found=record.paths.filter(path=>path.split('/').pop()===name+suffix);
+  if(found.length>1||(!found.length&&!optional))throw new Error('Missing or ambiguous '+name+' resource: '+name+suffix);
+  return found.length?[found[0]]:null;
+ };
+ if(!Array.isArray(faces.down)||faces.down.length!==1)throw new Error('Missing or ambiguous '+name+' floor');
+ const parts={floor:faces.down,top_off:find('_off'),top_on:find('_on'),torch_on:shared.torch_on,torch_off:shared.torch_off};
+ for(const role of ['torch_on','torch_off'])if(!Array.isArray(parts[role])||parts[role].length!==1)throw new Error('Missing '+name+' dependency: '+role);
+ const subtract=name==='comparator'?find('_subtract_on',true):null;
+ if(subtract)parts.top_subtract=subtract;
+ return parts;
+}
 function segmentedBindings(record) {
  let names;
  if (record.model==='pale_hanging_moss') names={middle:'pale_hanging_moss_middle',tip:'pale_hanging_moss_tip'};
@@ -105,10 +120,18 @@ export function createPreviewResolver(catalog, registry) {
    previewState.extended??=false;
    if (typeof previewState.extended!=='boolean') throw new Error('Invalid piston preview state');
   }
+  if (base==='repeater') {
+   previewState.delay??=1;
+   if (!Number.isInteger(previewState.delay)||previewState.delay<1||previewState.delay>4) throw new Error('Invalid repeater preview state');
+  }
+  if (base==='comparator') {
+   previewState.subtract??=false;
+   if (typeof previewState.subtract!=='boolean') throw new Error('Invalid comparator preview state');
+  }
   const model=base==='azalea'&&previewState.potted?'potted_azalea':base, descriptor=registry.get(model);
   const faceMap={}, shared=dictionary(record.dependencies)?record.dependencies:{};
   if (view==='model') {
-   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??candleBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
+   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??candleBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??deviceBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
    if (!dictionary(bindings)||!Object.keys(bindings).length) throw new Error('Missing model bindings');
    for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
    for (const [face,paths] of Object.entries(bindings)) {
