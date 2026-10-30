@@ -40,6 +40,15 @@ function candleBindings(record,state) {
   return [face,found];
  }));
 }
+function mossBindings(record) {
+ if(record.model!=='pale_moss_carpet')return null;
+ const find=name=>{
+  const found=record.paths.filter(path=>path.split('/').pop()===name);
+  if(found.length!==1)throw new Error('Missing or ambiguous pale moss resource: '+name);
+  return [found[0]];
+ };
+ return {...record.faces,side_base:find('pale_moss_carpet_side_base'),side_tip:find('pale_moss_carpet_side_tip')};
+}
 function segmentedBindings(record) {
  let names;
  if (record.model==='pale_hanging_moss') names={middle:'pale_hanging_moss_middle',tip:'pale_hanging_moss_tip'};
@@ -88,7 +97,7 @@ export function createPreviewResolver(catalog, registry) {
   const model=base==='azalea'&&previewState.potted?'potted_azalea':base, descriptor=registry.get(model);
   const faceMap={}, shared=dictionary(record.dependencies)?record.dependencies:{};
   if (view==='model') {
-   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??candleBindings(record,previewState)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
+   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??candleBindings(record,previewState)??mossBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
    if (!dictionary(bindings)||!Object.keys(bindings).length) throw new Error('Missing model bindings');
    for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
    for (const [face,paths] of Object.entries(bindings)) {
