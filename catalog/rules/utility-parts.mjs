@@ -5,6 +5,12 @@ export function utilityBindings(record) {
   return [...paths];
  };
  const named=(paths,name)=>single([...new Set(paths??[])].filter(path=>typeof path==='string'&&path.split('/').pop()===name),name);
+ if(record.model==='barrel') {
+  if(record.id!=='barrel')throw new Error('Unknown barrel object');
+  const top=record.variants?.north,f=record.faces??{};
+  if(!Array.isArray(top)||top.length!==2)throw new Error('Incomplete barrel top variants');
+  return {top_closed:single([top[0]],'barrel closed top'),top_open:single([top[1]],'barrel open top'),bottom:single(f.south,'barrel bottom'),side:single(f.up,'barrel side')};
+ }
  if(record.model==='dried_ghast') {
   if(record.id!=='dried_ghast')throw new Error('Unknown dried ghast object');
   const bindings={},faces=['up','down','north','south','east','west','tent'];
