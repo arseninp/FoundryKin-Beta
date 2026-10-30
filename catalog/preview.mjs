@@ -71,6 +71,28 @@ function deviceBindings(record) {
  if(subtract)parts.top_subtract=subtract;
  return parts;
 }
+function stageCount(record) {
+ return (record.model==='crop'||record.model==='turtle_egg')&&dictionary(record.faces)&&Array.isArray(record.faces.up)?record.faces.up.length:0;
+}
+function stageBindings(record,state) {
+ if(record.model!=='crop'&&record.model!=='turtle_egg')return null;
+ const total=stageCount(record);
+ if(!total)throw new Error('Missing '+record.model+' stages');
+ state.stage??=0;
+ if(!Number.isInteger(state.stage)||state.stage<0||state.stage>=total)throw new Error('Invalid '+record.model+' stage');
+ return {stage:[record.faces.up[state.stage]]};
+}
+function frameBindings(record) {
+ if(record.model!=='end_portal_frame')return null;
+ const eye=dictionary(record.carried)&&Array.isArray(record.carried.up)&&record.carried.up.length===1?{eye:record.carried.up}:{};
+ return {...record.faces,...eye};
+}
+function hookBindings(record) {
+ if(record.model!=='tripwire_hook')return null;
+ const faces=dictionary(record.faces)?record.faces:{},parts={wood:faces.down,hook:faces.up,string:faces.south};
+ for(const [role,paths] of Object.entries(parts))if(!Array.isArray(paths)||paths.length!==1)throw new Error('Missing or ambiguous tripwire hook '+role);
+ return parts;
+}
 function segmentedBindings(record) {
  let names;
  if (record.model==='pale_hanging_moss') names={middle:'pale_hanging_moss_middle',tip:'pale_hanging_moss_tip'};
@@ -128,10 +150,18 @@ export function createPreviewResolver(catalog, registry) {
    previewState.subtract??=false;
    if (typeof previewState.subtract!=='boolean') throw new Error('Invalid comparator preview state');
   }
+  if (base==='end_portal_frame') {
+   previewState.eye??=false;
+   if (typeof previewState.eye!=='boolean') throw new Error('Invalid end portal frame preview state');
+  }
+  if (base==='tripwire_hook') {
+   previewState.attached??=false;
+   if (typeof previewState.attached!=='boolean') throw new Error('Invalid tripwire hook preview state');
+  }
   const model=base==='azalea'&&previewState.potted?'potted_azalea':base, descriptor=registry.get(model);
   const faceMap={}, shared=dictionary(record.dependencies)?record.dependencies:{};
   if (view==='model') {
-   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??candleBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??deviceBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
+   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??candleBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??deviceBindings(record)??stageBindings(record,previewState)??frameBindings(record)??hookBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
    if (!dictionary(bindings)||!Object.keys(bindings).length) throw new Error('Missing model bindings');
    for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
    for (const [face,paths] of Object.entries(bindings)) {
@@ -148,7 +178,7 @@ export function createPreviewResolver(catalog, registry) {
    if (!['down','up'].includes(previewState.direction)||typeof previewState.merged!=='boolean') throw new Error('Invalid sulfur preview state');
   }
   const buildFaces={...faceMap},buildState={...previewState},sharedPaths=[...new Set(Object.values(faceMap).filter(path=>!record.paths.includes(path)))];
-  return {object:selected,model,slot,paths:available,shared:sharedPaths,faceMap:{...faceMap},bindings:{...faceMap},state:{...previewState},scale:descriptor.scale,mode:descriptor.mode,
+  return {object:selected,model,slot,paths:available,shared:sharedPaths,stages:stageCount(record),faceMap:{...faceMap},bindings:{...faceMap},state:{...previewState},scale:descriptor.scale,mode:descriptor.mode,
    build(environment) {
     if (!dictionary(environment)) throw new Error('Invalid preview environment');
     return registry.build(model,{...environment,cur:selected.id,slot,faceMap:{...buildFaces},bindings:{...buildFaces},state:{...buildState}});
