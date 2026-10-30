@@ -1,5 +1,21 @@
 /* Named model parts are declared from owned resources, independently of edited slots. */
 export function modelPartBindings(record) {
+ if(record.model==='sniffer_egg') {
+  if(record.id!=='sniffer_egg')throw new Error('Unknown sniffer egg object');
+  const faces=['up','down','north','south','east','west'],variants=record.variants,count=variants?.up?.length;
+  if(!Number.isInteger(count)||count<1)throw new Error('Missing sniffer egg stages');
+  const bindings={};
+  for(const face of faces) {
+   const paths=variants[face];
+   if(!Array.isArray(paths)||paths.length!==count)throw new Error('Mismatched sniffer egg stages: '+face);
+   for(let stage=0;stage<count;stage++) {
+    const path=paths[stage];
+    if(typeof path!=='string'||!record.paths.includes(path))throw new Error('Invalid sniffer egg resource: '+face);
+    bindings['stage_'+stage+'_'+face]=[path];
+   }
+  }
+  return bindings;
+ }
  if(record.model!=='flowerbed'&&record.model!=='sunflower')return null;
  const candidates=[...new Set(Object.values(record.faces??{}).flat())];
  if(record.model==='sunflower') {

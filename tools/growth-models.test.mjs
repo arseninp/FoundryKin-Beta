@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {normalizeBlock} from '../catalog/resources.mjs';
+import {modelPartBindings} from '../catalog/rules/parts.mjs';
 import {planModelAssignments} from '../catalog/model-policy.mjs';
 import {createPreviewResolver} from '../catalog/preview.mjs';
 import {createGrowthModels} from '../models/growth.mjs';
@@ -18,12 +19,12 @@ test('policy assigns crops, turtle egg, vine columns, portals, tripwire and hook
  const ids = ['wheat', 'carrots', 'potatoes', 'beetroot', 'turtle_egg', 'weeping_vines', 'twisting_vines', 'portal', 'end_portal_frame', 'trip_wire', 'tripwire_hook', 'sniffer_egg'];
  const plan = planModelAssignments(Object.fromEntries(ids.map(id => [id, {}])));
  const models = Object.fromEntries(Object.entries(plan.assignments).map(([id, a]) => [id, a.model]));
- assert.deepEqual(models, {beetroot: 'crop', carrots: 'crop', end_portal_frame: 'end_portal_frame', portal: 'portal', potatoes: 'crop', trip_wire: 'tripwire', tripwire_hook: 'tripwire_hook', turtle_egg: 'turtle_egg', twisting_vines: 'vines', weeping_vines: 'vines', wheat: 'crop'});
- assert.deepEqual(plan.unresolved, ['sniffer_egg']);
+ assert.deepEqual(models, {beetroot: 'crop', carrots: 'crop', end_portal_frame: 'end_portal_frame', portal: 'portal', potatoes: 'crop', sniffer_egg: 'sniffer_egg', trip_wire: 'tripwire', tripwire_hook: 'tripwire_hook', turtle_egg: 'turtle_egg', twisting_vines: 'vines', weeping_vines: 'vines', wheat: 'crop'});
+ assert.deepEqual(plan.unresolved, []);
 });
 test('registration exposes explicit builders; vine columns keep the two-block camera', () => {
  const Three = createThreeMock();
- assert.deepEqual(createGrowthModels(Three).map(m => [m.id, m.scale]), [['crop', 1], ['turtle_egg', 1], ['vines', 1.4]]);
+ assert.deepEqual(createGrowthModels(Three).map(m => [m.id, m.scale]), [['crop', 1], ['turtle_egg', 1], ['vines', 1.4], ['sniffer_egg', 1]]);
  assert.deepEqual(createMechanismModels(Three).map(m => [m.id, m.scale]), [['portal', 1], ['end_portal_frame', 1], ['tripwire', 1], ['tripwire_hook', 1]]);
  assert.throws(() => createGrowthModels({}), /require Three/);assert.throws(() => createMechanismModels({}), /require Three/);
 });
@@ -89,4 +90,31 @@ test('preview binds the end portal frame eye from the carried image and rejects 
  const mats = Object.fromEntries(c.records.end_portal_frame.paths.map(path => [path, {path}])), E = {mats, hiddenMat: {}, group: new Three.Group()};
  p.build(E);assert.equal(E.group.children.length, 11);
  assert.throws(() => resolve({id: 'end_portal_frame', state: {eye: 1}}), /Invalid end portal frame preview state/);
+});
+function snifferRecord() {
+ const faces=['up','down','north','south','east','west'];
+ const atlas=Object.fromEntries(faces.map(face=>[face,{textures:[0,1,2].map(stage=>P+'sniffer_'+stage+'_'+face)}]));
+ atlas.icon={textures:'textures/items/sniffer_egg'};
+ return normalizeBlock('sniffer_egg',{textures:Object.fromEntries(faces.map(face=>[face,face])),carried_textures:'icon'},atlas,{model:'sniffer_egg'});
+}
+test('sniffer egg declares all indexed faces and retains repeats and a separate carried icon',()=>{
+ const r=snifferRecord();assert.equal(Object.keys(r.bindings).length,18);assert.equal(r.paths.length,19);
+ assert.ok(!Object.values(r.bindings).flat().includes('textures/items/sniffer_egg'));
+ const repeated=structuredClone(r);for(const face of Object.keys(repeated.variants))repeated.variants[face][1]=repeated.variants[face][0];
+ const bindings=modelPartBindings(repeated);assert.equal(Object.keys(bindings).length,18);assert.deepEqual(bindings.stage_1_north,bindings.stage_0_north);
+ const bad=structuredClone(r);bad.variants.east.pop();assert.throws(()=>modelPartBindings(bad),/Mismatched sniffer egg stages/);
+});
+test('sniffer egg uses one explicit stage for all six faces, independent of edited resource',()=>{
+ const r=snifferRecord(),Three=createThreeMock(),model=createGrowthModels(Three).find(m=>m.id==='sniffer_egg');
+ const c={schema:1,records:{sniffer_egg:r},items:{},aliases:{},families:{},resources:{}};
+ const registry={get:()=>model,build:(id,E)=>model.build(E)},resolve=createPreviewResolver(c,registry);
+ const before=JSON.stringify(r);
+ for(let stage=0;stage<3;stage++)for(const slot of r.paths){
+  const p=resolve({id:'sniffer_egg',slot,state:{stage}}),E={mats:Object.fromEntries(r.paths.map(path=>[path,{path}])),group:new Three.Group(),hiddenMat:{}};
+  p.build(E);const m=meshesOf(E.group);assert.equal(m.length,6);assert.ok(uvInside(m));
+  assert.deepEqual(m.map(mesh=>mesh.material.path),['up','down','north','south','east','west'].map(face=>r.variants[face][stage]));
+ }
+ assert.equal(JSON.stringify(r),before);
+ const bindings=Object.fromEntries(Object.entries(r.bindings).map(([role,paths])=>[role,paths[0]]));
+ for(const stage of [-1,3,1.5,'2'])assert.throws(()=>model.build({bindings,state:{stage}}),/Invalid sniffer egg stage/);
 });
