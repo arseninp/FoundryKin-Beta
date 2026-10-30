@@ -48,5 +48,5 @@ export function modelPartBindings(record) {
   if(paths.length!==1)throw new Error('Missing or ambiguous flowerbed part: '+name);
   return paths;
  };
- return {flower:find('' + record.id),stem:find(record.id+'_stem')};
+ return {flower:find(record.id),stem:find(record.id+'_stem')};
 }
