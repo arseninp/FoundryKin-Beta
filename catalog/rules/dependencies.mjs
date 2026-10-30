@@ -1,5 +1,6 @@
 /* Shared resources a model may bind without owning them. Source objects keep ownership and editing. */
 import {resourceVariants} from '../resources.mjs';
+import {pitcherPodResources} from './shared.mjs';
 const own = (object, key) => Object.hasOwn(object, key);
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const ROLE = /^[a-z][a-z0-9_]*$/;
@@ -7,7 +8,8 @@ const TORCHES = Object.freeze({torch_on: 'textures/blocks/redstone_torch_on', to
 const BY_MODEL = Object.freeze({
   azalea: Object.freeze({pot: 'textures/blocks/flower_pot', soil: 'textures/blocks/dirt'}),
   repeater: TORCHES,
-  comparator: TORCHES
+  comparator: TORCHES,
+  pitcher: pitcherPodResources
 });
 export function declaredDependencies(assignments) {
   if (!dictionary(assignments)) throw new Error('Invalid model assignments');

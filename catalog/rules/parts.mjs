@@ -1,5 +1,7 @@
 /* Named model parts are declared from owned resources, independently of edited slots. */
+import {pitcherBindings} from './pitcher-parts.mjs';
 export function modelPartBindings(record) {
+ if(record.model==='pitcher')return pitcherBindings(record);
  if(record.model==='sniffer_egg') {
   if(record.id!=='sniffer_egg')throw new Error('Unknown sniffer egg object');
   const faces=['up','down','north','south','east','west'],variants=record.variants,count=variants?.up?.length;
