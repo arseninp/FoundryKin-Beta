@@ -1,4 +1,4 @@
-/* Tall flowers and spore blossom migrated from FKFixtures and FKCuration. */
+/* Tall flowers, spore blossom and sunflower migrated from FKFixtures and FKCuration. */
 import {composeShape, requireRoles} from './shapes.mjs';
 const Q = Math.PI / 2;
 export function createPlantModels(Three) {
@@ -44,5 +44,31 @@ export function createPlantModels(Three) {
   for (const mat of materials) {mat.side = Three.DoubleSide;mat.needsUpdate = true;}
   for (const part of parts) E.group.add(part);
  }
- return [{id: 'flower', scale: 1.4, mode: 'volume', build: flower}, {id: 'spore_blossom', scale: 1, mode: 'volume', build: spore}];
+ function sunflower(E) {
+  const f=requireRoles(E,['up','down','front','back'],'sunflower');
+  if(typeof Three.Group!=='function')throw new Error('Sunflower requires Three.Group');
+  if(!E.mats||!E.group||typeof E.group.add!=='function')throw new Error('Missing sunflower environment');
+  const mats=Object.fromEntries(['up','down','front','back'].map(role=>{
+   const mat=E.mats[f[role]];if(!mat||mat===E.hiddenMat)throw new Error('Missing sunflower material: '+role);return [role,mat];
+  }));
+  const geometries=[],parts=[];
+  function face(mat,w,h,x,y,ry,rect) {
+   const g=new Three.PlaneGeometry(w,h);geometries.push(g);const uv=g.attributes.uv,r=rect||[0,0,16,16];
+   for(let i=0;i<uv.count;i++)uv.setXY(i,(r[0]+uv.getX(i)*(r[2]-r[0]))/16,1-(r[1]+(1-uv.getY(i))*(r[3]-r[1]))/16);
+   const m=new Three.Mesh(g,mat);m.position.set(x,y,0);m.rotation.set(0,ry,0);return m;
+  }
+  try {
+   for(const angle of [0,Q])parts.push(face(mats.down,Math.SQRT2,1,0,-.5,angle));
+   for(const angle of [0,Q])parts.push(face(mats.up,Math.SQRT2,.5,0,.25,angle,[0,8,16,16]));
+   const outer=new Three.Group(),head=new Three.Group(),s=1/Math.cos(Math.PI/8);
+   head.add(face(mats.front,14/16,s,.1*s,-s/16,Q));
+   head.add(face(mats.back,14/16,s,.1*s,-s/16,-Q));
+   head.position.set(0,.5,0);head.rotation.z=Math.PI/8;outer.rotation.y=-Math.PI/4;outer.add(head);parts.push(outer);
+  } catch(error) {
+   for(const g of geometries)if(typeof g.dispose==='function')g.dispose();throw error;
+  }
+  for(const mat of Object.values(mats)){mat.side=Three.DoubleSide;mat.needsUpdate=true;}
+  for(const part of parts)E.group.add(part);
+ }
+ return [{id: 'flower', scale: 1.4, mode: 'volume', build: flower}, {id: 'spore_blossom', scale: 1, mode: 'volume', build: spore}, {id: 'sunflower', scale: 1.4, mode: 'volume', build: sunflower}];
 }

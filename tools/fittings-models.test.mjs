@@ -14,16 +14,16 @@ const uvInside = meshes => meshes.every(m => m.geometry.rows.every(row => row.ev
 const LECTERN = {down: 'd', east: 'b', north: 'f', south: 's', west: 's', up: 't'}, LEVER = {down: 'v', east: 'p', north: 'v', south: 'v', west: 'v', up: 'v'};
 test('policy assigns ladder, lectern, lever, every wood shelf and the three tall flowers explicitly', () => {
  const woods = ['oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak', 'mangrove', 'cherry', 'pale_oak', 'bamboo', 'crimson', 'warped', 'poplar'];
- const ids = ['ladder', 'lectern', 'lever', 'lilac', 'rose_bush', 'peony', 'bookshelf', 'chiseled_bookshelf', 'sunflower', ...woods.map(w => w + '_shelf')];
+ const ids = ['ladder', 'lectern', 'lever', 'lilac', 'rose_bush', 'peony', 'bookshelf', 'chiseled_bookshelf', 'sunflower', 'unimplemented_plant', ...woods.map(w => w + '_shelf')];
  const plan = planModelAssignments(Object.fromEntries(ids.map(id => [id, {}])));
  for (const w of woods) assert.equal(plan.assignments[w + '_shelf'].model, 'shelf');
- for (const [id, model] of Object.entries({ladder: 'ladder', lectern: 'lectern', lever: 'lever', lilac: 'flower', rose_bush: 'flower', peony: 'flower', bookshelf: 'cube', chiseled_bookshelf: 'cube'})) assert.equal(plan.assignments[id].model, model, id);
- assert.deepEqual(plan.unresolved, ['sunflower']);
+ for (const [id, model] of Object.entries({ladder: 'ladder', lectern: 'lectern', lever: 'lever', lilac: 'flower', rose_bush: 'flower', peony: 'flower', bookshelf: 'cube', chiseled_bookshelf: 'cube', sunflower: 'sunflower'})) assert.equal(plan.assignments[id].model, model, id);
+ assert.deepEqual(plan.unresolved, ['unimplemented_plant']);
 });
 test('fitting and plant models register explicit builders with their camera scale', () => {
  const Three = createThreeMock();
  assert.deepEqual(createFittingModels(Three).map(m => [m.id, m.scale]), [['ladder', 1], ['lectern', 1], ['lever', 1], ['shelf', 1]]);
- assert.deepEqual(createPlantModels(Three).map(m => [m.id, m.scale]), [['flower', 1.4], ['spore_blossom', 1]]);
+ assert.deepEqual(createPlantModels(Three).map(m => [m.id, m.scale]), [['flower', 1.4], ['spore_blossom', 1], ['sunflower', 1.4]]);
  assert.throws(() => createFittingModels({}), /require Three/);assert.throws(() => createPlantModels({}), /require Three/);
 });
 test('ladder is one double-sided plane; shelf is a half-turned group of four boxes', () => {

@@ -2,6 +2,7 @@
 export const SPECIAL_MODELS = Object.freeze({
   ladder: 'ladder', lectern: 'lectern', lever: 'lever',
   lilac: 'flower', rose_bush: 'flower', peony: 'flower',
+  sunflower: 'sunflower',
   spore_blossom: 'spore_blossom',
   pink_petals: 'flowerbed', wildflowers: 'flowerbed',
   grass_path: 'grass_path', enchanting_table: 'enchanting_table', stonecutter_block: 'stonecutter', sea_pickle: 'sea_pickle',
