@@ -13,7 +13,7 @@ function setup(id,slot) {
 }
 test('pots and conduit extend the existing special model factory with explicit assignments',()=>{
  const ids=createSpecialModels(createThreeMock()).map(m=>m.id);
- assert.deepEqual(ids,['grass_path','enchanting_table','stonecutter','sea_pickle','flower_pot','decorated_pot','conduit']);
+ assert.deepEqual(ids,['grass_path','enchanting_table','stonecutter','sea_pickle','flower_pot','decorated_pot','conduit','fire']);
  for(const id of ['flower_pot','decorated_pot','conduit'])assert.equal(SPECIAL_MODELS[id],id);
 });
 test('empty flower pot keeps four walls and its raised inner base using the original pot sheet',()=>{

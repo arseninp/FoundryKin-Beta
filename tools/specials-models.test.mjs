@@ -35,7 +35,7 @@ test('sea pickle is a 4 by 6 pixel shaft with two crossed double-sided leaf stri
 });
 test('registration, missing materials and bindings are validated before anything is added', () => {
  const Three = createThreeMock();
- assert.deepEqual(createSpecialModels(Three).map(m => [m.id, m.scale]), [['grass_path', 1], ['enchanting_table', 1], ['stonecutter', 1], ['sea_pickle', 1]]);
+ assert.deepEqual(createSpecialModels(Three).map(m => [m.id, m.scale]), [['grass_path', 1], ['enchanting_table', 1], ['stonecutter', 1], ['sea_pickle', 1], ['flower_pot', 1], ['decorated_pot', 1.4], ['conduit', 1], ['fire', 1]]);
  assert.throws(() => createSpecialModels({}), /require Three/);
  const s = setup('stonecutter', SIX);s.E.mats.e = s.E.hiddenMat;
  assert.throws(s.build, /Missing model material: e/);assert.equal(s.E.group.children.length, 0);assert.ok(s.Three.created.every(g => g.disposed));

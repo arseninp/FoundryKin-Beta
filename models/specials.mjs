@@ -1,5 +1,6 @@
 /* Dirt path, enchanting table, stonecutter and sea pickle migrated from FKCuration. Pots and conduit retain FKDetails geometry. */
 import {composeShape, requireRoles} from './shapes.mjs';
+import {createFireModels} from './fire.mjs';
 const FULL = [0, 0, 16, 16], FACES = ['up', 'down', 'north', 'south', 'east', 'west'];
 export function createSpecialModels(Three) {
  if (!Three || typeof Three.Mesh !== 'function' || typeof Three.PlaneGeometry !== 'function' || typeof Three.BoxGeometry !== 'function' || Three.DoubleSide === undefined) throw new Error('Special models require Three');
@@ -48,5 +49,5 @@ export function createSpecialModels(Three) {
   const id=requireRoles(E,['up'],'conduit').up;
   composeShape(Three,E,p=>p.box([5,5,5],[11,11,11],{north:id,south:id,east:id,west:id,up:id,down:id},{east:[0,4,4,8],north:[4,4,8,8],west:[8,4,12,8],south:[12,4,16,8],up:[4,0,8,4],down:[8,0,12,4]}));
  }
- return [{id: 'grass_path', scale: 1, mode: 'volume', build: lowered('grass path', 15)}, {id: 'enchanting_table', scale: 1, mode: 'volume', build: lowered('enchanting table', 12)}, {id: 'stonecutter', scale: 1, mode: 'volume', build: stonecutter}, {id: 'sea_pickle', scale: 1, mode: 'volume', build: seaPickle}, {id:'flower_pot',scale:1,mode:'volume',build:flowerPot}, {id:'decorated_pot',scale:1,mode:'volume',build:decoratedPot}, {id:'conduit',scale:1,mode:'volume',build:conduit}];
+ return [{id: 'grass_path', scale: 1, mode: 'volume', build: lowered('grass path', 15)}, {id: 'enchanting_table', scale: 1, mode: 'volume', build: lowered('enchanting table', 12)}, {id: 'stonecutter', scale: 1, mode: 'volume', build: stonecutter}, {id: 'sea_pickle', scale: 1, mode: 'volume', build: seaPickle}, {id:'flower_pot',scale:1,mode:'volume',build:flowerPot}, {id:'decorated_pot',scale:1.4,mode:'volume',build:decoratedPot}, {id:'conduit',scale:1,mode:'volume',build:conduit}, ...createFireModels(Three)];
 }
