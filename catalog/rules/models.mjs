@@ -9,6 +9,7 @@ export const SPECIAL_MODELS = Object.freeze({
   wheat: 'crop', carrots: 'crop', potatoes: 'crop', beetroot: 'crop', turtle_egg: 'turtle_egg',
   sniffer_egg: 'sniffer_egg',
   pitcher_crop: 'pitcher', pitcher_plant: 'pitcher',
+  redstone_wire: 'redstone_wire',
   weeping_vines: 'vines', twisting_vines: 'vines',
   portal: 'portal', end_portal_frame: 'end_portal_frame', trip_wire: 'tripwire', tripwire_hook: 'tripwire_hook'
 });
