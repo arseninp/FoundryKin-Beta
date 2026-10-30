@@ -72,7 +72,7 @@ function deviceBindings(record) {
  return parts;
 }
 function stageCount(record) {
- return (record.model==='crop'||record.model==='turtle_egg')&&dictionary(record.faces)&&Array.isArray(record.faces.up)?record.faces.up.length:0;
+ return (record.model==='crop'||record.model==='turtle_egg')&&dictionary(record.variants)&&Array.isArray(record.variants.up)?record.variants.up.length:0;
 }
 function stageBindings(record,state) {
  if(record.model!=='crop'&&record.model!=='turtle_egg')return null;
@@ -80,7 +80,7 @@ function stageBindings(record,state) {
  if(!total)throw new Error('Missing '+record.model+' stages');
  state.stage??=0;
  if(!Number.isInteger(state.stage)||state.stage<0||state.stage>=total)throw new Error('Invalid '+record.model+' stage');
- return {stage:[record.faces.up[state.stage]]};
+ return {stage:[record.variants.up[state.stage]]};
 }
 function frameBindings(record) {
  if(record.model!=='end_portal_frame')return null;
