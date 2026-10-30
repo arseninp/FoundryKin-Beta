@@ -72,6 +72,11 @@ function deviceBindings(record) {
  return parts;
 }
 function stageCount(record) {
+ if(record.model==='stage_cross') {
+  const bindings=record.bindings,count=dictionary(bindings)?Object.keys(bindings).filter(role=>/^stage_\d+$/.test(role)).length:0;
+  if(!count||!Array.from({length:count},(_,index)=>own(bindings,'stage_'+index)).every(Boolean))throw new Error('Missing or non-contiguous staged cross bindings');
+  return count;
+ }
  return (record.model==='crop'||record.model==='turtle_egg')&&dictionary(record.variants)&&Array.isArray(record.variants.up)?record.variants.up.length:0;
 }
 function stageBindings(record,state) {
