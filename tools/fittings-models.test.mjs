@@ -23,7 +23,7 @@ test('policy assigns ladder, lectern, lever, every wood shelf and the three tall
 test('fitting and plant models register explicit builders with their camera scale', () => {
  const Three = createThreeMock();
  assert.deepEqual(createFittingModels(Three).map(m => [m.id, m.scale]), [['ladder', 1], ['lectern', 1], ['lever', 1], ['shelf', 1]]);
- assert.deepEqual(createPlantModels(Three).map(m => [m.id, m.scale]), [['flower', 1.4]]);
+ assert.deepEqual(createPlantModels(Three).map(m => [m.id, m.scale]), [['flower', 1.4], ['spore_blossom', 1]]);
  assert.throws(() => createFittingModels({}), /require Three/);assert.throws(() => createPlantModels({}), /require Three/);
 });
 test('ladder is one double-sided plane; shelf is a half-turned group of four boxes', () => {
@@ -50,4 +50,19 @@ test('missing materials and bindings reject the model before anything is added a
  const {up, ...rest} = LECTERN;assert.throws(setup(createFittingModels, 'lectern', rest).build, /Missing lectern binding: up/);
  assert.throws(setup(createFittingModels, 'shelf', {north: 's'}).build, /Missing shelf binding: up/);
  assert.throws(setup(createPlantModels, 'flower', {up: 't'}).build, /Missing tall flower binding: down/);
+});
+test('spore blossom keeps its base and four nested tilted petals', () => {
+ const s = setup(createPlantModels, 'spore_blossom', {up: 'base', down: 'petal'});s.build();
+ assert.equal(s.E.group.children.length, 5);assert.equal(meshesOf(s.E.group).length, 5);
+ assert.equal(s.E.group.children[0].material, s.mats.base);
+ for (let i = 0; i < 4; i++) {
+  const outer = s.E.group.children[i + 1], inner = outer.children[0];
+  assert.equal(outer.rotation.y, [0, Math.PI / 2, Math.PI, -Math.PI / 2][i]);
+  assert.equal(inner.rotation.z, -Math.PI / 8);assert.equal(inner.children[0].material, s.mats.petal);
+ }
+ assert.deepEqual(s.E.group.children[1].children[0].children[0].geometry.rows, [[0, 0], [0, 1], [1, 0], [1, 1]]);
+ assert.equal(s.mats.base.side, 2);assert.equal(s.mats.petal.side, 2);
+ const missing = setup(createPlantModels, 'spore_blossom', {up: 'base', down: 'petal'});delete missing.E.mats.petal;
+ assert.throws(missing.build, /Missing spore blossom material/);assert.equal(missing.E.group.children.length, 0);
+ assert.equal(planModelAssignments({spore_blossom: {}}).assignments.spore_blossom.model, 'spore_blossom');
 });
