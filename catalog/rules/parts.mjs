@@ -2,6 +2,11 @@
 import {pitcherBindings} from './pitcher-parts.mjs';
 import {utilityBindings} from './utility-parts.mjs';
 export function modelPartBindings(record) {
+ if(record.model==='flower') {
+  const parts={up:record.faces?.up,down:record.faces?.down};
+  for(const [role,paths] of Object.entries(parts))if(!Array.isArray(paths)||paths.length!==1||typeof paths[0]!=='string'||!record.paths.includes(paths[0]))throw new Error('Missing or ambiguous tall plant half: '+role);
+  return {up:[...parts.up],down:[...parts.down]};
+ }
  const utility=utilityBindings(record);if(utility)return utility;
  if(record.model==='lightning_rod') {
   const paths=record.variants?.up;
@@ -43,5 +48,5 @@ export function modelPartBindings(record) {
   if(paths.length!==1)throw new Error('Missing or ambiguous flowerbed part: '+name);
   return paths;
  };
- return {flower:find(record.id),stem:find(record.id+'_stem')};
+ return {flower:find('' + record.id),stem:find(record.id+'_stem')};
 }

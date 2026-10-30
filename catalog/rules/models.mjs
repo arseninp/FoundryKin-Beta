@@ -9,6 +9,7 @@ export const SPECIAL_MODELS = Object.freeze({
   sculk_sensor: 'sculk_sensor', calibrated_sculk_sensor: 'sculk_sensor', sculk_shrieker: 'sculk_shrieker', sculk_catalyst: 'sculk_catalyst', cactus: 'cactus',
   pointed_dripstone: 'pointed_dripstone', dried_ghast: 'dried_ghast', barrel: 'barrel',
   lilac: 'flower', rose_bush: 'flower', peony: 'flower',
+  tall_grass: 'flower', large_fern: 'flower',
   sunflower: 'sunflower',
   spore_blossom: 'spore_blossom',
   pink_petals: 'flowerbed', wildflowers: 'flowerbed',
