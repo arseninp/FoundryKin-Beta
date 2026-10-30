@@ -1,5 +1,7 @@
 /* Unique resource paths and indexed variants are separate contracts. */
+import {modelPartBindings} from './rules/parts.mjs';
 const own = (value, key) => Object.hasOwn(value, key);
+const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const faces = ['up', 'down', 'north', 'south', 'east', 'west'];
 const DOORS = Object.freeze({wooden_door: 'wood', spruce_door: 'spruce', birch_door: 'birch', jungle_door: 'jungle', acacia_door: 'acacia', dark_oak_door: 'dark_oak', iron_door: 'iron'});
 export function resourceVariants(value) {
@@ -48,7 +50,9 @@ export function normalizeBlock(id, definition, atlas, options = {}) {
   const icons = [...new Set((options.icons ?? []).flatMap(resourcePaths))].sort();
   const paths = [...new Set([...Object.values(modelFaces).flat(), ...Object.values(carriedFaces ?? {}).flat(), ...icons])].sort();
   if (options.existing) for (const path of paths) if (!own(options.existing, path)) throw new Error('Missing resource file: ' + path);
-  return {id, model: options.model ?? null, states: options.states ?? null, faces: modelFaces, carried: carriedFaces, variants, carriedVariants, icons, paths};
+  const record = {id, model: options.model ?? null, states: options.states ?? null, faces: modelFaces, carried: carriedFaces, variants, carriedVariants, icons, paths};
+  const bindings = modelPartBindings(record);
+  return bindings ? {...record, bindings} : record;
 }
 function ordered(value) {
   if (Array.isArray(value)) return value.map(ordered);
@@ -57,5 +61,5 @@ function ordered(value) {
 }
 export function resourceSignature(record) {
   if (!record.model) throw new Error('Model identity is required for deduplication');
-  return JSON.stringify(ordered({model: record.model, states: record.states, faces: record.faces, carried: record.carried, variants: record.variants, carriedVariants: record.carriedVariants, icons: record.icons}));
+  return JSON.stringify(ordered({model: record.model, states: record.states, faces: record.faces, carried: record.carried, variants: record.variants, carriedVariants: record.carriedVariants, icons: record.icons, bindings: record.bindings}));
 }
