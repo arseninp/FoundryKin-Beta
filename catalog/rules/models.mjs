@@ -5,6 +5,7 @@ export const SPECIAL_MODELS = Object.freeze({
   cauldron: 'cauldron', cocoa: 'cocoa', daylight_detector: 'daylight', daylight_detector_inverted: 'daylight',
   flower_pot: 'flower_pot', decorated_pot: 'decorated_pot', conduit: 'conduit',
   fire: 'fire', soul_fire: 'fire',
+  big_dripleaf: 'big_dripleaf', small_dripleaf_block: 'small_dripleaf',
   lilac: 'flower', rose_bush: 'flower', peony: 'flower',
   sunflower: 'sunflower',
   spore_blossom: 'spore_blossom',
