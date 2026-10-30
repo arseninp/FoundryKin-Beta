@@ -8,12 +8,14 @@ import {createFixtureModels} from './fixtures.mjs';
 import {createDoorModels} from './doors.mjs';
 import {createAmethystModels} from './amethyst.mjs';
 import {createAzaleaModels} from './azalea.mjs';
+import {createPottedAzaleaModels} from './potted-azalea.mjs';
 import {compileCatalog} from '../catalog/compile.mjs';
 import {planModelAssignments} from '../catalog/model-policy.mjs';
+import {declaredDependencies} from '../catalog/rules/dependencies.mjs';
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 export function createModelLibrary(Three) {
  const registry = createModelRegistry();
- registry.register([...createPrimitiveModels(Three), ...createStrandModels(Three), ...createLightModels(Three), ...createPlanarModels(Three), ...createFixtureModels(Three), ...createDoorModels(Three), ...createAmethystModels(Three), ...createAzaleaModels(Three)]);
+ registry.register([...createPrimitiveModels(Three), ...createStrandModels(Three), ...createLightModels(Three), ...createPlanarModels(Three), ...createFixtureModels(Three), ...createDoorModels(Three), ...createAmethystModels(Three), ...createAzaleaModels(Three), ...createPottedAzaleaModels(Three)]);
  registry.seal();
  return registry;
 }
@@ -57,7 +59,7 @@ export function compileModelCatalog(input, Three) {
   if (!dictionary(atlas.texture_data)) throw new Error('Invalid ' + label + ' texture_data');
   return atlas.texture_data;
  };
- const prepared = {...input, models: plan.assignments, terrain: unwrap(input.terrain, 'terrain')};
+ const prepared = {...input, models: plan.assignments, dependencies: input.dependencies ?? declaredDependencies(plan.assignments), terrain: unwrap(input.terrain, 'terrain')};
  if (input.items !== undefined) prepared.items = unwrap(input.items, 'item');
  const catalog = compileCatalog(prepared);
  registry.validate(catalog.records);

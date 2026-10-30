@@ -8,6 +8,13 @@ function azaleaBindings(record) {
  if(!dictionary(bindings)||Object.keys(bindings).length!==3||!['top','side','plant'].every(role=>Array.isArray(bindings[role])&&bindings[role].length===1))throw new Error('Missing or ambiguous azalea parts');
  return bindings;
 }
+function pottedAzaleaBindings(record) {
+ const shared=record.dependencies;
+ if(!dictionary(shared)||!['pot','soil'].every(role=>Array.isArray(shared[role])&&shared[role].length===1))throw new Error('Missing potted azalea dependencies');
+ const faces=dictionary(record.faces)?record.faces:{},parts={top:faces.down,side:faces.south,plant:faces.west};
+ if(!['top','side','plant'].every(role=>Array.isArray(parts[role])&&parts[role].length===1))throw new Error('Missing or ambiguous potted azalea parts');
+ return {pot:shared.pot,soil:shared.soil,...parts};
+}
 function doorBindings(record) {
  if(record.model!=='door')return null;
  const bindings=own(record,'bindings')?record.bindings:{lower:record.faces?.down,upper:record.faces?.north};
@@ -73,16 +80,21 @@ export function createPreviewResolver(catalog, registry) {
    const iconPaths=group?Object.values(group.variants).flatMap(id=>catalog.records[id].icons):record.icons;
    if (!Array.isArray(iconPaths)||!iconPaths.includes(slot)) throw new Error('Resource has no declared icon role');
   }
-  const model=view==='sprite'?'sprite':record.model, descriptor=registry.get(model);
-  const previewState={...selected.state,...state};
-  const faceMap={};
+  const base=view==='sprite'?'sprite':record.model, previewState={...selected.state,...state};
+  if (base==='azalea') {
+   previewState.potted??=false;
+   if (typeof previewState.potted!=='boolean') throw new Error('Invalid azalea preview state');
+  }
+  const model=base==='azalea'&&previewState.potted?'potted_azalea':base, descriptor=registry.get(model);
+  const faceMap={}, shared=dictionary(record.dependencies)?record.dependencies:{};
   if (view==='model') {
-   const bindings=azaleaBindings(record)??doorBindings(record)??pumpkinBindings(record)??candleBindings(record,previewState)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
+   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??candleBindings(record,previewState)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
    if (!dictionary(bindings)||!Object.keys(bindings).length) throw new Error('Missing model bindings');
    for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
    for (const [face,paths] of Object.entries(bindings)) {
     if (!/^[a-z][a-z0-9_]*$/.test(face)||!Array.isArray(paths)||!paths.length) throw new Error('Invalid model binding: '+face);
-    if(paths.some(path=>typeof path!=='string'||!record.paths.includes(path)))throw new Error('Binding resource is outside the selected record: '+face);
+    const declared=own(shared,face)&&Array.isArray(shared[face])?shared[face]:[];
+    if(paths.some(path=>typeof path!=='string'||!(record.paths.includes(path)||declared.includes(path))))throw new Error('Binding resource is outside the selected record: '+face);
     const path=own(choices,face)?choices[face]:paths.length===1?paths[0]:null;
     if (typeof path!=='string'||!paths.includes(path)) throw new Error('Explicit face variant required: '+face);
     faceMap[face]=path;
@@ -92,8 +104,8 @@ export function createPreviewResolver(catalog, registry) {
    previewState.direction??='down';previewState.merged??=false;
    if (!['down','up'].includes(previewState.direction)||typeof previewState.merged!=='boolean') throw new Error('Invalid sulfur preview state');
   }
-  const buildFaces={...faceMap},buildState={...previewState};
-  return {object:selected,model,slot,paths:available,faceMap:{...faceMap},bindings:{...faceMap},state:{...previewState},scale:descriptor.scale,mode:descriptor.mode,
+  const buildFaces={...faceMap},buildState={...previewState},sharedPaths=[...new Set(Object.values(faceMap).filter(path=>!record.paths.includes(path)))];
+  return {object:selected,model,slot,paths:available,shared:sharedPaths,faceMap:{...faceMap},bindings:{...faceMap},state:{...previewState},scale:descriptor.scale,mode:descriptor.mode,
    build(environment) {
     if (!dictionary(environment)) throw new Error('Invalid preview environment');
     return registry.build(model,{...environment,cur:selected.id,slot,faceMap:{...buildFaces},bindings:{...buildFaces},state:{...buildState}});

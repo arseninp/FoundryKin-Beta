@@ -6,8 +6,8 @@ function three() {
 }
 test('single library registers all migrated builders exactly once and seals the registry',()=>{
  const library=createModelLibrary(three());
- assert.equal(library.ids().length,30);assert.ok(library.has('cube'));assert.ok(library.has('sulfur_spike'));
- for(const id of ['lantern','chain','torch','campfire','cross','sprite','rail','decal','pane','candle','brewing','anvil','beacon','pumpkin','door','amethyst','azalea'])assert.ok(library.has(id));
+ assert.equal(library.ids().length,31);assert.ok(library.has('cube'));assert.ok(library.has('sulfur_spike'));
+ for(const id of ['lantern','chain','torch','campfire','cross','sprite','rail','decal','pane','candle','brewing','anvil','beacon','pumpkin','door','amethyst','azalea','potted_azalea'])assert.ok(library.has(id));
  assert.equal(library.get('door').scale,1.4);assert.equal(library.get('sprite').mode,'sprite');
  assert.throws(()=>library.register([{id:'cube',build(){}}]),/sealed/);
  assert.throws(()=>library.build('unknown',{}),/Unknown/);

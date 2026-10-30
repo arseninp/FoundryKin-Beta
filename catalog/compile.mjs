@@ -4,6 +4,7 @@ import {compileAliases} from './identity.mjs';
 import {indexItems, resolveIcons} from './items.mjs';
 import {blockIconLinks} from './rules/icons.mjs';
 import {duplicateRules} from './rules/duplicates.mjs';
+import {attachDependencies} from './rules/dependencies.mjs';
 import {powerRules, compileStateGroups} from './states.mjs';
 const own = (object, key) => Object.hasOwn(object, key);
 function object(value, label) {
@@ -22,7 +23,7 @@ export function compileCatalog(input) {
   const rules = duplicateRules(blocks, object(input.aliases ?? {}, 'duplicate rules'));
   const items = indexItems(atlas, inventory);
   for (const id of Object.keys(links)) if (!own(blocks, id)) throw new Error('Icon owner is missing: ' + id);
-  const records = Object.fromEntries(Object.keys(blocks).sort().map(id => {
+  const built = Object.fromEntries(Object.keys(blocks).sort().map(id => {
     const assignment = models[id];
     if (!own(models, id) || !assignment || typeof assignment.model !== 'string' || !assignment.model.trim()) throw new Error('Missing model assignment: ' + id);
     const iconOwner = own(rules, id) ? rules[id].target : id;
@@ -30,6 +31,7 @@ export function compileCatalog(input) {
     const icons = resolveIcons(items, references);
     return [id, normalizeBlock(id, blocks[id], terrain, {model: assignment.model, states: assignment.states, icons, existing: inventory})];
   }));
+  const records = attachDependencies(built, object(input.dependencies ?? {}, 'model dependencies'), inventory);
   const identity = compileAliases(records, rules);
   const stateRecords = Object.fromEntries(identity.visible.map(id => [id, records[id]]));
   const states = compileStateGroups(stateRecords, powerRules(stateRecords));
