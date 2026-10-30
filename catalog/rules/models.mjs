@@ -6,6 +6,7 @@ export const SPECIAL_MODELS = Object.freeze({
   flower_pot: 'flower_pot', decorated_pot: 'decorated_pot', conduit: 'conduit',
   fire: 'fire', soul_fire: 'fire',
   big_dripleaf: 'big_dripleaf', small_dripleaf_block: 'small_dripleaf',
+  sculk_sensor: 'sculk_sensor', calibrated_sculk_sensor: 'sculk_sensor', sculk_shrieker: 'sculk_shrieker', sculk_catalyst: 'sculk_catalyst', cactus: 'cactus',
   lilac: 'flower', rose_bush: 'flower', peony: 'flower',
   sunflower: 'sunflower',
   spore_blossom: 'spore_blossom',
