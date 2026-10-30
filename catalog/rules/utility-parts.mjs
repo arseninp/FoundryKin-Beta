@@ -5,6 +5,16 @@ export function utilityBindings(record) {
   return [...paths];
  };
  const named=(paths,name)=>single([...new Set(paths??[])].filter(path=>typeof path==='string'&&path.split('/').pop()===name),name);
+ if(record.model==='dried_ghast') {
+  if(record.id!=='dried_ghast')throw new Error('Unknown dried ghast object');
+  const bindings={},faces=['up','down','north','south','east','west','tent'];
+  for(const face of faces) {
+   const paths=face==='tent'?record.carriedVariants?.up:record.variants?.[face];
+   if(!Array.isArray(paths)||paths.length!==4)throw new Error('Incomplete dried ghast stages: '+face);
+   for(let stage=0;stage<4;stage++)bindings['stage_'+stage+'_'+face]=single([paths[stage]],'dried ghast '+face+' stage '+stage);
+  }
+  return bindings;
+ }
  if(record.model==='pointed_dripstone') {
   if(record.id!=='pointed_dripstone')throw new Error('Unknown pointed dripstone object');
   return Object.fromEntries(['down','up'].flatMap(direction=>['base','middle','frustum','tip','tip_merge'].map(part=>[direction+'_'+part,named(record.paths,'pointed_dripstone_'+direction+'_'+(part==='tip_merge'?'merge':part))])));
