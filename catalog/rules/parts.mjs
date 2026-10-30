@@ -1,6 +1,8 @@
 /* Named model parts are declared from owned resources, independently of edited slots. */
 import {pitcherBindings} from './pitcher-parts.mjs';
+import {utilityBindings} from './utility-parts.mjs';
 export function modelPartBindings(record) {
+ const utility=utilityBindings(record);if(utility)return utility;
  if(record.model==='lightning_rod') {
   const paths=record.variants?.up;
   if(!Array.isArray(paths)||paths.length!==2||paths.some(path=>typeof path!=='string'||!record.paths.includes(path)))throw new Error('Missing or invalid lightning rod variants');
