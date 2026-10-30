@@ -1,9 +1,15 @@
 /* Named model parts are declared from owned resources, independently of edited slots. */
 import {pitcherBindings} from './pitcher-parts.mjs';
 import {utilityBindings} from './utility-parts.mjs';
+const FACE_STAGE_ORDER=Object.freeze({sweet_berry_bush:Object.freeze(['down','up','north','east'])});
 export function modelPartBindings(record) {
  if(record.model==='stage_cross') {
-  const paths=record.variants?.up;
+  const order=Object.hasOwn(FACE_STAGE_ORDER,record.id)?FACE_STAGE_ORDER[record.id]:null;
+  const paths=order?order.map(face=>{
+   const rows=record.faces?.[face];
+   if(!Array.isArray(rows)||rows.length!==1)throw new Error('Missing or ambiguous stage face: '+face);
+   return rows[0];
+  }):record.variants?.up;
   if(!Array.isArray(paths)||!paths.length||paths.some(path=>typeof path!=='string'||!record.paths.includes(path)))throw new Error('Missing or invalid staged cross sequence');
   return Object.fromEntries(paths.map((path,index)=>['stage_'+index,[path]]));
  }

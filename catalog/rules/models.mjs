@@ -1,4 +1,4 @@
-/* Explicit model assignments for special objects. Add new migrated models here; unknown objects stay unresolved instead of becoming cubes. */
+/* Explicit model assignments for special objects. Add new models here; unlisted objects stay unresolved rather than becoming cubes. */
 export const SPECIAL_MODELS = Object.freeze({
   ladder: 'ladder', lectern: 'lectern', lever: 'lever',
   hopper: 'hopper', grindstone: 'grindstone', frame: 'frame', glow_frame: 'frame',
@@ -10,7 +10,8 @@ export const SPECIAL_MODELS = Object.freeze({
   pointed_dripstone: 'pointed_dripstone', dried_ghast: 'dried_ghast', barrel: 'barrel',
   lilac: 'flower', rose_bush: 'flower', peony: 'flower',
   tall_grass: 'flower', large_fern: 'flower',
-  nether_wart: 'stage_cross', torchflower_crop: 'stage_cross',
+  nether_wart: 'stage_cross', torchflower_crop: 'stage_cross', sweet_berry_bush: 'stage_cross',
+  bush: 'cross', cactus_flower: 'cross',
   sunflower: 'sunflower',
   spore_blossom: 'spore_blossom',
   pink_petals: 'flowerbed', wildflowers: 'flowerbed',
