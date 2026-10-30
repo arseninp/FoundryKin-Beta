@@ -10,6 +10,7 @@ export const SPECIAL_MODELS = Object.freeze({
   pointed_dripstone: 'pointed_dripstone', dried_ghast: 'dried_ghast', barrel: 'barrel',
   lilac: 'flower', rose_bush: 'flower', peony: 'flower',
   tall_grass: 'flower', large_fern: 'flower',
+  nether_wart: 'stage_cross', torchflower_crop: 'stage_cross',
   sunflower: 'sunflower',
   spore_blossom: 'spore_blossom',
   pink_petals: 'flowerbed', wildflowers: 'flowerbed',

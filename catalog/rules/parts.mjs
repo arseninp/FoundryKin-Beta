@@ -2,6 +2,11 @@
 import {pitcherBindings} from './pitcher-parts.mjs';
 import {utilityBindings} from './utility-parts.mjs';
 export function modelPartBindings(record) {
+ if(record.model==='stage_cross') {
+  const paths=record.variants?.up;
+  if(!Array.isArray(paths)||!paths.length||paths.some(path=>typeof path!=='string'||!record.paths.includes(path)))throw new Error('Missing or invalid staged cross sequence');
+  return Object.fromEntries(paths.map((path,index)=>['stage_'+index,[path]]));
+ }
  if(record.model==='flower') {
   const parts={up:record.faces?.up,down:record.faces?.down};
   for(const [role,paths] of Object.entries(parts))if(!Array.isArray(paths)||paths.length!==1||typeof paths[0]!=='string'||!record.paths.includes(paths[0]))throw new Error('Missing or ambiguous tall plant half: '+role);
