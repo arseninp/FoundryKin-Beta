@@ -1,4 +1,5 @@
 /* Explicit presentation policy. Unknown objects never receive a fallback cube. */
+import {SPECIAL_MODELS, SPECIAL_PATTERNS} from './rules/models.mjs';
 const own = (o,k) => Object.hasOwn(o,k);
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const CUBES = new Set([
@@ -35,6 +36,8 @@ const EXACT = {
 };
 function classify(id) {
  if (own(EXACT,id)) return {model:EXACT[id],reason:'explicit-model'};
+ if (own(SPECIAL_MODELS,id)) return {model:SPECIAL_MODELS[id],reason:'special-model'};
+ for (const [pattern,model] of SPECIAL_PATTERNS) if (pattern.test(id)) return {model,reason:'special-pattern'};
  if (CUBES.has(id)) return {model:'cube',reason:'explicit-cube'};
  if (CROSS.has(id)) return {model:'cross',reason:'explicit-cross'};
  if (/(^|_)lantern$/.test(id)) return {model:'lantern',reason:'lantern-family'};

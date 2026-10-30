@@ -52,11 +52,21 @@ export function composeShape(Three, E, draw) {
     if (typeof Three.Group !== 'function') throw new Error('Shape rotation requires Three.Group');
     const inner = fragment();
     drawInner(inner.api);items.push({inner, angle});
+   },
+   tilted(pivot, angle, drawInner) {
+    if (typeof Three.Group !== 'function') throw new Error('Shape rotation requires Three.Group');
+    const inner = fragment();
+    drawInner(inner.api);items.push({inner, pivot, angle});
    }
   };
   return {api, flush(target) {
    for (const item of items) {
-    if (item.inner) {
+    if (item.inner && item.pivot) {
+     const group = new Three.Group(), px = (item.pivot[0] - 8) / 16, py = (item.pivot[1] - 8) / 16, pz = (item.pivot[2] - 8) / 16;
+     item.inner.flush(group);
+     group.children.forEach(m => {m.position.x -= px;m.position.y -= py;m.position.z -= pz;});
+     group.position.set(px, py, pz);group.rotation.x = item.angle;target.add(group);
+    } else if (item.inner) {
      const group = new Three.Group();
      group.rotation.y = item.angle;item.inner.flush(group);target.add(group);
     } else target.add(item);

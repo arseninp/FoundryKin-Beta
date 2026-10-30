@@ -12,13 +12,15 @@ import {createPottedAzaleaModels} from './potted-azalea.mjs';
 import {createBambooModels} from './bamboo.mjs';
 import {createMossModels} from './moss.mjs';
 import {createRedstoneModels} from './redstone.mjs';
+import {createFittingModels} from './fittings.mjs';
+import {createPlantModels} from './plants.mjs';
 import {compileCatalog} from '../catalog/compile.mjs';
 import {planModelAssignments} from '../catalog/model-policy.mjs';
 import {declaredDependencies} from '../catalog/rules/dependencies.mjs';
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 export function createModelLibrary(Three) {
  const registry = createModelRegistry();
- registry.register([...createPrimitiveModels(Three), ...createStrandModels(Three), ...createLightModels(Three), ...createPlanarModels(Three), ...createFixtureModels(Three), ...createDoorModels(Three), ...createAmethystModels(Three), ...createAzaleaModels(Three), ...createPottedAzaleaModels(Three), ...createBambooModels(Three), ...createMossModels(Three), ...createRedstoneModels(Three)]);
+ registry.register([...createPrimitiveModels(Three), ...createStrandModels(Three), ...createLightModels(Three), ...createPlanarModels(Three), ...createFixtureModels(Three), ...createDoorModels(Three), ...createAmethystModels(Three), ...createAzaleaModels(Three), ...createPottedAzaleaModels(Three), ...createBambooModels(Three), ...createMossModels(Three), ...createRedstoneModels(Three), ...createFittingModels(Three), ...createPlantModels(Three)]);
  registry.seal();
  return registry;
 }
