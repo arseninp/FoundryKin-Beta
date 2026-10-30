@@ -1,42 +1,39 @@
 # ARCHITECTURE
 
-Кодовая точка 07caecd, 2026-10-29. Рефактор в main ещё не подключён к рабочим страницам.
+Передача 2026-10-30, проверенный HEAD 2a109dc3c527d2cd7ad0d6221212ce47af15c0f9. library.mjs прочитан непосредственно; остальные изменения ниже восстановлены из OLDCHAT11 и требуют проверки соответствующих исходников перед кодовыми правками.
 
 ## Два пути
 
-Рабочий: app.html → fk-editor/fk-app → iframe index.html → старые fk-модули. Новый: data → normalization → aliases/states/families/icons → compile → access → preview bindings → registry → renderer. HTML пока использует только первый.
-
-Legacy обёртки/sp-списки могут терять варианты/carried. Старое ядро игнорирует saved ID, местами меняет модель через PNG-слот, имеет риски async replacement/storage и общего изменения разрешения. Наличие нового модуля не исправляет автоматически старый runtime.
+Legacy: app.html → fk-editor/fk-app → iframe index.html → fk-модули. Новый: data → normalization → aliases/states/families/icons → compile → access → preview bindings → registry → renderer. По истории новый путь пока не подключён к HTML; версия живых страниц 0.9.1. Новая проверяемая страница и полноценный редактор ещё не реализованы.
 
 ## Контракты
 
-- load.mjs: JSONC/assembleChunks, terrain в texture_data; hashes проверяет вызывающий загрузчик.
-- resources.mjs: unique paths/faces/carried отдельно от variants/carriedVariants с повторами/индексами. Семь shared door atlases выбирают свои половины.
-- items.mjs/rules/icons.mjs: item atlas и явные icon links; полный аудит не закрыт.
-- identity.mjs/rules/duplicates.mjs: aliases с проверкой эквивалентности, а не по одному общему PNG.
-- compile.mjs: records/cards/aliases/families/stateGroups/routes/reverse resource index. Полная совместимость с family plan ещё требует прогона.
-- states.mjs: семь power groups плюс pumpkin/anvil/amethyst; неполную группу не сливать вслепую.
+- load.mjs: JSONC/assembleChunks; hashes проверяет вызывающий загрузчик.
+- resources.mjs: уникальные paths/faces/carried отдельно от variants/carriedVariants с повторами и индексами. Shared door atlases выбирают свои половины. normalizeBlock вызывает rules/parts.mjs для именованных частей.
+- rules/models.mjs: явные специальные назначения и ограниченные шаблоны; model-policy подключает их. Unknown остаётся unresolved, не default cube.
+- rules/parts.mjs и pitcher-parts.mjs: named bindings flower/stem, sunflower front/back, индексированные грани sniffer_egg, части pitcher и варианты lightning_rod.
+- rules/dependencies.mjs: declaredDependencies/attachDependencies объявляют общие роли, проверяют формат, единственность пути и наличие в inventory. Azalea pot/soil, устройства torch_on/off, pitcher pod. Собственные paths не расширяются неявно; общий ресурс не становится собственным редактируемым слотом.
+- compile.mjs: records/cards/aliases/families/stateGroups/routes/reverse resource index и присоединение dependencies. Зависимости не являются полным entity source adapter или готовым окном Shared textures.
+- identity/rules/duplicates: эквивалентность ресурсов, модели и состояний перед объединением waxed/infested; old-ID routes сохраняются. Степени окисления не удаляются.
+- states.mjs: power groups, pumpkin/anvil/amethyst и вариант pitcher_crop/plant. Группа требует одинаковый model; для bamboo_sapling/adult с разными моделями нужен механизм форм, пока не подключённый.
 - access.mjs: saved ID/alias → source/card/form/state; неоднозначный PNG не выбирает первого владельца.
-- preview.mjs: editing slot отдельно от model state; role → пути, явный выбор альтернатив, проверка принадлежности ресурсов. Есть bindings door/pumpkin/candle/azalea/strands.
-- model-policy.mjs: явные материалы/формы/специальные назначения и overrides; unresolved вместо default cube.
-- models/library.mjs: compileModelCatalog допускает plain/wrapped terrain/item atlas и блокирует неполное покрытие. tools/model-coverage.mjs переиспользует общую проверку и учитывает overrides; прежнее дублирование уже исправлено.
+- preview.mjs: slot независим от state; проверяет owned пути или dependency именно объявленной роли, возвращает shared для загрузчика. Azalea potted выбирает potted_azalea и down/south/west. Посевы/turtle_egg используют variants.up, не уникальные faces. Не все состояния валидируются на одном уровне: часть проверяется построителем. Общая панель UI отсутствует.
+- models/library.mjs: запечатанная библиотека фабрик вплоть до workshop. Ожидаемое тестами количество по архиву — 69, не результат выполнения в этой передаче. compileModelCatalog остаётся строгим: unresolved/missing builders блокируют компиляцию до normalize. Режим ограниченного среза не реализован. Plain/wrapped terrain/item atlas поддерживаются.
 
-## Реестр и незавершённые модели
+## Геометрия
 
-30 типов: primitives cube/slab/stairs/wall/fence/gate/button/plate/cake/trapdoor/carpet/anvil/beacon/pumpkin; strands pale_hanging_moss/sulfur_spike; lights lantern/chain/torch/campfire; planar cross/sprite/rail/decal; fixtures pane/candle/brewing; door; amethyst; azalea.
+models/shapes.mjs даёт composeShape/requireRoles и общие операции плоскостей, боксов и повёрнутых/наклонных групп. Перенос сохраняет принятую legacy geometry/UV, кроме явно оговорённых отличий. Реализации сгруппированы по ответственности: bamboo, moss, redstone, fittings, plants, specials, growth, mechanisms, flowerbeds, pitcher, wires, tracks, metals, workshop и прежние primitives/strands/lights/planar/fixtures/doors/amethyst/azalea.
 
-Door — закрытые две половины без merged canvas. Amethyst — один cross, growth выбирает исходный ID. Unpotted azalea — top/side/plant из up/north/east; potted down/south/west сохранены в редактируемых ресурсах.
-
-Potted azalea — незарегистрированный Java-reference candidate (template_potted_azalea_bush, blob d3ce7c09fc34fe2212a741ebf3a2a5e3a720e405). Нужны Bedrock PNG/UV review, зависимости pot/soil и выбор формы. Нельзя подставлять чужие пути в обход ownership validation.
+Closed door остаётся без открывания. Один amethyst выбирает growth. Potted azalea зарегистрирована, но её Java-reference geometry требует Bedrock PNG/UV review. Repeater/comparator перенесены из принятого fk-curation.js, не заново из Java. Включённый redstone torch сохраняет дополнительные sprite planes. Track — плоский рисунок, без наклонов/соединений путей. Workshop показывает downward hopper, floor grindstone и две рамки. Регистрация не означает полноту игровых состояний.
 
 ## Данные и расширение
 
-PIN Mojang 46ba6ea985fb5a92d79a9419198f10dda14c199d. Candidate: 1275 блоков, 1241 terrain key, 8201 resource path, auxiliary end_gateway/lava_cauldron. Raw blocks имеет 1352 definitions; часть legacy/internal отфильтрована намеренно.
+PIN Mojang 46ba6ea985fb5a92d79a9419198f10dda14c199d. Исторические параметры candidate: 1275 определений, 1241 terrain key, 8201 resource path, auxiliary end_gateway/lava_cauldron; raw blocks 1352. Это не новый замер. Старый stonecutter по поправке архива уже исключён; не возвращать его как unresolved задачу без проверки candidate.
 
-Named bindings и объявленная model — заготовка для расширения. Item по умолчанию sprite; 3D только по объявлению. Entity source/geometry/material/render-controller adapter НЕ реализован. Исходные размеры PNG, альфа, атласы и frame sequences должны сохраняться.
+Item по умолчанию sprite, 3D только по явному объявлению. Entity source/geometry/material/render-controller adapter не реализован. Табличкам, кроватям и другим объектам с отдельными атласами нужен проверяемый источник, inventory и ownership, а не только строка dependencies. Сохранять размеры PNG, alpha, atlases и frame sequences.
 
-## Проверки и хранение
+## Проверки и сохранность
 
-Targeted тесты используют заглушки Three/геометрии. Полный validate/compileModelCatalog, зелёный CI, настоящий WebGL/Android и экспорт текущей точки не подтверждены. Проверки: node tools/validate.mjs и node --test tools/*.test.mjs. Пути в данных не равны проверке PNG-пикселей.
+История содержит targeted mock/syntax/real-input проверки, но полный validate/tests/compile, CI, WebGL/Android и export не подтверждены. В этой передаче код не запускался. Команды для среды исполнения: node tools/validate.mjs и node --test tools/*.test.mjs; запуск не перекладывать на владельца.
 
-Legacy cache foundrykin.catalog.v6; user packs fk070_packs. Backup кода не содержит паков. Не очищать storage ради кэша. Transactions, import limits, async target, non-square atlases, cache limits и URL lifecycle требуют регрессий.
+Legacy cache foundrykin.catalog.v6; packs fk070_packs. Риски: saved ID, async target binding, storage transactions/import limits, non-square atlases, глобальное изменение разрешения, cache limits и URL lifecycle. Не очищать storage. Перед удалением legacy проверить draw/undo/redo/Add/reopen/PNG/mcpack.
