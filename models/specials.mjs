@@ -62,5 +62,24 @@ export function createSpecialModels(Three) {
   const id=requireRoles(E,['up'],'conduit').up;
   composeShape(Three,E,p=>p.box([5,5,5],[11,11,11],{north:id,south:id,east:id,west:id,up:id,down:id},{east:[0,4,4,8],north:[4,4,8,8],west:[8,4,12,8],south:[12,4,16,8],up:[4,0,8,4],down:[8,0,12,4]}));
  }
- return [{id:'farmland',scale:1,mode:'volume',build:farmland}, {id:'snow_layer',scale:1,mode:'volume',build:lowered('snow layer',snowHeight)}, {id: 'grass_path', scale: 1, mode: 'volume', build: lowered('grass path', 15)}, {id: 'enchanting_table', scale: 1, mode: 'volume', build: lowered('enchanting table', 12)}, {id: 'stonecutter', scale: 1, mode: 'volume', build: stonecutter}, {id: 'sea_pickle', scale: 1, mode: 'volume', build: seaPickle}, {id:'flower_pot',scale:1,mode:'volume',build:flowerPot}, {id:'decorated_pot',scale:1.4,mode:'volume',build:decoratedPot}, {id:'conduit',scale:1,mode:'volume',build:conduit}, ...createFireModels(Three)];
+ /* Java-reference dragon_egg.json, blob 042d4ebedf87d6d7015a5abbc8b6e16fc065b434; Bedrock-owned material. */
+ function dragonEgg(E) {
+  const id=requireRoles(E,['up'],'dragon egg').up;
+  const elements=[
+   [[6,15,6],[10,16,10],[6,0,10,1],[6,6,10,10],false],
+   [[5,14,5],[11,15,11],[5,1,11,2],[5,5,11,11],false],
+   [[4,13,4],[12,14,12],[4,2,12,3],[4,4,12,12],false],
+   [[3,0,3],[13,13,13],[3,3,13,16],[3,3,13,13],true],
+   [[2,1,2],[14,11,14],[2,5,14,15],[2,2,14,14],true],
+   [[1,3,1],[15,8,15],[1,8,15,13],[1,1,15,15],true]
+  ];
+  composeShape(Three,E,p=>{
+   for(const [a,b,side,cap,bottom] of elements) {
+    const faces={north:id,south:id,east:id,west:id,up:id},uv={north:side,south:side,east:side,west:side,up:cap};
+    if(bottom){faces.down=id;uv.down=cap;}
+    p.box(a,b,faces,uv);
+   }
+  });
+ }
+ return [{id:'farmland',scale:1,mode:'volume',build:farmland}, {id:'snow_layer',scale:1,mode:'volume',build:lowered('snow layer',snowHeight)}, {id: 'grass_path', scale: 1, mode: 'volume', build: lowered('grass path', 15)}, {id: 'enchanting_table', scale: 1, mode: 'volume', build: lowered('enchanting table', 12)}, {id: 'stonecutter', scale: 1, mode: 'volume', build: stonecutter}, {id: 'sea_pickle', scale: 1, mode: 'volume', build: seaPickle}, {id:'flower_pot',scale:1,mode:'volume',build:flowerPot}, {id:'decorated_pot',scale:1.4,mode:'volume',build:decoratedPot}, {id:'conduit',scale:1,mode:'volume',build:conduit}, {id:'dragon_egg',scale:1,mode:'volume',build:dragonEgg}, ...createFireModels(Three)];
 }

@@ -35,7 +35,7 @@ export const SPECIAL_MODELS = Object.freeze({
   iron_bars: 'bars', end_rod: 'end_rod', heavy_core: 'heavy_core',
   grass_path: 'grass_path', enchanting_table: 'enchanting_table', stonecutter_block: 'stonecutter', sea_pickle: 'sea_pickle',
   wheat: 'crop', carrots: 'crop', potatoes: 'crop', beetroot: 'crop', turtle_egg: 'turtle_egg',
-  sniffer_egg: 'sniffer_egg',
+  sniffer_egg: 'sniffer_egg', dragon_egg: 'dragon_egg',
   pitcher_crop: 'pitcher', pitcher_plant: 'pitcher',
   redstone_wire: 'redstone_wire',
   rail: 'track', golden_rail: 'track', detector_rail: 'track', activator_rail: 'track',
