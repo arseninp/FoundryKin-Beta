@@ -31,6 +31,7 @@ function pumpkinBindings(record) {
 }
 const CUBE_FACES=['up','down','north','south','east','west'];
 const HIVE_STATE=['honey',[false,true],['south']];
+const BULB_STATE=['mode',['off','lit','powered','lit_powered'],CUBE_FACES];
 const MUSHROOM_VARIANTS=Array.from({length:16},(_,index)=>index);
 const CUBE_STATES={
  bee_nest:HIVE_STATE,beehive:HIVE_STATE,
@@ -41,7 +42,12 @@ const CUBE_STATES={
  suspicious_gravel:['brushing',[0,1,2,3],CUBE_FACES],
  brown_mushroom_block:['variant',MUSHROOM_VARIANTS,CUBE_FACES,14],
  red_mushroom_block:['variant',MUSHROOM_VARIANTS,CUBE_FACES,14],
- mushroom_stem:['variant',MUSHROOM_VARIANTS,['up','down'],10]
+ mushroom_stem:['variant',MUSHROOM_VARIANTS,['up','down'],10],
+ frosted_ice:['stage',[0,1,2,3],CUBE_FACES],
+ respawn_anchor:['charges',[0,1,2,3,4],CUBE_FACES],
+ ...Object.fromEntries(['','exposed_','weathered_','oxidized_'].flatMap(prefix=>{
+  const id=prefix+'copper_bulb';return [[id,BULB_STATE],['waxed_'+id,BULB_STATE]];
+ }))
 };
 function cubeStateBindings(record,state) {
  if(record.model!=='cube'||!own(CUBE_STATES,record.id))return null;
