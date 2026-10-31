@@ -29,13 +29,27 @@ function pumpkinBindings(record) {
  if(found.length!==1)throw new Error('Missing or ambiguous pumpkin resource');
  return {...record.faces,south:found};
 }
-function hiveBindings(record,state) {
- if(record.model!=='cube'||!['bee_nest','beehive'].includes(record.id))return null;
- if(state.honey===undefined)state.honey=false;
- if(typeof state.honey!=='boolean')throw new Error('Invalid hive honey state');
- const front=record.variants?.south;
- if(!Array.isArray(front)||front.length!==2||[0,1].some(index=>typeof front[index]!=='string'||!record.paths.includes(front[index])))throw new Error('Missing or invalid hive front variants');
- return {...record.faces,south:[front[state.honey?1:0]]};
+const CUBE_FACES=['up','down','north','south','east','west'];
+const HIVE_STATE=['honey',[false,true],['south']];
+const CUBE_STATES={
+ bee_nest:HIVE_STATE,beehive:HIVE_STATE,
+ crafter:['mode',['idle','triggered','crafting'],CUBE_FACES],
+ chiseled_bookshelf:['occupied',[false,true],['north']],
+ creaking_heart:['mode',['inactive','dormant','active'],CUBE_FACES],
+ suspicious_sand:['brushing',[0,1,2,3],CUBE_FACES],
+ suspicious_gravel:['brushing',[0,1,2,3],CUBE_FACES]
+};
+function cubeStateBindings(record,state) {
+ if(record.model!=='cube'||!own(CUBE_STATES,record.id))return null;
+ const [parameter,values,varied]=CUBE_STATES[record.id],value=state[parameter]===undefined?values[0]:state[parameter],index=values.indexOf(value);
+ if(index<0)throw new Error('Invalid cube preview state: '+parameter);
+ const bindings={};
+ for(const face of CUBE_FACES) {
+  const paths=record.variants?.[face],count=varied.includes(face)?values.length:1;
+  if(!Array.isArray(paths)||paths.length!==count||Array.from(paths).some(path=>typeof path!=='string'||!record.paths.includes(path)))throw new Error('Missing or invalid cube variants: '+face);
+  bindings[face]=[paths[count===1?0:index]];
+ }
+ state[parameter]=value;return bindings;
 }
 function candleBindings(record,state) {
  if(record.model!=='candle')return null;
@@ -174,7 +188,7 @@ export function createPreviewResolver(catalog, registry) {
   const model=base==='azalea'&&previewState.potted?'potted_azalea':base, descriptor=registry.get(model);
   const faceMap={}, shared=dictionary(record.dependencies)?record.dependencies:{};
   if (view==='model') {
-   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??hiveBindings(record,previewState)??candleBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??deviceBindings(record)??stageBindings(record,previewState)??frameBindings(record)??hookBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
+   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??cubeStateBindings(record,previewState)??candleBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??deviceBindings(record)??stageBindings(record,previewState)??frameBindings(record)??hookBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
    if (!dictionary(bindings)||!Object.keys(bindings).length) throw new Error('Missing model bindings');
    for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
    for (const [face,paths] of Object.entries(bindings)) {

@@ -43,62 +43,85 @@ test('selection and building do not mutate the catalog or expose shared state ob
  assert.equal(resolve({id:'furnace',state:{powered:'on'}}).state.powered,'on');assert.equal(JSON.stringify(cat),before);
 });
 
-// Normalized preview fixtures reflect blocks-000 and terrain-000 at PIN 46ba6ea; this is not a full-input compile test.
-const HIVES=['bee_nest','beehive'];
-function hiveFixture() {
- const cat=fixture(),P='textures/blocks/';
- for(const id of HIVES) {
-  const names={up:[id+'_top'],down:[id==='bee_nest'?'bee_nest_bottom':'beehive_top'],north:[id+'_side'],south:[id+'_front',id+'_front_honey'],east:[id+'_side'],west:[id+'_side']};
-  const faces=Object.fromEntries(Object.entries(names).map(([face,paths])=>[face,paths.map(path=>P+path)]));
-  cat.records[id]={id,model:SPECIAL_MODELS[id],faces,variants:structuredClone(faces),icons:[],paths:[...new Set(Object.values(faces).flat())].sort()};
+// Selected normalized resource sequences from the pinned terrain atlas, not a full catalog compilation.
+const CUBE_CASES=[
+ ...['bee_nest','beehive'].map(id=>[id,'honey',[false,true],{
+  up:[id+'_top'],down:[id==='bee_nest'?'bee_nest_bottom':'beehive_top'],north:[id+'_side'],
+  south:[id+'_front',id+'_front_honey'],east:[id+'_side'],west:[id+'_side']
+ }]),
+ ['crafter','mode',['idle','triggered','crafting'],{
+  up:['crafter_top','crafter_top_triggered','crafter_top_crafting'],down:['crafter_bottom','crafter_bottom','crafter_bottom'],
+  north:['crafter_north','crafter_north','crafter_north_crafting'],south:['crafter_south','crafter_south_triggered','crafter_south_triggered'],
+  east:['crafter_east','crafter_east_triggered','crafter_east_crafting'],west:['crafter_west','crafter_west_triggered','crafter_west_crafting']
+ }],
+ ['chiseled_bookshelf','occupied',[false,true],{
+  up:['chiseled_bookshelf_top'],down:['chiseled_bookshelf_top'],north:['chiseled_bookshelf_empty','chiseled_bookshelf_occupied'],
+  south:['chiseled_bookshelf_side'],east:['chiseled_bookshelf_side'],west:['chiseled_bookshelf_side']
+ }],
+ ['creaking_heart','mode',['inactive','dormant','active'],Object.fromEntries(sides.map(face=>[face,['inactive','dormant','active'].map(mode=>'creaking_heart_'+(['up','down'].includes(face)?'top':'side')+'_'+mode)]))],
+ ...['suspicious_sand','suspicious_gravel'].map(id=>[id,'brushing',[0,1,2,3],Object.fromEntries(sides.map(face=>[face,[0,1,2,3].map(index=>id+'_'+index)]))])
+];
+function cubeFixture() {
+ const cat=fixture();
+ for(const [id,,,names] of CUBE_CASES) {
+  const variants=Object.fromEntries(Object.entries(names).map(([face,paths])=>[face,paths.map(path=>'textures/blocks/'+path)]));
+  cat.records[id]={id,model:'cube',variants,faces:Object.fromEntries(Object.entries(variants).map(([face,paths])=>[face,[...new Set(paths)]])),icons:[],paths:[...new Set(Object.values(variants).flat())].sort()};
  }
  return cat;
 }
-test('hives have exact cube assignments and remain distinct objects',()=>{
- for(const id of HIVES)assert.equal(SPECIAL_MODELS[id],'cube');
- const resolve=createPreviewResolver(hiveFixture(),registry());
- assert.equal(resolve({id:'bee_nest'}).object.card,'bee_nest');assert.equal(resolve({id:'beehive'}).object.card,'beehive');
- assert.equal(Object.hasOwn(SPECIAL_MODELS,'future_beehive'),false);
+test('crafter and suspicious blocks receive exact cube assignments without new geometry',()=>{
+ for(const id of ['bee_nest','beehive','crafter','suspicious_sand','suspicious_gravel'])assert.equal(SPECIAL_MODELS[id],'cube');
+ for(const id of ['future_crafter','future_suspicious_sand'])assert.equal(Object.hasOwn(SPECIAL_MODELS,id),false);
 });
-test('hive honey state selects only the front, independently of every edited resource',()=>{
- const cat=hiveFixture(),before=JSON.stringify(cat),resolve=createPreviewResolver(cat,registry());
- for(const id of HIVES)for(const honey of [undefined,false,true])for(const slot of cat.records[id].paths) {
-  const state=honey===undefined?{}:{honey},stateBefore=JSON.stringify(state),p=resolve({id,slot,state});
-  assert.equal(p.model,'cube');assert.equal(p.state.honey,honey===true);assert.equal(p.slot,slot);assert.deepEqual(p.paths,cat.records[id].paths);assert.deepEqual(p.shared,[]);
-  for(const face of sides)assert.equal(p.faceMap[face],face==='south'?cat.records[id].variants.south[honey===true?1:0]:cat.records[id].faces[face][0]);
-  assert.equal(JSON.stringify(state),stateBefore);
+test('all declared cube states select synchronized face indices independently of edited PNGs',()=>{
+ const cat=cubeFixture(),before=JSON.stringify(cat),resolve=createPreviewResolver(cat,registry());
+ for(const [id,parameter,values] of CUBE_CASES)for(let index=0;index<values.length;index++)for(const slot of cat.records[id].paths) {
+  const state={[parameter]:values[index]},p=resolve({id,slot,state});assert.equal(p.model,'cube');assert.equal(p.slot,slot);assert.equal(p.state[parameter],values[index]);
+  for(const face of sides){const sequence=cat.records[id].variants[face];assert.equal(p.bindings[face],sequence[sequence.length===1?0:index]);}
+  assert.deepEqual(p.paths,cat.records[id].paths);assert.deepEqual(p.shared,[]);assert.deepEqual(state,{[parameter]:values[index]});
  }
  assert.equal(JSON.stringify(cat),before);
 });
-test('hive build forwards isolated honey state and chosen materials to the existing cube',()=>{
- const resolve=createPreviewResolver(hiveFixture(),registry());
- for(const id of HIVES) {
-  const p=resolve({id,state:{honey:true}}),expected=p.faceMap.south;p.state.honey=false;p.faceMap.south='wrong';
-  const first=p.build({state:{honey:false},faceMap:{south:'wrong'},cur:'wrong'});
-  assert.equal(first.id,'cube');assert.equal(first.env.cur,id);assert.equal(first.env.state.honey,true);assert.equal(first.env.faceMap.south,expected);
-  first.env.state.honey=false;first.env.bindings.south='wrong';
-  const second=p.build({});assert.equal(second.env.state.honey,true);assert.equal(second.env.bindings.south,expected);
+test('repeated crafter resources retain three modes and heart top and sides change together',()=>{
+ const cat=cubeFixture(),resolve=createPreviewResolver(cat,registry());
+ assert.equal(cat.records.crafter.variants.down.length,3);assert.equal(new Set(cat.records.crafter.variants.down).size,1);
+ const triggered=resolve({id:'crafter',state:{mode:'triggered'}}),crafting=resolve({id:'crafter',state:{mode:'crafting'}});
+ assert.equal(triggered.bindings.south,crafting.bindings.south);assert.notEqual(triggered.bindings.up,crafting.bindings.up);
+ for(const mode of ['inactive','dormant','active']) {
+  const p=resolve({id:'creaking_heart',state:{mode}});assert.ok(p.bindings.up.endsWith('top_'+mode));assert.ok(p.bindings.north.endsWith('side_'+mode));
  }
 });
-test('invalid hive states, unrelated resources and face overrides cannot bypass honey selection',()=>{
- const cat=hiveFixture(),resolve=createPreviewResolver(cat,registry());
- for(const id of HIVES) {
-  for(const honey of [null,0,1,'true',[],{}])assert.throws(()=>resolve({id,state:{honey}}),/Invalid hive honey state/);
-  assert.throws(()=>resolve({id,slot:'textures/blocks/foreign'}),/outside/);
-  assert.throws(()=>resolve({id,state:{honey:false},faceChoices:{south:cat.records[id].variants.south[1]}}),/Explicit face variant required/);
+test('cube defaults are explicit and invalid state values never pick a fallback image',()=>{
+ const resolve=createPreviewResolver(cubeFixture(),registry());
+ for(const [id,parameter,values] of CUBE_CASES) {
+  assert.equal(resolve({id}).state[parameter],values[0]);
+  const bad=parameter==='brushing'?[-1,4,1.5,'1',null]:typeof values[0]==='boolean'?[0,1,'true',null]:['unknown',0,true,null];
+  for(const value of bad)assert.throws(()=>resolve({id,state:{[parameter]:value}}),/Invalid cube preview state/);
  }
 });
-test('incomplete or foreign hive front variants are rejected even when the bad variant is not selected',()=>{
- for(const id of HIVES)for(const change of [r=>{delete r.variants.south;},r=>{r.variants.south.pop();},r=>{r.variants.south.push(r.variants.south[0]);},r=>{delete r.variants.south[1];},r=>{r.variants.south[1]='textures/blocks/foreign';}]) {
-  const cat=hiveFixture();change(cat.records[id]);
-  assert.throws(()=>createPreviewResolver(cat,registry())({id,state:{honey:false}}),/Missing or invalid hive front variants/);
+test('incomplete, sparse, wrong-length or foreign cube sequences reject before registry build',()=>{
+ for(const [id,,,names] of CUBE_CASES)for(const face of sides)for(const change of [paths=>paths.pop(),paths=>paths.push(paths[0]),paths=>{delete paths[0];},paths=>{paths[paths.length-1]='textures/blocks/foreign';}]) {
+  const cat=cubeFixture();change(cat.records[id].variants[face]);let builds=0;const target=registry();target.build=()=>{builds++;};
+  assert.throws(()=>createPreviewResolver(cat,target)({id}),/Missing or invalid cube variants/);assert.equal(builds,0);
  }
 });
-test('hive selection does not add honey defaults or first-variant fallback to other cubes',()=>{
- const cat=hiveFixture(),resolve=createPreviewResolver(cat,registry());
+test('cube face overrides cannot contradict state and build calls retain isolated selected values',()=>{
+ const cat=cubeFixture(),resolve=createPreviewResolver(cat,registry());
+ for(const [id,parameter,values] of CUBE_CASES) {
+  const index=values.length-1,p=resolve({id,state:{[parameter]:values[index]}}),expected={...p.bindings};
+  const face=sides.find(face=>cat.records[id].variants[face].length>1&&cat.records[id].variants[face][0]!==expected[face]);
+  assert.ok(face);assert.throws(()=>resolve({id,state:{[parameter]:values[index]},faceChoices:{[face]:cat.records[id].variants[face][0]}}),/Explicit face variant required/);
+  p.state[parameter]='wrong';p.bindings[face]='wrong';
+  const first=p.build({state:{[parameter]:'wrong'},faceMap:{}});assert.equal(first.id,'cube');assert.deepEqual(first.env.bindings,expected);assert.equal(first.env.state[parameter],values[index]);
+  first.env.bindings[face]='wrong';first.env.state[parameter]='wrong';assert.deepEqual(p.build({}).env.bindings,expected);assert.equal(p.build({}).env.state[parameter],values[index]);
+ }
+});
+
+test('cube state handling preserves distinct IDs and does not apply to undeclared cubes or models',()=>{
+ const cat=cubeFixture(),resolve=createPreviewResolver(cat,registry());
+ for(const [id] of CUBE_CASES)assert.equal(resolve({id}).object.card,id);
  assert.deepEqual(resolve({id:'stone'}).state,{});
  cat.records.future_beehive={...cat.records.beehive,id:'future_beehive'};
  assert.throws(()=>resolve({id:'future_beehive'}),/Explicit face variant required/);
- cat.records.beehive.model='custom_hive';
- assert.throws(()=>resolve({id:'beehive'}),/Unknown model/);
+ cat.records.beehive.model='custom_hive';assert.throws(()=>resolve({id:'beehive'}),/Unknown model/);
 });
