@@ -1,4 +1,4 @@
-/* Composter and scaffolding use Java JSON geometry references with Bedrock-owned materials. */
+/* Open structures and cages use Java JSON geometry references with Bedrock-owned materials. */
 import {composeShape,requireRoles} from './shapes.mjs';
 function cuboid(p,a,b,faces,overrides={}) {
  const uv={north:[16-b[0],16-b[1],16-a[0],16-a[1]],south:[a[0],16-b[1],b[0],16-a[1]],east:[16-b[2],16-b[1],16-a[2],16-a[1]],west:[a[2],16-b[1],b[2],16-a[1]],up:[a[0],a[2],b[0],b[2]],down:[a[0],16-b[2],b[0],16-a[2]]};
@@ -37,5 +37,22 @@ export function createStructureModels(Three) {
    if(bottom){platform(2);rim(0);}
   });
  }
- return [{id:'composter',scale:1,mode:'volume',build:composter},{id:'scaffolding',scale:1,mode:'volume',build:scaffolding}];
+ function cage(E) {
+  if(!E||!['mob_spawner','trial_spawner','vault'].includes(E.cur))throw new Error('Unknown cage object');
+  const names=['up','down','north','south','east','west'],bindings=E.bindings??E.faceMap,variant=E.state?.variant===undefined?0:E.state.variant;
+  const count=bindings?Object.keys(bindings).filter(role=>/^variant_\d+_up$/.test(role)).length:0;
+  if(!count||!Number.isInteger(variant)||variant<0||variant>=count||!Array.from({length:count},(_,i)=>bindings['variant_'+i+'_up']).every(path=>typeof path==='string'&&path))throw new Error('Invalid cage variant');
+  const roles=names.map(face=>'variant_'+variant+'_'+face),parts=requireRoles(E,roles,'cage'),faces=Object.fromEntries(names.map((face,index)=>[face,parts[roles[index]]])),f=faces;
+  const floor=E.cur==='vault'?3:0,q=Math.PI/2,low=(.002-8)/16,high=(15.998-8)/16,width=15.996/16,height=(15.996-floor)/16,y=floor/32,side=[16,0,0,16-floor];
+  composeShape(Three,E,p=>{
+   cuboid(p,[0,0,0],[16,16,16],faces);
+   p.face(f.north,width,height,0,y,low,0,0,side);
+   p.face(f.south,width,height,0,y,high,0,Math.PI,side);
+   p.face(f.east,width,height,high,y,0,0,-q,side);
+   p.face(f.west,width,height,low,y,0,0,q,side);
+   p.face(f.up,width,width,0,high,0,q,0,[0,16,16,0]);
+   p.face(f.down,width,width,0,(floor+.002-8)/16,0,-q,0,floor?[16,16,0,0]:[0,16,16,0]);
+  });
+ }
+ return [{id:'composter',scale:1,mode:'volume',build:composter},{id:'scaffolding',scale:1,mode:'volume',build:scaffolding},{id:'cage',scale:1,mode:'volume',build:cage}];
 }

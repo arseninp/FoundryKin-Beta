@@ -5,6 +5,17 @@ export function utilityBindings(record) {
   return [...paths];
  };
  const named=(paths,name)=>single([...new Set(paths??[])].filter(path=>typeof path==='string'&&path.split('/').pop()===name),name);
+ if(record.model==='cage') {
+  const counts={mob_spawner:1,trial_spawner:12,vault:8},count=Object.hasOwn(counts,record.id)?counts[record.id]:0;
+  if(!count)throw new Error('Unknown cage object');
+  const bindings={};
+  for(const face of ['up','down','north','south','east','west']) {
+   const paths=record.variants?.[face];
+   if(!Array.isArray(paths)||paths.length!==count)throw new Error('Incomplete cage variants: '+face);
+   for(let variant=0;variant<count;variant++)bindings['variant_'+variant+'_'+face]=single([paths[variant]],'cage '+face+' variant '+variant);
+  }
+  return bindings;
+ }
  if(record.model==='composter') {
   if(record.id!=='composter')throw new Error('Unknown composter object');
   const top=record.variants?.up,f=record.faces??{};
