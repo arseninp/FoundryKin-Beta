@@ -5,6 +5,7 @@ import {join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {assembleChunks} from '../catalog/load.mjs';
 import {planModelAssignments} from '../catalog/model-policy.mjs';
+import {auditModelInputs} from '../catalog/audit.mjs';
 import {createModelLibrary, inspectModelCoverage} from '../models/library.mjs';
 const PIN = '46ba6ea985fb5a92d79a9419198f10dda14c199d';
 export {inspectModelCoverage as inspectCoverage};
@@ -12,7 +13,7 @@ export function createModelCoverageReport(input, registry) {
  const plan = planModelAssignments(input.blocks, input.models ?? {});
  const coverage = inspectModelCoverage(plan.assignments, registry);
  const missing = Object.values(coverage.missing).reduce((n, ids) => n + ids.length, 0);
- return {source: input.source, counts: {total: Object.keys(input.blocks).length, assigned: Object.keys(plan.assignments).length, unresolved: plan.unresolved.length, registered: coverage.total - coverage.invalid.length - missing, missingBuilders: missing}, unresolved: plan.unresolved, missingBuilders: coverage.missing, invalid: coverage.invalid, decisions: plan.decisions};
+ return {source: input.source, counts: {total: Object.keys(input.blocks).length, assigned: Object.keys(plan.assignments).length, unresolved: plan.unresolved.length, registered: coverage.total - coverage.invalid.length - missing, missingBuilders: missing}, unresolved: plan.unresolved, missingBuilders: coverage.missing, invalid: coverage.invalid, decisions: plan.decisions, inputValidation: auditModelInputs(input, plan.assignments)};
 }
 export function readCandidate(directory) {
  const manifest = JSON.parse(readFileSync(join(directory, 'manifest.json'), 'utf8'));

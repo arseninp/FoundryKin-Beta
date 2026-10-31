@@ -1,4 +1,6 @@
 /* Read-only audit of catalog inputs: where texture alternatives, states and files are lost before compilation. */
+import {normalizeBlock} from './resources.mjs';
+import {attachDependencies, declaredDependencies} from './rules/dependencies.mjs';
 const FACES = ['up', 'down', 'north', 'south', 'east', 'west'];
 const own = (object, key) => Object.hasOwn(object, key);
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -88,4 +90,31 @@ export function auditCatalog({blocks, terrain, existing = null, flipbook = []}) 
     technical: report.technical, unresolved: report.unresolved, incomplete: report.incomplete,
     alternatives: lost, alternativeClasses, orphanKeys, orphanPaths, statePairs: pairs, sharedArrayKeys: sharedArrays, animatedBlocks, missingFiles
   };
+}
+
+/* Inspect assigned blocks in isolation, not aliases, item icons, preview dispatch or rendering. */
+export function auditModelInputs(input, assignments) {
+  if (!dictionary(input) || !dictionary(input.blocks) || !dictionary(assignments)) throw new Error('Invalid model audit input');
+  const ids = Object.keys(assignments).sort(), scope = 'assigned-block-normalization-and-dependencies';
+  if (input.terrain === undefined || input.existing === undefined) return {status: 'not-checked', scope, reason: 'terrain-or-resource-inventory-not-provided', counts: {total: ids.length, checked: 0, passed: 0, failed: 0}, errors: []};
+  if (!dictionary(input.terrain) || !dictionary(input.existing)) throw new Error('Invalid model audit atlas or inventory');
+  const atlas = own(input.terrain, 'texture_data') ? input.terrain.texture_data : input.terrain;
+  if (!dictionary(atlas)) throw new Error('Invalid model audit terrain atlas');
+  const dependencies = input.dependencies ?? declaredDependencies(assignments);
+  if (!dictionary(dependencies)) throw new Error('Invalid model audit dependencies');
+  const errors = [];
+  for (const id of ids) {
+    let phase = 'assignment';
+    try {
+      const assignment = assignments[id];
+      if (!own(input.blocks, id) || !dictionary(assignment) || !own(assignment, 'model') || typeof assignment.model !== 'string' || !/^[a-z][a-z0-9_-]*$/.test(assignment.model)) throw new Error('Invalid model audit assignment: ' + id);
+      phase = 'normalize';
+      const record = normalizeBlock(id, input.blocks[id], atlas, {model: assignment.model, states: assignment.states, existing: input.existing});
+      phase = 'dependencies';
+      attachDependencies({[id]: record}, own(dependencies, id) ? {[id]: dependencies[id]} : {}, input.existing);
+    } catch (error) {
+      errors.push({id, phase, message: error?.message ?? String(error)});
+    }
+  }
+  return {status: 'checked', scope, counts: {total: ids.length, checked: ids.length, passed: ids.length - errors.length, failed: errors.length}, errors};
 }
