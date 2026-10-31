@@ -7,9 +7,22 @@ export function createSpecialModels(Three) {
  /* A lowered block: the top keeps the full image, the sides show only the visible strip. */
  function lowered(label, height) {
   return function build(E) {
-   const f = requireRoles(E, FACES, label), cut = [0, 16 - height, 16, 16];
-   composeShape(Three, E, p => p.box([0, 0, 0], [16, height, 16], {up: f.up, down: f.down, north: f.north, south: f.south, east: f.east, west: f.west}, {up: FULL, down: FULL, north: cut, south: cut, east: cut, west: cut}));
+   const h = typeof height === 'function' ? height(E) : height;
+   const f = requireRoles(E, FACES, label), cut = [0, 16 - h, 16, 16];
+   composeShape(Three, E, p => p.box([0, 0, 0], [16, h, 16], {up: f.up, down: f.down, north: f.north, south: f.south, east: f.east, west: f.west}, {up: FULL, down: FULL, north: cut, south: cut, east: cut, west: cut}));
   };
+ }
+ const farmBase=lowered('farmland',15);
+ function farmland(E) {
+  const f=requireRoles(E,['wet','dry','bottom','side'],'farmland'),wet=E.state?.wet===undefined?true:E.state.wet;
+  if(typeof wet!=='boolean')throw new Error('Invalid farmland wet state');
+  const faces={up:wet?f.wet:f.dry,down:f.bottom,north:f.side,south:f.side,east:f.side,west:f.side};
+  farmBase({...E,bindings:faces,faceMap:faces});
+ }
+ function snowHeight(E) {
+  const layers=E?.state?.layers===undefined?1:E.state.layers;
+  if(!Number.isInteger(layers)||layers<1||layers>8)throw new Error('Invalid snow layer count');
+  return layers*2;
  }
  function stonecutter(E) {
   const f = requireRoles(E, FACES, 'stonecutter'), side = [0, 7, 16, 16];
@@ -49,5 +62,5 @@ export function createSpecialModels(Three) {
   const id=requireRoles(E,['up'],'conduit').up;
   composeShape(Three,E,p=>p.box([5,5,5],[11,11,11],{north:id,south:id,east:id,west:id,up:id,down:id},{east:[0,4,4,8],north:[4,4,8,8],west:[8,4,12,8],south:[12,4,16,8],up:[4,0,8,4],down:[8,0,12,4]}));
  }
- return [{id: 'grass_path', scale: 1, mode: 'volume', build: lowered('grass path', 15)}, {id: 'enchanting_table', scale: 1, mode: 'volume', build: lowered('enchanting table', 12)}, {id: 'stonecutter', scale: 1, mode: 'volume', build: stonecutter}, {id: 'sea_pickle', scale: 1, mode: 'volume', build: seaPickle}, {id:'flower_pot',scale:1,mode:'volume',build:flowerPot}, {id:'decorated_pot',scale:1.4,mode:'volume',build:decoratedPot}, {id:'conduit',scale:1,mode:'volume',build:conduit}, ...createFireModels(Three)];
+ return [{id:'farmland',scale:1,mode:'volume',build:farmland}, {id:'snow_layer',scale:1,mode:'volume',build:lowered('snow layer',snowHeight)}, {id: 'grass_path', scale: 1, mode: 'volume', build: lowered('grass path', 15)}, {id: 'enchanting_table', scale: 1, mode: 'volume', build: lowered('enchanting table', 12)}, {id: 'stonecutter', scale: 1, mode: 'volume', build: stonecutter}, {id: 'sea_pickle', scale: 1, mode: 'volume', build: seaPickle}, {id:'flower_pot',scale:1,mode:'volume',build:flowerPot}, {id:'decorated_pot',scale:1.4,mode:'volume',build:decoratedPot}, {id:'conduit',scale:1,mode:'volume',build:conduit}, ...createFireModels(Three)];
 }
