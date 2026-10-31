@@ -1,4 +1,5 @@
 /* Explicit model assignments for special objects. Add new models here; unlisted objects stay unresolved rather than becoming cubes. */
+import {CANDLE_CAKE_PATTERN} from './duplicates.mjs';
 export const SPECIAL_MODELS = Object.freeze({
   fence_gate: 'gate',
   ladder: 'ladder', lectern: 'lectern', lever: 'lever',
@@ -32,6 +33,7 @@ export const SPECIAL_MODELS = Object.freeze({
   portal: 'portal', end_portal_frame: 'end_portal_frame', trip_wire: 'tripwire', tripwire_hook: 'tripwire_hook'
 });
 export const SPECIAL_PATTERNS = Object.freeze([
+  [CANDLE_CAKE_PATTERN, 'cake'],
   [/^(?:dead_)?(?:tube|brain|bubble|fire|horn)_coral_(?:wall_)?fan$/, 'cross'],
   [/_shelf$/, 'shelf'],
   [/^(?:waxed_)?(?:(?:exposed|weathered|oxidized)_)?copper_bars$/, 'bars'],

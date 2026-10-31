@@ -1,4 +1,5 @@
 /* Approved editor-equivalent classes, not arbitrary shared-texture deduplication. */
+export const CANDLE_CAKE_PATTERN = /^(?:(?:white|orange|magenta|light_blue|yellow|lime|pink|gray|light_gray|cyan|purple|blue|brown|green|red|black)_)?candle_cake$/;
 const own = (object, key) => Object.hasOwn(object, key);
 export function duplicateRules(blocks, explicit = {}) {
   const rules = new Map();
@@ -14,6 +15,9 @@ export function duplicateRules(blocks, explicit = {}) {
     } else if (/^(?:dead_)?(?:tube|brain|bubble|fire|horn)_coral_wall_fan$/.test(id)) {
       target = id.replace('_coral_wall_fan', '_coral_fan');
       reason = 'approved wall coral fan duplicate of the ordinary editor fan';
+    } else if (CANDLE_CAKE_PATTERN.test(id)) {
+      target = 'cake';
+      reason = 'approved candle cake duplicate of the ordinary editor cake';
     } else continue;
     if (!own(blocks, target)) throw new Error('Missing ordinary counterpart: ' + id + ' -> ' + target);
     rules.set(id, {target, reason});
