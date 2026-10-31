@@ -18,6 +18,17 @@ export function modelPartBindings(record) {
   for(const [role,paths] of Object.entries(parts))if(!Array.isArray(paths)||paths.length!==1||typeof paths[0]!=='string'||!record.paths.includes(paths[0]))throw new Error('Missing or ambiguous tall plant half: '+role);
   return {up:[...parts.up],down:[...parts.down]};
  }
+ if(record.model==='cave_vines'||record.model==='cave_vines_part') {
+  const whole=record.id==='cave_vines',body=record.id==='cave_vines_body_with_berries',head=record.id==='cave_vines_head_with_berries';
+  if((record.model==='cave_vines'&&!whole)||(record.model==='cave_vines_part'&&!body&&!head))throw new Error('Unknown cave vine object');
+  const parts=whole?{body:'up',head:'down'}:{[body?'body':'head']:'up'},bindings={};
+  for(const [part,face] of Object.entries(parts)) {
+   const paths=record.variants?.[face];
+   if(!Array.isArray(paths)||paths.length!==2||Array.from(paths).some(path=>typeof path!=='string'||!record.paths.includes(path)))throw new Error('Incomplete cave vine variants: '+part);
+   bindings[part+'_plain']=[paths[0]];bindings[part+'_berries']=[paths[1]];
+  }
+  return bindings;
+ }
  const utility=utilityBindings(record);if(utility)return utility;
  if(record.model==='lightning_rod') {
   const paths=record.variants?.up;
