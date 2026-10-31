@@ -4,6 +4,7 @@ import {compileAliases} from './identity.mjs';
 import {indexItems, resolveIcons} from './items.mjs';
 import {blockIconLinks} from './rules/icons.mjs';
 import {duplicateRules} from './rules/duplicates.mjs';
+import {familyRules} from './rules/forms.mjs';
 import {attachDependencies} from './rules/dependencies.mjs';
 import {powerRules, compileStateGroups} from './states.mjs';
 const own = (object, key) => Object.hasOwn(object, key);
@@ -40,7 +41,7 @@ export function compileCatalog(input) {
     const target = own(identity.aliases, id) ? identity.aliases[id] : id;
     return own(states.routes, target) ? states.routes[target].card : target;
   };
-  for (const [sourceBase, forms] of Object.entries(input.families ?? {})) {
+  for (const [sourceBase, forms] of Object.entries(familyRules(records, object(input.families ?? {}, 'family rules')))) {
     object(forms, 'family forms');
     if (!own(records, sourceBase)) throw new Error('Invalid family base: ' + sourceBase);
     const base = canonical(sourceBase);
