@@ -1,7 +1,10 @@
 /* Approved editor forms preserve distinct source records, models and owned resources. */
 const own=(object,key)=>Object.hasOwn(object,key);
 const dictionary=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
-const APPROVED=Object.freeze({bamboo:Object.freeze({shoot:'bamboo_sapling'})});
+const APPROVED=Object.freeze({
+ bamboo:Object.freeze({shoot:'bamboo_sapling'}),
+ torchflower:Object.freeze({crop:'torchflower_crop'})
+});
 export function familyRules(records,explicit={}) {
  if(!dictionary(records)||!dictionary(explicit))throw new Error('Invalid family rule input');
  const result=Object.create(null);
