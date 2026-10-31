@@ -1,10 +1,17 @@
 /* Named resources for utility models, independent of edited slots. */
+import {chorusPlantResources} from './shared.mjs';
 export function utilityBindings(record) {
  const single=(paths,label)=>{
   if(!Array.isArray(paths)||paths.length!==1||typeof paths[0]!=='string'||!record.paths.includes(paths[0]))throw new Error('Missing or ambiguous '+label);
   return [...paths];
  };
  const named=(paths,name)=>single([...new Set(paths??[])].filter(path=>typeof path==='string'&&path.split('/').pop()===name),name);
+ if(record.model==='chorus_flower') {
+  if(record.id!=='chorus_flower')throw new Error('Unknown chorus flower object');
+  const paths=record.variants?.up;
+  if(!Array.isArray(paths)||paths.length!==2)throw new Error('Incomplete chorus flower resources');
+  return {live:single([paths[0]],'chorus flower live'),dead:single([paths[1]],'chorus flower dead'),stem:[chorusPlantResources.stem]};
+ }
  if(record.model==='cage') {
   const counts={mob_spawner:1,trial_spawner:12,vault:8},count=Object.hasOwn(counts,record.id)?counts[record.id]:0;
   if(!count)throw new Error('Unknown cage object');
@@ -88,4 +95,46 @@ export function utilityBindings(record) {
   return {day:single([paths[0]],'daylight day'),inverted:single([paths[1]],'daylight inverted'),bottom:single(f.down,'daylight bottom'),side:single(f.north,'daylight side')};
  }
  return null;
+}
+
+path: catalog/rules/dependencies.mjs
+content:
+/* Shared resources a model may bind without owning them. Source objects keep ownership and editing. */
+import {resourceVariants} from '../resources.mjs';
+import {pitcherPodResources,chorusPlantResources} from './shared.mjs';
+const own = (object, key) => Object.hasOwn(object, key);
+const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+const ROLE = /^[a-z][a-z0-9_]*$/;
+const TORCHES = Object.freeze({torch_on: 'textures/blocks/redstone_torch_on', torch_off: 'textures/blocks/redstone_torch_off'});
+const BY_MODEL = Object.freeze({
+  azalea: Object.freeze({pot: 'textures/blocks/flower_pot', soil: 'textures/blocks/dirt'}),
+  piston: Object.freeze({head_back: 'textures/blocks/piston_top_normal'}),
+  chorus_flower: chorusPlantResources,
+  repeater: TORCHES,
+  comparator: TORCHES,
+  pitcher: pitcherPodResources
+});
+export function declaredDependencies(assignments) {
+  if (!dictionary(assignments)) throw new Error('Invalid model assignments');
+  const result = {};
+  for (const [id, assignment] of Object.entries(assignments)) if (dictionary(assignment) && own(BY_MODEL, assignment.model)) result[id] = {...BY_MODEL[assignment.model]};
+  return result;
+}
+export function attachDependencies(records, dependencies, inventory) {
+  if (!dictionary(records) || !dictionary(dependencies) || !dictionary(inventory)) throw new Error('Invalid dependency input');
+  const result = {...records};
+  for (const [id, roles] of Object.entries(dependencies)) {
+    if (!own(records, id)) throw new Error('Dependency owner is missing: ' + id);
+    if (!dictionary(roles) || !Object.keys(roles).length) throw new Error('Invalid dependencies: ' + id);
+    const declared = {};
+    for (const [role, value] of Object.entries(roles)) {
+      if (!ROLE.test(role)) throw new Error('Invalid dependency role: ' + id + ':' + role);
+      const paths = resourceVariants(value);
+      if (paths.length !== 1) throw new Error('Ambiguous dependency: ' + id + ':' + role);
+      if (!own(inventory, paths[0])) throw new Error('Missing dependency resource: ' + paths[0]);
+      declared[role] = [paths[0]];
+    }
+    result[id] = {...records[id], dependencies: declared};
+  }
+  return result;
 }
