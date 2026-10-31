@@ -5,6 +5,12 @@ export function utilityBindings(record) {
   return [...paths];
  };
  const named=(paths,name)=>single([...new Set(paths??[])].filter(path=>typeof path==='string'&&path.split('/').pop()===name),name);
+ if(record.model==='farmland') {
+  if(record.id!=='farmland')throw new Error('Unknown farmland object');
+  const top=record.variants?.up,f=record.faces??{};
+  if(!Array.isArray(top)||top.length!==2)throw new Error('Incomplete farmland top variants');
+  return {wet:single([top[0]],'farmland wet top'),dry:single([top[1]],'farmland dry top'),bottom:single(f.down,'farmland bottom'),side:single(f.north,'farmland side')};
+ }
  if(record.model==='barrel') {
   if(record.id!=='barrel')throw new Error('Unknown barrel object');
   const top=record.variants?.north,f=record.faces??{};
