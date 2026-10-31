@@ -5,6 +5,12 @@ export function utilityBindings(record) {
   return [...paths];
  };
  const named=(paths,name)=>single([...new Set(paths??[])].filter(path=>typeof path==='string'&&path.split('/').pop()===name),name);
+ if(record.model==='composter') {
+  if(record.id!=='composter')throw new Error('Unknown composter object');
+  const top=record.variants?.up,f=record.faces??{};
+  if(!Array.isArray(top)||top.length!==3)throw new Error('Incomplete composter resources');
+  return {rim:single([top[0]],'composter rim'),compost:single([top[1]],'composter compost'),ready:single([top[2]],'composter ready'),bottom:single(f.down,'composter bottom'),side:single(f.north,'composter side')};
+ }
  if(record.model==='farmland') {
   if(record.id!=='farmland')throw new Error('Unknown farmland object');
   const top=record.variants?.up,f=record.faces??{};

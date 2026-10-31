@@ -7,6 +7,7 @@ export const SPECIAL_MODELS = Object.freeze({
   bee_nest: 'cube', beehive: 'cube',
   crafter: 'cube', suspicious_sand: 'cube', suspicious_gravel: 'cube',
   fence_gate: 'gate',
+  composter: 'composter', scaffolding: 'scaffolding',
   ladder: 'ladder', lectern: 'lectern', lever: 'lever',
   hopper: 'hopper', grindstone: 'grindstone', frame: 'frame', glow_frame: 'frame',
   cauldron: 'cauldron', cocoa: 'cocoa', daylight_detector: 'daylight', daylight_detector_inverted: 'daylight',

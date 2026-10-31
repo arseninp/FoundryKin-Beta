@@ -28,13 +28,14 @@ import {createDripleafModels} from './dripleaf.mjs';
 import {createSculkModels} from './sculk.mjs';
 import {createDriedGhastModels} from './dried-ghast.mjs';
 import {createBarrelModels} from './barrel.mjs';
+import {createStructureModels} from './structures.mjs';
 import {compileCatalog} from '../catalog/compile.mjs';
 import {planModelAssignments} from '../catalog/model-policy.mjs';
 import {declaredDependencies} from '../catalog/rules/dependencies.mjs';
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 export function createModelLibrary(Three) {
  const registry = createModelRegistry();
- registry.register([...createPrimitiveModels(Three), ...createGelModels(Three), ...createStrandModels(Three), ...createLightModels(Three), ...createPlanarModels(Three), ...createFixtureModels(Three), ...createDoorModels(Three), ...createAmethystModels(Three), ...createAzaleaModels(Three), ...createPottedAzaleaModels(Three), ...createBambooModels(Three), ...createMossModels(Three), ...createRedstoneModels(Three), ...createFittingModels(Three), ...createPlantModels(Three), ...createSpecialModels(Three), ...createGrowthModels(Three), ...createMechanismModels(Three), ...createFlowerbedModels(Three), ...createPitcherModels(Three), ...createWireModels(Three), ...createTrackModels(Three), ...createMetalModels(Three), ...createWorkshopModels(Three), ...createDripleafModels(Three), ...createSculkModels(Three), ...createDriedGhastModels(Three), ...createBarrelModels(Three)]);
+ registry.register([...createPrimitiveModels(Three), ...createGelModels(Three), ...createStrandModels(Three), ...createLightModels(Three), ...createPlanarModels(Three), ...createFixtureModels(Three), ...createDoorModels(Three), ...createAmethystModels(Three), ...createAzaleaModels(Three), ...createPottedAzaleaModels(Three), ...createBambooModels(Three), ...createMossModels(Three), ...createRedstoneModels(Three), ...createFittingModels(Three), ...createPlantModels(Three), ...createSpecialModels(Three), ...createGrowthModels(Three), ...createMechanismModels(Three), ...createFlowerbedModels(Three), ...createPitcherModels(Three), ...createWireModels(Three), ...createTrackModels(Three), ...createMetalModels(Three), ...createWorkshopModels(Three), ...createDripleafModels(Three), ...createSculkModels(Three), ...createDriedGhastModels(Three), ...createBarrelModels(Three), ...createStructureModels(Three)]);
  registry.seal();
  return registry;
 }
