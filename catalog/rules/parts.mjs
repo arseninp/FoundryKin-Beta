@@ -18,6 +18,12 @@ export function modelPartBindings(record) {
   for(const [role,paths] of Object.entries(parts))if(!Array.isArray(paths)||paths.length!==1||typeof paths[0]!=='string'||!record.paths.includes(paths[0]))throw new Error('Missing or ambiguous tall plant half: '+role);
   return {up:[...parts.up],down:[...parts.down]};
  }
+ if(record.model==='stem') {
+  if(!['pumpkin_stem','melon_stem'].includes(record.id))throw new Error('Unknown crop stem object');
+  const paths=record.variants?.up;
+  if(!Array.isArray(paths)||paths.length!==2||Array.from(paths).some(path=>typeof path!=='string'||!record.paths.includes(path)))throw new Error('Incomplete crop stem resources');
+  return {stem:[paths[0]],upperstem:[paths[1]]};
+ }
  if(record.model==='cave_vines'||record.model==='cave_vines_part') {
   const whole=record.id==='cave_vines',body=record.id==='cave_vines_body_with_berries',head=record.id==='cave_vines_head_with_berries';
   if((record.model==='cave_vines'&&!whole)||(record.model==='cave_vines_part'&&!body&&!head))throw new Error('Unknown cave vine object');
