@@ -1,48 +1,53 @@
-# TODO — продолжение переноса и интеграции
+# TODO — проверка реальных данных и интеграция
 
-Передача 2026-10-30, проверенный HEAD 2a109dc. [x] означает записанную реализацию по истории и текущим подключениям, не визуальную приёмку. Документацию обновлять по запросу в конце сессии.
+Обновлено 2026-10-31. Проверенный кодовый HEAD 4c52b9d. [x] обозначает записанную реализацию по исходникам/истории, а не запуск, интеграцию или визуальную приёмку. Границы доказательств — CONTEXT.
 
-## Следующий рабочий проход
+## Следующий цельный проход
 
-- [ ] Сверить HEAD и нужные исходники; не перечитывать весь архив и не повторять сделанные модели.
-- [ ] Выполнить существующие validate/tests и полный coverage на PIN 46ba6ea в доступной среде; не заявлять запуск без результата и не поручать его владельцу.
-- [ ] Пересчитать актуальный остаток после workshop. 1066/39/170 — старый арифметический ориентир до последнего пакета, не текущий compile.
-- [ ] Продолжать законченными семействами из принятого legacy кода, с assignments/resources/states/tests вместе. Разделять неполное покрытие, синтаксис, потери ресурсов, CI и визуальные дефекты. Не создавать дубли отчётных helpers.
+- [ ] Сверить HEAD и нужные исходники; не повторять уже записанные назначения slime/honey_block/farmland/snow_layer. Имена мёда в проверенных назначениях и gels совпадают: honey_block.
+- [ ] Использовать существующий tools/model-coverage.mjs на полном PIN candidate с проверкой контрольных сумм и inputValidation; получить фактические ошибки нормализации/ресурсов/зависимостей, unresolved и missing builders. Не создавать параллельный аудит.
+- [ ] Выполнить validate и существующий набор tests без упрощённой подмены проектных зависимостей. Проверить полный CI отдельно. Не заявлять запуск без результата и не поручать отладку владельцу.
+- [ ] Выбрать следующий средний законченный пакет по проверенному остатку; geometry/assignments/bindings/states/tests вместе.
 
-## Перенесено, но не подключено к рабочему UI
+Последнее историческое основание: отчёт OLDCHAT12 1275/1112 assigned/39 sign missing/124 unresolved/0 invalid; после последующих локальных пересчётов политики заявлено 78 unresolved. Сам отчёт этой передачей не перепроверен. Эти числа не свежий compile, не число карточек и не процент готовности.
 
-- [x] Potted azalea, объявленные общие зависимости и переключение potted в preview.
-- [x] Взрослый bamboo, bamboo fence/gate, pale moss carpet.
-- [x] Поршни, redstone torch, repeater/comparator из принятой модели.
-- [x] Ladder/lectern/lever/shelf, высокие цветы; path/enchanting table/stonecutter_block/sea pickle.
-- [x] Посевы и turtle egg с сохранением повторяющихся индексов; лозы, порталы, tripwire/hook.
-- [x] Spore blossom, flowerbeds, sunflower, sniffer egg, pitcher crop/plant, redstone wire.
-- [x] Восемь простых растений через cross; четыре рельса; bars/lightning rods/end rod/heavy core.
-- [x] Hopper, grindstone, frame/glow_frame — последний workshop пакет 2a109dc.
-- [ ] Подтвердить выполнение библиотечного теста с ожидаемыми 69 типами и остальных новых интеграционных тестов без подмены импортов.
+## Записано, но не принято в новом рабочем UI
 
-## Остаток моделей и данных
+- [x] Potted azalea, pot/soil dependencies, potted preview; взрослый bamboo и ограды, moss.
+- [x] Поршни/redstone, fittings, высокие цветы, path/enchanting table/stonecutter/sea pickle.
+- [x] Growth stages с повторами, vines/portals/tripwire, flowerbeds/sunflower/sniffer egg/pitcher/wires, tracks/metals/workshop.
+- [x] Cauldron/cocoa/daylight; flower pot/decorated pot/conduit; fire/soul fire.
+- [x] Dripleaf, sculk/cactus, pointed dripstone, dried ghast, barrel.
+- [x] Простые/высокие растения, stage_cross для nether wart/torchflower crop/berry bush; сведения о количестве стадий в preview.
+- [x] Fence_gate на gate; десять пар вееров с настенными aliases и тестами без отдельной настенной формы; 17 candle_cake на cake с правилами aliases; пять явных technical cube ID.
+- [x] Изменение альфа-политики общего FKView; двухобъёмные slime/honey_block и их назначения.
+- [x] Farmland 15/16 с wet и snow_layer с layers 1..8; назначения и ресурсные роли пашни в 4c52b9d.
+- [x] Расширение существующего отчёта inputValidation; coverage artifact workflow; исправление синтаксиса strands.test.mjs.
+- [ ] Подтвердить актуальный полный библиотечный и интеграционный прогон; исторические целевые тесты не заменяют его.
 
-- [ ] Связать bamboo_sapling и взрослый bamboo как формы семейства; иконка независима, bamboo block и ограды отдельно.
-- [ ] Bedrock PNG/UV review горшечной азалии и полный вход dependencies: pot/soil, torch_on/off, pitcher pod.
-- [ ] Классифицировать реальный unresolved список семействами: специальные формы, растения/стадии, устройства, жидкости/технические объекты и источники entity-ресурсов. Старый список 243 больше не актуален.
-- [ ] Для табличек и других block entities подготовить общий source adapter с inventory/ownership/geometry/materials. 39 sign пока без построителя; не делать cube или отдельную временную архитектуру. В OLDCHAT11 они отложены до общего источника; перед основным переключением явно согласовать scope этих блоков.
-- [ ] Проверить aliases/forms/states/icons/carried, old-ID open и все повторы вариантов. Waxed/infested скрывать только при эквивалентности; степени окисления сохранять.
-- [ ] Не возвращать устаревший stonecutter; нужен stonecutter_block. По поздней поправке истории старый уже исключён из candidate.
-- [ ] Нормализовать фронт lit blast furnace; проверить auxiliary end_gateway/lava_cauldron, hashes и совместимость family plan/state groups.
-- [ ] Проверить PNG inventory и block↔item icon links; путь не доказывает правильность UV/роли.
+## Данные и незавершённые контракты
+
+- [ ] Проверить текущие bindings/stages всех назначенных объектов на настоящем входе, включая повторы и общие зависимости. Наличие registry ID недостаточно.
+- [ ] Грибы: проверить исходные определения и согласованный индекс вариантов шести граней; не менять общий cube/UV на основе неподтверждённых предположений. Отдельный грибной пакет не записан.
+- [ ] Связать bamboo_sapling/adult как формы семейства. Проверить crop/adult torchflower relationship; не считать её сделанной по наличию stage_cross.
+- [ ] Bedrock PNG/UV potted azalea; полный вход pot/soil, torch_on/off, pitcher pod.
+- [ ] Проверить реальные PNG alpha и WebGL порядок ядра/оболочки slime/honey; не объявлять визуальный дефект закрытым по коду.
+- [ ] Проверить aliases/forms/states/icons/carried и saved-ID routes. Waxed/infested — только эквивалентные, oxidation сохранить; normal/deepslate не сливать.
+- [ ] Нормализовать lit blast furnace front; проверить auxiliary end_gateway/lava_cauldron, hashes, PNG inventory и block↔item icon links.
+- [ ] Не возвращать obsolete stonecutter или отдельные настенные веера. Не добавлять cushion по одному найденному пути.
+- [ ] Общий entity source/inventory/geometry/material adapter: sign, bed, bell и другие block entities. Entities отложены владельцем; перед основным переключением явно согласовать scope. Sign не подменять cube.
 
 ## Интеграция и приёмка
 
-- [ ] Сделать отдельную страницу проверки нового пути, сохранив рабочий legacy app. Явно решить admission ограниченного среза: compileModelCatalog сейчас строго отвергает неполное покрытие. Unsupported не превращать в кубы.
-- [ ] Закрыть согласованный полный scope и цепочку normalize→compile→access→preview→registry до замены основного приложения.
-- [ ] Новый Find/editor/loader: snapshot и editor одной модели; общий материал обновляется корректно.
-- [ ] State panel, формы, стадии, role-based icon badges, Shared textures, EN/RU и растущие подписи. Сохранить бумажный макет; централизовать design tokens без редизайна.
-- [ ] Плеер отдельно от состояний: timing/order, пауза при рисовании, экспорт всей ленты.
-- [ ] Saved-ID openTexture, storage transactions, async target, dimensions/alpha и import limits.
-- [ ] Настоящие Three/WebGL и Android: draw/undo/redo→Add→reopen→PNG→mcpack, Back, язык/тема, pack/slot/frame switching.
-- [ ] После приёмки переключить HTML, синхронизировать FK_V/cache versions, удалить заменённый legacy runtime.
+- [ ] Перепроверить HTML и сохранить рабочий legacy путь до приёмки нового. По истории он остаётся 0.9.1.
+- [ ] Отдельная проверяемая страница normalize→compile→access→preview→registry с настоящими PNG/Three. Явно решить admission среза: compileModelCatalog сейчас строгий; unsupported обозначать, не превращать в cube и не скрывать сокращение конечного scope.
+- [ ] Новый Find/editor/loader: один объект и общий материал для snapshot/editor, корректное обновление текстур.
+- [ ] Панели state/forms/stages, role-based icon badges, Shared textures, EN/RU, растущие подписи, design tokens без редизайна бумажного макета. UX поиска item icon согласовать отдельно.
+- [ ] Плеер отдельно от state: timing/order, пауза при рисовании, экспорт всей ленты; часы/компас — демонстрационный цикл.
+- [ ] Saved-ID openTexture, transactions, async targets, PNG dimensions/alpha, import limits, URL/cache lifecycle.
+- [ ] Настоящие WebGL и Android: draw/undo/redo→Add→reopen→PNG→mcpack, Back, язык/тема, pack/slot/frame switching.
+- [ ] После приёмки согласованного scope переключить HTML, синхронизировать FK_V/cache versions, удалить заменённый legacy runtime.
 
-## Дальнейшие разделы
+## После основного этапа
 
-Полные items и entities требуют отдельных adapters; dependencies и named bindings только точки расширения. IndexedDB, большие паки, backup пользовательских данных, PWA/offline и права на ресурсы — отдельные задачи. Backup автоматически не обновлять; fk070_packs не очищать.
+Полные items/entities через adapters; IndexedDB, большие паки, пользовательский backup, PWA/offline и права на ресурсы — отдельные задачи. Backup кода автоматически не обновлять; fk070_packs не очищать. Документы обновлять по запросу, не после каждого объекта.
