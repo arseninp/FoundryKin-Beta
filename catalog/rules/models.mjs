@@ -2,6 +2,7 @@
 import {CANDLE_CAKE_PATTERN} from './duplicates.mjs';
 export const SPECIAL_MODELS = Object.freeze({
   allow: 'cube', deny: 'cube', border_block: 'cube', barrier: 'cube', structure_void: 'cube',
+  slime: 'slime', honey_block: 'honey_block',
   fence_gate: 'gate',
   ladder: 'ladder', lectern: 'lectern', lever: 'lever',
   hopper: 'hopper', grindstone: 'grindstone', frame: 'frame', glow_frame: 'frame',
