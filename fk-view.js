@@ -36,7 +36,7 @@ function texture(canvas){
     var start=y*w*4,end=(h-1-y)*w*4;
     for(var x=0;x<w*4;x++){
       var value=data[start+x];out[end+x]=value;
-      if((x&3)===3&&value>8&&value<248)semi=true;
+      if((x&3)===3&&value>0&&value<255)semi=true;
     }
   }
   var tx=new THREE.DataTexture(out,w,h,THREE.RGBAFormat);
@@ -47,7 +47,8 @@ function material(doubleSided){
   return new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:doubleSided?THREE.DoubleSide:THREE.FrontSide});
 }
 function mapMaterial(mat,tx){
-  mat.map=tx;mat.depthWrite=!tx.userData.semi;mat.needsUpdate=true;
+  var semi=!!tx.userData.semi;
+  mat.map=tx;mat.transparent=semi;mat.alphaTest=semi?0:.05;mat.depthWrite=!semi;mat.needsUpdate=true;
 }
 function doorTexture(lower,upper){
   if(lower.width!==upper.width||lower.height!==lower.width||upper.height!==upper.width)throw new Error('Door frames must be equally sized squares');
