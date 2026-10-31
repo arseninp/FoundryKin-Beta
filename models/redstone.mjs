@@ -21,7 +21,7 @@ export function createRedstoneModels(Three) {
  function piston(E) {
   const extended = E && E.state && E.state.extended !== undefined ? E.state.extended : false;
   if (typeof extended !== 'boolean') throw new Error('Invalid piston state');
-  const f = requireRoles(E, extended ? ['head', 'inner', 'bottom', 'side'] : ['head', 'bottom', 'side'], 'piston'), s = f.side;
+  const f = requireRoles(E, extended ? ['head', 'inner', 'bottom', 'side', 'head_back'] : ['head', 'bottom', 'side'], 'piston'), s = f.side;
   composeShape(Three, E, p => {
    if (!extended) {
     p.box([0, 0, 0], [16, 16, 16], {up: f.head, down: f.bottom, north: s, south: s, east: s, west: s}, {up: FULL, down: FULL, north: FULL, south: FULL, east: FULL, west: FULL});
@@ -30,7 +30,7 @@ export function createRedstoneModels(Three) {
    const body = [0, 4, 16, 16], plate = [0, 0, 16, 4], arm = [6, 0, 10, 4];
    p.box([0, 0, 0], [16, 12, 16], {up: f.inner, down: f.bottom, north: s, south: s, east: s, west: s}, {up: FULL, down: FULL, north: body, south: body, east: body, west: body});
    p.box([6, 12, 6], [10, 16, 10], {north: s, south: s, east: s, west: s}, {north: arm, south: arm, east: arm, west: arm});
-   p.box([0, 16, 0], [16, 20, 16], {up: f.head, north: s, south: s, east: s, west: s}, {up: FULL, north: plate, south: plate, east: plate, west: plate});
+   p.box([0, 16, 0], [16, 20, 16], {up: f.head, down: f.head_back, north: s, south: s, east: s, west: s}, {up: FULL, down: FULL, north: plate, south: plate, east: plate, west: plate});
   });
  }
  function torch(E) {
@@ -48,7 +48,7 @@ export function createRedstoneModels(Three) {
    if (!compare && (!Number.isInteger(delay) || delay < 1 || delay > 4)) throw new Error('Invalid repeater delay');
    const top = compare && subtract && f.top_subtract ? f.top_subtract : powered ? f.top_on : f.top_off, edge = [0, 14, 16, 16], torchId = powered ? f.torch_on : f.torch_off;
    composeShape(Three, E, p => {
-    p.box([0, 0, 0], [16, 2, 16], {up: top, down: f.floor, north: f.floor, south: f.floor, east: f.floor, west: f.floor}, {up: FULL, down: FULL, north: edge, south: edge, east: edge, west: edge});
+    p.box([0, 0, 0], [16, 2, 16], {up: top, down: f.floor, north: f.floor, south: f.floor, east: f.floor, west: f.floor}, {up: FULL, down: FULL, north: edge, south: edge, east: edge,west: edge});
     if (compare) {
      torchPost(p, torchId, powered, 5, 12, 5, 2, false);torchPost(p, torchId, powered, 11, 12, 5, 2, false);
      torchPost(p, subtract ? f.torch_on : f.torch_off, subtract, 8, 3, 3, 2, false);

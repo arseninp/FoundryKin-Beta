@@ -73,8 +73,8 @@ function mossBindings(record) {
 }
 function pistonBindings(record) {
  if(record.model!=='piston')return null;
- const faces=dictionary(record.faces)?record.faces:{},carried=dictionary(record.carried)?record.carried:{};
- const parts={head:carried.up,inner:faces.up,bottom:faces.down,side:faces.north};
+ const faces=dictionary(record.faces)?record.faces:{},carried=dictionary(record.carried)?record.carried:{},shared=dictionary(record.dependencies)?record.dependencies:{};
+ const parts={head:carried.up,inner:faces.up,bottom:faces.down,side:faces.north,head_back:shared.head_back};
  for(const [role,paths] of Object.entries(parts))if(!Array.isArray(paths)||paths.length!==1)throw new Error('Missing or ambiguous piston '+role);
  return parts;
 }

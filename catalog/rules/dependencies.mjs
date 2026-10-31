@@ -7,6 +7,7 @@ const ROLE = /^[a-z][a-z0-9_]*$/;
 const TORCHES = Object.freeze({torch_on: 'textures/blocks/redstone_torch_on', torch_off: 'textures/blocks/redstone_torch_off'});
 const BY_MODEL = Object.freeze({
   azalea: Object.freeze({pot: 'textures/blocks/flower_pot', soil: 'textures/blocks/dirt'}),
+  piston: Object.freeze({head_back: 'textures/blocks/piston_top_normal'}),
   repeater: TORCHES,
   comparator: TORCHES,
   pitcher: pitcherPodResources

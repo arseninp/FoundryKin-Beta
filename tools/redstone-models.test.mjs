@@ -5,7 +5,7 @@ import {attachDependencies, declaredDependencies} from '../catalog/rules/depende
 import {createPreviewResolver} from '../catalog/preview.mjs';
 import {createRedstoneModels} from '../models/redstone.mjs';
 import {createThreeMock, meshesOf} from './three-mock.mjs';
-const P = 'textures/blocks/', ROLES = {head: 'head', inner: 'inner', bottom: 'bottom', side: 'side'};
+const P = 'textures/blocks/', ROLES = {head: 'head', inner: 'inner', bottom: 'bottom', side: 'side', head_back: 'back'};
 const DEVICE = {floor: 'floor', top_off: 'off', top_on: 'on', top_subtract: 'sub', torch_on: 'tOn', torch_off: 'tOff'};
 const uvInside = meshes => meshes.every(m => m.geometry.rows.every(row => row.every(v => v >= 0 && v <= 1)));
 function setup(id, roles, state, cur) {
@@ -23,7 +23,7 @@ test('retracted piston is one cube with the head on top; extended piston adds ar
  const a = setup('piston', ROLES, {});a.build();const m = meshesOf(a.E.group);
  assert.equal(m.length, 6);assert.equal(m.find(x => x.rotation.x === -Math.PI / 2).material.path, 'head');assert.ok(!m.some(x => x.material.path === 'inner'));
  const b = setup('piston', ROLES, {extended: true});b.build();const n = meshesOf(b.E.group);
- assert.equal(n.length, 15);assert.equal(n.filter(x => x.material.path === 'head').length, 1);assert.equal(n.filter(x => x.material.path === 'inner').length, 1);
+ assert.equal(n.length, 16);assert.equal(n.filter(x => x.material.path === 'head').length, 1);assert.equal(n.filter(x => x.material.path === 'inner').length, 1);
  assert.equal(Math.max(...n.map(x => x.position.y)), .75);assert.ok(uvInside(n));
 });
 test('piston state and materials are validated before anything is added', () => {
@@ -100,24 +100,60 @@ test('preview binds device tops by name and torches from dependencies, with expl
  assert.ok(!('top_subtract' in createPreviewResolver(catalog('comparator', false), registry)({id: 'unpowered_comparator'}).bindings));
  const bad = catalog('repeater');delete bad.records.unpowered_repeater.dependencies;assert.throws(() => createPreviewResolver(bad, registry)({id: 'unpowered_repeater'}), /Missing repeater dependency/);
 });
-function pistonCatalog(carriedUp = true) {
- const atlas = {piston_bottom: {textures: P + 'piston_bottom'}, piston_side: {textures: P + 'piston_side'}, piston_top: {textures: P + 'piston_inner'}, piston_top_normal: {textures: P + 'piston_top_normal'}};
- const def = {textures: {down: 'piston_bottom', side: 'piston_side', up: 'piston_top'}, carried_textures: {down: 'piston_bottom', side: 'piston_side', up: 'piston_top_normal'}};
- const record = normalizeBlock('piston', def, atlas, {model: 'piston'});
+function pistonCatalog(carriedUp = true, sticky = false) {
+ const id = sticky ? 'sticky_piston' : 'piston', head = sticky ? 'piston_top_sticky' : 'piston_top_normal';
+ const atlas = {piston_bottom: {textures: P + 'piston_bottom'}, piston_side: {textures: P + 'piston_side'}, piston_top: {textures: P + 'piston_inner'}, piston_top_normal: {textures: P + 'piston_top_normal'}, piston_top_sticky: {textures: P + 'piston_top_sticky'}};
+ const def = {textures: {down: 'piston_bottom', side: 'piston_side', up: 'piston_top'}, carried_textures: {down: 'piston_bottom', side: 'piston_side', up: head}};
+ const record = normalizeBlock(id, def, atlas, {model: 'piston'});
  if (!carriedUp) record.carried.up = [];
- return {schema: 1, records: {piston: record}, items: {}, aliases: {}, families: {}, resources: {}};
+ const records = attachDependencies({[id]: record}, declaredDependencies({[id]: {model: 'piston'}}), {[P + 'piston_top_normal']: 1});
+ return {schema: 1, records, items: {}, aliases: {}, families: {}, resources: {}};
 }
 test('preview binds piston head from the carried texture and the hole from the block face, with an explicit extended state', () => {
  const Three = createThreeMock(), model = createRedstoneModels(Three)[0];
  const registry = {get: id => {assert.equal(id, 'piston');return model;}, build: (id, E) => model.build(E)};
  const c = pistonCatalog(), before = JSON.stringify(c), resolve = createPreviewResolver(c, registry);
  const p = resolve({id: 'piston', state: {extended: true}});
- assert.deepEqual(p.bindings, {head: P + 'piston_top_normal', inner: P + 'piston_inner', bottom: P + 'piston_bottom', side: P + 'piston_side'});
+ assert.deepEqual(p.bindings, {head: P + 'piston_top_normal', inner: P + 'piston_inner', bottom: P + 'piston_bottom', side: P + 'piston_side', head_back: P + 'piston_top_normal'});
  assert.equal(p.scale, 1.4);assert.equal(p.state.extended, true);assert.equal(resolve({id: 'piston'}).state.extended, false);
  const mats = Object.fromEntries(c.records.piston.paths.map(path => [path, {path}])), E = {mats, hiddenMat: {}, group: new Three.Group()};
- p.build(E);assert.equal(E.group.children.length, 15);
+ p.build(E);assert.equal(E.group.children.length, 16);
  for (const slot of c.records.piston.paths) assert.deepEqual(resolve({id: 'piston', slot, state: {extended: true}}).bindings, p.bindings);
  assert.throws(() => resolve({id: 'piston', state: {extended: 'yes'}}), /Invalid piston preview state/);
  assert.throws(() => createPreviewResolver(pistonCatalog(false), registry)({id: 'piston'}), /Missing or ambiguous piston head/);
  assert.equal(JSON.stringify(c), before);
+});
+test('both piston variants declare the ordinary head back as an explicit dependency', () => {
+ const back = {head_back: P + 'piston_top_normal'};
+ assert.deepEqual(declaredDependencies({piston: {model: 'piston'}, sticky_piston: {model: 'piston'}}), {piston: back, sticky_piston: back});
+ assert.throws(() => attachDependencies({sticky_piston: {}}, declaredDependencies({sticky_piston: {model: 'piston'}}), {}), /Missing dependency resource/);
+});
+test('ordinary and sticky piston backs use the ordinary texture without changing owned slots or the front', () => {
+ for (const sticky of [false, true]) {
+  const id = sticky ? 'sticky_piston' : 'piston', c = pistonCatalog(true, sticky), before = JSON.stringify(c), Three = createThreeMock(), model = createRedstoneModels(Three)[0];
+  const registry = {get: () => model, build: (key, E) => model.build(E)}, resolve = createPreviewResolver(c, registry), p = resolve({id, state: {extended: true}}), back = P + 'piston_top_normal';
+  assert.equal(p.bindings.head_back, back);assert.equal(p.bindings.head, P + (sticky ? 'piston_top_sticky' : 'piston_top_normal'));assert.deepEqual(p.shared, sticky ? [back] : []);
+  assert.deepEqual(p.paths, c.records[id].paths);assert.equal(c.records[id].paths.includes(back), !sticky);
+  const E = {mats: Object.fromEntries([...p.paths, ...p.shared].map(path => [path, {path}])), hiddenMat: {}, group: new Three.Group()};p.build(E);
+  const meshes = meshesOf(E.group), rear = meshes.filter(m => m.rotation.x === Math.PI / 2 && m.position.y === .5), front = meshes.filter(m => m.rotation.x === -Math.PI / 2 && m.position.y === .75);
+  assert.equal(meshes.length, 16);assert.equal(rear.length, 1);assert.equal(front.length, 1);assert.equal(rear[0].material.path, back);assert.equal(front[0].material.path, p.bindings.head);
+  assert.deepEqual(rear[0].geometry.size, [1, 1]);assert.deepEqual(rear[0].geometry.rows, [[0, 1], [1, 1], [0, 0], [1, 0]]);assert.ok(uvInside(meshes));
+  for (const slot of p.paths) assert.deepEqual(resolve({id, slot, state: {extended: true}}).bindings, p.bindings);
+  if (sticky) {assert.throws(() => resolve({id, slot: back}), /outside the selected object/);assert.throws(() => resolve({id, faceChoices: {head_back: p.bindings.head}}), /Explicit face variant required/);}
+  assert.equal(JSON.stringify(c), before);
+ }
+});
+test('missing head-back bindings, hidden materials and allocation failures leave no partial piston', () => {
+ const roles = {...ROLES};delete roles.head_back;const missing = setup('piston', roles, {extended: true});
+ assert.throws(missing.build, /Missing piston binding: head_back/);assert.equal(missing.Three.created.length, 0);
+ for (const hide of [false, true]) {
+  const s = setup('piston', ROLES, {extended: true}), existing = {};s.E.group.add(existing);
+  if (hide) s.E.mats.back = s.E.hiddenMat;else delete s.E.mats.back;
+  assert.throws(s.build, /Missing model material: back/);assert.deepEqual(s.E.group.children, [existing]);assert.ok(s.Three.created.every(g => g.disposed));
+ }
+ const s = setup('piston', ROLES, {extended: true}), Base = s.Three.PlaneGeometry;
+ s.Three.PlaneGeometry = class extends Base {constructor(...args) {if (s.Three.created.length === 11) throw new Error('allocation');super(...args);}};
+ assert.throws(s.build, /allocation/);assert.equal(s.E.group.children.length, 0);assert.ok(s.Three.created.every(g => g.disposed));
+ const c = pistonCatalog(true, true);delete c.records.sticky_piston.dependencies.head_back;
+ assert.throws(() => createPreviewResolver(c, {get: () => ({scale: 1.4, mode: 'volume'}), build() {}})({id: 'sticky_piston'}), /Missing or ambiguous piston head_back/);
 });
