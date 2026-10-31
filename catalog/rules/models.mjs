@@ -32,6 +32,7 @@ export const SPECIAL_MODELS = Object.freeze({
   portal: 'portal', end_portal_frame: 'end_portal_frame', trip_wire: 'tripwire', tripwire_hook: 'tripwire_hook'
 });
 export const SPECIAL_PATTERNS = Object.freeze([
+  [/^(?:dead_)?(?:tube|brain|bubble|fire|horn)_coral_(?:wall_)?fan$/, 'cross'],
   [/_shelf$/, 'shelf'],
   [/^(?:waxed_)?(?:(?:exposed|weathered|oxidized)_)?copper_bars$/, 'bars'],
   [/^(?:waxed_)?(?:(?:exposed|weathered|oxidized)_)?lightning_rod$/, 'lightning_rod']

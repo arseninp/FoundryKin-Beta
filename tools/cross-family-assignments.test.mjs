@@ -12,11 +12,12 @@ test('six simple plants and ten living/dead coral plants have explicit cross ass
  for(const id of IDS)assert.equal(plan.assignments[id].model,'cross',id);
  assert.equal(JSON.stringify(input),before);
 });
-test('coral fans remain separate, solid coral blocks stay cubes, and unknown names are not guessed',()=>{
+test('coral fans use the ordinary cross, solid coral blocks stay cubes, and unknown names are not guessed',()=>{
  const fans=CORALS.flatMap(c=>[c+'_coral_fan','dead_'+c+'_coral_fan',c+'_coral_wall_fan','dead_'+c+'_coral_wall_fan']);
  const solids=CORALS.flatMap(c=>[c+'_coral_block','dead_'+c+'_coral_block']);
  const unknown=['future_coral','future_fern','future_roots'],plan=planModelAssignments(blocks([...fans,...solids,...unknown,'cactus']));
- assert.deepEqual(plan.unresolved,[...fans,...unknown].sort());
+ assert.deepEqual(plan.unresolved,[...unknown].sort());
+ for(const id of fans)assert.equal(plan.assignments[id].model,'cross',id);
  for(const id of solids)assert.equal(plan.assignments[id].model,'cube',id);
  assert.equal(plan.assignments.cactus.model,'cactus');
 });
