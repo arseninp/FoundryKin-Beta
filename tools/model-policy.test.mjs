@@ -48,8 +48,10 @@ test('leaf, nether wood and solid coral classes do not absorb plant stems or cor
  for(const wood of ['crimson','warped'])for(const part of ['stem','hyphae'])ids.push(wood+'_'+part,'stripped_'+wood+'_'+part);
  for(const coral of ['tube','brain','bubble','fire','horn'])ids.push(coral+'_coral_block','dead_'+coral+'_coral_block');
  const plan=planModelAssignments(objects(ids));assert.deepEqual(plan.unresolved,[]);assert.ok(Object.values(plan.assignments).every(a=>a.model==='cube'));
- const special=['pumpkin_stem','melon_stem','chorus_plant'];
+ const special=['pumpkin_stem','melon_stem'];
  for(const id of ['brain_coral_fan','dead_brain_coral_wall_fan'])assert.equal(planModelAssignments(objects([id])).assignments[id].model,'cross');
+ const chorus=planModelAssignments(objects(['chorus_plant','chorus_flower']));assert.deepEqual(chorus.unresolved,[]);
+ for(const id of ['chorus_plant','chorus_flower'])assert.equal(chorus.assignments[id].model,id);
  assert.deepEqual(planModelAssignments(objects(special)).unresolved,[...special].sort());
 });
 test('explicit solid materials are admitted without a blanket block or PNG rule',()=>{

@@ -1,6 +1,6 @@
 /* Shared resources a model may bind without owning them. Source objects keep ownership and editing. */
 import {resourceVariants} from '../resources.mjs';
-import {pitcherPodResources} from './shared.mjs';
+import {pitcherPodResources,chorusPlantResources} from './shared.mjs';
 const own = (object, key) => Object.hasOwn(object, key);
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const ROLE = /^[a-z][a-z0-9_]*$/;
@@ -8,6 +8,7 @@ const TORCHES = Object.freeze({torch_on: 'textures/blocks/redstone_torch_on', to
 const BY_MODEL = Object.freeze({
   azalea: Object.freeze({pot: 'textures/blocks/flower_pot', soil: 'textures/blocks/dirt'}),
   piston: Object.freeze({head_back: 'textures/blocks/piston_top_normal'}),
+  chorus_flower: chorusPlantResources,
   repeater: TORCHES,
   comparator: TORCHES,
   pitcher: pitcherPodResources
