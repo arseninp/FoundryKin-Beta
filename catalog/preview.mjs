@@ -29,6 +29,14 @@ function pumpkinBindings(record) {
  if(found.length!==1)throw new Error('Missing or ambiguous pumpkin resource');
  return {...record.faces,south:found};
 }
+function hiveBindings(record,state) {
+ if(record.model!=='cube'||!['bee_nest','beehive'].includes(record.id))return null;
+ if(state.honey===undefined)state.honey=false;
+ if(typeof state.honey!=='boolean')throw new Error('Invalid hive honey state');
+ const front=record.variants?.south;
+ if(!Array.isArray(front)||front.length!==2||[0,1].some(index=>typeof front[index]!=='string'||!record.paths.includes(front[index])))throw new Error('Missing or invalid hive front variants');
+ return {...record.faces,south:[front[state.honey?1:0]]};
+}
 function candleBindings(record,state) {
  if(record.model!=='candle')return null;
  state.lit??=false;
@@ -166,7 +174,7 @@ export function createPreviewResolver(catalog, registry) {
   const model=base==='azalea'&&previewState.potted?'potted_azalea':base, descriptor=registry.get(model);
   const faceMap={}, shared=dictionary(record.dependencies)?record.dependencies:{};
   if (view==='model') {
-   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??candleBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??deviceBindings(record)??stageBindings(record,previewState)??frameBindings(record)??hookBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
+   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??hiveBindings(record,previewState)??candleBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??deviceBindings(record)??stageBindings(record,previewState)??frameBindings(record)??hookBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
    if (!dictionary(bindings)||!Object.keys(bindings).length) throw new Error('Missing model bindings');
    for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
    for (const [face,paths] of Object.entries(bindings)) {
