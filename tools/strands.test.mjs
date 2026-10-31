@@ -8,7 +8,7 @@ function setup(){
  const extra={pale_hanging_moss:['middle','tip'].map(p=>prefix+'pale_hanging_moss_'+p),sulfur_spike:['down','up'].flatMap(d=>parts.map(p=>prefix+'sulfur_spike_'+d+'_'+p))};
  const raw={b:{pale_hanging_moss:Array(6).fill(extra.pale_hanging_moss[0]),sulfur_spike:Array(6).fill(extra.sulfur_spike[0])},extra};
  const existing=Object.fromEntries(Object.values(extra).flat().map(p=>[p,1]));let fallbacks=0;
- const ctx={FKCatalog:{index:c=>({b:c.b,sp:{},cr:{},ids:Object.keys(c.b)})},FKShapes:{build(){fallbacks++},view:id=>id==='pointed_dripstone'?1.4:1},THREE:{DoubleSide:2,PlaneGeometry:class{constructor(w,h){this.w=w;this.h=h}},Mesh:class{constructor(g,m){this.geometry=g;this.material=m;this.position={set:(x,y,z)=>{this.x=x;this.y=y;this.z=z}};this.rotation={}}}};
+ const ctx={FKCatalog:{index:c=>({b:c.b,sp:{},cr:{},ids:Object.keys(c.b)})},FKShapes:{build(){fallbacks++},view:id=>id==='pointed_dripstone'?1.4:1},THREE:{DoubleSide:2,PlaneGeometry:class{constructor(w,h){this.w=w;this.h=h}},Mesh:class{constructor(g,m){this.geometry=g;this.material=m;this.position={set:(x,y,z)=>{this.x=x;this.y=y;this.z=z}};this.rotation={}}}}};
  ctx.window=ctx;vm.createContext(ctx);vm.runInContext(code,ctx);const cat=ctx.FKCatalog.index(raw,existing);
  function render(id,slot){const list=cat.sp[id].list,mats=Object.fromEntries(list.map(s=>[s.id,{path:s.id}])),meshes=[];ctx.FKShapes.build({cur:id,slot:slot||list[0].id,faceMap:cat.sp[id].fm,mats,group:{add:m=>meshes.push(m)}});return meshes}
  return {ctx,cat,raw,existing,render,fallbacks:()=>fallbacks};
