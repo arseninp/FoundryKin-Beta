@@ -31,17 +31,21 @@ function pumpkinBindings(record) {
 }
 const CUBE_FACES=['up','down','north','south','east','west'];
 const HIVE_STATE=['honey',[false,true],['south']];
+const MUSHROOM_VARIANTS=Array.from({length:16},(_,index)=>index);
 const CUBE_STATES={
  bee_nest:HIVE_STATE,beehive:HIVE_STATE,
  crafter:['mode',['idle','triggered','crafting'],CUBE_FACES],
  chiseled_bookshelf:['occupied',[false,true],['north']],
  creaking_heart:['mode',['inactive','dormant','active'],CUBE_FACES],
  suspicious_sand:['brushing',[0,1,2,3],CUBE_FACES],
- suspicious_gravel:['brushing',[0,1,2,3],CUBE_FACES]
+ suspicious_gravel:['brushing',[0,1,2,3],CUBE_FACES],
+ brown_mushroom_block:['variant',MUSHROOM_VARIANTS,CUBE_FACES,14],
+ red_mushroom_block:['variant',MUSHROOM_VARIANTS,CUBE_FACES,14],
+ mushroom_stem:['variant',MUSHROOM_VARIANTS,['up','down'],10]
 };
 function cubeStateBindings(record,state) {
  if(record.model!=='cube'||!own(CUBE_STATES,record.id))return null;
- const [parameter,values,varied]=CUBE_STATES[record.id],value=state[parameter]===undefined?values[0]:state[parameter],index=values.indexOf(value);
+ const [parameter,values,varied,initial=values[0]]=CUBE_STATES[record.id],value=state[parameter]===undefined?initial:state[parameter],index=values.indexOf(value);
  if(index<0)throw new Error('Invalid cube preview state: '+parameter);
  const bindings={};
  for(const face of CUBE_FACES) {
