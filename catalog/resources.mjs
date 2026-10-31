@@ -4,6 +4,12 @@ const own = (value, key) => Object.hasOwn(value, key);
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const faces = ['up', 'down', 'north', 'south', 'east', 'west'];
 const DOORS = Object.freeze({wooden_door: 'wood', spruce_door: 'spruce', birch_door: 'birch', jungle_door: 'jungle', acacia_door: 'acacia', dark_oak_door: 'dark_oak', iron_door: 'iron'});
+/* Pinned lit furnace records place their front on east; editor state pairs share a south-facing front. */
+const LIT_FRONTS = Object.freeze({
+  lit_furnace: ['furnace_front_on', 'furnace_side'],
+  lit_blast_furnace: ['blast_furnace_front_on', 'blast_furnace_side'],
+  lit_smoker: ['smoker_front_on', 'smoker_side']
+});
 export function resourceVariants(value) {
   if (typeof value === 'string') {
     if (!/^textures\/[A-Za-z0-9_./-]+$/.test(value) || value.split('/').some(p => p === '..' || p === '.' || !p)) throw new Error('Invalid resource path: ' + value);
@@ -33,8 +39,11 @@ function blockTexture(id, key, atlas) {
 function resolveFaces(value, atlas, id) {
   if (typeof value === 'string') return Object.fromEntries(faces.map(face => [face, blockTexture(id, value, atlas)]));
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid block texture definition');
+  const front = own(LIT_FRONTS, id) ? LIT_FRONTS[id] : null;
+  const swapFront = front && value.east === front[0] && value.south === front[1];
   return Object.fromEntries(faces.map(face => {
-    const key = value[face] ?? value.side;
+    const sourceFace = swapFront && face === 'south' ? 'east' : swapFront && face === 'east' ? 'south' : face;
+    const key = value[sourceFace] ?? value.side;
     if (key === undefined) throw new Error('Missing block face: ' + face);
     return [face, blockTexture(id, key, atlas)];
   }));
