@@ -1,5 +1,6 @@
 /* Explicit model assignments for special objects. Add new models here; unlisted objects stay unresolved rather than becoming cubes. */
 export const SPECIAL_MODELS = Object.freeze({
+  fence_gate: 'gate',
   ladder: 'ladder', lectern: 'lectern', lever: 'lever',
   hopper: 'hopper', grindstone: 'grindstone', frame: 'frame', glow_frame: 'frame',
   cauldron: 'cauldron', cocoa: 'cocoa', daylight_detector: 'daylight', daylight_detector_inverted: 'daylight',
