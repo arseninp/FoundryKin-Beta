@@ -1,50 +1,66 @@
 # ARCHITECTURE
 
-Обновлено 2026-10-31. Кодовая точка: 4c52b9d5508422e705b4e5ef28056391350d2ecd. Границы проверки и история — CONTEXT. Эта передача проверила library/gels/model assignments и последний diff, но не выполнила полный аудит всех модулей или тесты.
+Обновлено 2026-10-31. Проверенный HEAD 5c5f9f4f449ba0aba3be6847cd09287f0d716130. Эта передача прочитала документацию, OLDCHAT13, последние коммиты и целевые исходники/diff; тесты и полный аудит не выполнялись. Текущий новый путь повреждён последним пакетом: см. P0 в CONTEXT/TODO.
 
 ## Два пути
 
-Legacy: app.html → fk-editor/fk-app → iframe index.html → fk-модули. По истории это рабочий UI 0.9.1; HTML перед изменением интеграции нужно перепроверить. Новый путь: data → normalization → aliases/states/families/icons → compile → access → preview bindings → registry → renderer. Его полноценный UI и отдельная проверяемая страница ещё не подтверждены.
+Legacy: app.html → fk-editor/fk-app → iframe index.html → fk-модули. По прежним документам рабочий UI 0.9.1; HTML здесь повторно не проверен. Новый путь: data → normalize → aliases/states/families/icons → compile → access → preview bindings → registry → renderer. Он не принят в основном UI; отдельная проверяемая страница не подтверждена.
 
-## Каталог и контракты
+В 5c5f9f4 в utility-parts.mjs вклеены заголовки path/content и код dependencies.mjs с повторным импортом. Это синтаксически повреждённый модуль, а настоящий dependencies остался без chorus. Нельзя считать перечисленные ниже новые контракты полностью работоспособными до исправления сохранённых файлов.
 
-- load.mjs: JSONC/assembleChunks; контрольные суммы проверяет вызывающий загрузчик.
-- resources.mjs: уникальные paths/faces/carried отдельно от variants/carriedVariants с повторами и исходными индексами. normalizeBlock подключает named parts. Shared door atlases сохраняют свои половины.
-- rules/models.mjs/model-policy.mjs: явные специальные назначения и ограниченные шаблоны; unknown остаётся unresolved. slime→slime, honey_block→honey_block, farmland→farmland, snow_layer→snow_layer уже записаны. Имена гелей совпадают с gels.mjs.
-- rules/parts.mjs и специализированные parts: именованные роли частей и индексированные варианты. В последнем проверенном diff utility-parts задаёт farmland wet=variants.up[0], dry=variants.up[1], bottom=down, side=north и отвергает неполный верх. Порядок исходных вариантов не меняется.
-- rules/dependencies.mjs: объявленные общие роли, проверка пути и inventory. Pot/soil азалии, torch_on/off устройств, pod pitcher не становятся собственными редактируемыми слотами. Dependencies не заменяют entity source adapter.
-- compile.mjs: records/cards/aliases/families/stateGroups/routes/reverse resource index и зависимости.
-- identity/rules/duplicates: aliases требуют эквивалентности ресурсов, модели и состояний. Waxed/infested сохраняют old-ID routes; oxidation variants не удаляются. Добавлены правила десяти coral_wall_fan→coral_fan и 17 candle_cake→cake. Объявленное правило не заменяет проверку применения на полном входе.
-- states.mjs: группы одинаковой модели, включая режимы датчиков и pitcher crop/plant. Bamboo sapling/adult требуют связи форм, не простого объединения state groups.
-- access.mjs: saved ID/alias → source/card/form/state. Неоднозначный PNG не выбирает первого владельца.
-- preview.mjs: edit slot независим от state. Материал должен принадлежать объекту или конкретной declared dependency. Возвращает shared для загрузчика. Potted azalea переключает модель и down/south/west bindings; crop/turtle egg используют варианты с повторами. По истории cc26bd0 добавил подсчёт стадий stage_cross по непрерывным stage_N. Часть состояний проверяется построителями; общей UI-панели ещё нет.
+## Каталог и ресурсы
+
+- load.mjs: JSONC/assembleChunks; hashes проверяет вызывающий загрузчик.
+- resources.mjs: уникальные paths/faces/carried отдельно от variants/carriedVariants, где сохраняются исходные индексы и повторы. normalizeBlock подключает named parts; общие door atlases сохраняют половины.
+- model-policy/rules/models: точные специальные назначения и ограниченные шаблоны; неизвестные остаются unresolved, не cube fallback.
+- parts и utility-parts: именованные роли частей/стадий. Farmland wet=variants.up[0], dry=variants.up[1]; composter rim/compost/ready из трёх вариантов up плюс bottom/side. Cage хранит variant_N_face для всех исходных индексов (1 mob, 12 trial, 8 vault). Chorus flower live/dead и stem подготовлены в utility-parts, но модуль сейчас повреждён.
+- dependencies.mjs: разрешение конкретных общих ролей с проверкой inventory, без передачи ownership. Реально объявлены pot/soil азалии, head_back поршней, torch_on/off устройств, pod pitcher. Chorus stem есть в shared.mjs и привязках, но его объявление в настоящем dependencies ещё отсутствует.
+- compile.mjs: records/cards/aliases/families/stateGroups/routes/reverse resource index и dependencies.
+- identity/duplicates: aliases требуют эквивалентности ресурсов, модели и состояний. Waxed/infested сохраняют old-ID routes; oxidation остаётся. Coral wall fans — aliases обычных без отдельной формы; candle cakes имеют правила cake aliases при сохранении ресурсов. Наличие правил не заменяет полный входной прогон.
+- states.mjs: группы одинаковой модели, включая датчики/pitcher; bamboo sapling/adult нуждаются в связи форм.
+- access.mjs: saved ID/alias → source/card/form/state; неоднозначный PNG не выбирает первого владельца.
+
+## Предпросмотр и состояния
+
+Edit slot независим от геометрии и state. Материал принадлежит объекту или конкретной declared dependency; shared сообщает загрузчику внешние пути. Potted azalea меняет построитель и использует pot/soil; crop/turtle egg сохраняют повторы стадий; stage_cross считает непрерывные stage_N bindings. Часть состояний проверяет сам builder, общей UI-панели ещё нет.
+
+Общий cubeStateBindings в preview заменил отдельную обработку ульев. Он синхронно выбирает индекс variants по граням и проверяет допустимые состояния/длины/принадлежность путей:
+
+- bee_nest/beehive: honey false/true;
+- crafter: mode idle/triggered/crafting, повторяющиеся пути не удаляются;
+- suspicious sand/gravel: brushing 0..3;
+- chiseled bookshelf: occupied false/true, не все комбинации книг;
+- creaking heart: inactive/dormant/active;
+- brown/red mushroom block и mushroom_stem: variant 0..15. Default 14 для шляпок, 10 для ножки; геометрия и UV общего cube не изменены.
+
+Это контракты нового пути, не уже подключённые переключатели рабочего приложения.
 
 ## Библиотека и геометрия
 
-models/library.mjs непосредственно проверен: createModelLibrary собирает фабрики, включая gels, specials, dripleaf, sculk, dried-ghast и barrel, и запечатывает registry. compileModelCatalog сначала проверяет план и наличие построителей; unresolved/missing блокируют компиляцию до normalize. Затем compileCatalog и registry.validate проверяют записи. Поддерживаются plain/wrapped terrain/item atlas. Режим ограниченного среза не подтверждён реализованным.
+createModelLibrary собирает фабрики и запечатывает registry. compileModelCatalog сначала проверяет назначения/наличие builders; unresolved/missing блокируют полный compile до normalize. Потом compileCatalog и registry.validate проверяют записи. Plain/wrapped terrain/item atlas поддерживаются. Ограниченный admission среза требует явного решения.
 
-inspectModelCoverage проверяет назначение и наличие model ID, не строит геометрию и не доказывает UV/материалы/визуальную готовность. Число типов реестра не равно числу исходных блоков, карточек или принятых моделей.
+inspectModelCoverage проверяет назначение и наличие model ID, не строит геометрию. В tools/model-library.test.mjs записано ожидание 95 типов после хоруса; оно не выполнено этой передачей и не доказывает запуск повреждённого каталога.
 
-models/shapes.mjs предоставляет composeShape/requireRoles и операции плоскостей, боксов, поворотов и наклонных групп. Модели группируются по ответственности; перенос сохраняет принятую legacy geometry/UV без необоснованных переписываний. Closed door без открывания, один amethyst с growth, potted azalea с отдельным Bedrock PNG/UV review. Repeater/comparator используют принятую legacy геометрию. Track остаётся плоской формой, workshop — downward hopper/floor grindstone/frames, не все игровые состояния.
+shapes.mjs: composeShape/requireRoles, плоскости/боксы/повороты/наклонные группы. Сохранять принятую legacy geometry/UV; менять по конкретному дефекту, не ради формальной чистоты. Planar получил единый безопасный путь построения с очисткой геометрии и без частичной сцены при проверяемых ошибках.
 
-По истории OLDCHAT12 добавлены utility/decorative модели, fire, dripleaf/sculk/cactus, pointed dripstone/dried ghast/barrel и stage_cross растения. Состояния выбирают части/материалы независимо от PNG. Декорированный горшок пока без черепковых узоров, conduit без активированной формы, fire без плеера, cauldron без lava_cauldron.
+Поршень разделяет корпус/inner, шток, front/head и head_back. Задняя грань выдвинутой головки добавлена для обоих вариантов; dependency head_back использует piston_top_normal, sticky front остаётся зелёным. Чужая PNG не становится собственным edit slot липкого поршня.
 
-Проверенный gels.mjs строит ядро и оболочку исходными материалами: slime 10/16 px, honey_block 14/16 px. Мёд использует up/down/north; принудительного opacity и клонирования материалов нет. По истории fk-view.js изменяет blending/depth policy по промежуточной альфе PNG и пересчитывает её после обновления текстуры. Это разные уровни: геометрия новой библиотеки и материал общего legacy viewer. Реальные PNG, порядок прозрачного WebGL-рендеринга и результат в UI не подтверждены.
+Structures: composter — внутреннее дно и четыре стенки, level 0..8, ready material на 8; scaffolding — отдельные стойки/открытый каркас/настил, bottom добавляет нижнюю площадку и обвязку. Cage — наружные и внутренние грани, vault с внутренним дном на 3 px, индексированные варианты trial/vault. Внутренние существа и предметы не включены. Геометрия новых структур основана на Java references с Bedrock materials; PNG/WebGL review отдельно.
 
-Farmland и snow_layer добавлены в specials по истории fca127c и назначены последним проверенным коммитом. Farmland: высота 15/16, wet; snow: layers 1..8, высота 2..16 px. Интеграционный тест в 4c52b9d проверяет нормализацию закреплённых записей и роли, не рабочие UI-переключатели.
+Plants: chorus plant имеет шесть независимых boolean connections, базовый noside без случайных noside1..3; chorus flower — составная форма с dead и общей текстурой stem. Геометрия записана, но её ресурсное подключение/сохранённые тесты пакета неполны.
 
-## Аудит и источники
+Гели: slime ядро 10/оболочка 16 px, honey_block 14/16; исходные материалы без принудительного opacity/clone. Legacy FKView alpha policy — отдельный уровень от новой геометрии. Реальная прозрачность и сортировка WebGL не приняты. Farmland 15/16 с wet; snow layers 1..8 (2..16 px). Edit PNG не переключает состояния.
 
-Существующий tools/model-coverage.mjs используется для отчёта назначений; по истории 9dca5f4 добавил catalog/audit.mjs и inputValidation: нормализация назначенных записей, инвентарь ресурсов и объявленные dependencies. Ошибки разделяются по ID/этапу; отсутствие данных не считать успешной проверкой. Это не геометрическая или браузерная приёмка.
+Другие ограничения: closed door; один amethyst growth; potted azalea ожидает Bedrock UV review; repeater/comparator сохраняют принятую legacy geometry; track плоский; workshop реализует не все игровые orientations. Decorated pot без черепков, conduit без активированной формы, cauldron без lava_cauldron, fire без плеера.
 
-По истории validate.yml сохраняет coverage artifact даже после неуспешных тестов, если запуск не отменён; ошибка тестов не подавляется. strands.test.mjs исправлен в bae756f. Наличие workflow и исправления не доказывает зелёный CI или доступность артефакта. Полный CLI и inputValidation текущего candidate ещё нужно получить и проверить.
+## Аудит, источники и сохранность
 
-PIN Mojang: 46ba6ea985fb5a92d79a9419198f10dda14c199d. Исторические размеры candidate: 1275 определений, 1241 terrain key, 8201 resource path; auxiliary end_gateway/lava_cauldron. Это не новый замер. Старый stonecutter по прежней истории исключён, modern stonecutter_block нужен.
+Существующий tools/model-coverage.mjs/catalog/audit.mjs: назначения, builders, inputValidation назначенных записей, normalization/inventory/dependencies. inputValidation не доказывает корректность объединённых карточек, icons, preview или render. Workflow с artifact не доказывает зелёный CI. Отсутствие данных означает не проверено.
 
-Item по умолчанию sprite, 3D — по явному объявлению. Entity source/geometry/material/render-controller adapter не реализован. Inventory пути сам по себе не создаёт карточку. Таблички, кровати, колокол, cushion и другие отдельные ресурсы требуют проверяемого источника и ownership; entities отложены владельцем. Сохранять PNG dimensions/alpha, atlas и frame sequences.
+PIN Mojang/bedrock-samples: 46ba6ea985fb5a92d79a9419198f10dda14c199d. Исторически candidate: 1275 определений, 1241 terrain key, 8201 resource path; auxiliary end_gateway/lava_cauldron. Это не свежий замер. Нужен stonecutter_block, obsolete stonecutter не возвращать.
 
-## Проверки и сохранность
+Item по умолчанию sprite, 3D только явно. Entity source/inventory/geometry/material/render-controller adapter не реализован; inventory path не создаёт карточку. Sign/bed/bell/cushion требуют проверяемого источника; entities отложены владельцем, scope согласовать до переключения.
 
-Не смешивать целевые stub-тесты, реальные JSON, полный compile, CI и настоящий WebGL. Документальная передача тесты не запускала. Команды среды исполнения: node tools/validate.mjs; node --test tools/*.test.mjs. Их запуск не перекладывать на владельца. Полный свежий coverage с inputValidation, compiler, Android и export остаются неподтверждёнными.
+Разделять tests на mocks, реальные JSON, full compile/CI, Three/WebGL, Android/export. Исторические целевые результаты — CONTEXT; новые тесты здесь не запускались. Команды: node tools/validate.mjs; node --test tools/*.test.mjs. Полный актуальный прогон не подтверждён.
 
-Legacy cache foundrykin.catalog.v6; packs fk070_packs. Риски: saved ID, async target binding, storage transactions/import limits, non-square atlases, глобальное изменение разрешения, cache limits и URL lifecycle. Не очищать storage. Перед удалением legacy проверить draw/undo/redo/Add/reopen/PNG/mcpack; при переключении синхронизировать loader/cache versions.
+Legacy cache foundrykin.catalog.v6; packs fk070_packs. Риски: saved ID, async targets, transactions/import limits, non-square atlas, dimensions/alpha, cache/URL lifecycle. Storage не очищать. До удаления legacy принять draw/undo/redo/Add/reopen/PNG/mcpack; при переключении синхронизировать loader/cache versions.

@@ -1,41 +1,50 @@
 # Review principles and handoff safety
 
-Updated 2026-10-31. Verified code baseline before documentation: 4c52b9d5508422e705b4e5ef28056391350d2ecd. Read CONTEXT first. This is a documentation handoff, not an application release.
+Updated 2026-10-31. Verified repository HEAD before this documentation write: 5c5f9f4f449ba0aba3be6847cd09287f0d716130. Read CONTEXT first. Documentation is not an application release or a code fix.
 
-## Workflow
+## Workflow and write verification
 
-- The owner curates behaviour and appearance, not code. Respond briefly in Russian. Own technical decisions and debugging; do not delegate script execution to the owner.
-- Work in main. refactor-0.9 was merged/deleted. Do not recreate branches or refresh backup automatically. Code backup does not contain localStorage packs.
-- Prepare coherent medium-sized packages: assignments, resources, geometry, state, preview and tests together. Avoid isolated helper commits, duplicate audits and huge unverified rewrites.
-- Every external write needs system confirmation with exact complete arguments and contents. Execute only approved arguments; verify the resulting commit and file list. Line statistics alone do not prove identity. After an interruption inspect GitHub before retrying or claiming failure.
-- Update documentation when requested, not after every model. Keep files under 25000 UTF-8 bytes by responsibility, not minification. No runtime patch loaders or one-off Actions migrations.
+- The owner curates behaviour/appearance, not code. Respond briefly in Russian. Own technical decisions/debugging; do not delegate scripts to the owner.
+- Work in main. refactor-0.9 was merged/deleted; do not recreate it or refresh backup automatically. Code backup does not contain localStorage packs.
+- Prepare coherent medium-sized packages: geometry, assignments, resources, state, preview, tests. Avoid isolated helpers, duplicate audits, huge rewrites and unnecessary cleanup.
+- When a package is ready, request the write immediately rather than spending a separate turn announcing readiness. The owner withdrew mandatory per-commit remaining-count reports for productivity. Never invent remaining model counts.
+- Every external write requires system confirmation with exact complete arguments/content. Execute only approved arguments. Verify actual saved content or full diff against the approved package, including all expected files. File counts and line statistics do not prove identity or correct file boundaries.
+- After interruption inspect GitHub before retrying. Update documentation when requested, not after each model. Keep files below 25000 UTF-8 bytes by responsibility. No runtime patch loaders or one-off Actions migrations.
+
+## Current blocking defect
+
+The full 5c5f9f4 diff was checked in this pass. It changed five files although the request described eight. catalog/rules/utility-parts.mjs contains literal path/content headers and the intended dependencies.mjs source appended after its function, including a repeated chorusPlantResources import. The module is syntactically damaged. The actual dependencies.mjs still lacks chorus_flower/stem. The intended policy-test changes and chorus test file were not included in that commit.
+
+Do not describe chorus as completed, or historical draft tests as proof of the saved package. First remove the misplaced tail, update the real dependency module, inspect/restore the agreed tests and verify the saved normalize→attach→preview→build chain. Preserve already committed chorus geometry/assignments unless a concrete defect requires changes. Do not silently mix this code repair into a documentation-only write.
 
 ## Scope and preservation
 
-Do not restart already committed work from stale checklists or a broken handoff. At the verified baseline, slime/honey_block/farmland/snow_layer assignments exist. The gel builder ID is honey_block, matching the assignment. Farmland roles and snow assignment were committed in 4c52b9d; repeating their introduction would be incorrect.
+Do not restart committed work from stale checklists. Slime/honey_block/farmland/snow_layer assignments exist and the honey_block IDs match. Roots reuse cross; pot PNGs remain available without selecting potted geometry. Indexed cube states cover hives/crafter/suspicious blocks/bookshelf/heart. Composter/scaffolding have open structural geometry; piston backs use an ordinary head texture via an explicit dependency, including sticky pistons. Mushroom indexed selection is committed; do not reopen it as missing implementation. Cage spawner/vault surfaces and variants are committed without inner entities/items.
 
-Finish the agreed scope without silently shrinking the catalog. Entities were deferred by the owner; signs and other block entities need a shared source/inventory/geometry/material adapter. A declared dependency or inventory path is not that adapter and does not create a card. Do not add cushion from one discovered texture path. Make block-entity scope explicit before switching the main runtime. Never substitute unknown models with cubes.
+Chorus geometry exists but the package is broken/incomplete. Its base noside form does not include random noside1..3 decoration. Preserve this limitation explicitly rather than claiming full game-state reproduction.
 
-Distinguish duplicates, forms, model states, growth stages and animation frames. Preserve paths, carried resources, icon roles, indexed alternatives/repeats and old-ID routes. Shared PNG alone does not establish equivalent geometry. Waxed/infested require equivalence; oxidation variants remain needed. Keep normal/deepslate ores separate. Do not restore obsolete stonecutter; stonecutter_block is the modern model.
+Finish the agreed model scope without silently shrinking the catalog. Entities/cushion/bell were deferred. Signs/beds and other block entities require a shared source/inventory/geometry/material adapter. A dependency or inventory path is not that adapter and does not create a card. Make scope explicit before switching the main runtime. Unknown models never become cube fallbacks.
 
-Wall coral fans stay aliases of ordinary fans: no separate cards, geometry or mounting switch. Candle cakes have cake assignments and alias rules; ordinary candles remain separate. Do not weaken equivalence/resource checks merely to reduce coverage counters.
+Distinguish duplicates, forms, states, growth stages and animation frames. Preserve owned paths, carried resources, icons, indexed repeats and old-ID routes. Shared PNG does not establish equivalent geometry. Waxed/infested require equivalence; oxidation remains; normal/deepslate ores stay separate. Do not restore obsolete stonecutter; use stonecutter_block.
 
-Inspect wood/color/oxidation variants as a class. Preserve accepted geometry/UV unless a concrete defect requires changes. Keep adult bamboo composite and implement its shoot relationship separately. Show one centered amethyst stage. Potted azalea is registered, but Bedrock PNG/UV review remains unconfirmed. Doors currently implement the closed form. Repeater/comparator use accepted legacy geometry, not a replacement Java approximation.
+Wall coral fans stay aliases of ordinary fans, without separate cards/models/mounting switches. Candle cake aliases preserve resources; ordinary candles remain separate. Do not weaken equivalence checks to reduce counters.
 
-Edit slots must not control model states or geometry. Dependencies authorize specific shared bindings, not arbitrary foreign paths or ownership transfers. Preserve PNG dimensions, alpha, atlases and frame strips. Gel geometry and material alpha policy are separate concerns: committed inner/shell volumes do not prove transparent rendering with actual PNGs/WebGL. Do not change source pixels or force opacity to manufacture a passing appearance.
+Inspect wood/colour/oxidation variants as classes. Preserve accepted geometry/UV unless fixing a concrete defect. Keep adult bamboo composite and implement shoot/adult forms separately. Show one centred amethyst stage. Potted azalea still needs Bedrock PNG/UV review. Doors currently implement closed form; repeater/comparator preserve accepted legacy geometry.
 
-Preserve the light paper layout and centralize design tokens. Dark colours remain unchosen. Visible text/help must consistently follow EN/RU localization. File names and IDs are never translated. Keep animation playback separate from model state.
+Edit slots must not control model states/geometry. Dependencies authorize specific shared roles, not arbitrary foreign paths or ownership transfers. Preserve PNG dimensions/alpha/atlases/frame strips. Gel volumes and material alpha policy are separate: committed geometry does not prove actual transparent rendering. Do not alter pixels or force opacity to manufacture success.
+
+Preserve the light paper layout; centralize design tokens, dark colours remain unchosen. Visible text/help follows EN/RU; filenames/IDs are not translated. Playback remains separate from model state.
 
 ## Evidence and handoff
 
-Separate committed code, runtime connection, expected registry counts, targeted stub tests, real-input checks, full normalization/compiler/CI, actual Three/WebGL, Android and export acceptance. Registration and checksums do not establish visual correctness. Policy coverage counts source records, not user cards or completed refactoring.
+Separate committed source, runtime connection, expected registry counts, targeted mocks, real-input checks, full compiler/CI, actual Three/WebGL, Android/export acceptance. Registration and checksums do not establish visual correctness. Coverage counts source records, not cards or completed refactoring.
 
-This documentation pass read OLDCHAT12 and the previous six documents, checked HEAD, the final commit diff, model assignments, gels and library. It did not execute tests, read the original coverage attachment again, audit every historical diff or recheck HTML. Historical assistant claims about tests remain historical. The final OLDCHAT12 summary contradicted committed code and must not be reused as the current state.
+This pass read OLDCHAT13 and all six previous documents, checked recent commits, full final diff, actual dependencies and library test. It did not run tests, inspect every historical diff, obtain a fresh full coverage report or recheck HTML. Historical test claims remain historical. In OLDCHAT13 a later run of 26 saved redstone/structures/preview-parts tests was reported; that does not validate the damaged subsequent chorus commit.
 
-The mushroom episode included acknowledged simplified dependencies and fabricated resource fixtures. Those tests do not validate real inputs. Any new mushroom change must follow actual definitions and indexed face variants; unsupported special-UV claims must not drive changes to the common cube builder.
+Earlier mushroom research included acknowledged simplified dependencies/fabricated fixtures; those claims never proved real inputs. The later committed mushroom package implements synchronized native indices without changing common cube UV. Its targeted fixture tests still do not establish full pinned-input or WebGL acceptance.
 
-Use the existing coverage tool and inputValidation instead of a parallel audit. Distinguish unresolved assignments, missing builders, normalization failures, inventory/dependency errors and rendering defects. Missing data means not checked, not success. An artifact-producing workflow or a fixed syntax error is not evidence of a successful full run. Current full tests/validate/compile, CI and visual/export acceptance remain unconfirmed.
+Use existing tools/model-coverage.mjs/inputValidation, not another audit. inputValidation examines assigned records individually, not merged cards/icons/preview/render. Separate unresolved/missing builders/normalization/inventory/dependency/rendering errors. Missing data means not checked. Artifact workflow is not successful CI. Current full validate/tests/compile/CI and visual/export acceptance remain unconfirmed. Old 78/74 unresolved and the test expectation of 95 model types are not a fresh measured remainder.
 
-Start new chats with CONTEXT and relevant source, not whole archives unless explicitly requested. Sandbox state/files and prior attachments do not persist automatically. Chat/provider failure causes are not established; do not assert application code or thread length as the proven cause.
+Start new chats with CONTEXT/relevant code, not archives unless explicitly requested. Sandbox/files/attachments do not persist automatically. Chat/provider failure causes are unknown; do not assert application code or thread length as proven causes.
 
-Never clear fk070_packs for cache issues. Recheck live HTML before changing integration; keep the working legacy path until acceptance, then remove replaced runtime and synchronize loader/cache versions.
+Never clear fk070_packs for cache issues. Recheck HTML before integration changes; keep working legacy until acceptance, then remove replaced runtime and synchronize loader/cache versions.
