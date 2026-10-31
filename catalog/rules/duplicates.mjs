@@ -11,6 +11,9 @@ export function duplicateRules(blocks, explicit = {}) {
     } else if (id.startsWith('infested_')) {
       target = id.slice(9);
       reason = 'infested variant shares the ordinary editor resources';
+    } else if (/^(?:dead_)?(?:tube|brain|bubble|fire|horn)_coral_wall_fan$/.test(id)) {
+      target = id.replace('_coral_wall_fan', '_coral_fan');
+      reason = 'approved wall coral fan duplicate of the ordinary editor fan';
     } else continue;
     if (!own(blocks, target)) throw new Error('Missing ordinary counterpart: ' + id + ' -> ' + target);
     rules.set(id, {target, reason});
