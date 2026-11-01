@@ -6,6 +6,12 @@ export function utilityBindings(record) {
   return [...paths];
  };
  const named=(paths,name)=>single([...new Set(paths??[])].filter(path=>typeof path==='string'&&path.split('/').pop()===name),name);
+ if(record.model==='mangrove_propagule') {
+  if(record.id!=='mangrove_propagule')throw new Error('Unknown mangrove propagule object');
+  const paths=record.variants?.up;
+  if(!Array.isArray(paths)||paths.length!==2)throw new Error('Incomplete mangrove propagule resources');
+  return {ground:single([paths[0]],'ground propagule'),hanging:single([paths[1]],'hanging propagule')};
+ }
  if(record.model==='chorus_flower') {
   if(record.id!=='chorus_flower')throw new Error('Unknown chorus flower object');
   const paths=record.variants?.up;
