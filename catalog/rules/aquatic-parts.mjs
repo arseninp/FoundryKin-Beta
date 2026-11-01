@@ -1,5 +1,6 @@
 /* Exact owned resource roles for the pinned aquatic plant definitions. */
 const SPECS=Object.freeze({
+ kelp:{body_a:['north','kelp_a'],body_b:['south','kelp_b'],body_c:['up','kelp_c'],body_d:['down','kelp_d'],head:['east','kelp_top'],head_bulb:['west','kelp_top_bulb']},
  seagrass:{short:['up','seagrass'],lower_a:['down','seagrass_doubletall_bottom_a'],upper_a:['north','seagrass_doubletall_top_a'],lower_b:['south','seagrass_doubletall_bottom_b'],upper_b:['west','seagrass_doubletall_top_b']}
 });
 export function aquaticBindings(record) {
