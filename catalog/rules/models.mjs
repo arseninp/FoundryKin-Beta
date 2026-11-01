@@ -22,7 +22,7 @@ export const SPECIAL_MODELS = Object.freeze({
   lilac: 'flower', rose_bush: 'flower', peony: 'flower',
   tall_grass: 'flower', large_fern: 'flower',
   nether_wart: 'stage_cross', torchflower_crop: 'stage_cross', sweet_berry_bush: 'stage_cross',
-  bush: 'cross', cactus_flower: 'cross',
+  bush: 'cross', cactus_flower: 'cross', closed_eyeblossom: 'cross',
   crimson_roots: 'cross', warped_roots: 'cross',
   sunflower: 'sunflower',
   spore_blossom: 'spore_blossom',
