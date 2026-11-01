@@ -1,6 +1,6 @@
 /* Shared resources a model may bind without owning them. Source objects keep ownership and editing. */
 import {resourceVariants} from '../resources.mjs';
-import {pitcherPodResources,chorusPlantResources} from './shared.mjs';
+import {pitcherPodResources,chorusPlantResources,buddingAmethystResources} from './shared.mjs';
 const own = (object, key) => Object.hasOwn(object, key);
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const ROLE = /^[a-z][a-z0-9_]*$/;
@@ -16,7 +16,11 @@ const BY_MODEL = Object.freeze({
 export function declaredDependencies(assignments) {
   if (!dictionary(assignments)) throw new Error('Invalid model assignments');
   const result = {};
-  for (const [id, assignment] of Object.entries(assignments)) if (dictionary(assignment) && own(BY_MODEL, assignment.model)) result[id] = {...BY_MODEL[assignment.model]};
+  for (const [id, assignment] of Object.entries(assignments)) {
+    if (!dictionary(assignment)) continue;
+    if (id === 'budding_amethyst' && assignment.model === 'cube') result[id] = {...buddingAmethystResources};
+    else if (own(BY_MODEL, assignment.model)) result[id] = {...BY_MODEL[assignment.model]};
+  }
   return result;
 }
 export function attachDependencies(records, dependencies, inventory) {
