@@ -3,7 +3,9 @@ const own=(object,key)=>Object.hasOwn(object,key);
 const dictionary=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const APPROVED=Object.freeze({
  bamboo:Object.freeze({shoot:'bamboo_sapling'}),
- torchflower:Object.freeze({crop:'torchflower_crop'})
+ torchflower:Object.freeze({crop:'torchflower_crop'}),
+ pumpkin:Object.freeze({stem:'pumpkin_stem'}),
+ melon_block:Object.freeze({stem:'melon_stem'})
 });
 export function familyRules(records,explicit={}) {
  if(!dictionary(records)||!dictionary(explicit))throw new Error('Invalid family rule input');

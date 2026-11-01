@@ -1,5 +1,6 @@
 /* Selection and model resources are independent of the edited PNG. */
 import {createCatalogAccess} from './access.mjs';
+import {withFruitStemSelection} from './fruit-stem-selection.mjs';
 const own = (value, key) => Object.hasOwn(value, key);
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 function azaleaBindings(record) {
@@ -142,10 +143,10 @@ function segmentedBindings(record) {
   return [role,[found[0]]];
  }));
 }
-export function createPreviewResolver(catalog, registry) {
+export function createPreviewResolver(catalog, registry, Three) {
  const access = createCatalogAccess(catalog);
  if (!registry || typeof registry.get !== 'function' || typeof registry.build !== 'function') throw new Error('Invalid preview registry');
- return function resolve(request) {
+ return withFruitStemSelection(catalog,function resolve(request) {
   if (!dictionary(request)) throw new Error('Invalid preview request');
   const kind=request.kind??'block', initial=access.describe(request.id,kind);
   if (!initial) throw new Error('Unknown preview object: '+request.id);
@@ -221,5 +222,5 @@ export function createPreviewResolver(catalog, registry) {
     return registry.build(model,{...environment,cur:selected.id,slot,faceMap:{...buildFaces},bindings:{...buildFaces},state:{...buildState}});
    }
   };
- };
+ },Three);
 }
