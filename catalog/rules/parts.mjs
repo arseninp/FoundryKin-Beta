@@ -1,8 +1,10 @@
 /* Named model parts are declared from owned resources, independently of edited slots. */
 import {pitcherBindings} from './pitcher-parts.mjs';
 import {utilityBindings} from './utility-parts.mjs';
+import {aquaticBindings} from './aquatic-parts.mjs';
 const FACE_STAGE_ORDER=Object.freeze({sweet_berry_bush:Object.freeze(['down','up','north','east'])});
 export function modelPartBindings(record) {
+ const aquatic=aquaticBindings(record);if(aquatic)return aquatic;
  if(record.model==='stage_cross') {
   const order=Object.hasOwn(FACE_STAGE_ORDER,record.id)?FACE_STAGE_ORDER[record.id]:null;
   const paths=order?order.map(face=>{

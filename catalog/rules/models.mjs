@@ -40,6 +40,7 @@ export const SPECIAL_MODELS = Object.freeze({
   pitcher_crop: 'pitcher', pitcher_plant: 'pitcher',
   redstone_wire: 'redstone_wire',
   rail: 'track', golden_rail: 'track', detector_rail: 'track', activator_rail: 'track',
+  seagrass: 'seagrass',
   weeping_vines: 'vines', twisting_vines: 'vines',
   cave_vines: 'cave_vines', cave_vines_body_with_berries: 'cave_vines_part', cave_vines_head_with_berries: 'cave_vines_part',
   portal: 'portal', end_portal_frame: 'end_portal_frame', trip_wire: 'tripwire', tripwire_hook: 'tripwire_hook'
