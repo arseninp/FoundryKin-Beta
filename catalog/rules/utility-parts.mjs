@@ -6,6 +6,16 @@ export function utilityBindings(record) {
   return [...paths];
  };
  const named=(paths,name)=>single([...new Set(paths??[])].filter(path=>typeof path==='string'&&path.split('/').pop()===name),name);
+ if(record.model==='emissive_cross') {
+  const specs={open_eyeblossom:['eyeblossom_stem_blooming','eyeblossom_eyes_blooming'],firefly_bush:['firefly_bush','firefly_bush_firefly']};
+  const names=Object.hasOwn(specs,record.id)?specs[record.id]:null;
+  if(!names)throw new Error('Unknown emissive plant object');
+  const paths=record.variants?.up;
+  if(!Array.isArray(paths)||paths.length!==2)throw new Error('Incomplete emissive plant resources');
+  const plant=single([paths[0]],'emissive plant body'),glow=single([paths[1]],'emissive plant glow');
+  if(plant[0].split('/').pop()!==names[0]||glow[0].split('/').pop()!==names[1])throw new Error('Unexpected emissive plant texture order');
+  return {plant,glow};
+ }
  if(record.model==='mangrove_propagule') {
   if(record.id!=='mangrove_propagule')throw new Error('Unknown mangrove propagule object');
   const paths=record.variants?.up;

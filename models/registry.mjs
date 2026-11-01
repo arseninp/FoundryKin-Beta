@@ -12,7 +12,13 @@ function describe(entry) {
   const mode = entry.mode === undefined ? 'volume' : entry.mode;
   if (typeof scale !== 'number' || !Number.isFinite(scale) || scale <= 0) throw new Error('Invalid model scale: ' + entry.id);
   if (mode !== 'volume' && mode !== 'sprite') throw new Error('Invalid model mode: ' + entry.id);
-  return Object.freeze({id: entry.id, build: entry.build, scale, mode});
+  const result={id:entry.id,build:entry.build,scale,mode};
+  if(Object.hasOwn(entry,'emissiveRoles')) {
+    const roles=entry.emissiveRoles;
+    if(!Array.isArray(roles)||!roles.length||new Set(roles).size!==roles.length||Array.from(roles).some(role=>typeof role!=='string'||!/^[a-z][a-z0-9_]*$/.test(role)))throw new Error('Invalid emissive roles: '+entry.id);
+    result.emissiveRoles=Object.freeze([...roles]);
+  }
+  return Object.freeze(result);
 }
 export function createModelRegistry() {
   const entries = new Map();
