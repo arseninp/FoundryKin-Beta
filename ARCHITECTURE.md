@@ -1,61 +1,53 @@
 # ARCHITECTURE
 
-Обновлено 2026-11-02. Проверенный кодовый HEAD: cc5d4e20ac4ef0ed2c9ab66d955bee8d79154a1c. Границы свежей проверки — CONTEXT. Тесты/HTML/полный аудит здесь не выполнялись.
+Обновлено 2026-11-02. Кодовый HEAD перед документальной записью: 4448dca87745ccf94203591952288a06d77eb01b. Границы свежей проверки — CONTEXT. Это описание записанной основы, не runtime acceptance.
 
-## Два пути и текущий незакрытый стык
+## Пути приложения
 
-Legacy: app.html → fk-editor/fk-app → iframe index.html → fk-модули. По прежней проверке UI 0.9.1; HTML здесь не перечитан. Новый путь: data → normalize → aliases/states/families/icons → compile → access → preview bindings → registry → renderer. Он ещё не принят в основном UI; отдельная проверяемая страница не подтверждена.
+Legacy: app.html → fk-editor/fk-app → iframe index.html → fk-модули. По прежней проверке UI 0.9.1; основной HTML здесь не перечитан. Новый путь: data → normalize → aliases/states/families/icons → compile → access → preview bindings → registry → materials/textures → scene. В основном редакторе не принят.
 
-Новый models/materials.mjs записан, но прочитанный catalog/preview.mjs его не импортирует. Ближайшая работа — подключить материалы и lifecycle, не создавать новый модуль заново и не переключать legacy. Затем отдельно объединить closed/open eyeblossom в одну карточку.
+После df1fcab/f03acbe material instance и canvas texture lifecycle уже подключены к новому preview; не повторять прежнюю задачу импорта materials. Отдельные preview.html/preview.mjs записаны b0e163d: read-only срез 17 исходных ID с переиспользованием PNG/TGA loader, states/rotation/manual frames. Это не полный каталог/редактор; Pages и настоящий WebGL не подтверждены. e64ef13 ограничивает loader timeout/cache по архиву.
 
-## Каталог, ресурсы и идентичность
+## Данные и идентичность
 
-load.mjs читает JSONC/assembleChunks, hashes проверяет вызывающий loader. resources.mjs разделяет unique paths/faces/carried и variants/carriedVariants с исходными индексами/повторами. normalizeBlock добавляет named parts. Door atlases сохраняют половины; furnace front normalization ограничена известными lit/normal парами.
+load.mjs читает JSONC/assembleChunks; hashes проверяет вызывающий loader. resources.mjs разделяет unique paths/faces/carried и variants/carriedVariants с индексами/повторами. normalizeBlock добавляет named parts; door atlases сохраняют половины, furnace front normalization ограничена известными парами.
 
-model-policy/rules/models задают специальные назначения и ограниченные шаблоны; unknown остаётся unresolved. parts/utility-parts и aquatic-parts объявляют роли, стадии и части. dependencies разрешает конкретные shared resources с inventory-проверкой без передачи ownership: pot/soil, piston head_back, torch_on/off, pitcher pod, chorus stem, amethyst growth. Чужая PNG не становится owned edit slot.
+model-policy/rules/models задают назначения без unknown→cube. parts/utility-parts/aquatic-parts задают роли/стадии/части. dependencies разрешает конкретные shared ресурсы с inventory-проверкой, без передачи ownership: pot/soil, piston head_back, torch, pitcher pod, chorus stem, amethyst growth.
 
-compile.mjs собирает records/cards/aliases/families/stateGroups/routes/reverse resource index/dependencies. access.mjs открывает source/card/form/state по исходному ID; неоднозначный PNG не выбирает первого владельца. Aliases требуют эквивалентности, а не просто общей текстуры. Waxed/infested сохраняют routes; oxidation и normal/deepslate остаются раздельными. Coral wall fans aliases без mounting, candle cakes объединены с cake при сохранении ресурсов.
+compile.mjs собирает records/cards/aliases/families/stateGroups/routes/reverse resource index/dependencies. access.mjs сохраняет исходные source/card/form/state и неоднозначный PNG не назначает первому владельцу. Aliases требуют эквивалентности, не общей PNG. Waxed/infested routes сохраняются, oxidation/normal/deepslate раздельны. Coral wall fans aliases без mounting; candle cakes объединены с cake, обычные свечи отдельно.
 
-## Формы и составные предпросмотры
+## Формы и составные модели
 
-Текущий rules/forms.mjs связывает bamboo→shoot:bamboo_sapling, torchflower→crop:torchflower_crop, pumpkin→stem:pumpkin_stem и melon_block→stem:melon_stem при наличии обеих записей; explicit rules объединяются с проверкой конфликтов. Исходные записи/модели/owned PNG сохраняются, формы не aliases.
+rules/forms связывает bamboo/shoot, torchflower/crop, pumpkin/stem и melon_block/stem, сохраняя source records и owned PNG. Fruit preview показывает плод отдельно либо плод и соседний направленный стебель вместе; варианты тыквы сохраняются. Budding amethyst без роста либо один small/medium/large/cluster на одной из шести граней, growth shared; карточки не объединять.
 
-Preview обёрнут withFruitStemSelection и withBuddingAmethystSelection. Плод+стебель — отдельные соответствующие карточки тыквы и арбуза, явный stem: плод один либо плод и соседний направленный к нему стебель вместе. Сохранить варианты тыквы и saved IDs. Budding amethyst: без нароста либо один small/medium/large/cluster на одной из шести граней, ресурс нароста shared; карточки аметистов не объединять.
+Edit PNG независим от state/form/stage. Closed/open eyeblossom остаются отдельными по отмене объединения в OLDCHAT16. Панель отдельного среза не означает интеграцию меню в основной editor.
 
-Edit slot независим от geometry/state/form/stage. Открытый/закрытый глазоцвет пока не объединены; следующая согласованная связь должна сохранить оба source ID, ресурсы и glow открытого. UI-панель нового пути ещё не подключена.
+## Материалы и lifecycle
 
-## Материалы и светящиеся слои
+emissive_cross разделяет plant/glow; registry хранит immutable emissiveRoles, glow требует MeshBasicMaterial, не Lambert. createModelMaterials принимает descriptor/bindings/classified textures (isTexture и boolean userData.semi), создаёт Basic для sprite/emissive, Lambert для остальных; конфликт lit/unlit по одному path отклоняется.
 
-5720f66 добавил emissive_cross для open_eyeblossom/firefly_bush. Utility bindings разделяют plant/glow и проверяют порядок двух ресурсов. Registry копирует/замораживает emissiveRoles:['glow']. Builder требует unlit MeshBasicMaterial для glow, а не молча использует освещаемый материал; готовит оба слоя до добавления, очищает подготовленную геометрию при ошибке второго слоя, задаёт glow renderOrder=1.
+semi=true → transparent=true, alphaTest=0, depthWrite=false; иначе transparent=false, alphaTest=.05, depthWrite=true. По умолчанию FrontSide/depthTest, planar builders устанавливают DoubleSide. Материалы управляют только созданными материалами, заимствуют текстуры; texture layer управляет созданными GPU-текстурами. Composite lifecycle учитывает все части и cleanup ошибок. Подключение уже записано; это не доказательство настоящего PNG/WebGL результата.
 
-cc5d4e2 добавил createModelMaterials(Three,descriptor,bindings,textures). Вход — разрешённые role→path bindings и классифицированные textures с isTexture=true и boolean userData.semi. Sprite и emissive roles используют MeshBasicMaterial, другие MeshLambertMaterial. Одинаковый path с конфликтующими lit/unlit ролями отклоняется.
+## Библиотека и новые block entities
 
-semi=true: transparent=true, alphaTest=0, depthWrite=false; иначе transparent=false, alphaTest=.05, depthWrite=true. Исходно FrontSide/depthTest=true, нужный planar builder ставит DoubleSide. Модуль владеет только созданными материалами, не клонирует/не освобождает текстуры; возвращает mats/update/dispose, update предварительно проверяет полный lookup.
+createModelLibrary регистрирует и запечатывает builders. compileModelCatalog сначала проверяет assignments/builders, unresolved/missing блокируют полный compile, затем compileCatalog/registry.validate. Read-only срез не должен незаметно ослаблять полный strict compiler. Library test ожидает 105 типов после bed/sign; это не успешный прогон и не число карточек.
 
-Подключение к preview/loader/lifecycle ещё не записано. Требуется сохранить emissive policy, обновление карт и cleanup при ошибках/смене объекта, включая составные сцены. Обычный Lambert для glow намеренно приводит к ошибке builder. Наличие materials.mjs не доказывает работающий WebGL.
+Bed: eb98909 переносит девять частей с legacy размерами/UV; ae5cc41 подключает 16 цветных источников/owned sheets, light_gray_bed использует silver, bed маршрутизируется к red_bed без лишней карточки, colour icons переиспользованы. Полная runtime/визуальная приёмка открыта.
 
-## Состояния и библиотека
-
-Общий cubeStateBindings синхронно выбирает индекс по граням и сохраняет повторы: hive honey, crafter modes, suspicious brushing 0..3, bookshelf empty/occupied (не все комбинации книг), creaking heart modes, mushroom variant 0..15 (defaults 14/10), copper bulb 4 modes включая waxed/oxidation, frosted ice 0..3, respawn anchor 0..4. Potted azalea меняет builder с pot/soil, crop/turtle egg/stage_cross сохраняют реальные стадии.
-
-createModelLibrary регистрирует и запечатывает builders. Library test ожидает 103 типа после seagrass/propagule/kelp/emissive_cross; это не запуск, не число карточек и не визуальная готовность. compileModelCatalog проверяет assignments/builders до normalize, unresolved/missing блокируют полный compile, затем compileCatalog/registry.validate. Admission ограниченного среза требует явного решения.
+Sign: 4448dca добавляет models/signs.mjs, регистрацию sign и обновление существующего library test. Geometry candidate standing/wall/hanging с mounting/rotation/facing и sheet binding. Комментарий указывает acacia-rs/acacia@750f657 как reference, не Mojang geometry export. Листы пород/карточки ещё не подключены; review качества этого коммита — следующая задача. Общий adapter всех entities этим не завершён.
 
 ## Геометрия и ограничения
 
-shapes.mjs — composeShape/requireRoles, плоскости/боксы/повороты. Принятую legacy geometry/UV не переделывать ради чистоты; repeater/comparator сохраняют прежнюю реализацию. Поршни используют normal top как shared head_back и сохраняют зелёную sticky front. Composter полый level 0..8; scaffolding bottom; cage имеет внутренние поверхности/дно vault без entities/items внутри.
+shapes.mjs: composeShape/requireRoles, planes/boxes/rotations. Принятые geometry/UV, особенно legacy repeater/comparator, без дефекта не переделывать. Piston normal top — shared head_back, sticky front сохраняется. Composter level 0..8, scaffolding bottom, cage без внутренних entities. Chorus corruption исправлена 86b6d8f. Cave vines body/head/berries, stem stage 0..7/attached/facing уже есть, stem tint нет.
 
-Chorus plant: шесть connections и базовый noside без случайных noside1..3, flower live/dead/shared stem. Дефект границ utility-parts/dependencies 5c5f9f4 исправлен 86b6d8f, не текущий блокер. Cave vines целый body+head и отдельные части, berries отдельно от PNG. Stem stage 0..7/attached/facing, роли stem/upperstem, без возрастной окраски.
+Cube indexed states сохраняют повторы: hives/crafter/suspicious/bookshelf/heart/mushrooms/bulbs/ice/anchor. Slime/honey cores 10/16 и 14/16, оболочки 16 px; alpha отдельно. Farmland 15/16, wet=up[0]/dry=up[1]; snow layers 1..8. Seagrass short/tall; propagule ground/hanging age 0..4; kelp static lower/top с шестью paths и animation definitions, A–D не стадии роста.
 
-Seagrass short/tall и согласованные lower/upper A/B. Mangrove propagule ground/hanging age 0..4 — Java-reference с Bedrock materials. Kelp — статический кандидат lower+top с шестью путями, анимационные определения сохранены; A–D не стадии роста. Точные Bedrock sides/UV/TGA и плеер ещё открыты.
+Открыты Bedrock UV potted azalea/reference-моделей, kelp sides/UV/TGA, gel alpha/WebGL, decorated pot patterns, active conduit, lava_cauldron/fire playback, другие placements. Closed door и один выбранный amethyst growth — текущие ограничения.
 
-Dragon egg: шесть элементов/33 грани Java-reference. Slime/honey: ядра 10/16 и 14/16 при оболочке 16 px; alpha policy отдельно. Farmland 15/16 wet=up[0]/dry=up[1]; snow 1..8 layers. Ограничения: closed door, один amethyst growth, potted azalea Bedrock UV review, workshop не все orientations, decorated pot без черепков, conduit без active, cauldron без lava_cauldron, fire без плеера.
+## Проверки, порядок и сохранность
 
-## Источники, аудит и сохранность
+PIN Mojang/bedrock-samples: 46ba6ea985fb5a92d79a9419198f10dda14c199d. Candidate исторически 1275 definitions/1241 terrain keys/8201 paths, не свежий coverage. Существующие model-coverage/audit/inputValidation различают assignments/builders/normalization/inventory/dependencies; не доказывают cards/render. Workflow содержит preview-slice/95 geometry scenarios и userData fix, актуальный успешный CI не подтверждён.
 
-PIN Mojang/bedrock-samples: 46ba6ea985fb5a92d79a9419198f10dda14c199d. Исторический candidate: 1275 определений/1241 terrain key/8201 resource path, auxiliary end_gateway/lava_cauldron; это не свежий coverage. tools/model-coverage.mjs/catalog/audit.mjs проверяют assignments/builders/inputValidation/normalization/inventory/dependencies, не принятую визуализацию карточек. Artifact workflow не доказывает зелёный CI.
+Сначала собрать недостающие модели/основу с точечными проверками, затем общая проверка, затем чистка, затем удаление принятого заменённого legacy. Не развивать тестовую инфраструктуру вместо переноса. Новые test files требуют отдельного согласования; существующие не удалять автоматически. Entities/cushion/bell отложены, item default sprite/3D явно. Scope согласовать до переключения.
 
-Item по умолчанию sprite, 3D явно. Entity source/inventory/geometry/material/render-controller adapter не реализован; sign/bed и прочие block entities требуют проверяемого источника, inventory path не создаёт карточку. Scope согласовать до переключения, entities/cushion/bell отложены.
-
-Отделять targeted mocks, выбранный реальный вход, полный compile/CI, настоящие Three/WebGL и Android/export. Здесь тестов не было. Новые постоянные тестовые файлы без отдельного согласования не добавлять; существующие не удалять автоматически.
-
-Legacy cache foundrykin.catalog.v6; packs fk070_packs не очищать. До удаления legacy принять draw/undo/redo/Add/reopen/PNG/mcpack, async targets/storage/import limits/dimensions/alpha/cache/URL lifecycle; при переключении синхронизировать FK_V/cache.
+Legacy cache foundrykin.catalog.v6; fk070_packs не очищать. Приёмка draw/undo/redo/Add/reopen/PNG/mcpack, Android, async/storage/import/dimensions/alpha/cache/URL lifecycle обязательна до заявления о завершении. FK_V/cache синхронизировать при переключении; не оставлять конкурирующие runtime.

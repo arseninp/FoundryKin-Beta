@@ -1,53 +1,43 @@
 # Review principles and handoff safety
 
-Updated 2026-11-02. Verified code HEAD before this documentation write: cc5d4e20ac4ef0ed2c9ab66d955bee8d79154a1c. Read CONTEXT first. Documentation is not an application release or runtime acceptance.
+Updated 2026-11-02. Verified code HEAD before documentation write: 4448dca87745ccf94203591952288a06d77eb01b. Read CONTEXT first. Documentation is not a release or runtime acceptance.
 
-## Workflow and write verification
+## Workflow
 
-- The owner curates behaviour/appearance, not code. Respond briefly in Russian. Own technical decisions/debugging; do not delegate scripts or TGA research to the owner.
-- Work in main. refactor-0.9 was merged/deleted; do not recreate it or refresh backup automatically. Code backup does not contain localStorage packs. Never clear fk070_packs for cache issues.
-- The owner requested small self-consistent packages after interrupted requests. Prepare material integration first, then eyeblossom card merging separately, then joint verification. Do not present an isolated component as a finished user feature.
-- Do not add new permanent test files without separate agreement. The proposed fruit integration test was declined in OLDCHAT15; local checks do not require committing their harness. Existing tests were not removed by this decision. Audit their purpose later as requested, without blanket deletion or promises of automatic cleanup.
-- Avoid duplicate audits, isolated diagnostic helpers, huge rewrites, runtime patch loaders and one-off Actions migrations. When ready, request the exact write immediately. Per-commit remaining-count reports are not mandatory; never invent counts.
-- Every external write requires system confirmation of complete exact arguments/content. Execute only approved arguments. Verify full saved content or diff against every approved file, not just counts/statistics. Keep files below 25000 UTF-8 bytes by responsibility.
-- After interruption inspect GitHub before retrying. Update documents when requested. Sandbox/files/attachments do not persist automatically. Provider failure causes are unknown; AI-model switching is not evidence of a FoundryKin 3D defect.
+- Respond briefly in Russian. The owner curates behaviour/appearance, not code; own technical decisions and debugging.
+- Work only in main; do not recreate refactor-0.9 or refresh backup automatically. Never clear fk070_packs for cache issues; code backup does not include user packs.
+- Current agreed sequence: migrate remaining models and technical foundation; jointly test the assembled agreed scope; remove unnecessary/duplicate parts after success; remove pre-refactor runtime only after readiness and acceptance. Targeted syntax/diff/behaviour checks accompany migration. Do not replace missing functionality with a campaign to expand CI or test infrastructure.
+- Use small self-consistent packages. After verifying each write, independently start the next step without waiting for another continue message. Every further write still needs its own exact system confirmation.
+- Do not add new permanent test files without separate agreement. Existing tests remain until individually reviewed; no blanket deletion or automatic-cleanup promise.
+- Every external write requires approval of complete exact arguments/content. Verify full saved content or diff, not only file counts. Files below 25000 UTF-8 bytes by responsibility.
+- After interruption inspect GitHub before retrying. Update documents on request. Previous attachments/sandbox do not persist. AI failures have unknown causes and do not prove a FoundryKin model defect. Avoid duplicate audits, huge rewrites, patch loaders and one-off Actions migrations.
 
 ## Actual stopping point
 
-Main ends at cc5d4e2, adding models/materials.mjs. Current catalog/preview.mjs does not import it. The subsequently declined integration request in OLDCHAT15 did not create a later commit. Do not ask the owner to resend that request or recreate already committed materials. Read the actual chain and prepare the integration afresh.
+OLDCHAT16 ends with an inaccurate claim that the sign package was not written. GitHub main already contains 4448dca: models/signs.mjs, library registration and existing model-library test update. Do not duplicate or replay that write. The current owner requests quality review of this last code commit next; reading its full patch is not yet a completed geometry/UV/runtime review. Then continue verified sign sheet/source/card integration.
 
-5720f66 added plant/glow bindings for open_eyeblossom and firefly_bush, immutable registry emissiveRoles and emissive_cross. Glow must use MeshBasicMaterial; a Lambert glow is an explicit error, not a usable approximation. createModelMaterials handles role-based Basic/Lambert materials, classified textures/userData.semi, updates and material disposal while borrowing textures. Integration must cover composite previews, cleanup and ownership, not merely add an import.
+Materials/preview lifecycle (df1fcab), canvas textures (f03acbe), isolated read-only 17-ID preview (b0e163d), loader timeout/cache (e64ef13), full bed geometry (eb98909) and 16 coloured bed sources/routes (ae5cc41) are already committed. Sign geometry is an acacia-rs/acacia reference candidate, not a Mojang geometry export or visual acceptance; species sheets/cards are not connected by 4448dca. Library test expects 105 types, not a passing run or accepted-card count.
 
-After material integration, separately merge closed/open eyeblossom into one card with explicit closed/open selection, preserving both source IDs, owned resources, saved-ID routes and the open glow layer. This merge is agreed but not committed. Do not switch legacy yet.
+The owner cancelled closed/open eyeblossom merging in OLDCHAT16. Keep separate cards; do not resurrect the old plan. The owner restored migration-first priorities after work drifted into integration tests/CI.
 
-## Committed behaviour and preservation
+## Preservation
 
-Fruit composition/card links exist in 0fa7846/593f918: one pumpkin card with its own stem, one melon card with its own stem. Without stem shows fruit; with stem shows fruit plus an adjacent stem directed towards it. Do not replace fruit with a standalone stem, merge pumpkin with melon or ask the same UI question again. Preserve pumpkin variants, stage/attached/facing, source routes and owned PNGs.
+Preserve accepted legacy geometry/UV unless fixing a concrete defect, including repeater/comparator. Fruit preview shows fruit alone or fruit plus adjacent matching stem directed towards it, preserving pumpkin variants/source routes/owned PNG. Pumpkin and melon remain separate cards. Budding amethyst has no growth or one selected stage/face; growth is shared and amethyst cards stay separate.
 
-f0df125 adds budding amethyst without growth or with one selected small/medium/large/cluster on one of six faces. Do not merge/remove amethyst cards. Growth resource is shared, not an owned edit slot of the block. Reuse existing builders/UV.
+Distinguish duplicates, forms, states, stages and frames. Edit PNG never drives geometry. Preserve owned paths, carried/icons, indexed repeats and saved IDs. Dependencies authorize concrete shared roles, not arbitrary foreign resources or ownership transfers. Waxed/infested require equivalence; oxidation/normal/deepslate stay separate. Coral wall fans aliases have no mounting cards; candle cakes preserve resources with cake, ordinary candles stay separate. Unknown never becomes a cube fallback; use stonecutter_block, not obsolete stonecutter.
 
-Seagrass, mangrove propagule, static kelp, closed cross and emissive plants are committed. Kelp A–D are not growth stages; retain all native resources and animation definitions. Static geometry is not accepted Bedrock side/UV/TGA playback. Library test now expects 103 types, not a successful run or accepted-card count.
+Preserve PNG dimensions/alpha/atlases/frame strips. Do not alter pixels or force opacity to manufacture success. Glow uses MeshBasicMaterial; sprite is unlit, normal roles Lambert. Materials borrow textures; texture lifecycle owns created GPU textures. Composite previews must include every part and clean up errors.
 
-Do not restart older work from stale checklists. Chorus corruption from 5c5f9f4 was repaired by 86b6d8f; it is not a current blocker. Cave vines, bulb/ice/anchor states, furnace front normalization, dragon egg, bamboo/shoot, torchflower/crop and stem already exist, alongside earlier models in CONTEXT.
+Kelp A–D are not growth stages; retain six resources/animation definitions. Bedrock sides/UV/TGA/playback remain open. Stem tint, potted azalea UV, gel alpha/WebGL, decorated pot patterns, active conduit and fire playback remain open. Chorus corruption was repaired by 86b6d8f; do not restart completed models from stale lists.
 
-Distinguish duplicates, forms, states, growth stages and animation frames. Preserve owned paths, carried resources, icons, indexed repeats and saved IDs. Shared PNG alone does not establish equivalent geometry. Waxed/infested require equivalence; oxidation and normal/deepslate remain separate. Use stonecutter_block, not obsolete stonecutter.
-
-Wall coral fans remain aliases without separate mounting cards. Candle cake aliases preserve resources; ordinary candles stay separate. Bamboo/shoot and torchflower/crop preserve distinct source records, not aliases. Inspect wood/colour/oxidation variants as classes. Preserve accepted geometry/UV, including legacy repeater/comparator, unless fixing a concrete defect.
-
-Edit slots must not control geometry/state. Dependencies authorize concrete shared roles, not arbitrary foreign paths or ownership transfers. Preserve PNG dimensions/alpha/atlases/frame strips; never alter pixels or force opacity to manufacture success. Gel geometry and alpha policy are separate. Stem age tint, potted azalea Bedrock UV, decorated pot patterns, active conduit and fire playback remain open.
-
-Sign/bed and other block entities need a shared source/inventory/geometry/material adapter; inventory/dependency paths are not that adapter or a card. Entities/cushion/bell were deferred. Explicitly agree scope before switching the main runtime. Unknown models never become cube fallbacks; do not silently shrink the catalog.
-
-Preserve the light paper layout; centralize design tokens, dark colours remain unchosen. Visible text/help follows EN/RU; filenames/IDs are not translated. Playback stays separate from model state.
+Beds already have a specific source/card path; signs currently have geometry without species sheets/cards. Entity-sheet use for block entities is not a complete entity adapter/import. Entities/cushion/bell remain deferred; agree scope before switching main runtime. Preserve paper layout/design tokens; visible text/help EN/RU, IDs not translated. Player stays separate from state.
 
 ## Evidence boundaries
 
-This handoff read OLDCHAT15 in full and all six documents, inspected the latest 12 commits, current preview/forms/materials and the full five-file 5720f66 patch. It did not run tests, reread HTML, inspect every intermediate implementation/diff or perform a complete code audit. Other intermediate details are archive/history evidence.
+This handoff read OLDCHAT16 in full, six documents, the latest 12 commits and the full three-file 4448dca patch. It did not run tests/syntax checks, reread main HTML, complete code review, inspect every intermediate implementation or validate CI/WebGL. Other intermediate details come from archive/history.
 
-OLDCHAT15 reports targeted local checks and syntax checks, including fruit composition/integration, amethyst, aquatic plants, propagule, emissive plants and materials. Those environments/reports are not carried into this session. Do not sum overlapping counts or claim fresh execution. Earlier targeted checks and recording-registry integration also do not prove complete pinned inputs, real geometry or WebGL.
+OLDCHAT16 reports targeted mock checks for lifecycle/textures/page/loader/beds. Those reports/environments are not transferred. Do not claim fresh execution or sum overlapping checks. The archive reports both CI jobs failing at 860e977 and later fixes including e776d96; current passing status is unconfirmed. The workflow's 95 scenarios are a configured scope, not proof of passage.
 
-Separate committed source, runtime connection, expected registry counts, targeted mocks, selected real-input checks, full compiler/CI, actual Three/WebGL and Android/export acceptance. Checksums and registration do not prove visual correctness. Earlier fabricated/simplified research fixtures were not real-input evidence.
+Separate committed code, runtime connection, registry expectations, targeted mocks, selected real input, full compiler/CI, real PNG/UV/Three/WebGL and Android/export acceptance. Use existing model-coverage/inputValidation, not a second audit. Historical unresolved counts/39 missing sign builders are not fresh after migration. inputValidation of individual records does not prove merged cards/icons/preview/render.
 
-Use existing model-coverage/inputValidation, not another audit. inputValidation examines assigned records individually, not merged cards/icons/preview/render. Distinguish unresolved/missing builders/normalization/inventory/dependency/rendering errors. Artifact workflow is not successful CI. Full validate/tests/compile/CI and visual/export acceptance remain unconfirmed; old 78/74 unresolved and 39 sign are historical.
-
-Recheck HTML before integration changes. Preserve working legacy until agreed acceptance, then remove replaced runtime and synchronize FK_V/cache. Accept draw/undo/redo/Add/reopen/PNG/mcpack, Android, async/storage/import/dimensions/alpha/URL lifecycle before claiming completion.
+Preserve working legacy until agreed readiness and acceptance; recheck HTML before integration changes. Accept draw/undo/redo/Add/reopen/PNG/mcpack, async/storage/import/dimensions/alpha/cache/URL lifecycle and Android before completion claims. Remove replaced runtime only afterwards and synchronize FK_V/cache.

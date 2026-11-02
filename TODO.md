@@ -1,48 +1,41 @@
-# TODO — материалы, глазоцвет и интеграция
+# TODO — перенос моделей и технической основы
 
-Обновлено 2026-11-02. Проверенный кодовый HEAD: cc5d4e20ac4ef0ed2c9ab66d955bee8d79154a1c. [x] означает записанную реализацию, не визуальную приёмку. Доказательства и история — CONTEXT.
+Обновлено 2026-11-02. Кодовый HEAD перед документальной записью: 4448dca87745ccf94203591952288a06d77eb01b. [x] — записанный код, не runtime/визуальная приёмка. История и правила — CONTEXT.md.
 
-## Следующий небольшой пакет: подключение материалов
+## Ближайшая работа
 
-- [x] cc5d4e2: отдельный models/materials.mjs, createModelMaterials с role-based Lambert/Basic и update/dispose.
-- [ ] Заново подготовить его подключение к новому preview после отклонённого запроса OLDCHAT15. Текущий preview модуль материалов не импортирует; повторно его создавать не нужно.
-- [ ] Проверить descriptor.emissiveRoles, разрешённые bindings, classified textures/userData.semi и совместимость с составными fruit stem/amethyst.
-- [ ] Обеспечить обновление текстур и cleanup материалов/геометрии при смене объекта и ошибках. Заимствованные текстуры не освобождать вместе с материалами. Не создавать второй конкурирующий renderer path.
-- [ ] После записи проверить полное содержание/diff, затем отдельным пакетом объединить closed/open eyeblossom в одну карточку с выбором «Закрытый / Открытый». Сохранить source IDs, owned ресурсы, saved-ID routes и glow; edit PNG не переключает форму.
+- [ ] По текущему запросу проверить качество последнего кодового коммита 4448dca: sign geometry, UV/placements, lifecycle/errors, регистрация и существующий тест. Полный diff прочитан, review не завершён; ничего повторно не записывать.
+- [ ] Подключить проверенные источники/листы пород/карточки табличек с owned sheets, icons и saved-ID routes. Не выдавать geometry-only пакет за подключённые карточки.
+- [ ] Продолжить недостающие модели и техническую основу по реальному закреплённому входу; не заменять перенос расширением тестовой инфраструктуры.
 
-Работать небольшими самосогласованными частями. Старый редактор не переключать. Новые постоянные тестовые файлы без отдельного согласования не добавлять; локальные проверки не требуют коммита тестов.
+## Уже записано после OLDCHAT15
 
-## Уже записано в OLDCHAT15
+- [x] df1fcab: preview material instance lifecycle и составные сцены.
+- [x] f03acbe: canvas textures и GPU lifecycle.
+- [x] b0e163d: отдельные preview.html/preview.mjs для read-only среза 17 исходных ID.
+- [x] 860e977: workflow preview-slice/95 geometry scenarios; прохождение не подтверждено.
+- [x] 52cbb88/e776d96: существующие тестовые ожидания и userData CI; свежий зелёный CI не подтверждён.
+- [x] e64ef13: timeout/cache/retry loader.
+- [x] eb98909/ae5cc41: полная модель bed и источники 16 цветных кроватей; bed→red_bed, light_gray→silver.
+- [x] 4448dca: sign geometry candidate/registration, existing library test expects 105 types.
 
-- [x] 0fa7846/593f918: композиция плод+стебель и связи двух отдельных карточек pumpkin/pumpkin_stem и melon_block/melon_stem. Без стебля — плод, со стеблем — плод и соседний стебель вместе. Варианты тыквы и owned PNG сохраняются.
-- [x] f0df125: budding amethyst без нароста либо один выбранной стадии на одной из шести граней; карточки не объединены.
-- [x] 18d7077: seagrass short/tall и парные нижние/верхние ресурсы.
-- [x] 37d0d48: mangrove propagule ground/hanging, age 0..4.
-- [x] 3c8062c: статический kelp-кандидат с шестью исходными путями и сохранёнными animation definitions.
-- [x] 5694f16: closed eyeblossom→cross.
-- [x] 5720f66: open eyeblossom/firefly bush→emissive_cross, plant/glow и registry emissiveRoles.
-- [ ] Настоящие PNG/TGA/UV/WebGL и полная интеграция этих функций; видимые меню ещё не подключены.
+Объединение closed/open eyeblossom отменено владельцем в OLDCHAT16. Оставить отдельными; не возвращать в очередь. Предыдущие модели, fruit+stem, budding amethyst, aquatic/propagule/kelp и emissive plants уже записаны; подробности CONTEXT.
 
-## Предыдущий прогресс не начинать заново
+## Остаток технической основы
 
-Уже записаны azalea/pot/soil, bamboo/ограды/moss, поршни/redstone/fittings, растения/utility/workshop, cauldron/cocoa/daylight/pots/conduit/fire, dripleaf/sculk/cactus/dripstone/ghast/barrel, slime/honey/farmland/snow, cube states/structures/mushrooms/cage. OLDCHAT14: исправленный chorus, cave vines, bulbs/ice/anchor, furnace front normalization, dragon egg, bamboo/shoot, torchflower/crop и stem growth/attached/facing. Подробности — CONTEXT/ARCHITECTURE.
+- [ ] Bindings/stages/indexed repeats/dependencies, aliases/forms/states/icons/carried/saved-ID и reopening.
+- [ ] Bedrock PNG/UV азалии/reference-моделей, alpha гелей, stem tint, kelp sides/UV/TGA; A–D не рост.
+- [ ] Auxiliary end_gateway/lava_cauldron, block↔item icons, оставшиеся block-entity adapters; кровати не считать неподключёнными целиком.
+- [ ] Decorated pot patterns, active conduit, fire/player scope — согласовать необходимый объём до переключения. Entities/cushion/bell отложены. Unknown не заменять cube.
+- [ ] Общий Find/editor/loaders, EN/RU, Shared textures/icon badges, подписи/design tokens без редизайна бумаги.
+- [ ] Player отдельно от state: timing/order, pause при рисовании, export ленты, clocks/compass demo; UX item icon согласовать.
 
-## Проверки и оставшийся scope
+## После сборки согласованного объёма
 
-- [ ] Полный PIN candidate через существующий coverage/inputValidation; отдельно unresolved/missing builders/normalization/inventory/dependencies/rendering, без нового дублирующего аудита.
-- [ ] validate, существующие tests, полный compileModelCatalog и CI; целевые mocks и ожидаемые 103 library types не заменяют эти проверки. Свежего coverage нет.
-- [ ] Bindings/stages/indexed repeats/dependencies, aliases/forms/states/icons/carried/saved-ID и обратное открытие стеблей.
-- [ ] Bedrock PNG/UV азалии/Java-reference моделей, alpha/WebGL гелей, stem tint, kelp sides/UV/TGA и согласование анимации. A–D kelp не стадии роста.
-- [ ] Auxiliary end_gateway/lava_cauldron, block↔item icons и source adapter sign/bed/block entities. Scope согласовать до переключения, unknown не заменять cube.
-- [ ] Отдельно разобрать существующие тесты по просьбе владельца; без массового удаления и без обещания автоматической очистки.
+- [ ] Совместный полный PIN candidate/coverage/inputValidation/compile и существующие validate/tests/CI. Использовать существующий аудит; свежих counts нет.
+- [ ] Реальные PNG/TGA/Three/WebGL, карточки и источники, Android, editor/export, async/storage/import/dimensions/alpha/cache/URL lifecycle.
+- [ ] Принять draw/undo/redo/Add/reopen/PNG/mcpack и переключения языка/темы/пака/слота/кадра.
+- [ ] После успеха удалить ненужные/дублирующие части; существующие тесты разобрать отдельно, без массового удаления.
+- [ ] Только после готовности/приёмки новой основы переключить основной runtime, синхронизировать FK_V/cache и удалить заменённый legacy.
 
-## Интеграция и приёмка
-
-- [ ] Перечитать HTML и сохранить рабочий legacy до приёмки; отдельная проверяемая страница с реальными Three/PNG/WebGL, явный admission среза без скрытого ослабления strict compile.
-- [ ] Общий объект Find/editor/loaders, корректные материалы, формы/состояния/стадии отдельно от edit slot.
-- [ ] EN/RU, Shared textures, role-based icon badges, растущие подписи/design tokens без редизайна бумаги; UX item icon согласовать.
-- [ ] Плеер отдельно от state: timing/order, pause при рисовании, экспорт ленты; часы/компас demo cycle.
-- [ ] Async targets/transactions/import limits/dimensions/alpha/cache/URL lifecycle и Android draw/undo/redo→Add→reopen→PNG→mcpack, Back/язык/тема/pack-slot-frame switching.
-- [ ] Только после приёмки scope переключить HTML/FK_V/cache и удалить заменённый legacy runtime.
-
-Каждая запись — точное системное подтверждение и полная сверка после неё. После обрыва сначала GitHub. Файлы <25000 UTF-8 байт; backup автоматически не обновлять, fk070_packs не очищать. Полные items/entities, IndexedDB, большие паки, пользовательский backup, PWA/offline и права на ресурсы — отдельные этапы.
+Точечные проверки сопровождают перенос и не требуют откладывать его до всеобщей тестовой кампании. Малые согласованные пакеты; после проверки записи самостоятельно продолжать следующий шаг. Каждая запись — отдельное точное подтверждение и сверка полного diff. Новые постоянные test files без отдельного согласования не добавлять. Только main, файлы <25000 UTF-8 байт; backup/fk070_packs не трогать. Полные items/entities, IndexedDB, большие паки, пользовательский backup, PWA/offline и права на ресурсы — отдельные этапы.

@@ -1,41 +1,31 @@
-# ROADMAP — материалы и интеграция
+# ROADMAP — перенос, проверка, очистка
 
-Обновлено 2026-11-02. Проверенный кодовый HEAD cc5d4e20ac4ef0ed2c9ab66d955bee8d79154a1c. Контекст/доказательства — CONTEXT, задачи — TODO, контракты — ARCHITECTURE. Это не выпуск приложения.
+Обновлено 2026-11-02. Кодовый HEAD: 4448dca87745ccf94203591952288a06d77eb01b. Доказательства CONTEXT, задачи TODO, контракты ARCHITECTURE. Не выпуск приложения.
 
-## 1. Подключить подготовленные материалы
+## 1. Собрать модели и техническую основу
 
-Композиция плодов со стеблями и optional amethyst уже записаны; не начинать их заново по старым документам. Open eyeblossom/firefly bush имеют plant/glow и требуют unlit glow material. Models/materials.mjs существует, но текущий preview его не подключает.
+Продолжать недостающие модели вместе с source/inventory/bindings/materials/states/cards/saved-ID. Уже записанные materials/texture lifecycle, read-only preview slice, bed geometry/16 colour sources и sign geometry не создавать повторно. Следующее: review 4448dca по запросу владельца, затем листы пород/карточки табличек и оставшийся модельный scope.
 
-Первый небольшой пакет — заново подготовить интеграцию материалов в новый путь: role policy, classified textures, обновления и cleanup ошибок/смены объекта, включая составные preview. Не повторять отклонённый запрос вслепую и не создавать второй renderer path. Затем проверить сохранённый результат. Legacy пока не переключать.
+Closed/open eyeblossom оставлять отдельными: объединение отменено в OLDCHAT16. Fruit+stem — отдельные карточки pumpkin/melon с сохранёнными вариантами; budding amethyst cards не сливать. Kelp A–D не рост; сохранять шесть ресурсов и animation definitions.
 
-## 2. Объединить глазоцвет и закончить модельный scope
+Unknown не превращать в cube; aliases/forms/states/stages/frames различать. Сохранять owned PNG, carried/icons, indexed repeats, saved routes и shared dependencies без ownership transfer. Sign/bed block entities не равны импорту всех entities; кровати уже имеют подключённые источники, таблички пока geometry-only. Entities/cushion/bell отложены. Scope согласовать до переключения.
 
-Отдельным пакетом одна карточка закрытого/открытого глазоцвета с явным меню, исходными ID/ресурсами и glow открытой формы. PNG не управляет состоянием. Budding amethyst карточки не объединять.
+## 2. Проверить собранный согласованный объём
 
-Уже записаны плод+стебель, seagrass short/tall, mangrove propagule ground/hanging и статический kelp. Kelp A–D не стадии роста; точные Bedrock стороны/UV/TGA и анимация требуют проверки. Сохранить все шесть ресурсов и animation definitions, плеер не смешивать с модельным state.
+Точечные проверки синтаксиса/diff/изменяемого поведения делать при каждом пакете. Общую кампанию compiler/CI/WebGL не ставить вместо переноса отсутствующих частей. После сборки — полный закреплённый вход через существующие coverage/inputValidation/compile/validate/tests; свежего coverage нет. Workflow preview-slice/95 scenarios существует, актуальное прохождение не подтверждено.
 
-Проверять реальный PIN candidate через существующие coverage/inputValidation, отдельно unresolved/missing builders/normalization/inventory/dependencies/rendering. Свежего остатка нет; старые 78/74 unresolved, 39 sign и ожидаемые 103 library types не являются текущей готовностью. Не создавать дубли аудита.
+Реальные PNG/TGA/UV/Three/WebGL, gel alpha, potted azalea/reference models, stem tint, kelp; карточки/источники/reopen. Отдельный read-only preview уже записан, его наличие не доказывает Pages/браузерную приёмку и не заменяет editor.
 
-## 3. Сохранить идентичность и источники
+## 3. Довести и принять новый редактор
 
-Формы, aliases, состояния, стадии и кадры различать. Pumpkin/melon — две отдельные соответствующие карточки со стеблями; source records/owned PNG сохраняются. Bamboo/shoot и torchflower/crop не aliases. Wall coral fans aliases без mounting; candle cakes объединены с cake с сохранением ресурсов, обычные свечи отдельны. Waxed/infested требуют эквивалентности, oxidation и normal/deepslate остаются раздельными. Unknown не заменять cube.
+Общий Find/editor объект и loaders, независимые PNG и geometry state/forms/stages/frames. EN/RU, Shared textures, role-based icon badges, растущие подписи/design tokens без редизайна бумаги. Плеер отдельно от state: timing/order, pause при рисовании, export ленты; clock/compass demo cycle. UX item icon согласовать.
 
-Sign/bed/block entities требуют общего source/inventory/geometry/material adapter. Entities/cushion/bell отложены; scope согласовать до основного переключения. Путь в inventory или dependency не создаёт карточку.
+Принять Android draw/undo/redo/Add/reopen/PNG/mcpack, async targets/storage transactions/import limits/dimensions/alpha/cache/URL lifecycle и переключения pack/slot/frame/language/theme.
 
-## 4. Проверяемый новый путь
+## 4. Очистить после успеха
 
-Сохранить рабочий legacy до приёмки. Отдельная страница с настоящими PNG/Three/WebGL, normalize→compile→access→preview→registry. Admission среза решить явно без скрытого ослабления strict compileModelCatalog. Проверить aliases/forms/states/icons/materials/source-ID reopen, alpha гелей, Bedrock UV азалии и Java-reference моделей, stem tint и ресурсные зависимости.
+После совместной успешной проверки удалить ненужные/дублирующие/заменённые части. По отдельному разбору оценить существующие тесты, без массового удаления и обещаний автоматической очистки. Только после готовности/приёмки новой основы удалить дорефакторный runtime и синхронизировать HTML/FK_V/cache. До этого сохранить рабочий legacy.
 
-Локальные проверки выполнять без обязательного сохранения новых тестовых файлов. По просьбе владельца позже отдельно разобрать существующие тесты; не удалять их автоматически. Targeted mocks/исторические прогоны не равны полному compile/CI и визуальной приёмке.
+## Рабочий темп и дальнейшие этапы
 
-## 5. Интегрировать и принять редактор
-
-Общий объект Find/editor/loaders, независимые state/forms/stages/frames. EN/RU, Shared textures, role-based icon badges, растущие подписи/design tokens без редизайна бумаги. Плеер отдельно от state: timing/order, pause при рисовании, экспорт всей ленты; часы/компас demo cycle. UX item icon согласовать.
-
-Принять async targets/storage transactions/dimensions/alpha/import limits/cache/URL lifecycle и Android draw/undo/redo/Add/reopen/PNG/mcpack. Затем переключить HTML/FK_V/cache и удалить заменённый legacy, не оставляя конкурирующие runtime. HTML в этой передаче не перечитан.
-
-## 6. Темп и дальнейшие этапы
-
-Небольшие самосогласованные пакеты, готовое сразу на точное системное подтверждение; после записи полный diff/контент. После обрыва сначала GitHub. Документы по запросу; числа/сроки/причины обрывов не выдумывать. Файлы <25000 UTF-8 байт. Backup автоматически не обновлять, fk070_packs не очищать.
-
-Полные items/entities, IndexedDB, большие паки, пользовательский backup, PWA/offline и права на ресурсы — отдельные этапы.
+Небольшие согласованные пакеты, точное системное подтверждение каждой записи, затем полный diff/контент и самостоятельное продолжение следующей работы. После обрыва сначала GitHub. Новые постоянные test files без отдельного согласования не добавлять. Только main; файлы <25000 UTF-8 байт; backup и fk070_packs не трогать. Полные items/entities, IndexedDB, большие паки, пользовательский backup, PWA/offline и права на ресурсы — отдельные этапы.
