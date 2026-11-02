@@ -1,0 +1,168 @@
+/* Read-only entry point for an explicit block slice. Uses the production compiler and preview path. */
+import {compileModelCatalog} from './models/library.mjs';
+import {createPreviewResolver} from './catalog/preview.mjs';
+export const REVIEW_IDS=Object.freeze(['pumpkin','carved_pumpkin','lit_pumpkin','pumpkin_stem','melon_block','melon_stem','budding_amethyst','small_amethyst_bud','medium_amethyst_bud','large_amethyst_bud','amethyst_cluster','seagrass','mangrove_propagule','kelp','closed_eyeblossom','open_eyeblossom','firefly_bush']);
+const own=(object,key)=>Object.hasOwn(object,key);
+const dictionary=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
+export function compileReview(input,Three) {
+ if(!dictionary(input)||!dictionary(input.blocks))throw new Error('Missing pinned catalog data');
+ const blocks=Object.fromEntries(REVIEW_IDS.map(id=>{
+  if(!own(input.blocks,id))throw new Error('Missing review source ID: '+id);
+  return [id,input.blocks[id]];
+ }));
+ return compileModelCatalog({...input,blocks},Three);
+}
+export function resourcePaths(plan) {
+ const maps=plan.parts?Object.values(plan.parts).map(part=>part.bindings):[plan.mode==='sprite'?{sprite:plan.slot}:plan.bindings];
+ return [...new Set(maps.flatMap(map=>Object.values(map)))];
+}
+export function activePack(storage) {
+ const raw=storage.getItem('fk070_packs');if(!raw)throw new Error('No saved packs');
+ const data=JSON.parse(raw),pack=data?.packs?.find(pack=>pack.id===data.active);
+ if(!pack||!Array.isArray(pack.textures))throw new Error('No active pack');
+ const textures=Object.create(null);
+ for(const row of pack.textures) {
+  if(!row.data)continue;
+  if(typeof row.path!=='string'||typeof row.data!=='string'||!row.data.startsWith('data:image/png;base64,'))throw new Error('Invalid saved PNG');
+  const path='textures/'+row.path.replace(/\.png$/i,'');
+  if(own(textures,path)&&textures[path]!==row.data)throw new Error('Ambiguous saved texture: '+path);
+  textures[path]=row.data;
+ }
+ return textures;
+}
+export function imageFrames(image) {
+ const width=image.naturalWidth||image.width,height=image.naturalHeight||image.height;
+ if(!Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1||width>16384||height>16384||width*height>16777216)throw new Error('Image exceeds review limits');
+ return {width,height,count:height>width&&height%width===0?height/width:1};
+}
+export function frameCanvas(image,index,makeCanvas) {
+ const {width,height,count}=imageFrames(image);
+ if(!Number.isInteger(index)||index<0||index>=count)throw new Error('Invalid source frame');
+ const canvas=makeCanvas();canvas.width=width;canvas.height=count>1?width:height;
+ const context=canvas.getContext('2d');if(!context)throw new Error('Canvas 2D is unavailable');
+ context.imageSmoothingEnabled=false;context.drawImage(image,0,count>1?index*width:0,width,canvas.height,0,0,width,canvas.height);
+ return canvas;
+}
+export function createImageSource(loadVanilla,decodePNG) {
+ const cache=new Map();
+ return function(path,overrides) {
+  if(typeof path!=='string'||!path.startsWith('textures/')||path.split('/').some(part=>!part||part==='.'||part==='..'))return Promise.reject(new Error('Invalid resource path'));
+  const data=own(overrides,path)?overrides[path]:null,hit=cache.get(path);
+  if(hit&&hit.data===data)return hit.promise;
+  const item={data,promise:null};
+  item.promise=Promise.resolve().then(()=>data===null?loadVanilla(path):decodePNG(data)).then(image=>{
+   if(!image)throw new Error('Missing texture: '+path);imageFrames(image);return image;
+  }).catch(error=>{if(cache.get(path)===item)cache.delete(path);throw error;});
+  cache.set(path,item);return item.promise;
+ };
+}
+const TEXT={
+ en:{back:'Editor',language:'Language',title:'New model preview',scope:'Explicit review slice: 17 source block IDs, not the full catalog or an editor release. Nothing is written to your packs.',scopeDetails:'Included source IDs',object:'Object',source:'Open source ID',open:'Open',textures:'Texture source',vanilla:'Pinned vanilla',pack:'Active pack (read only)',reload:'Reload',hint:'Drag to rotate. Manual source frames only: no playback or Bedrock animation timing. Kelp remains a static candidate.',resources:'Model resources',loading:'Loading',ready:'Displayed',failed:'Could not display',frame:'Source frame',stem:'Stem',stage:'Stem stage',facing:'Stem direction',variant:'Variant',crystals:'Crystal',growth:'Growth',face:'Block face',tall:'Tall form',hanging:'Hanging',age:'Age',off:'Without',on:'With',plain:'Plain',carved:'Carved',lit:'Lit',small:'Small',medium:'Medium',large:'Large',cluster:'Cluster',up:'Up',down:'Down',north:'North',south:'South',east:'East',west:'West'},
+ ru:{back:'Редактор',language:'Язык',title:'Новый просмотр моделей',scope:'Явный срез: 17 исходных ID блоков, не полный каталог и не выпуск редактора. В паки ничего не записывается.',scopeDetails:'Исходные ID в этом срезе',object:'Объект',source:'Открыть исходный ID',open:'Открыть',textures:'Источник текстур',vanilla:'Закреплённая ваниль',pack:'Активный пак (только чтение)',reload:'Обновить',hint:'Потяни для вращения. Кадры выбираются вручную: плеера и игрового тайминга ещё нет. Kelp остаётся статическим кандидатом.',resources:'Ресурсы модели',loading:'Загрузка',ready:'Показан',failed:'Не удалось показать',frame:'Кадр исходника',stem:'Стебель',stage:'Стадия стебля',facing:'Направление стебля',variant:'Вариант',crystals:'Нарост',growth:'Рост',face:'Грань блока',tall:'Высокая форма',hanging:'Висячий',age:'Возраст',off:'Без',on:'Со',plain:'Обычная',carved:'Вырезанная',lit:'Светящаяся',small:'Малый',medium:'Средний',large:'Большой',cluster:'Кластер',up:'Верх',down:'Низ',north:'Север',south:'Юг',east:'Восток',west:'Запад'}
+};
+const bool=[['off',false],['on',true]],directions=['north','south','east','west'].map(key=>[key,key]);
+const numbers=n=>Array.from({length:n},(_,index)=>[String(index),index]);
+const fruit=[['stem',bool,false],['facing',directions,'west'],['stage',numbers(8),7]];
+const growth=['small','medium','large','cluster'].map(key=>[key,key]);
+const FIELDS={pumpkin:[['variant',['plain','carved','lit'].map(key=>[key,key]),'plain'],...fruit],melon_block:fruit,budding_amethyst:[['crystals',bool,false],['growth',growth,'cluster'],['face',[...directions,['up','up'],['down','down']],'up']],amethyst_cluster:[['growth',growth,'cluster']],seagrass:[['tall',bool,false],['variant',[['A','a'],['B','b']],'a']],mangrove_propagule:[['hanging',bool,false],['age',numbers(5),0]]};
+export async function startPreview() {
+ const Three=globalThis.THREE,$=id=>document.getElementById(id),stage=$('stage'),status=$('status');
+ let lang=navigator.language.toLowerCase().startsWith('ru')?'ru':'en';
+ const t=key=>TEXT[lang][key]??key,makeCanvas=()=>document.createElement('canvas');
+ let renderer,current=null,resolve,id='',state={},generation=0,busy=false,disposed=false,frame=null,drag=null,controlPlan=null,lost=false;
+ let notice={key:'loading',detail:'',error:false};
+ const frames=new Map(),readImage=createImageSource(path=>globalThis.FKCatalog.loadAny(path),data=>new Promise((ok,fail)=>{
+  const image=new Image();image.onload=()=>ok(image);image.onerror=()=>fail(new Error('Saved PNG decode failed'));image.src=data;
+ }));
+ function message(key,detail='',error=false){notice={key,detail,error};status.className=error?'error':'';status.textContent=t(key)+(detail?' — '+detail:'');}
+ function strings(){document.documentElement.lang=lang;document.querySelectorAll('[data-text]').forEach(el=>el.textContent=t(el.dataset.text));}
+ $('language').value=lang;strings();$('scopeList').textContent=REVIEW_IDS.join(', ');
+ function render() {
+  if(disposed||lost||!renderer||document.hidden||frame!==null)return;
+  frame=requestAnimationFrame(()=>{
+   frame=null;if(disposed||lost||document.hidden)return;
+   const width=Math.max(1,stage.clientWidth);renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio||1,2));renderer.setSize(width,width,false);
+   try{renderer.render(scene,camera);}catch(error){message('failed',error.message,true);}
+  });
+ }
+ if(!Three)throw new Error('Three.js did not load');
+ const scene=new Three.Scene(),camera=new Three.OrthographicCamera(-1,1,1,-1,.1,100),turn=new Three.Group();
+ camera.position.set(0,0,10);camera.lookAt(0,0,0);scene.add(turn);scene.add(new Three.AmbientLight(0xffffff,.75));
+ const light=new Three.DirectionalLight(0xffffff,.55);light.position.set(2,4,3);scene.add(light);
+ renderer=new Three.WebGLRenderer({antialias:true,alpha:true});renderer.setClearColor(0,0);stage.appendChild(renderer.domElement);
+ function controls(plan) {
+  controlPlan=plan;$('controls').replaceChildren();
+  for(const [key,options,fallback] of FIELDS[plan.object.card]??[]) {
+   const label=document.createElement('label'),text=document.createElement('span'),select=document.createElement('select');text.textContent=t(key);label.append(text,select);
+   const value=plan.state[key]??fallback;
+   options.forEach(([name,choice],index)=>{const option=document.createElement('option');option.value=String(index);option.textContent=t(name);option.selected=choice===value;select.appendChild(option);});
+   select.addEventListener('change',()=>{state={...state,[key]:options[Number(select.value)][1]};show();});$('controls').appendChild(label);
+  }
+ }
+ function resources(snapshot) {
+  $('resources').replaceChildren();
+  for(const path of snapshot.paths) {
+   const row=document.createElement('div'),body=document.createElement('div'),code=document.createElement('code'),info=document.createElement('small');row.className='resource';
+   const canvas=snapshot.canvases[path];code.textContent=path;const image=snapshot.images[path],dims=imageFrames(image);info.textContent=dims.width+' × '+dims.height;
+   body.append(code,info);row.append(canvas,body);
+   if(dims.count>1) {
+    const label=document.createElement('label'),text=document.createElement('span'),slider=document.createElement('input');slider.type='range';slider.min='0';slider.max=String(dims.count-1);slider.value=String(frames.get(path)??0);
+    const caption=()=>{text.textContent=t('frame')+' '+(Number(slider.value)+1)+' / '+dims.count;};caption();label.append(text,slider);body.appendChild(label);
+    slider.addEventListener('input',()=>{
+     if(current!==snapshot||busy)return;
+     try {
+      const index=Number(slider.value),next=frameCanvas(image,index,makeCanvas),canvases={...snapshot.canvases,[path]:next};snapshot.instance.update(canvases);
+      canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);canvas.getContext('2d').drawImage(next,0,0);snapshot.canvases[path]=canvas;frames.set(path,index);caption();render();
+     }catch(error){message('failed',error.message,true);}
+    });
+   }
+   $('resources').appendChild(row);
+  }
+ }
+ async function show() {
+  if(!resolve||disposed)return;if(lost){message('failed','WebGL context lost',true);return;}
+  const token=++generation;busy=true;drag=null;stage.setAttribute('aria-busy','true');renderer.domElement.style.visibility='hidden';controlPlan=null;$('controls').replaceChildren();$('resources').replaceChildren();message('loading',id);
+  let next;
+  try {
+   const plan=resolve({id,state:{...state}}),paths=resourcePaths(plan),overrides=$('textureSource').value==='pack'?activePack(localStorage):{};
+   controls(plan);const loaded=await Promise.all(paths.map(path=>readImage(path,overrides)));
+   if(token!==generation||disposed)return;
+   const images=Object.fromEntries(paths.map((path,index)=>[path,loaded[index]])),canvases=Object.fromEntries(paths.map(path=>[path,frameCanvas(images[path],frames.get(path)??0,makeCanvas)]));
+   next=plan.instantiateCanvases({group:new Three.Group()},canvases);
+   const bounds=new Three.Box3().setFromObject(next.group);if(bounds.isEmpty())throw new Error('Empty model geometry');
+   next.group.position.sub(bounds.getCenter(new Three.Vector3()));const extent=Math.max(.1,bounds.getSize(new Three.Vector3()).length()/2*1.15);
+   if(token!==generation||disposed){next.dispose();next=null;return;}
+   const previous=current;current={plan,paths,images,canvases,instance:next};next=null;turn.add(current.instance.group);
+   turn.rotation.set(plan.mode==='sprite'?0:.6155,plan.mode==='sprite'?0:-Math.PI/4,0);
+   camera.left=camera.bottom=-extent;camera.right=camera.top=extent;camera.updateProjectionMatrix();
+   let cleanup='';try{previous?.instance.dispose();}catch(error){cleanup='; '+error.message;}
+   $('object').value=plan.object.card;renderer.domElement.style.visibility='';resources(current);message('ready',plan.object.id+cleanup);render();
+  }catch(error){
+   try{next?.dispose();}catch(cleanupError){error=new AggregateError([error,cleanupError],'Preview cleanup failed');}
+   if(token===generation&&!disposed)message('failed',error.message,true);
+  }finally{if(token===generation&&!disposed){busy=false;stage.setAttribute('aria-busy','false');}}
+ }
+ function choose(value){id=value;state={};frames.clear();$('source').value=id;show();}
+ $('object').addEventListener('change',()=>choose($('object').value));
+ $('sourceForm').addEventListener('submit',event=>{event.preventDefault();choose($('source').value.trim());});
+ $('textureSource').addEventListener('change',()=>{frames.clear();show();});$('reload').addEventListener('click',()=>{if(resolve)show();else location.reload();});
+ $('language').addEventListener('change',()=>{lang=$('language').value;strings();if(controlPlan)controls(controlPlan);if(current&&!busy&&renderer.domElement.style.visibility!=='hidden')resources(current);message(notice.key,notice.detail,notice.error);});
+ stage.addEventListener('pointerdown',event=>{if(busy||!current||current.plan.mode==='sprite'||drag)return;drag={id:event.pointerId,x:event.clientX,y:event.clientY};stage.setPointerCapture(event.pointerId);});
+ stage.addEventListener('pointermove',event=>{if(!drag||drag.id!==event.pointerId)return;turn.rotation.y+=(event.clientX-drag.x)*.01;turn.rotation.x=Math.max(-1.4,Math.min(1.4,turn.rotation.x+(event.clientY-drag.y)*.01));drag.x=event.clientX;drag.y=event.clientY;render();});
+ const end=event=>{if(drag?.id===event.pointerId)drag=null;};['pointerup','pointercancel','lostpointercapture'].forEach(name=>stage.addEventListener(name,end));
+ renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();generation++;lost=true;busy=false;drag=null;stage.setAttribute('aria-busy','false');if(frame!==null){cancelAnimationFrame(frame);frame=null;}renderer.domElement.style.visibility='hidden';message('failed','WebGL context lost',true);});
+ renderer.domElement.addEventListener('webglcontextrestored',()=>{lost=false;show();});
+ const resize=new ResizeObserver(render);resize.observe(stage);
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){drag=null;if(frame!==null){cancelAnimationFrame(frame);frame=null;}}else render();});
+ window.addEventListener('pageshow',event=>{if(event.persisted)render();});
+ window.addEventListener('storage',event=>{if(event.key==='fk070_packs'&&$('textureSource').value==='pack'){frames.clear();show();}});
+ window.addEventListener('pagehide',event=>{if(event.persisted)return;disposed=true;generation++;resize.disconnect();if(frame!==null)cancelAnimationFrame(frame);try{current?.instance.dispose();}finally{renderer.dispose();}});
+ try {
+  const input=await globalThis.FKCatalogData.load();if(disposed)return;
+  const {catalog,registry}=compileReview(input,Three);resolve=createPreviewResolver(catalog,registry,Three);
+  for(const card of catalog.cards){const option=document.createElement('option');option.value=card;option.textContent=card;$('object').appendChild(option);}
+  ['object','source','open','textureSource','reload'].forEach(key=>$(key).disabled=false);
+  choose(new URL(location.href).searchParams.get('id')||'pumpkin');
+ }catch(error){message('failed',error.message,true);stage.setAttribute('aria-busy','false');}
+}
+if(typeof document!=='undefined'&&document.getElementById('stage'))startPreview().catch(error=>{const status=document.getElementById('status');status.className='error';status.textContent=error.message;});

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FoundryKin — model preview</title>
+<link rel="stylesheet" href="fk-base.css?v=0.9.1">
+<style>
+main{max-width:580px;margin:auto;padding:24px 14px calc(24px + env(safe-area-inset-bottom))}
+h1{font-size:20px;margin:16px 0 8px}p{font-size:13px;color:var(--mute)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;flex:1;min-width:120px}
+button,select,input,a.back{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;min-height:42px;padding:8px;max-width:100%}
+a.back{text-decoration:none;display:inline-flex;align-items:center}button{cursor:pointer}select,input{width:100%}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.stage{width:100%;aspect-ratio:1;border:1px solid var(--line);border-radius:14px;background:var(--stage);overflow:hidden;touch-action:none}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#status{min-height:40px;overflow-wrap:anywhere}#status.error{color:var(--red)}
+.resource{display:grid;grid-template-columns:64px 1fr;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.resource canvas{width:64px;height:64px;object-fit:contain;image-rendering:pixelated;background:conic-gradient(#bbb 25%,#eee 0 50%,#bbb 0 75%,#eee 0) 0 0/16px 16px}
+.resource code{display:block;font-size:11px;overflow-wrap:anywhere}.resource label{min-width:0}.resource input{min-height:32px}
+small{color:var(--mute)}details{margin-top:14px;font-size:12px;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<main>
+<div class="row"><a class="back" href="app.html" data-text="back">Editor</a><label><span data-text="language">Language</span><select id="language"><option value="en">English</option><option value="ru">Русский</option></select></label></div>
+<h1 data-text="title">New model preview</h1>
+<p data-text="scope">Explicit review slice, not the full catalog or an editor release. No pack changes are saved.</p>
+<details><summary data-text="scopeDetails">Included source IDs</summary><p id="scopeList"></p></details>
+<div class="row"><label><span data-text="object">Object</span><select id="object" disabled></select></label></div>
+<form id="sourceForm" class="row"><label><span data-text="source">Open source ID</span><input id="source" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" disabled></label><button id="open" type="submit" data-text="open" disabled>Open</button></form>
+<div id="controls" class="row"></div>
+<div class="row"><label><span data-text="textures">Texture source</span><select id="textureSource" disabled><option value="vanilla" data-text="vanilla">Pinned vanilla</option><option value="pack" data-text="pack">Active pack (read only)</option></select></label><button id="reload" type="button" data-text="reload">Reload</button></div>
+<div id="stage" class="stage" aria-busy="true"></div>
+<p id="status" role="status" aria-live="polite">Loading / Загрузка…</p>
+<p data-text="hint">Drag to rotate. Frames are selected manually; this is not animation playback.</p>
+<h2 data-text="resources">Model resources</h2><div id="resources"></div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="fk-catalog-data.js?v=0.9.1"></script>
+<script src="fk-catalog.js?v=0.9.1"></script>
+<script type="module" src="preview.mjs"></script>
+</body>
+</html>
