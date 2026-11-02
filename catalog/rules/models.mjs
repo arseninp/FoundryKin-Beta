@@ -3,7 +3,7 @@ import {CANDLE_CAKE_PATTERN} from './duplicates.mjs';
 export const SPECIAL_MODELS = Object.freeze({
   allow: 'cube', deny: 'cube', border_block: 'cube', barrier: 'cube', structure_void: 'cube',
   slime: 'slime', honey_block: 'honey_block',
-  farmland: 'farmland', snow_layer: 'snow_layer',
+  farmland: 'farmland', snow_layer: 'snow_layer', bed: 'bed',
   bee_nest: 'cube', beehive: 'cube',
   crafter: 'cube', suspicious_sand: 'cube', suspicious_gravel: 'cube',
   fence_gate: 'gate',

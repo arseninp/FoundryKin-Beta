@@ -1,6 +1,6 @@
 /* Block-to-item links are data policy, never responsibilities of model builders. */
 const own = (object, key) => Object.hasOwn(object, key);
-const COLORS = ['white', 'orange', 'magenta', 'light_blue', 'yellow', 'lime', 'pink', 'gray', 'light_gray', 'cyan', 'purple', 'blue', 'brown', 'green', 'red', 'black'];
+export const BED_COLORS = Object.freeze(['white', 'orange', 'magenta', 'light_blue', 'yellow', 'lime', 'pink', 'gray', 'light_gray', 'cyan', 'purple', 'blue', 'brown', 'green', 'red', 'black']);
 const LINKS = {
   brewing_stand: 'brewing_stand', cake: 'cake', campfire: 'campfire', soul_campfire: 'soul_campfire', cauldron: 'cauldron', flower_pot: 'flower_pot', hopper: 'hopper', lever: 'lever',
   frame: 'item_frame', glow_frame: 'glow_item_frame', iron_chain: 'chain', reeds: 'reeds', kelp: 'kelp', nether_wart: 'nether_wart', hanging_roots: 'hanging_roots', nether_sprouts: 'nether_sprouts',
@@ -24,7 +24,7 @@ export function blockIconLinks(blocks, atlas) {
       reference = own(SIGN_KEYS, wood) ? SIGN_KEYS[wood] : 'sign_' + wood;
     }
     if (!reference && id.endsWith('_bed')) {
-      const color = COLORS.indexOf(id.slice(0, -4));
+      const color = BED_COLORS.indexOf(id.slice(0, -4));
       if (color >= 0) reference = {item: 'bed', variant: color};
     }
     if (!reference) continue;

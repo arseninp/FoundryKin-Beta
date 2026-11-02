@@ -1,5 +1,6 @@
 /* Pure catalog assembly. No DOM, network, storage, or model registration side effects. */
 import {normalizeBlock} from './resources.mjs';
+import {bedSourcePlan, normalizeBedSource} from './rules/bed-sources.mjs';
 import {compileAliases} from './identity.mjs';
 import {indexItems, resolveIcons} from './items.mjs';
 import {blockIconLinks} from './rules/icons.mjs';
@@ -13,15 +14,15 @@ function object(value, label) {
   return value;
 }
 export function compileCatalog(input) {
-  const blocks = object(input.blocks, 'blocks');
   const terrain = object(input.terrain, 'terrain atlas');
   const inventory = object(input.existing, 'resource inventory');
-  const models = object(input.models, 'model assignments');
+  const bedSources = bedSourcePlan(object(input.blocks, 'blocks'), object(input.models, 'model assignments'), inventory, object(input.aliases ?? {}, 'duplicate rules'));
+  const {blocks, models} = bedSources;
   const atlas = object(input.items ?? {}, 'item atlas');
   const explicitLinks = object(input.icons ?? {}, 'icon links');
   const defaults = input.items === undefined ? {} : blockIconLinks(blocks, atlas);
   const links = Object.fromEntries([...Object.entries(defaults), ...Object.entries(explicitLinks)]);
-  const rules = duplicateRules(blocks, object(input.aliases ?? {}, 'duplicate rules'));
+  const rules = duplicateRules(blocks, bedSources.aliases);
   const items = indexItems(atlas, inventory);
   for (const id of Object.keys(links)) if (!own(blocks, id)) throw new Error('Icon owner is missing: ' + id);
   const built = Object.fromEntries(Object.keys(blocks).sort().map(id => {
@@ -30,7 +31,8 @@ export function compileCatalog(input) {
     const iconOwner = own(rules, id) ? rules[id].target : id;
     const references = links[id] ?? links[iconOwner] ?? [];
     const icons = resolveIcons(items, references);
-    return [id, normalizeBlock(id, blocks[id], terrain, {model: assignment.model, states: assignment.states, icons, existing: inventory})];
+    const record = own(bedSources.sources, id) ? normalizeBedSource(id, bedSources.sources[id], blocks[id], assignment, icons, inventory) : normalizeBlock(id, blocks[id], terrain, {model: assignment.model, states: assignment.states, icons, existing: inventory});
+    return [id, record];
   }));
   const records = attachDependencies(built, object(input.dependencies ?? {}, 'model dependencies'), inventory);
   const identity = compileAliases(records, rules);
