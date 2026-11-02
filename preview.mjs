@@ -43,17 +43,34 @@ export function frameCanvas(image,index,makeCanvas) {
  context.imageSmoothingEnabled=false;context.drawImage(image,0,count>1?index*width:0,width,canvas.height,0,0,width,canvas.height);
  return canvas;
 }
-export function createImageSource(loadVanilla,decodePNG) {
- const cache=new Map();
+export function createImageSource(loadVanilla,decodePNG,options={}) {
+ if(typeof loadVanilla!=='function'||typeof decodePNG!=='function'||!dictionary(options))throw new Error('Invalid image source configuration');
+ const timeoutMs=options.timeoutMs??20000,maxEntries=options.maxEntries??32,maxPixels=options.maxPixels??16777216;
+ if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>2147483647||!Number.isSafeInteger(maxEntries)||maxEntries<1||!Number.isSafeInteger(maxPixels)||maxPixels<1)throw new Error('Invalid image source limits');
+ const cache=new Map();let pixels=0;
+ function remove(path) {
+  const item=cache.get(path);if(!item)return;
+  cache.delete(path);pixels-=item.pixels;
+ }
+ function trim() {
+  while(cache.size>maxEntries||pixels>maxPixels)remove(cache.keys().next().value);
+ }
  return function(path,overrides) {
   if(typeof path!=='string'||!path.startsWith('textures/')||path.split('/').some(part=>!part||part==='.'||part==='..'))return Promise.reject(new Error('Invalid resource path'));
+  if(!dictionary(overrides))return Promise.reject(new Error('Invalid texture overrides'));
   const data=own(overrides,path)?overrides[path]:null,hit=cache.get(path);
-  if(hit&&hit.data===data)return hit.promise;
-  const item={data,promise:null};
-  item.promise=Promise.resolve().then(()=>data===null?loadVanilla(path):decodePNG(data)).then(image=>{
-   if(!image)throw new Error('Missing texture: '+path);imageFrames(image);return image;
-  }).catch(error=>{if(cache.get(path)===item)cache.delete(path);throw error;});
-  cache.set(path,item);return item.promise;
+  if(hit&&hit.data===data){cache.delete(path);cache.set(path,hit);return hit.promise;}
+  remove(path);
+  const item={data,promise:null,pixels:0};let timer;
+  const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Image load timeout: '+path)),timeoutMs);});
+  const operation=Promise.resolve().then(()=>data===null?loadVanilla(path):decodePNG(data));
+  item.promise=Promise.race([operation,deadline]).then(image=>{
+   if(!image)throw new Error('Missing texture: '+path);
+   const dimensions=imageFrames(image);
+   if(cache.get(path)===item){item.pixels=dimensions.width*dimensions.height;pixels+=item.pixels;trim();}
+   return image;
+  }).catch(error=>{if(cache.get(path)===item)remove(path);throw error;}).finally(()=>clearTimeout(timer));
+  cache.set(path,item);trim();return item.promise;
  };
 }
 const TEXT={
