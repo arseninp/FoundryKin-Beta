@@ -50,3 +50,70 @@ jobs:
           path: model-coverage.json
           if-no-files-found: error
           retention-days: 7
+  preview-slice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned Three.js only in runner temporary storage
+        run: |
+          mkdir -p "$RUNNER_TEMP/fk-preview-three"
+          npm install --prefix "$RUNNER_TEMP/fk-preview-three" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund three@0.128.0
+      - name: Compile pinned review slice and build real Three.js geometry without WebGL
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {createRequire} from 'node:module';
+          import {join} from 'node:path';
+          import {readCandidate} from './tools/model-coverage.mjs';
+          import {compileReview, REVIEW_IDS, resourcePaths} from './preview.mjs';
+          import {createPreviewResolver} from './catalog/preview.mjs';
+          const require = createRequire(join(process.env.RUNNER_TEMP, 'fk-preview-three', 'package.json'));
+          const Three = require('three');
+          assert.equal(Three.REVISION, '128');
+          const input = readCandidate('data/catalog-candidate');
+          const {catalog, registry, coverage} = compileReview(input, Three);
+          assert.equal(coverage.ready, true);
+          assert.deepEqual(Object.keys(catalog.records).sort(), [...REVIEW_IDS].sort());
+          assert.ok(catalog.cards.includes('closed_eyeblossom'));
+          assert.ok(catalog.cards.includes('open_eyeblossom'));
+          const resolve = createPreviewResolver(catalog, registry, Three);
+          const before = JSON.stringify(catalog);
+          let checks = 0;
+          function check(request) {
+           const plan = resolve(request), group = new Three.Group(), textures = Object.create(null);
+           for (const path of resourcePaths(plan)) {
+            assert.ok(Object.hasOwn(input.existing, path), 'Missing pinned resource: ' + path);
+            const texture = new Three.DataTexture(new Uint8Array([255,255,255,255]), 1, 1, Three.RGBAFormat);
+            texture.userData.semi = false;texture.needsUpdate = true;textures[path] = texture;
+           }
+           let instance;
+           try {
+            instance = plan.instantiate({group}, textures);
+            let meshes = 0;
+            group.traverse(node => {
+             if (node.isMesh) {meshes++;assert.ok(node.geometry?.attributes.position?.count > 0);}
+            });
+            assert.ok(meshes > 0, 'Empty preview: ' + request.id);
+            if (!request.state) assert.equal(plan.object.id, request.id);
+            checks++;
+           } finally {
+            try {instance?.dispose();} finally {for (const texture of Object.values(textures)) texture.dispose();}
+           }
+           assert.equal(group.children.length, 0);
+          }
+          for (const id of REVIEW_IDS) check({id});
+          for (const variant of ['plain','carved','lit']) for (const stem of [false,true]) for (const facing of ['north','south','east','west']) check({id:'pumpkin',state:{variant,stem,facing}});
+          for (const stem of [false,true]) for (const facing of ['north','south','east','west']) check({id:'melon_block',state:{stem,facing}});
+          for (let stage = 0; stage < 8; stage++) check({id:'melon_stem',state:{stage}});
+          for (const growth of ['small','medium','large','cluster']) for (const face of ['up','down','north','south','east','west']) check({id:'budding_amethyst',state:{crystals:true,growth,face}});
+          for (const tall of [false,true]) for (const variant of ['a','b']) check({id:'seagrass',state:{tall,variant}});
+          for (const hanging of [false,true]) for (let age = 0; age < 5; age++) check({id:'mangrove_propagule',state:{hanging,age}});
+          assert.equal(JSON.stringify(catalog), before);
+          console.log(JSON.stringify({source:input.source,sourceRecords:Object.keys(catalog.records).length,cards:catalog.cards.length,modelTypes:registry.ids().length,geometryChecks:checks,limits:'Synthetic one-pixel textures; no PNG/TGA, UV, WebGL or Android acceptance'},null,2));
+          NODE
