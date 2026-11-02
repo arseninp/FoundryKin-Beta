@@ -90,7 +90,7 @@ jobs:
            for (const path of resourcePaths(plan)) {
             assert.ok(Object.hasOwn(input.existing, path), 'Missing pinned resource: ' + path);
             const texture = new Three.DataTexture(new Uint8Array([255,255,255,255]), 1, 1, Three.RGBAFormat);
-            texture.userData.semi = false;texture.needsUpdate = true;textures[path] = texture;
+            texture.userData = {...texture.userData, semi:false};texture.needsUpdate = true;textures[path] = texture;
            }
            let instance;
            try {
