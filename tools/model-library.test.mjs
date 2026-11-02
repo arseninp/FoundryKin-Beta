@@ -6,18 +6,18 @@ function three() {
 }
 test('single library registers all migrated builders exactly once and seals the registry',()=>{
  const library=createModelLibrary(three());
- assert.equal(library.ids().length,104);assert.ok(library.has('cube'));assert.ok(library.has('sulfur_spike'));
- for(const id of ['lantern','chain','torch','campfire','cross','sprite','rail','decal','pane','candle','brewing','anvil','beacon','pumpkin','door','bed','amethyst','azalea','potted_azalea','bamboo','bamboo_fence','bamboo_gate','pale_moss_carpet','piston','redstone_torch','repeater','comparator','ladder','lectern','lever','shelf','flower','grass_path','enchanting_table','stonecutter','sea_pickle','crop','turtle_egg','vines','portal','end_portal_frame','tripwire','tripwire_hook','spore_blossom','flowerbed','sunflower','sniffer_egg','pitcher','redstone_wire','track','bars','lightning_rod','end_rod','heavy_core','hopper','grindstone','frame','cauldron','cocoa','daylight','flower_pot','decorated_pot','conduit','fire','big_dripleaf','small_dripleaf','sculk_sensor','sculk_shrieker','sculk_catalyst','cactus','pointed_dripstone','dried_ghast','barrel','stage_cross','slime','honey_block','farmland','snow_layer','composter','scaffolding','cage','chorus_plant','chorus_flower','cave_vines','cave_vines_part','dragon_egg','stem','seagrass','mangrove_propagule','kelp','emissive_cross'])assert.ok(library.has(id));
- assert.equal(library.get('door').scale,1.4);assert.equal(library.get('bed').scale,1.4);assert.equal(library.get('bamboo').scale,1.8);assert.equal(library.get('piston').scale,1.4);assert.equal(library.get('flower').scale,1.4);assert.equal(library.get('vines').scale,1.4);assert.equal(library.get('sprite').mode,'sprite');
+ assert.equal(library.ids().length,105);assert.ok(library.has('cube'));assert.ok(library.has('sulfur_spike'));
+ for(const id of ['lantern','chain','torch','campfire','cross','sprite','rail','decal','pane','candle','brewing','anvil','beacon','pumpkin','door','bed','sign','amethyst','azalea','potted_azalea','bamboo','bamboo_fence','bamboo_gate','pale_moss_carpet','piston','redstone_torch','repeater','comparator','ladder','lectern','lever','shelf','flower','grass_path','enchanting_table','stonecutter','sea_pickle','crop','turtle_egg','vines','portal','end_portal_frame','tripwire','tripwire_hook','spore_blossom','flowerbed','sunflower','sniffer_egg','pitcher','redstone_wire','track','bars','lightning_rod','end_rod','heavy_core','hopper','grindstone','frame','cauldron','cocoa','daylight','flower_pot','decorated_pot','conduit','fire','big_dripleaf','small_dripleaf','sculk_sensor','sculk_shrieker','sculk_catalyst','cactus','pointed_dripstone','dried_ghast','barrel','stage_cross','slime','honey_block','farmland','snow_layer','composter','scaffolding','cage','chorus_plant','chorus_flower','cave_vines','cave_vines_part','dragon_egg','stem','seagrass','mangrove_propagule','kelp','emissive_cross'])assert.ok(library.has(id));
+ assert.equal(library.get('door').scale,1.4);assert.equal(library.get('bed').scale,1.4);assert.equal(library.get('sign').scale,1);assert.equal(library.get('bamboo').scale,1.8);assert.equal(library.get('piston').scale,1.4);assert.equal(library.get('flower').scale,1.4);assert.equal(library.get('vines').scale,1.4);assert.equal(library.get('sprite').mode,'sprite');
  assert.equal(library.get('cave_vines').scale,1.4);assert.equal(library.get('cave_vines_part').scale,1);
  assert.throws(()=>library.register([{id:'cube',build(){}}]),/sealed/);
  assert.throws(()=>library.build('unknown',{}),/Unknown/);
 });
 test('coverage returns every missing builder and invalid assignment, without inventing cubes',()=>{
- const records={stone:{model:'cube'},a:{model:'bed'},b:{model:'sign'},c:{model:'bed'},d:{},e:{model:null}};
+ const records={stone:{model:'cube'},a:{model:'bed'},b:{model:'future_sign'},c:{model:'bed'},d:{},e:{model:null}};
  const before=JSON.stringify(records),report=inspectModelCoverage(records,createModelLibrary(three()));
  assert.equal(report.ready,false);assert.equal(report.total,6);
- assert.deepEqual(report.assigned,{bed:['a','c'],cube:['stone']});assert.deepEqual(report.missing,{sign:['b']});assert.deepEqual(report.invalid,['d','e']);
+ assert.deepEqual(report.assigned,{bed:['a','c'],cube:['stone']});assert.deepEqual(report.missing,{future_sign:['b']});assert.deepEqual(report.invalid,['d','e']);
  assert.equal(JSON.stringify(records),before);
 });
 test('catalog binding validates complete coverage and dispatches to the migrated builder',()=>{
@@ -28,9 +28,9 @@ test('catalog binding validates complete coverage and dispatches to the migrated
  assert.equal(group.children.length,1);assert.equal(group.children[0].position.y,0);
 });
 test('incomplete catalog binding exposes the whole coverage report and does not mutate the catalog',()=>{
- const catalog={schema:1,records:{x:{model:'sign'},y:{model:'bed'},z:{}}},before=JSON.stringify(catalog);
+ const catalog={schema:1,records:{x:{model:'future_sign'},y:{model:'bed'},z:{}}},before=JSON.stringify(catalog);
  assert.throws(()=>bindCatalogModels(catalog,three()),error=>{
-  assert.match(error.message,/sign: x/);assert.deepEqual(error.coverage.assigned,{bed:['y']});assert.deepEqual(error.coverage.missing,{sign:['x']});assert.deepEqual(error.coverage.invalid,['z']);return true;
+  assert.match(error.message,/future_sign: x/);assert.deepEqual(error.coverage.assigned,{bed:['y']});assert.deepEqual(error.coverage.missing,{future_sign:['x']});assert.deepEqual(error.coverage.invalid,['z']);return true;
  });
  assert.equal(JSON.stringify(catalog),before);
 });
