@@ -19,10 +19,11 @@ test('the eight explicit simple plants reuse cross without a new builder or broa
  for(const id of Object.keys(PLANTS))assert.equal(plan.assignments[id].model,'cross',id);
  assert.equal(JSON.stringify(blocks),before);
 });
-test('unknown plants and special objects remain unresolved rather than becoming crosses',()=>{
+test('unknown plants stay unresolved while declared special plants keep their own builders',()=>{
  const ids=['future_sapling','future_fungus','future_cactus','mangrove_propagule','open_eyeblossom'];
  const plan=planModelAssignments(Object.fromEntries(ids.map(id=>[id,{textures:'plant'}])));
- assert.deepEqual(plan.unresolved,[...ids].sort());assert.equal(Object.keys(plan.assignments).length,0);
+ assert.deepEqual(plan.unresolved,['future_cactus','future_fungus','future_sapling']);
+ assert.deepEqual({...plan.assignments},{mangrove_propagule:{model:'mangrove_propagule'},open_eyeblossom:{model:'emissive_cross'}});
 });
 test('all eight materials render as the accepted pair of double-sided centered cross planes',()=>{
  const Three=createThreeMock(),model=createPlanarModels(Three).find(m=>m.id==='cross');

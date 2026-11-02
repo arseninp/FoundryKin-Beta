@@ -23,7 +23,7 @@ test('policy assigns ladder, lectern, lever, every wood shelf and the three tall
 test('fitting and plant models register explicit builders with their camera scale', () => {
  const Three = createThreeMock();
  assert.deepEqual(createFittingModels(Three).map(m => [m.id, m.scale]), [['ladder', 1], ['lectern', 1], ['lever', 1], ['shelf', 1]]);
- assert.deepEqual(createPlantModels(Three).map(m => [m.id, m.scale]), [['flower', 1.4], ['spore_blossom', 1], ['sunflower', 1.4]]);
+ assert.deepEqual(createPlantModels(Three).map(m => [m.id, m.scale]), [['flower', 1.4], ['spore_blossom', 1], ['sunflower', 1.4], ['chorus_plant', 1], ['chorus_flower', 1]]);
  assert.throws(() => createFittingModels({}), /require Three/);assert.throws(() => createPlantModels({}), /require Three/);
 });
 test('ladder is one double-sided plane; shelf is a half-turned group of four boxes', () => {
