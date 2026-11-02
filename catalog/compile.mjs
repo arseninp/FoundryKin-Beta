@@ -1,6 +1,7 @@
 /* Pure catalog assembly. No DOM, network, storage, or model registration side effects. */
 import {normalizeBlock} from './resources.mjs';
 import {bedSourcePlan, normalizeBedSource} from './rules/bed-sources.mjs';
+import {attachSignSource} from './rules/sign-sources.mjs';
 import {compileAliases} from './identity.mjs';
 import {indexItems, resolveIcons} from './items.mjs';
 import {blockIconLinks} from './rules/icons.mjs';
@@ -32,7 +33,7 @@ export function compileCatalog(input) {
     const references = links[id] ?? links[iconOwner] ?? [];
     const icons = resolveIcons(items, references);
     const record = own(bedSources.sources, id) ? normalizeBedSource(id, bedSources.sources[id], blocks[id], assignment, icons, inventory) : normalizeBlock(id, blocks[id], terrain, {model: assignment.model, states: assignment.states, icons, existing: inventory});
-    return [id, record];
+    return [id, assignment.model === 'sign' ? attachSignSource(record, blocks[id], inventory) : record];
   }));
   const records = attachDependencies(built, object(input.dependencies ?? {}, 'model dependencies'), inventory);
   const identity = compileAliases(records, rules);
