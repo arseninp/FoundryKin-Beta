@@ -1,41 +1,41 @@
-# ROADMAP — модели и интеграция
+# ROADMAP — материалы и интеграция
 
-Обновлено 2026-11-01. Проверенный кодовый HEAD 62c8af15ec1fb4d9c4cc1c96caec9e349141df6a. Контекст/доказательства — CONTEXT, задачи — TODO, контракты — ARCHITECTURE. Это не выпуск приложения.
+Обновлено 2026-11-02. Проверенный кодовый HEAD cc5d4e20ac4ef0ed2c9ab66d955bee8d79154a1c. Контекст/доказательства — CONTEXT, задачи — TODO, контракты — ARCHITECTURE. Это не выпуск приложения.
 
-## 1. Закончить согласованный просмотр плода со стеблем
+## 1. Подключить подготовленные материалы
 
-Хорус восстановлен 86b6d8f; не начинать это исправление заново. Stem для pumpkin_stem/melon_stem записан 62c8af1, но составной просмотр и объединение карточек ещё нет.
+Композиция плодов со стеблями и optional amethyst уже записаны; не начинать их заново по старым документам. Open eyeblossom/firefly bush имеют plant/glow и требуют unlit glow material. Models/materials.mjs существует, но текущий preview его не подключает.
 
-Цель: тыква с собственным стеблем — одна карточка, арбуз с собственным стеблем — другая. Явное меню «Без стебля / Со стеблем»: только плод либо плод и направленный к нему стебель рядом. Это не простая замена плода отдельным стеблем и не объединение тыквы с арбузом. Сохранить source IDs/PNG, параметры стебля и варианты тыквы. Выбор PNG не управляет видом.
+Первый небольшой пакет — заново подготовить интеграцию материалов в новый путь: role policy, classified textures, обновления и cleanup ошибок/смены объекта, включая составные preview. Не повторять отклонённый запрос вслепую и не создавать второй renderer path. Затем проверить сохранённый результат. Legacy пока не переключать.
 
-По просьбе владельца разделить на самосогласованные небольшие пакеты: компонент с тестами → подключение карточек/состояния/маршрутов → интеграция и saved-ID reopen. Локальный компонент, заявленный в OLDCHAT14, не считать перенесённым: его код/журнал здесь не получены. Не дублировать builders и не менять legacy редактор ради этой задачи.
+## 2. Объединить глазоцвет и закончить модельный scope
 
-## 2. Закончить модельный scope по реальным данным
+Отдельным пакетом одна карточка закрытого/открытого глазоцвета с явным меню, исходными ID/ресурсами и glow открытой формы. PNG не управляет состоянием. Budding amethyst карточки не объединять.
 
-После прежних roots/cube states/structures/piston backs/mushrooms/cage записаны исправленный chorus, cave vines, bulb/ice/anchor states, furnace front normalization, dragon egg, bamboo/shoot и torchflower/crop forms, stem growth/attached/facing. Записанные возможности не повторять по старым TODO.
+Уже записаны плод+стебель, seagrass short/tall, mangrove propagule ground/hanging и статический kelp. Kelp A–D не стадии роста; точные Bedrock стороны/UV/TGA и анимация требуют проверки. Сохранить все шесть ресурсов и animation definitions, плеер не смешивать с модельным state.
 
-Использовать существующий coverage/inputValidation на полном PIN candidate и validate/tests; отделять unresolved/missing builders/normalization/inventory/dependencies/rendering. Свежего полного остатка нет. Старые 78/74 unresolved и ожидаемые 99 registry types не являются текущим coverage/готовностью. Не создавать дубли аудита и не считать каждый ход неподтверждённый остаток.
+Проверять реальный PIN candidate через существующие coverage/inputValidation, отдельно unresolved/missing builders/normalization/inventory/dependencies/rendering. Свежего остатка нет; старые 78/74 unresolved, 39 sign и ожидаемые 103 library types не являются текущей готовностью. Не создавать дубли аудита.
 
-Открыты Bedrock PNG/UV азалии/новых Java-reference моделей, возрастная окраска stem, alpha/WebGL гелей, ресурсные связи/иконки и saved-ID routes. Регистрация не закрывает модельный этап.
+## 3. Сохранить идентичность и источники
 
-## 3. Сохранить смысл объектов и источников
+Формы, aliases, состояния, стадии и кадры различать. Pumpkin/melon — две отдельные соответствующие карточки со стеблями; source records/owned PNG сохраняются. Bamboo/shoot и torchflower/crop не aliases. Wall coral fans aliases без mounting; candle cakes объединены с cake с сохранением ресурсов, обычные свечи отдельны. Waxed/infested требуют эквивалентности, oxidation и normal/deepslate остаются раздельными. Unknown не заменять cube.
 
-Дубли, формы, состояния, стадии и кадры различать. Bamboo/shoot и torchflower/crop связаны карточками, не aliases исходных записей. Wall coral fans остаются aliases без отдельных карточек/переключателей крепления; candle cakes объединяются с cake при сохранении ресурсов, обычные свечи отдельны. Waxed/infested требуют эквивалентности; oxidation сохранять, normal/deepslate не сливать. Obsolete stonecutter не возвращать.
+Sign/bed/block entities требуют общего source/inventory/geometry/material adapter. Entities/cushion/bell отложены; scope согласовать до основного переключения. Путь в inventory или dependency не создаёт карточку.
 
-Dependencies разрешают конкретные shared roles, не обход ownership и не замену entity adapter. Entities/cushion/bell отложены; sign/bed и прочие block entities требуют source/inventory/geometry/material контракта. Перед основным переключением явно согласовать scope, не скрывать unsupported кубами и не выдавать срез за полный каталог.
+## 4. Проверяемый новый путь
 
-## 4. Сделать новый путь проверяемым
+Сохранить рабочий legacy до приёмки. Отдельная страница с настоящими PNG/Three/WebGL, normalize→compile→access→preview→registry. Admission среза решить явно без скрытого ослабления strict compileModelCatalog. Проверить aliases/forms/states/icons/materials/source-ID reopen, alpha гелей, Bedrock UV азалии и Java-reference моделей, stem tint и ресурсные зависимости.
 
-Сохранить рабочий legacy до приёмки. Создать отдельную проверяемую страницу с реальными PNG/Three/WebGL, проверить normalize→compile→access→preview→registry. Admission ограниченного среза решить явно при строгом compileModelCatalog. Проверить aliases/forms/states/icons/materials и открытие исходных ID. Исторические 11 интеграционных сценариев OLDCHAT14 не заменяют полный candidate и реальные builders/rendering.
+Локальные проверки выполнять без обязательного сохранения новых тестовых файлов. По просьбе владельца позже отдельно разобрать существующие тесты; не удалять их автоматически. Targeted mocks/исторические прогоны не равны полному compile/CI и визуальной приёмке.
 
 ## 5. Интегрировать и принять редактор
 
-Общий объект Find/editor, loaders и обновление материалов; независимые state/forms/stages/frames. EN/RU, role-based icon badges, Shared textures, растущие подписи/design tokens без редизайна бумаги. Плеер отдельно от state: timing/order, пауза при рисовании, экспорт ленты; часы/компас demo cycle.
+Общий объект Find/editor/loaders, независимые state/forms/stages/frames. EN/RU, Shared textures, role-based icon badges, растущие подписи/design tokens без редизайна бумаги. Плеер отдельно от state: timing/order, pause при рисовании, экспорт всей ленты; часы/компас demo cycle. UX item icon согласовать.
 
-Принять async targets, storage transactions, dimensions/alpha/import limits и Android-цепочку draw/undo/redo/Add/reopen/PNG/mcpack. Затем переключить HTML/FK_V/cache и удалить заменённый legacy, не оставляя конкурирующие runtime. HTML в этой документальной передаче не перечитан.
+Принять async targets/storage transactions/dimensions/alpha/import limits/cache/URL lifecycle и Android draw/undo/redo/Add/reopen/PNG/mcpack. Затем переключить HTML/FK_V/cache и удалить заменённый legacy, не оставляя конкурирующие runtime. HTML в этой передаче не перечитан.
 
-## 6. Темп и следующие этапы
+## 6. Темп и дальнейшие этапы
 
-Пакеты geometry/data/resources/states/tests; для текущей функции согласовано разбиение из пункта 1. Готовый пакет сразу на точное системное подтверждение, после записи сверять полный фактический diff/контент. После обрыва проверить GitHub. Документы по запросу; числа/сроки/количество коммитов не выдумывать. Причины обрывов провайдера неизвестны.
+Небольшие самосогласованные пакеты, готовое сразу на точное системное подтверждение; после записи полный diff/контент. После обрыва сначала GitHub. Документы по запросу; числа/сроки/причины обрывов не выдумывать. Файлы <25000 UTF-8 байт. Backup автоматически не обновлять, fk070_packs не очищать.
 
-Полные items/entities, IndexedDB, большие паки, пользовательский backup, PWA/offline и права на ресурсы — отдельные этапы. Backup автоматически не обновлять; fk070_packs не очищать.
+Полные items/entities, IndexedDB, большие паки, пользовательский backup, PWA/offline и права на ресурсы — отдельные этапы.

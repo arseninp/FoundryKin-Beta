@@ -1,60 +1,53 @@
 # Review principles and handoff safety
 
-Updated 2026-11-01. Verified code HEAD before this documentation write: 62c8af15ec1fb4d9c4cc1c96caec9e349141df6a. Read CONTEXT first. Documentation is not an application release, code fix or successful runtime check.
+Updated 2026-11-02. Verified code HEAD before this documentation write: cc5d4e20ac4ef0ed2c9ab66d955bee8d79154a1c. Read CONTEXT first. Documentation is not an application release or runtime acceptance.
 
 ## Workflow and write verification
 
-- The owner curates behaviour/appearance, not code. Respond briefly in Russian. Own technical decisions/debugging; do not delegate scripts to the owner.
-- Work in main. refactor-0.9 was merged/deleted; do not recreate it or refresh backup automatically. Code backup does not contain localStorage packs.
-- Normally prepare coherent medium-sized geometry/assignments/resources/state/preview/tests packages. For the current fruit/stem task the owner explicitly approved smaller stages to reduce request size: tested composition component, catalog/state/routes integration, then integration checks. Each write remains self-consistent; a component alone is not a finished user feature.
-- Avoid isolated diagnostic helpers, duplicate audits, huge rewrites and unnecessary cleanup. When a package is ready, request the write immediately. Mandatory per-commit remaining-count reports were withdrawn; never invent counts.
-- Every external write requires system confirmation of exact complete arguments/content. Execute only approved arguments. Verify actual saved content or full diff against the approved package, including every expected file. Counts and line statistics do not prove correct content or file boundaries.
-- After interruption inspect GitHub before retrying. Update documents when requested. Keep files below 25000 UTF-8 bytes by responsibility. No runtime patch loaders or one-off Actions migrations.
+- The owner curates behaviour/appearance, not code. Respond briefly in Russian. Own technical decisions/debugging; do not delegate scripts or TGA research to the owner.
+- Work in main. refactor-0.9 was merged/deleted; do not recreate it or refresh backup automatically. Code backup does not contain localStorage packs. Never clear fk070_packs for cache issues.
+- The owner requested small self-consistent packages after interrupted requests. Prepare material integration first, then eyeblossom card merging separately, then joint verification. Do not present an isolated component as a finished user feature.
+- Do not add new permanent test files without separate agreement. The proposed fruit integration test was declined in OLDCHAT15; local checks do not require committing their harness. Existing tests were not removed by this decision. Audit their purpose later as requested, without blanket deletion or promises of automatic cleanup.
+- Avoid duplicate audits, isolated diagnostic helpers, huge rewrites, runtime patch loaders and one-off Actions migrations. When ready, request the exact write immediately. Per-commit remaining-count reports are not mandatory; never invent counts.
+- Every external write requires system confirmation of complete exact arguments/content. Execute only approved arguments. Verify full saved content or diff against every approved file, not just counts/statistics. Keep files below 25000 UTF-8 bytes by responsibility.
+- After interruption inspect GitHub before retrying. Update documents when requested. Sandbox/files/attachments do not persist automatically. Provider failure causes are unknown; AI-model switching is not evidence of a FoundryKin 3D defect.
 
-## Repaired defect and accurate handoff
+## Actual stopping point
 
-5c5f9f4 appended literal path/content headers and intended dependencies source into utility-parts, omitted the actual chorus dependency and some tests. This was a real saved-package defect, not merely a failed test claim. It was repaired by 86b6d8f: the misplaced tail was removed, the real dependencies module gained chorus_flower/stem, chorus tests were added and policy expectations corrected. Its full four-file diff was inspected in this handoff. Do not retain the old damage as a current blocker or repeat the repair blindly.
+Main ends at cc5d4e2, adding models/materials.mjs. Current catalog/preview.mjs does not import it. The subsequently declined integration request in OLDCHAT15 did not create a later commit. Do not ask the owner to resend that request or recreate already committed materials. Read the actual chain and prepare the integration afresh.
 
-Actual latest main is 62c8af1 (stem), not b9df7be (torchflower) as the final OLDCHAT14 message incorrectly stated. The full seven-file stem diff was inspected. The library test expects 99 types; this is not an executed registry check or a count of accepted objects.
+5720f66 added plant/glow bindings for open_eyeblossom and firefly_bush, immutable registry emissiveRoles and emissive_cross. Glow must use MeshBasicMaterial; a Lambert glow is an explicit error, not a usable approximation. createModelMaterials handles role-based Basic/Lambert materials, classified textures/userData.semi, updates and material disposal while borrowing textures. Integration must cover composite previews, cleanup and ownership, not merely add an import.
 
-## Current agreed fruit/stem behaviour
+After material integration, separately merge closed/open eyeblossom into one card with explicit closed/open selection, preserving both source IDs, owned resources, saved-ID routes and the open glow layer. This merge is agreed but not committed. Do not switch legacy yet.
 
-Create one pumpkin card containing its own stem and one melon card containing its own stem. Explicit views are without stem (fruit alone) and with stem (fruit plus adjacent stem directed towards it). The owner clarified this repeatedly: do not substitute a standalone-stem view or ask the same UI question again. Do not combine pumpkin and melon with each other.
+## Committed behaviour and preservation
 
-Preserve source IDs, owned PNGs, saved-ID routes, pumpkin variants and stem growth/attachment/direction parameters. Editing a PNG must not select a view. Reuse existing fruit/stem builders without copying accepted geometry/UV. Work in the new catalog/models path, not the legacy editor.
+Fruit composition/card links exist in 0fa7846/593f918: one pumpkin card with its own stem, one melon card with its own stem. Without stem shows fruit; with stem shows fruit plus an adjacent stem directed towards it. Do not replace fruit with a standalone stem, merge pumpkin with melon or ask the same UI question again. Preserve pumpkin variants, stage/attached/facing, source routes and owned PNGs.
 
-This composition/card integration is NOT committed. Current rules/forms only declares bamboo/shoot and torchflower/crop. OLDCHAT14 reported a local composition draft and seven tests, but its code/report was not retrieved in this handoff. Do not claim the draft is present, reusable or already integrated without obtaining and checking it.
+f0df125 adds budding amethyst without growth or with one selected small/medium/large/cluster on one of six faces. Do not merge/remove amethyst cards. Growth resource is shared, not an owned edit slot of the block. Reuse existing builders/UV.
 
-## Scope and preservation
+Seagrass, mangrove propagule, static kelp, closed cross and emissive plants are committed. Kelp A–D are not growth stages; retain all native resources and animation definitions. Static geometry is not accepted Bedrock side/UV/TGA playback. Library test now expects 103 types, not a successful run or accepted-card count.
 
-Do not restart committed work from stale checklists. Slime/honey/farmland/snow assignments, roots/cross, indexed cube states, composter/scaffolding, piston head_back, mushroom variants and cage surfaces exist. OLDCHAT14 adds repaired chorus, cave vines, bulb/ice/anchor states, constrained lit-furnace front normalization, dragon egg, bamboo/shoot and torchflower/crop links, and shared stem builder/resources/registration/tests.
+Do not restart older work from stale checklists. Chorus corruption from 5c5f9f4 was repaired by 86b6d8f; it is not a current blocker. Cave vines, bulb/ice/anchor states, furnace front normalization, dragon egg, bamboo/shoot, torchflower/crop and stem already exist, alongside earlier models in CONTEXT.
 
-Chorus retains base noside without random noside1..3 decoration. Stem implements stage 0..7, attached and four facing directions, not game age tint or fruit-card composition. Dragon egg uses Java-reference geometry with Bedrock material; that is not PNG/WebGL acceptance. Decorated pot patterns, active conduit and fire playback are still absent.
+Distinguish duplicates, forms, states, growth stages and animation frames. Preserve owned paths, carried resources, icons, indexed repeats and saved IDs. Shared PNG alone does not establish equivalent geometry. Waxed/infested require equivalence; oxidation and normal/deepslate remain separate. Use stonecutter_block, not obsolete stonecutter.
 
-Finish the agreed model scope without silently shrinking the catalog. Entities/cushion/bell were deferred. Signs/beds and other block entities need a shared source/inventory/geometry/material adapter. A dependency/inventory path is not that adapter or a card. Make scope explicit before switching the main runtime; unknown models never become cube fallbacks.
+Wall coral fans remain aliases without separate mounting cards. Candle cake aliases preserve resources; ordinary candles stay separate. Bamboo/shoot and torchflower/crop preserve distinct source records, not aliases. Inspect wood/colour/oxidation variants as classes. Preserve accepted geometry/UV, including legacy repeater/comparator, unless fixing a concrete defect.
 
-Distinguish duplicates, forms, states, growth stages and frames. Preserve owned paths, carried resources, icons, indexed repeats and old-ID routes. Shared PNG does not establish equivalent geometry. Waxed/infested require equivalence; oxidation remains; normal/deepslate ores stay separate. Use stonecutter_block, not obsolete stonecutter.
+Edit slots must not control geometry/state. Dependencies authorize concrete shared roles, not arbitrary foreign paths or ownership transfers. Preserve PNG dimensions/alpha/atlases/frame strips; never alter pixels or force opacity to manufacture success. Gel geometry and alpha policy are separate. Stem age tint, potted azalea Bedrock UV, decorated pot patterns, active conduit and fire playback remain open.
 
-Wall coral fans remain aliases without separate cards/models/mounting switches. Candle cake aliases preserve resources; ordinary candles remain separate. Do not weaken equivalence to lower counters. Bamboo/shoot and torchflower/crop preserve distinct source records/models/resources rather than aliasing them.
+Sign/bed and other block entities need a shared source/inventory/geometry/material adapter; inventory/dependency paths are not that adapter or a card. Entities/cushion/bell were deferred. Explicitly agree scope before switching the main runtime. Unknown models never become cube fallbacks; do not silently shrink the catalog.
 
-Inspect wood/colour/oxidation variants as classes. Preserve accepted geometry/UV unless fixing a concrete defect. Keep adult bamboo composite; show one centred amethyst stage. Potted azalea still needs Bedrock PNG/UV review. Doors currently implement closed form; repeater/comparator preserve legacy geometry.
+Preserve the light paper layout; centralize design tokens, dark colours remain unchosen. Visible text/help follows EN/RU; filenames/IDs are not translated. Playback stays separate from model state.
 
-Edit slots must not control model states/geometry. Dependencies authorize specific shared roles, not arbitrary foreign paths or ownership transfers. Preserve PNG dimensions/alpha/atlases/frame strips. Gel geometry and alpha policy are separate; do not alter pixels or force opacity to manufacture success.
+## Evidence boundaries
 
-Preserve the light paper layout; centralize design tokens, dark colours remain unchosen. Visible text/help follows EN/RU; filenames/IDs are not translated. Playback remains separate from model state.
+This handoff read OLDCHAT15 in full and all six documents, inspected the latest 12 commits, current preview/forms/materials and the full five-file 5720f66 patch. It did not run tests, reread HTML, inspect every intermediate implementation/diff or perform a complete code audit. Other intermediate details are archive/history evidence.
 
-## Evidence and handoff boundaries
+OLDCHAT15 reports targeted local checks and syntax checks, including fruit composition/integration, amethyst, aquatic plants, propagule, emissive plants and materials. Those environments/reports are not carried into this session. Do not sum overlapping counts or claim fresh execution. Earlier targeted checks and recording-registry integration also do not prove complete pinned inputs, real geometry or WebGL.
 
-Separate committed source, runtime connection, expected registry counts, targeted mocks, selected real-input checks, full compiler/CI, actual Three/WebGL and Android/export acceptance. Registration/checksums do not establish visual correctness. Coverage counts source records, not cards or completed refactoring.
+Separate committed source, runtime connection, expected registry counts, targeted mocks, selected real-input checks, full compiler/CI, actual Three/WebGL and Android/export acceptance. Checksums and registration do not prove visual correctness. Earlier fabricated/simplified research fixtures were not real-input evidence.
 
-This handoff read OLDCHAT14 in full and all six documents, inspected the latest ten commits, full chorus-repair/stem diffs and current forms. It did not run tests, recheck HTML, obtain draft attachments, inspect every intermediate diff or perform a complete code audit. Intermediate package details are archive/history evidence, not fresh runtime verification.
+Use existing model-coverage/inputValidation, not another audit. inputValidation examines assigned records individually, not merged cards/icons/preview/render. Distinguish unresolved/missing builders/normalization/inventory/dependency/rendering errors. Artifact workflow is not successful CI. Full validate/tests/compile/CI and visual/export acceptance remain unconfirmed; old 78/74 unresolved and 39 sign are historical.
 
-OLDCHAT14 reports targeted chorus 12, cave vines 8, cube states 9, furnace normalization/state groups 7, specials 9, bamboo 12 and torchflower 6 checks. Stem draft counts differ from the final five saved geometry tests reported before its write. Do not sum overlapping historical runs or imply a full suite was executed. It also reports 11 integration scenarios on selected structures/fixtures using real compiler/preview modules and a recording registry, not actual geometry/WebGL or the complete pinned candidate. Extra local reports are not available here.
-
-Earlier mushroom research included acknowledged simplified dependencies/fabricated fixtures; those claims never proved real inputs. Later committed mushroom selection preserves native indices and cube UV, but targeted fixtures still do not establish full-input/WebGL acceptance.
-
-Use existing model-coverage/inputValidation, not another audit. inputValidation examines assigned records individually, not merged cards/icons/preview/render. Separate unresolved/missing builders/normalization/inventory/dependency/rendering errors. Missing data means not checked; artifact workflow is not successful CI. Full validate/tests/compile/CI and visual/export acceptance remain unconfirmed. Old 78/74 unresolved and 39 sign figures are historical, not fresh measurements.
-
-Start new chats with CONTEXT/relevant code, not archives unless explicitly requested. Sandbox/files/attachments do not persist automatically. Provider failure causes are unknown; neither application code nor thread length is a proven cause.
-
-Never clear fk070_packs for cache issues. Recheck HTML before integration changes; preserve working legacy until acceptance, then remove replaced runtime and synchronize loader/cache versions.
+Recheck HTML before integration changes. Preserve working legacy until agreed acceptance, then remove replaced runtime and synchronize FK_V/cache. Accept draw/undo/redo/Add/reopen/PNG/mcpack, Android, async/storage/import/dimensions/alpha/URL lifecycle before claiming completion.

@@ -1,62 +1,48 @@
-# TODO — модели, плод со стеблем и интеграция
+# TODO — материалы, глазоцвет и интеграция
 
-Обновлено 2026-11-01. Проверенный кодовый HEAD: 62c8af15ec1fb4d9c4cc1c96caec9e349141df6a. [x] означает записанную реализацию, не визуальную приёмку. Доказательства и исторические проверки — CONTEXT.
+Обновлено 2026-11-02. Проверенный кодовый HEAD: cc5d4e20ac4ef0ed2c9ab66d955bee8d79154a1c. [x] означает записанную реализацию, не визуальную приёмку. Доказательства и история — CONTEXT.
 
-## Следующая согласованная задача: плод со стеблем
+## Следующий небольшой пакет: подключение материалов
 
-- [ ] Подготовить в новом catalog/models компонент совместного просмотра: без стебля — плод; со стеблем — тот же плод и направленный к нему стебель рядом. Переиспользовать существующие builders, не дублировать принятую геометрию/UV.
-- [ ] Проверить материалы/UV, направления/стык, границы сцены и масштаб камеры, cleanup при ошибках и независимость от edit PNG. Локальный компонент из OLDCHAT14 не считать доступным: код/журнал здесь не получены.
-- [ ] Связать pumpkin с pumpkin_stem, melon с melon_stem в две соответствующие карточки и явный вариант «Без стебля / Со стеблем». Не объединять тыкву с арбузом и не подменять совместный вид отдельным стеблем.
-- [ ] Сохранить исходные ID, owned PNG, stage 0..7, attached/facing и варианты обычной/вырезанной/светящейся тыквы. Проверить saved-ID маршруты и обратное открытие стеблей.
-- [ ] Проверить compile→access→preview→registry и тесты существующих forms/states/aliases, без регрессии bamboo/torchflower.
+- [x] cc5d4e2: отдельный models/materials.mjs, createModelMaterials с role-based Lambert/Basic и update/dispose.
+- [ ] Заново подготовить его подключение к новому preview после отклонённого запроса OLDCHAT15. Текущий preview модуль материалов не импортирует; повторно его создавать не нужно.
+- [ ] Проверить descriptor.emissiveRoles, разрешённые bindings, classified textures/userData.semi и совместимость с составными fruit stem/amethyst.
+- [ ] Обеспечить обновление текстур и cleanup материалов/геометрии при смене объекта и ошибках. Заимствованные текстуры не освобождать вместе с материалами. Не создавать второй конкурирующий renderer path.
+- [ ] После записи проверить полное содержание/diff, затем отдельным пакетом объединить closed/open eyeblossom в одну карточку с выбором «Закрытый / Открытый». Сохранить source IDs, owned ресурсы, saved-ID routes и glow; edit PNG не переключает форму.
 
-Владелец разрешил небольшие последовательные пакеты: компонент с тестами → подключение карточек/состояния/маршрутов → интеграция. Не выдавать первый пакет за всю функцию. Рабочий legacy редактор не менять. Текущий forms.mjs связывает только bamboo/shoot и torchflower/crop.
+Работать небольшими самосогласованными частями. Старый редактор не переключать. Новые постоянные тестовые файлы без отдельного согласования не добавлять; локальные проверки не требуют коммита тестов.
 
-## Уже записано в OLDCHAT14
+## Уже записано в OLDCHAT15
 
-- [x] 86b6d8f: исправлены границы utility-parts/dependencies и chorus_flower/stem; добавлены тесты хоруса и исправлено ожидание политики. Старый синтаксический дефект 5c5f9f4 больше не текущий P0.
-- [x] e537ecc: cave vines, целый столбик и отдельные части, berries, ресурсы/регистрация/тесты.
-- [x] 71d4501: copper bulb modes, frosted ice 0..3, respawn anchor 0..4 с сохранением индексов/повторов.
-- [x] c6a70d5: front lit furnace/blast furnace/smoker нормализуется к обычному состоянию по ограниченному проверенному правилу.
-- [x] aab86e1: специализированное dragon egg, назначения/регистрация/тесты; Bedrock PNG/WebGL ещё не приняты.
-- [x] 6aa8a0f: bamboo_sapling/adult forms без превращения ростка в alias взрослого.
-- [x] b9df7be: torchflower crop/adult relationship с сохранением стадий посева.
-- [x] 62c8af1: общий stem для pumpkin_stem/melon_stem, stage/attached/facing, роли stem/upperstem, регистрация и тесты. Не включает карточки плод+стебель, составной просмотр, UI или игровую возрастную окраску.
+- [x] 0fa7846/593f918: композиция плод+стебель и связи двух отдельных карточек pumpkin/pumpkin_stem и melon_block/melon_stem. Без стебля — плод, со стеблем — плод и соседний стебель вместе. Варианты тыквы и owned PNG сохраняются.
+- [x] f0df125: budding amethyst без нароста либо один выбранной стадии на одной из шести граней; карточки не объединены.
+- [x] 18d7077: seagrass short/tall и парные нижние/верхние ресурсы.
+- [x] 37d0d48: mangrove propagule ground/hanging, age 0..4.
+- [x] 3c8062c: статический kelp-кандидат с шестью исходными путями и сохранёнными animation definitions.
+- [x] 5694f16: closed eyeblossom→cross.
+- [x] 5720f66: open eyeblossom/firefly bush→emissive_cross, plant/glow и registry emissiveRoles.
+- [ ] Настоящие PNG/TGA/UV/WebGL и полная интеграция этих функций; видимые меню ещё не подключены.
 
 ## Предыдущий прогресс не начинать заново
 
-- [x] Potted azalea/pot/soil; adult bamboo/ограды/moss; поршни/redstone/fittings; растения/utility/workshop прежних проходов.
-- [x] Cauldron/cocoa/daylight, pots/conduit/fire, dripleaf/sculk/cactus, dripstone/dried ghast/barrel/stage_cross.
-- [x] Slime/honey, farmland/snow assignments; coral wall fan/candle cake aliases и явные technical cubes.
-- [x] Planar cleanup, nether roots→cross, общий индексированный cube preview hives/crafter/suspicious/bookshelf/heart/mushrooms.
-- [x] Composter/scaffolding, head_back обоих поршней через dependency, cage spawner/vault без внутренних entities.
+Уже записаны azalea/pot/soil, bamboo/ограды/moss, поршни/redstone/fittings, растения/utility/workshop, cauldron/cocoa/daylight/pots/conduit/fire, dripleaf/sculk/cactus/dripstone/ghast/barrel, slime/honey/farmland/snow, cube states/structures/mushrooms/cage. OLDCHAT14: исправленный chorus, cave vines, bulbs/ice/anchor, furnace front normalization, dragon egg, bamboo/shoot, torchflower/crop и stem growth/attached/facing. Подробности — CONTEXT/ARCHITECTURE.
 
-## Общие проверки данных и моделей
+## Проверки и оставшийся scope
 
-- [ ] Использовать существующий tools/model-coverage.mjs на полном PIN candidate с hashes/inputValidation. Разделять unresolved, missing builders, normalization, inventory/dependencies и rendering. Не создавать второй аудит.
-- [ ] Выполнить node tools/validate.mjs и node --test tools/*.test.mjs; полный compileModelCatalog и CI подтвердить отдельно. Запуск владельцу не поручать.
-- [ ] Проверить bindings/stages/variants/dependencies на реальном входе, сохраняя повторы. Целевые фикстуры не заменяют полный candidate.
-- [ ] Bedrock PNG/UV potted azalea; общие pot/soil/torch/pitcher/chorus/piston ресурсы.
-- [ ] Реальные PNG alpha и WebGL сортировка гелей; stem age tint и PNG/UV dragon egg отдельно.
-- [ ] Aliases/forms/states/icons/carried/saved-ID; waxed/infested equivalence, oxidation сохранять, normal/deepslate не сливать.
-- [ ] Auxiliary end_gateway/lava_cauldron и block↔item icons.
-- [ ] Общий entity source/inventory/geometry/material adapter для sign/bed и прочих block entities; entities/cushion/bell отложены, scope согласовать до переключения. Unknown не заменять cube.
-
-Свежего полного остатка нет. Старые 78/74 unresolved и 39 sign — исторические значения. В библиотечном тесте HEAD ожидается 99 типов; это не успешный запуск и не число карточек. Полные проверки и визуальная приёмка в этой передаче не выполнялись.
+- [ ] Полный PIN candidate через существующий coverage/inputValidation; отдельно unresolved/missing builders/normalization/inventory/dependencies/rendering, без нового дублирующего аудита.
+- [ ] validate, существующие tests, полный compileModelCatalog и CI; целевые mocks и ожидаемые 103 library types не заменяют эти проверки. Свежего coverage нет.
+- [ ] Bindings/stages/indexed repeats/dependencies, aliases/forms/states/icons/carried/saved-ID и обратное открытие стеблей.
+- [ ] Bedrock PNG/UV азалии/Java-reference моделей, alpha/WebGL гелей, stem tint, kelp sides/UV/TGA и согласование анимации. A–D kelp не стадии роста.
+- [ ] Auxiliary end_gateway/lava_cauldron, block↔item icons и source adapter sign/bed/block entities. Scope согласовать до переключения, unknown не заменять cube.
+- [ ] Отдельно разобрать существующие тесты по просьбе владельца; без массового удаления и без обещания автоматической очистки.
 
 ## Интеграция и приёмка
 
-- [ ] Перепроверить HTML; сохранить рабочий legacy 0.9.1 до приёмки.
-- [ ] Отдельная проверяемая страница normalize→compile→access→preview→registry с настоящими PNG/Three. Admission среза решить явно, не ослаблять строгий compileModelCatalog скрытым исключением unsupported.
-- [ ] Find/editor/loaders используют общий объект и корректно обновляют материалы; state/forms/stages независимы от edit slot.
-- [ ] Role-based icon badges, Shared textures, EN/RU, растущие подписи/design tokens без редизайна бумаги. UX поиска item icon согласовать.
-- [ ] Плеер отдельно от state: timing/order, пауза при рисовании, экспорт всей ленты; часы/компас demo cycle.
-- [ ] Saved-ID openTexture, transactions/async targets, dimensions/alpha, import limits/cache/URL lifecycle.
-- [ ] Настоящие WebGL/Android: draw/undo/redo→Add→reopen→PNG→mcpack, Back, язык/тема, pack/slot/frame switching.
-- [ ] Только после приёмки согласованного scope переключить HTML/FK_V/cache и удалить заменённый legacy runtime.
+- [ ] Перечитать HTML и сохранить рабочий legacy до приёмки; отдельная проверяемая страница с реальными Three/PNG/WebGL, явный admission среза без скрытого ослабления strict compile.
+- [ ] Общий объект Find/editor/loaders, корректные материалы, формы/состояния/стадии отдельно от edit slot.
+- [ ] EN/RU, Shared textures, role-based icon badges, растущие подписи/design tokens без редизайна бумаги; UX item icon согласовать.
+- [ ] Плеер отдельно от state: timing/order, pause при рисовании, экспорт ленты; часы/компас demo cycle.
+- [ ] Async targets/transactions/import limits/dimensions/alpha/cache/URL lifecycle и Android draw/undo/redo→Add→reopen→PNG→mcpack, Back/язык/тема/pack-slot-frame switching.
+- [ ] Только после приёмки scope переключить HTML/FK_V/cache и удалить заменённый legacy runtime.
 
-## Темп и сохранность
-
-Готовый пакет сразу на системное подтверждение точных полных аргументов. После записи сверять полное содержание/diff, не только число файлов. После обрыва сначала GitHub. Документы по запросу; постоянные отчёты остатка не обязательны. Файлы <25000 UTF-8 байт. Backup автоматически не обновлять; fk070_packs не очищать.
-
-Полные items/entities, IndexedDB, большие паки, пользовательский backup, PWA/offline и права на ресурсы — отдельные этапы.
+Каждая запись — точное системное подтверждение и полная сверка после неё. После обрыва сначала GitHub. Файлы <25000 UTF-8 байт; backup автоматически не обновлять, fk070_packs не очищать. Полные items/entities, IndexedDB, большие паки, пользовательский backup, PWA/offline и права на ресурсы — отдельные этапы.
