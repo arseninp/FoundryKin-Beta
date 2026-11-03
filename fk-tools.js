@@ -1,4 +1,4 @@
-/* fk-tools.js: drawing tools, colour palette, settings sheet and the menu manager FKM of the editor.
+/* fk-tools.js: drawing tools, colour palette and settings sheet. Uses the shared FKM.
    Builds its own panel inside #toolsPanel and talks to fk-core.js only through FKAPI.ctx. */
 (function(){
 var FK=window.FK,C=window.FKAPI.ctx;
@@ -99,26 +99,9 @@ function transform(kind){
   C.pushUndo();img.data.set(out);g.putImageData(img,0,0);C.touched();
 }
 
-/* menu manager: one open menu at a time; closes on the same button, the backdrop and system Back */
-var FKM={cur:null,pushed:0,skip:false};
-FKM.mark=function(m,on){(m.triggers||[]).forEach(function(t){t.classList.toggle('fkTrigOn',on)});document.body.classList.toggle('fkMenuOpen',on)};
-FKM.open=function(m){
-  if(FKM.cur===m)return;
-  if(FKM.cur){FKM.cur.hide();FKM.mark(FKM.cur,false)}
-  m.show();FKM.cur=m;FKM.mark(m,true);
-  if(!FKM.pushed){try{history.pushState({fk:1},'');FKM.pushed=1}catch(e){}}
-};
-FKM.close=function(){
-  var m=FKM.cur;if(!m)return;
-  FKM.cur=null;m.hide();FKM.mark(m,false);
-  if(FKM.pushed){FKM.pushed=0;FKM.skip=true;try{history.back()}catch(e){FKM.skip=false}}
-};
-FKM.toggle=function(m){if(FKM.cur===m)FKM.close();else FKM.open(m)};
-window.addEventListener('popstate',function(){
-  if(FKM.skip){FKM.skip=false;return}
-  var m=FKM.cur;if(m){FKM.cur=null;FKM.pushed=0;m.hide();FKM.mark(m,false)}
-});
-window.FKM=FKM;
+/* The document loads the shared manager before the editor modules. */
+var FKM=window.FKM;
+if(!FKM)throw new Error('Drawing tools require the shared menu manager');
 C.closeMenu=function(){if(!FKM.cur)return false;FKM.close();return true};
 window.FKAPI.closeMenu=C.closeMenu;
 

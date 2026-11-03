@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 const source=await readFile(new URL('../fk-model-state.js',import.meta.url),'utf8');
+const manager=await readFile(new URL('../fk-menu.js',import.meta.url),'utf8');
 const tools=await readFile(new URL('../fk-tools.js',import.meta.url),'utf8');
-const start=tools.indexOf('var FKM='),end=tools.indexOf('window.FKM=FKM;',start);
-assert.ok(start>=0&&end>start);
+assert.ok(tools.includes('var FKM=window.FKM;'));
+assert.ok(!tools.includes('FKM.open=function'));
 function setup(){
  const events={};let changes=0,pushed=0;
  const doc={activeElement:null,createElement:tag=>new Element(tag),body:null};
@@ -26,7 +27,7 @@ function setup(){
  }
  doc.body=new Element('body');const parent=doc.body.appendChild(new Element('main')),anchor=parent.appendChild(new Element('div'));
  const ctx={document:doc,FK:{lang:()=> 'en',t:()=> 'Done'},FKShapes:{previewStates:{}},addEventListener:(k,fn)=>(events[k]??=[]).push(fn),history:{pushState(){pushed++;},back(){for(const fn of events.popstate??[])fn();}}};ctx.window=ctx;
- vm.createContext(ctx);vm.runInContext(tools.slice(start,end+'window.FKM=FKM;'.length),ctx);vm.runInContext(source,ctx);
+ vm.createContext(ctx);vm.runInContext(manager,ctx);vm.runInContext(source,ctx);
  const api=ctx.FKModelState.create(anchor,()=>changes++);
  return {api,ctx,doc,host:parent.children[1],panel:doc.body.children[1],changes:()=>changes,pushed:()=>pushed,pop:()=>{for(const fn of events.popstate??[])fn();}};
 }
