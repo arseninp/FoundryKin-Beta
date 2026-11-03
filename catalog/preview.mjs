@@ -75,6 +75,27 @@ function candleBindings(record,state) {
   return [face,found];
  }));
 }
+function decoratedPotBindings(record,state) {
+ if(record.model!=='decorated_pot')return null;
+ const faces=['north','south','east','west'],selection=own(state,'patterns')?state.patterns:{};
+ if(!dictionary(selection)||Object.keys(selection).some(face=>!faces.includes(face)))throw new Error('Invalid decorated pot side selection');
+ if(!own(record,'potteryPatterns')) {
+  if(Object.keys(selection).length)throw new Error('Missing decorated pot pattern sources');
+  return null;
+ }
+ const patterns=record.potteryPatterns,bindings=record.bindings;
+ if(!dictionary(patterns)||!own(patterns,'brick')||!dictionary(bindings)||!Array.isArray(record.paths))throw new Error('Missing decorated pot pattern sources');
+ for(const role of ['base','side'])if(!Array.isArray(bindings[role])||bindings[role].length!==1||typeof bindings[role][0]!=='string'||!record.paths.includes(bindings[role][0]))throw new Error('Invalid decorated pot binding: '+role);
+ if(patterns.brick!==bindings.side[0]||Object.values(patterns).some(path=>typeof path!=='string'||!record.paths.includes(path)))throw new Error('Invalid decorated pot pattern resources');
+ const result={base:[...bindings.base]},normalized={};
+ for(const face of faces) {
+  const pattern=own(selection,face)?selection[face]:'brick';
+  if(typeof pattern!=='string'||!own(patterns,pattern))throw new Error('Invalid decorated pot pattern: '+face);
+  result[face]=[patterns[pattern]];normalized[face]=pattern;
+ }
+ state.patterns=normalized;
+ return result;
+}
 function mossBindings(record) {
  if(record.model!=='pale_moss_carpet')return null;
  const find=name=>{
@@ -204,7 +225,7 @@ export function createPreviewResolver(catalog, registry, Three) {
   const model=base==='azalea'&&previewState.potted?'potted_azalea':base, descriptor=registry.get(model);
   const faceMap={}, shared=dictionary(record.dependencies)?record.dependencies:{};
   if (view==='model') {
-   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??cubeStateBindings(record,previewState)??candleBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??deviceBindings(record)??stageBindings(record,previewState)??frameBindings(record)??hookBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
+   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??cubeStateBindings(record,previewState)??candleBindings(record,previewState)??decoratedPotBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??deviceBindings(record)??stageBindings(record,previewState)??frameBindings(record)??hookBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
    if (!dictionary(bindings)||!Object.keys(bindings).length) throw new Error('Missing model bindings');
    for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
    for (const [face,paths] of Object.entries(bindings)) {

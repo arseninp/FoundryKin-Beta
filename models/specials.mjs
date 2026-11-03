@@ -51,9 +51,12 @@ export function createSpecialModels(Three) {
   });
  }
  function decoratedPot(E) {
-  const f=requireRoles(E,['side','base'],'decorated pot'),S=f.side,B=f.base,SR=[1,0,15,16],six={north:B,south:B,east:B,west:B,up:B,down:B};
+  const faces=['north','south','east','west'],bindings=E&&(E.bindings??E.faceMap);
+  const separate=bindings&&faces.some(face=>Object.hasOwn(bindings,face));
+  const f=requireRoles(E,separate?['base',...faces]:['side','base'],'decorated pot'),B=f.base,SR=[1,0,15,16],six={north:B,south:B,east:B,west:B,up:B,down:B};
+  const sides=Object.fromEntries(faces.map(face=>[face,separate?f[face]:f.side]));
   composeShape(Three,E,p=>{
-   p.box([1,0,1],[15,16,15],{north:S,south:S,east:S,west:S,up:B,down:B},{north:SR,south:SR,east:SR,west:SR,up:[0,6.5,7,13.5],down:[7,6.5,14,13.5]});
+   p.box([1,0,1],[15,16,15],{...sides,up:B,down:B},{north:SR,south:SR,east:SR,west:SR,up:[0,6.5,7,13.5],down:[7,6.5,14,13.5]});
    p.box([5,16,5],[11,17,11],six,{east:[0,5.5,3,6],north:[3,5.5,6,6],west:[6,5.5,9,6],south:[9,5.5,12,6],up:[3,2.5,6,5.5],down:[6,2.5,9,5.5]});
    p.box([4,17,4],[12,20,12],six,{east:[0,4,4,5.5],north:[4,4,8,5.5],west:[8,4,12,5.5],south:[12,4,16,5.5],up:[4,0,8,4],down:[8,0,12,4]});
   });
