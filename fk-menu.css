@@ -1,0 +1,4 @@
+/* Shared sheet layout, extracted from the editor without changing its geometry. */
+.fkBack{position:fixed;left:0;top:0;right:0;bottom:0;z-index:100;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center}.fkBack.on{display:flex}
+.fkSheet{width:100%;max-width:460px;max-height:90vh;overflow:auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-bottom:0;border-radius:16px 16px 0 0;padding:12px 14px 18px}
+.fkHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.fkOk{min-width:44px;font-size:20px;color:var(--acc);border:1px solid var(--line);background:transparent}
