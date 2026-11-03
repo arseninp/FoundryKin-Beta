@@ -1,45 +1,43 @@
 # TODO — перенос моделей и технической основы
 
-Обновлено 2026-11-03. Проверенный HEAD до записи: 40c82f0e6e3be884f73d0ee61bf8a8a385e5164d. [x] — записанный код, НЕ runtime/визуальная приёмка. Начать с CONTEXT/handoff.
+Обновлено 2026-11-03 по OLDCHAT20. Проверенный HEAD до документации: efb873044ce59c308bce2aaf11ba73c709d869bf. [x] означает записанный код, НЕ runtime/визуальную приёмку. Начать с CONTEXT/handoff.
 
 ## Текущая точка
 
-- [ ] Ответить на уже сформулированный вопрос владельца об адаптивном макете: прочитать editor/iframe/preview CSS/ограничения/size consumers и установить, что сделано для планшета/компьютера. Не просить повторять вопрос. Новая раскладка/breakpoints/редизайн не согласованы; сохранить телефонный сценарий и paper/design tokens.
-- [ ] После обсуждения продолжить согласованные модели/основу, не начинать полных мобов и не повторять выполненное.
+- [ ] Изучить normalization/bindings/resolver/materials/controls жидкостей и подключить уже записанные water/lava к общему picker/срезу без повторного создания builders. level 0..7, default 0; PNG/state независимы.
+- [ ] Проверить связку на pinned данных существующими средствами. Не называть uniform-height sample симуляцией течения или принятой Bedrock моделью.
+- [ ] Вернуться к вопросу адаптивного макета tablet/desktop: editor/iframe/CSS/size consumers. Исследование не закончено, новая раскладка/редизайн не согласованы, mobile/paper tokens сохранить.
 
-Последняя реплика ассистента OLDCHAT19 исключена владельцем. Она не порождает задачу/блокер и не подменяет вопрос о макете.
+## Уже записано — не повторять
 
-## Уже записано
+- [x] Materials/composite/canvas-GPU lifecycle/read-only preview/loader timeout-cache-retry.
+- [x] Bed/sign/lava cauldron/auxiliary end_gateway; chest normal-trapped-ender-copper/double/static open; shulker sheets/directions/static candidate; banners resources/color/patterns/ominous.
+- [x] Fruit+stem/budding amethyst/aquatic/propagule/kelp/emissive models.
+- [x] Golem statues 4 stages/4 poses/sheets/source-waxed routes/parent cards/preview; головы skeleton/wither_skeleton/creeper/zombie/piglin/dragon с geometry/sources/parent/source routes. Полные mobs отложены.
+- [x] Eyeblossom одна card closed/open/cross-emissive_cross/glow; общий FKModelState/FKM/CSS; familyDefaults/plan.forms и independent form/slot/state, общий пункт Текстура/default sheets голов/статуй.
+- [x] Decorated pot: 23 patterns + ordinary side, 4 независимые стороны в builder/resolver/общем picker, EN/RU и independent PNG.
+- [x] Conduit: 6 resources/static active Java-reference candidate/resolver/shared picker activity-eye-wind, default inactive.
+- [x] Controls вынесены в preview-controls.mjs, прежние определения удалены, root exports проверок сохранены.
+- [x] Срез 29 source IDs: pot/conduit добавлены; НЕ cards/весь каталог. Основной editor не переключён; жидкости ещё вне среза.
+- [x] Existing preview-slice workflow дополнен pot/conduit, без новых test files; результат Actions не подтверждён.
+- [x] Water/lava builders + назначения 4 source IDs + existing library test (ожидание 112 builders, не coverage).
 
-- [x] Materials/composite/canvas/GPU lifecycle, read-only preview, loader timeout/cache/retry.
-- [x] Bed geometry/16 sheets; sign geometry/листы пород; lava_cauldron content и auxiliary end_gateway/lava_cauldron.
-- [x] Chest normal/trapped/ender/медные sources/double/static open, ender без double; shulker sheets/шесть направлений/static open candidate; banner sources/color/ordered patterns/ominous.
-- [x] Статуи голема: четыре позы/общие sheets четырёх стадий окисления/source и waxed routes/материнские cards/preview menu. Глаза/цветок автоматически не добавлены.
-- [x] Skeleton/wither skeleton/creeper/zombie/piglin головы: geometry/sources/parent cards/старые source-ID routes.
-- [x] Dragon head/jaw без тела, общий textures/entity/dragon/dragon, parent ender_dragon/preview, без новой PNG головы.
-- [x] Одна карточка глазоцвета closed/open с cross/emissive_cross, обе records/resources/glow/routes. Старый запрет объединения отменён.
-- [x] Переработан существующий FKModelState, единые FKM/CSS извлечены без второй реализации, themed picker подключён к preview.
-- [x] familyDefaults, раздельные request.form/slot/state, plan.forms, согласованный fruit/stem consumer.
-- [x] Общий пункт Текстура, PNG/form/pose/state независимы, default bindings.sheet для model view голов/статуй, загрузка выбранной PNG вне модели.
-- [x] Срез 27 source IDs, не число cards/не весь каталог. Четыре golem IDs — невощёные стадии; основной editor не переключён.
+## Остаток и ограничения
 
-Предыдущие fruit+stem/budding amethyst/aquatic/propagule/kelp/emissive models не делать заново. Полные существа/скелет/развёртки отложены, НЕ недоделка этапа голов. Rotation/facing меню голов/статуй не добавлять, есть жест. Позы статичны, не плеер.
-
-## Остаток технической основы
-
-- [ ] Проверить bindings/stages/indexed repeats/dependencies/aliases/forms/states/icons/carried/saved-ID/reopen и block↔item icons в согласованном объёме.
-- [ ] Bedrock PNG/UV potted azalea/reference models/dragon head placement/scale; gel alpha, stem tint, kelp sides/UV/TGA. A–D не рост.
-- [ ] Остальные block-entity adapters, decorated pot patterns, active conduit, fire/player scope согласовать. Полные entities/cushion/bell отложены. Unknown не cube.
-- [ ] Общий Find/editor/loaders, EN/RU, Shared textures/icon badges, подписи/design tokens; адаптивную компоновку определить после исследования layout.
-- [ ] Player отдельно от state: timing/order/pause при рисовании/export ленты/clock-compass demo; UX item icon согласовать.
+- [ ] Получить свежий coverage/normalization/inputValidation/full compile на PIN; архивная сверка после жидкостей предварительно оставляет bell/player_head/bubble_column, не автоматическое согласование scope.
+- [ ] Сохранить bindings/stages/indexed repeats/dependencies/aliases/forms/states/icons/carried/saved-ID/reopen/block-item icons. Unknown не cube.
+- [ ] Bedrock PNG/UV potted azalea/reference/dragon placement-scale; gel alpha/stem tint/kelp sides-UV-TGA; pot patterns/conduit/liquids реальные изображения/render.
+- [ ] Conduit animation/eye tracking и liquid slopes/falling/tint/overlays/timing отсутствуют; не объявлять обязательным новым scope без согласования. Fire geometry уже существует, player отдельный.
+- [ ] Общий Find/editor/loaders, EN/RU/Shared textures/icon badges/design tokens, адаптивность после исследования.
+- [ ] Player timing/order/pause при рисовании/export ленты/clock-compass demo отдельно от state; item icon UX согласовать. Полные entities/cushion/bell отложены.
 
 ## Приёмка и очистка
 
-- [ ] Полный PIN candidate/coverage/inputValidation/compile и existing validate/tests/CI. Workflow не означает успешный Actions, свежего coverage нет.
-- [ ] Реальные PNG/TGA/Three/WebGL, меню/cards/source routes/forms/poses/PNG/frames, Android/editor/export/lifecycle. Исторические mocks не заменяют приёмку.
-- [ ] Исторические возможные проблемы OLDCHAT17 воспроизвести отдельно: async PNG index, память/storage при save failure, imageFrames atlas heuristic, полное GPU update. Не доказанные блокеры; ceiling sign rotation suspicion снято. Не смешивать с исключённой репликой OLDCHAT19.
+- [ ] Existing validate/tests/full compiler/CI и реальные PNG-TGA/Three/WebGL/Android/export; записанные workflow/mocks не прохождение.
+- [ ] Проверить cards/source IDs/reopen/menu/forms/poses/PNG/frames и lifecycle/texture ownership/update/cleanup.
+- [ ] Исторические гипотезы OLDCHAT17 воспроизводить отдельно (async PNG index, memory-storage save failure, atlas heuristic, full GPU update), не считать блокерами. Ceiling-sign rotation suspicion снято. Исключённую реплику OLDCHAT19 не возвращать в задачи.
 - [ ] Принять draw/undo/redo/Add/reopen/PNG/mcpack, async/storage/import/dimensions/alpha/cache/URL lifecycle и language/theme/pack/slot/frame.
-- [ ] После успеха убрать ненужные/дублирующие части, тесты разбирать индивидуально без массового удаления.
-- [ ] Только после готовности/приёмки переключить основной runtime, синхронизировать FK_V/cache и удалить заменённый legacy.
+- [ ] После совместного успеха убрать ненужные/дубли; тесты разбирать индивидуально, без массового удаления.
+- [ ] Лишь затем переключить основной runtime, синхронизировать FK_V/cache, удалить заменённый legacy.
 
-Только main, малые пакеты, точное подтверждение каждой записи и полный saved diff/контент. Новые test files отдельно согласовать. Файлы <25000 UTF-8 байт; backup/fk070_packs не трогать. Полные items/entities, IndexedDB, большие паки/пользовательский backup, PWA/offline/права на ресурсы — отдельные этапы.
+Только main, малые самосогласованные пакеты, точное подтверждение и полный saved diff. Новые test files отдельно согласовать; <25000 UTF-8 байт на файл; backup/fk070_packs не трогать. Полные items/entities/IndexedDB/большие паки/user backup/PWA-offline/права на ресурсы отдельные этапы.

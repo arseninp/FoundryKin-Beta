@@ -1,52 +1,54 @@
 # CONTEXT — вход новому чату
 
-Обновлено 2026-11-03 по OLDCHAT19 и уточнению владельца в новом чате. arseninp/FoundryKin-Beta, только main. Проверенный HEAD перед документальной записью: 40c82f0e6e3be884f73d0ee61bf8a8a385e5164d. Рефакторинг и блоковый этап в целом НЕ завершены. Кодовое подключение согласованных голов к отдельному preview записано, но это не выпуск, не полная приёмка и не переключение редактора.
+Обновлено 2026-11-03 по полному OLDCHAT20 на Диске и текущему GitHub. Репозиторий arseninp/FoundryKin-Beta, только main. Проверенный HEAD до этой документальной записи: efb873044ce59c308bce2aaf11ba73c709d869bf. Рефакторинг и блоковый этап НЕ завершены. Это не выпуск и не визуальная приёмка; основной редактор не переключён на новый путь.
 
 ## Читать и продолжать отсюда
 
-Сначала этот файл, затем docs/handoff-unified-cards.md, ARCHITECTURE.md, TODO.md, ROADMAP.md, README.md, docs/review-principles.md. Все семь документов синхронизируются этой записью. История до совмещённых карточек — aae3661; предыдущий подробный CONTEXT — 40c82f0. Старые задачи не означают повторный перенос уже записанных моделей.
+Порядок: CONTEXT.md → docs/handoff-unified-cards.md → ARCHITECTURE.md → TODO.md → ROADMAP.md → README.md → docs/review-principles.md. Предыдущие полные версии документов сохранены в d41f3843a8ef4fc66872784c11d6f50a7b5f49dc; история голов и дракона — также в 40c82f0. Не повторять выполненные пакеты из старых TODO.
 
-OLDCHAT19 на Диске прочитан до конца. Владелец уже сформулировал вопрос: делалась ли в рефакторинге адаптация макета под планшет/компьютер, поскольку нынешний узкий макет не использует большой экран. Следующая содержательная работа — изучить фактический layout editor/iframe/preview, CSS и потребителей размеров, затем ответить по коду, что уже сделано и что осталось. Старая остановка до формулировки вопроса больше не актуальна. Широкая раскладка/breakpoints/редизайн пока не согласованы; сохранить телефонный сценарий и paper/design tokens. Полноценного исследования layout в этом документальном проходе не было; готовность адаптивности не установлена.
+Точка продолжения — вода и лава. efb8730 добавил models/liquids.mjs, регистрацию builders water/lava, назначения water/flowing_water/lava/flowing_lava и обновление существующего library test. В прочитанном liquids.mjs есть явный state.level 0..7, default 0, равномерная высота (8-level)/9, шесть ресурсных ролей; lava объявляет их emissive. Это редакторский образец ровного уровня с Java-reference, НЕ симуляция соседских уклонов/падения/течения, без biome tint, overlays и анимационного тайминга. Bedrock appearance не принят. Не создавать builders заново.
 
-В новом чате владелец прямо попросил игнорировать последнюю реплику ассистента в OLDCHAT19. Не переносить её утверждения о кадрах PNG в диагнозы, TODO или блокеры. Она не является основанием для правок. Не подменять вопрос о макете самопридуманной отладкой. Причину потери контекста владелец описал как исчерпание памяти чата; это не доказательство дефекта приложения.
+В прочитанном корневом preview.mjs REVIEW_IDS содержит 29 source block IDs: прежние 27 + decorated_pot + conduit. Жидкостей в срезе нет. Следующий небольшой пакет после изучения consumers — связать уже записанные жидкости с resolver/общими controls и срезом, сохраняя независимость PNG/state. Сначала проверить существующие bindings/normalization/материалы и поведение level, а не придумывать второй путь. Расширение просмотра и создание геометрии — разные задачи.
 
-## Текущий объём и решения владельца
+Вопрос владельца об адаптации узкого макета под планшет/компьютер остаётся открытым: исследование editor/iframe/CSS/size consumers не завершено. OLDCHAT20 фактически продолжился моделями, поэтому макет больше не единственная точка остановки. Широкая раскладка/breakpoints/редизайн не согласованы; телефонный сценарий и paper/design tokens сохранить.
 
-- Только готовые головы/черепа, статуи голема и совмещение карточек. Полных мобов НЕ переносить и НЕ считать их отсутствие текущей недоделкой этого этапа. Скелет модели/развёртки мобов — отдельный будущий этап, без преждевременного проектирования.
-- Одна материнская карточка; отдельная видимая карточка головы уходит. Исходный block ID/record/resources/reopen остаются и открывают правильное представление. Не создавать фиктивный entity-record ради названия; готовый пункт Моб без реальной модели не показывать.
-- Статуя и будущий моб голема различаются. Наблюдение владельца об отсутствии глаз не доказывает весь список различий; глаза/цветок автоматически не добавлять. Четыре статичные позы standing/sitting/running/star. Стадии окисления не сливать; waxed aliases только при эквивалентности.
-- Отдельных rotation/facing controls голов/статуй не нужно: модель крутят жестом. Внутренний rotation builders сохраняется. Статичные позы не плеер.
-- PNG независим от form/state/pose. Общий лист использовать напрямую, без новой PNG головы, обрезки или копирования; разные реальные ресурсы сохранять. Подписи EN/RU, IDs без перевода.
-- Перерабатывать существующие обязанности и потребителей, без второго каталога, monkey-patch цепочек, адаптеров вокруг адаптеров и специальных панелей голов. Общий аудит/расширение CI не заменяет перенос.
+## Прогресс OLDCHAT20 — не повторять
 
-## Что записано
+- 70ec5f8: источники decorated pot — базовый лист, 23 узора и обычная сторона, inventory checks; без новых cards/копий PNG.
+- 1fcf149: существующий builder/resolver поддерживают независимые стороны горшка. Незаданные стороны обычные; корпус/горловина/UV сохранены, PNG не задаёт узор.
+- 56724d3: горшок в preview, четыре выбора через общий picker, 23 узора + Без рисунка, EN/RU; срез стал 28 IDs.
+- df07052: проверки горшка добавлены в существующий preview-slice workflow, без нового test file. Записанный workflow не означает успешный Actions.
+- cdac9c4: шесть ресурсов conduit — база, оболочка, открытый/закрытый глаз, два вихря. Неактивный вид сохранён.
+- 93b9565: статичный Java-reference-кандидат активного conduit: оболочка, глаз, два слоя вихря. Нет анимации и слежения глаза за камерой; Bedrock UV/alpha/render не приняты.
+- eb3fa90: resolver независимо выбирает активность, глаз и вихрь; default неактивный, PNG не переключает состояние.
+- 5eeed20: существующая логика controls перенесена из preview.mjs в preview-controls.mjs, старые определения удалены, экспорты для проверок сохранены. Conduit подключён к общему picker; срез 29 IDs. Не второй manager/панель.
+- ae7120e: существующий workflow проверяет conduit state/materials/update/cleanup/заимствованные textures. Успешный Actions не подтверждён.
+- efb8730: основа жидкостей; по OLDCHAT20 ожидание библиотеки — 112 builders, не число cards/принятых моделей и не свежий coverage.
 
-- f2479ea: closed/open eyeblossom — одна карточка с bloom closed/open и явным models контрактом cross/emissive_cross. Обе records/resources/stateRoutes и glow сохранены; строгие проверки остальных групп остаются. Прежний auth_required из OLDCHAT18 больше не текущий статус.
-- 2623353/2d222fc/b8cbd84/4b4d417/356de40: состояния из каталога; существующий FKModelState переработан под явные зависимости/начальное состояние, busy/stale events/dispose. Единый FKM вынесен из fk-tools.js в fk-menu.js, стили панели — из index.html в fk-menu.css; прежние реализации удалены. Preview использует общий themed picker вместо select состояний. Existing model-state-ui.test.mjs использует настоящий manager.
-- 7cb4a83: forms/compile/access разделяют материнскую card и реальную source record; familyDefaults выбирает доступную форму без фиктивного entity-record. Native прежних семейств/reverse index сохраняются.
-- df72fa6: request.form отдельно от request.slot/request.state, plan.forms содержит доступные представления. Fruit/stem потребитель согласован; составной fruit view возвращает forms:null, поскольку controls управляют композицией.
-- 8e64e04/ad3de20: четыре невощёные стадии статуи с четырьмя позами и пять голов/черепов подключены к материнским cards в отдельном preview; rotation controls не добавлены.
-- d715eca: общий пункт Текстура; form/slot/state раздельны, выбранная PNG загружается и вне bindings модели. Model view голов/статуй default — bindings.sheet; явный PNG и sprite сохраняют прежние правила. Это записанный контракт, не полная runtime приёмка.
-- c71716b: models/dragon-head.mjs — 6 head cubes и 1 jaw cube по pinned ender_dragon.geo.json, mirror UV, общий 256x256 лист, dispatch через skull. Без отдельного builder ID/полного моба. Челюсть статична/закрыта, Bedrock placement/scale не приняты.
-- b9fe64e: dragon_head получает skull assignment, textures/entity/dragon/dragon и материнскую ender_dragon с формой head. Путь ранее подтверждён pinned client_entity/existing-005.json; не использовать выдуманный textures/entity/enderdragon/dragon.
-- 40c82f0: dragon_head включён в preview, подпись Дракон Края / Ender dragon, обновлён CONTEXT. REVIEW_IDS — 27 source IDs, НЕ 27 cards и НЕ весь каталог. Четыре golem IDs в срезе — невощёные стадии, не отдельная приёмка всех waxed маршрутов.
+## Сохранённый предыдущий прогресс и объём
 
-Ранние bed/sign/cauldron/chest/shulker/banner/statue/skull/piglin пакеты — ARCHITECTURE/handoff/история Git. Не повторять их по старым TODO. Полные тела/крылья/хвосты/анимации мобов не добавлены и не входят в текущий объём.
+Eyeblossom уже одна card closed/open с явным cross/emissive_cross, обе records/resources/routes/glow сохранены. Existing FKModelState переработан; единые FKM/CSS вынесены в fk-menu.js/fk-menu.css с удалением прежних реализаций. Preview использует общий themed picker. Parent cards/familyDefaults используют реальные source records, без фиктивных entities. request.form/slot/state и plan.forms раздельны; выбранная PNG загружается даже вне model bindings. Default model view голов/статуй — bindings.sheet.
 
-## Граница доказательств
+Головы skeleton/wither_skeleton/creeper/zombie/piglin/dragon, статуи четырёх окислений/четырёх поз и их parent/source-ID routes уже подключены к отдельному preview. Не объявлять их ошибочными только из-за отсутствия браузерной приёмки. Dragon: textures/entity/dragon/dragon, общий 256x256 sheet, 6 head cubes + jaw, mirror UV/static closed jaw через skull, без нового builder ID/отдельной PNG/полного тела. Placement/scale/UV не приняты. Четыре golem IDs среза невощёные; это не приёмка всех waxed routes.
 
-В OLDCHAT19 сообщалось о точечных Node/syntax проверках, Three mock, имитациях canvas/DOM/history; часть использовала искусственные normalized records/изолированные функции. Это не полная normalizeBlock → compileCatalog/compileReview → resolver → UI цепочка. Старые среды/отчёты не переносятся; blob SHA подтверждал конкретный модуль, не весь проект. Перекрывающиеся числа не суммировать.
+Полные мобы/их скелет/развёртки — отдельный будущий этап, не недоделка голов. Недоступный Моб не показывать готовым. Статуе автоматически не добавлять глаза/цветок, окисления не сливать. Отдельных rotation/facing controls голов/статуй не нужно: жест; внутренние builder protocols сохранить. Позы и static open — не плеер.
 
-Workflow preview-slice обновлён в 795d492 и расширялся вместе со срезом. Успешный Actions не подтверждён. Сохранённый тест/inventory guard/регистрация builder не доказывает прохождение. Полные compile/coverage/CI, реальные PNG/TGA, страница/Three/WebGL, Bedrock UV/масштаб, Android/export НЕ приняты.
+Bed/sign/cauldron/auxiliary/chest/shulker/banner, fruit+stem/budding amethyst/aquatic/propagule/kelp/materials/lifecycle уже переносились. Не начинать заново по старой передаче. Детали — ARCHITECTURE и история Git.
 
-В этом проходе прочитаны полный OLDCHAT19, семь документов, последние 20 коммитов и preview.mjs; HEAD повторно проверен. Весь код/все diff заново не исследовались, тесты/compile/CI/браузер не запускались.
+## Остаток и доказательства
 
-## Сохранность
+В OLDCHAT20 чтением шести входных chunks/правил названы семь ID без назначения ДО efb8730: bell, player_head, bubble_column, water, flowing_water, lava, flowing_lava. После назначения четырёх жидкостей предварительный остаток — bell/player_head/bubble_column. Это вывод из архивной сверки и последующего коммита, НЕ свежий полный coverage. Колокол/голова игрока не становятся согласованным объёмом автоматически. Fire уже имеет builder; отсутствие player не означает отсутствие геометрии.
 
-Только main; refactor-0.9 не воссоздавать, backup автоматически не обновлять. fk070_packs — пользовательские localStorage паки; backup кода их не сохраняет, storage ради кэша не очищать. Файлы <25000 UTF-8 байт по ответственности. Каждая запись — точное подтверждение и полный saved diff/контент. После неоднозначного сбоя сначала GitHub. Новые постоянные test files только отдельно согласовать; существующие не удалять массово.
+OLDCHAT20 сообщает изолированные syntax/JS/Three mock проверки горшка, conduit и жидкостей; числа перекрываются, не суммировать. Они не full normalize → compile → resolver → UI, не реальные PNG/TGA/WebGL/Android/export. В этой сессии тесты, компиляция, CI и браузер НЕ запускались. Прочитаны полный OLDCHAT20, семь прежних документов, последние 15 коммитов, текущие preview.mjs и models/liquids.mjs; весь код/все diff заново не проверены. История подтверждает коммиты, не результат исполнения.
 
-Unknown не заменять cube. Различать aliases/forms/states/stages/frames, сохранять owned paths/carried/icons/indexed repeats/saved-ID и конкретные shared dependencies без передачи ownership. Oxidation/normal/deepslate не сливать по сходству. Принятые legacy geometry/UV без дефекта не переделывать. Glow — Basic, обычные роли Lambert; texture layer владеет GPU textures, materials заимствуют. Composite учитывает все части/update/cleanup.
+Последняя реплика ассистента OLDCHAT19 ранее исключена владельцем: не возвращать её PNG-frame заявления как диагноз/задачу. Исторические гипотезы OLDCHAT17 (async PNG index, memory/storage save failure, atlas heuristic, full GPU update) — отдельно для воспроизведения, не доказанные блокеры. Подозрение ceiling-sign rotation снято: standing/attached rotation, ceiling/wall facing. Сбои AI/коннектора не доказывают дефект приложения.
 
-Перенос/основа с точечными проверками → совместная приёмка → чистка → удаление заменённого legacy после успеха. Принять draw/undo/redo/Add/reopen/PNG/mcpack, Android, async/storage/import/dimensions/alpha/cache/URL lifecycle и language/theme/pack/slot/frame. Только затем синхронизировать FK_V/cache. PIN Mojang/bedrock-samples: 46ba6ea985fb5a92d79a9419198f10dda14c199d; выпуски не смешивать.
+## Постоянные контракты и сохранность
 
-Гипотезы OLDCHAT17 — async PNG index, память/storage при неудачном сохранении, imageFrames atlas heuristic, полное GPU update — остаются историческими возможными проблемами для воспроизведения, не текущими доказанными блокерами. Они не основаны на исключённой последней реплике OLDCHAT19. Подозрение rotation потолочной таблички снято. Причины сбоев AI/коннектора не установлены и не доказывают дефект FoundryKin. Отвечать коротко по-русски.
+Только main; refactor-0.9 не воссоздавать, backup автоматически не обновлять. fk070_packs — пользовательские localStorage паки, backup кода их не сохраняет; ради кэша storage не очищать. Каждая запись — точное подтверждение и полный saved diff/контент; после неоднозначного сбоя сначала GitHub. Малые самосогласованные пакеты, файлы <25000 UTF-8 байт по ответственности. Новые постоянные test files отдельно согласовать, существующие не удалять массово. Отвечать коротко по-русски, техническую отладку на владельца не перекладывать.
+
+Не создавать второй каталог/меню/monkey-patch chains/адаптеры вокруг адаптеров. Unknown не cube. Различать aliases/forms/states/stages/frames; сохранять source IDs/reopen/owned paths/carried/icons/indexed repeats и конкретные shared dependencies без передачи ownership. Общая PNG не основание alias, oxidation/normal/deepslate не сливать; waxed/infested только при эквивалентности. PNG/form/state/pose независимы, общие sheets напрямую без копирования/обрезки. EN/RU, IDs без перевода, paper tokens сохранять.
+
+Принятую legacy geometry/UV, особенно repeater/comparator, без конкретного дефекта не переделывать. Glow/sprite Basic-unlit, обычные роли Lambert; материалы заимствуют textures, texture layer владеет GPU textures. Composite update/cleanup учитывает все части и ошибки. Сохранять PNG dimensions/alpha/atlases/frame strips.
+
+Перенос/основа с точечными проверками → совместная приёмка → чистка → удаление заменённого legacy после успеха. Принять draw/undo/redo/Add/reopen/PNG/mcpack, Android, async/storage/import/dimensions/alpha/cache/URL lifecycle и language/theme/pack/slot/frame; лишь затем переключать основной runtime и синхронизировать FK_V/cache. PIN Mojang/bedrock-samples: 46ba6ea985fb5a92d79a9419198f10dda14c199d, выпуски не смешивать.

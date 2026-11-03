@@ -6,22 +6,20 @@
 
 ## Статус на 2026-11-03
 
-Проверенный HEAD до документации: 40c82f0e6e3be884f73d0ee61bf8a8a385e5164d. Рефакторинг/блоковый этап в целом не завершены; не выпуск/визуальная приёмка. Основной editor не переключён на новый путь, по прежним проверкам legacy UI 0.9.1; HTML здесь заново не проверялся.
+Проверенный HEAD до этой документации: efb873044ce59c308bce2aaf11ba73c709d869bf. Рефакторинг/блоковый этап не завершены, это не выпуск/визуальная приёмка. Основной editor не переключён на новый путь; legacy UI 0.9.1 по прежним проверкам, HTML здесь заново не исследован.
 
-Записаны каталог/модели, fruit+stem/budding amethyst/aquatic/propagule/kelp/emissive plants, materials/canvas-GPU lifecycle. Bed/sign/auxiliary/lava cauldron/chest/shulker/banner не нужно повторять. Статуи голема уже используют общие sheets четырёх окислений и четыре статичные позы.
+Новая основа разделяет каталог/модели/ресурсы/состояния/materials/lifecycle. Bed/sign/cauldron/chest/shulker/banner и предыдущие plant/fruit/aquatic модели уже переносились. Головы skeleton/wither_skeleton/creeper/zombie/piglin/dragon и статуи 4 окислений/4 поз находятся в parent cards с сохранением source IDs. Eyeblossom одна card closed/open/glow. Полные mobs отложены, не недоделка голов.
 
-Отдельный read-only preview использует общий FKModelState/FKM/CSS. Eyeblossom — одна card closed/open с glow. Skeleton/wither skeleton/creeper/zombie/piglin/dragon heads находятся в parent cards, source IDs сохранены. Дракон использует textures/entity/dragon/dragon без отдельной PNG головы/полного тела. PNG/form/state/pose независимы.
+OLDCHAT20 добавил decorated pot с 23 узорами/обычной стороной и 4 независимыми choices, static active Java-reference conduit с activity/eye/wind picker. Общие controls вынесены в preview-controls.mjs без второй реализации меню. PNG/form/state/pose независимы.
 
-Срез 27 source block IDs — НЕ 27 cards/весь каталог. Кодовое подключение согласованных голов к preview записано; full compile/реальные PNG-TGA/WebGL/Android/export ещё не приняты. Полные мобы/скелет/развёртки отложены, не текущая недоделка этапа голов. Static states/poses не плеер.
+Отдельный read-only preview теперь включает 29 source block IDs, НЕ 29 cards/весь каталог/редактор. Основы water/lava и назначения 4 ID уже записаны; в срез/меню жидкости ещё не подключены — это текущая точка продолжения. Uniform-height level 0..7 не симуляция потока и не принятый Bedrock render.
 
-Текущий вопрос владельца — адаптация узкого макета под планшет/компьютер. Предстоит изучить layout и ответить по коду; широкий макет не подтверждён, редизайн/раскладка не согласованы. Последнюю реплику ассистента OLDCHAT19 владелец исключил из работы: она не источник задач/диагнозов.
-
-Порядок: согласованные модели/основа с точечными проверками → совместная приёмка → чистка → удаление заменённой основы после готовности. Workflow/исторические mocks не доказывают успешный CI/render, свежего coverage нет. Возможные проблемы OLDCHAT17 — отдельные исторические гипотезы, не доказанные блокеры.
+Existing workflow дополнен проверками pot/conduit, но успешный Actions/full compile/реальные PNG-TGA/WebGL/Android/export не подтверждены. Исторические mocks этого не заменяют. Вопрос адаптации tablet/desktop открыт, конкретный редизайн не согласован; mobile/paper tokens сохраняются.
 
 ## Навигация и сохранность
 
-Начать с CONTEXT.md, затем docs/handoff-unified-cards.md; TODO.md/ARCHITECTURE.md/ROADMAP.md/docs/review-principles.md. Прочитаны OLDCHAT19, семь документов, последние 20 коммитов и preview.mjs; HEAD проверен повторно. Тесты/compile/CI/браузер не запускались, весь код/diff не исследовался заново.
+Читать CONTEXT.md → docs/handoff-unified-cards.md → ARCHITECTURE.md → TODO.md → ROADMAP.md → docs/review-principles.md. Предыдущие полные документы сохранены в d41f384. В этой передаче прочитаны полный OLDCHAT20, семь документов, 15 коммитов, root preview.mjs и models/liquids.mjs; тесты/compile/CI/браузер не запускались, весь код/diff заново не исследован.
 
-Только main, малые пакеты/точное подтверждение каждой записи/полный saved diff. Новые test files отдельно согласовать, существующие не удалять массово. Backup автоматически не обновлять, refactor-0.9 не воссоздавать. LocalStorage fk070_packs не очищать: backup кода не сохраняет паки.
+Порядок: перенос/основа с точечными проверками → совместная приёмка → чистка → переключение/удаление legacy после готовности. Только main/точное подтверждение каждой записи/saved diff; новые test files отдельно согласовать, существующие не удалять массово. backup автоматически не обновлять/refactor-0.9 не воссоздавать. fk070_packs не очищать: backup кода не сохраняет пользовательские паки.
 
-PIN Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d; candidate в репозитории. Legacy Three.js r128/JSZip 3.10.1. Сохранять paper/design tokens/телефонный сценарий.
+PIN Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d, candidate в репозитории. Legacy Three.js r128/JSZip 3.10.1. Прочие контракты и границы доказательств — CONTEXT/ARCHITECTURE.
