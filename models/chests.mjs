@@ -2,10 +2,11 @@
    Reference candidate, not a Mojang geometry export or Bedrock PNG/UV acceptance. */
 import {composeShape,requireRoles} from './shapes.mjs';
 const FACING=Object.freeze({north:0,east:-Math.PI/2,south:Math.PI,west:Math.PI/2});
+const COPPER=/^(?:waxed_)?(?:(?:exposed|weathered|oxidized)_)?copper_chest$/;
 export function createChestModels(Three) {
  if(!Three||typeof Three.Mesh!=='function'||typeof Three.PlaneGeometry!=='function'||typeof Three.BoxGeometry!=='function'||Three.DoubleSide===undefined)throw new Error('Chest models require Three');
  function build(E) {
-  if(!['chest','trapped_chest','ender_chest'].includes(E?.cur))throw new Error('Unknown chest object');
+  if(!['chest','trapped_chest','ender_chest'].includes(E?.cur)&&!(typeof E?.cur==='string'&&COPPER.test(E.cur)))throw new Error('Unknown chest object');
   const state=E.state??{};
   if(!state||typeof state!=='object'||Array.isArray(state))throw new Error('Invalid chest state');
   const facing=state.facing??'north';

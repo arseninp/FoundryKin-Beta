@@ -52,6 +52,7 @@ export const SPECIAL_PATTERNS = Object.freeze([
   [CANDLE_CAKE_PATTERN, 'cake'],
   [/^(?:dead_)?(?:tube|brain|bubble|fire|horn)_coral_(?:wall_)?fan$/, 'cross'],
   [/_shelf$/, 'shelf'],
+  [/^(?:waxed_)?(?:(?:exposed|weathered|oxidized)_)?copper_chest$/, 'chest'],
   [/^(?:waxed_)?(?:(?:exposed|weathered|oxidized)_)?copper_bars$/, 'bars'],
   [/^(?:waxed_)?(?:(?:exposed|weathered|oxidized)_)?lightning_rod$/, 'lightning_rod']
 ].map(pair => Object.freeze(pair)));
