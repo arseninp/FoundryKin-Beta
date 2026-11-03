@@ -7,6 +7,18 @@ export function parseLooseJson(text) {
   const stripped = clean.replace(/("(?:\\.|[^"\\])*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g, (all, quoted) => quoted ?? '').replace(/,(\s*[}\]])/g, '$1');
   return JSON.parse(stripped);
 }
+/* Only these auxiliary definitions are admitted as catalog block sources. */
+export function admitAuxiliaryBlocks(blocks, auxiliary = {}) {
+  if (!dictionary(blocks) || !dictionary(auxiliary)) throw new Error('Invalid auxiliary block sources');
+  const admitted = {...blocks};
+  for (const [id, definition] of Object.entries(auxiliary)) {
+    if (!['end_gateway', 'lava_cauldron'].includes(id)) throw new Error('Unassigned auxiliary block source: ' + id);
+    if (!dictionary(definition)) throw new Error('Invalid auxiliary block definition: ' + id);
+    if (own(blocks, id)) throw new Error('Conflicting auxiliary block source: ' + id);
+    admitted[id] = structuredClone(definition);
+  }
+  return admitted;
+}
 /* Mirrors the pinned chunk layout: blocks, terrain (texture_data), existing and auxiliary sections of manifest files. */
 export function assembleChunks(manifest, parts) {
   if (!dictionary(manifest) || manifest.schema !== 1 || !dictionary(manifest.counts) || !Array.isArray(parts)) throw new Error('Unsupported catalog manifest');
@@ -23,6 +35,7 @@ export function assembleChunks(manifest, parts) {
   }
   const counts = {blocks: Object.keys(data.blocks).length, terrain: Object.keys(data.terrain.texture_data).length, existing: Object.keys(data.existing).length};
   for (const name of Object.keys(counts)) if (counts[name] !== manifest.counts[name]) throw new Error('Catalog count mismatch: ' + name);
+  data.blocks = admitAuxiliaryBlocks(data.blocks, data.auxiliary);
   return data;
 }
 /* Unpacked Mojang files: blocks.json, terrain_texture.json and optionally flipbook_textures.json. */

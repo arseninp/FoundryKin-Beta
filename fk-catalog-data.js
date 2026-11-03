@@ -18,15 +18,8 @@ function manifest(m){
  return m;
 }
 function assemble(m,parts){
- var d={blocks:{},terrain:{texture_data:{}},existing:{},auxiliary:{},source:m.source};
- parts.forEach(function(p){
-  var section=p.name.split('-')[0],target=section==='terrain'?d.terrain.texture_data:d[section];
-  if(!target)return;
-  if(!p.value||typeof p.value!=='object'||Array.isArray(p.value))throw new Error('Invalid catalog section');
-  Object.keys(p.value).forEach(function(k){if(Object.prototype.hasOwnProperty.call(target,k))throw new Error('Duplicate catalog key: '+k);Object.defineProperty(target,k,{value:p.value[k],enumerable:true,writable:true,configurable:true})});
- });
- if(!Object.keys(d.blocks).length||Object.keys(d.blocks).length!==m.counts.blocks||Object.keys(d.terrain.texture_data).length!==m.counts.terrain||Object.keys(d.existing).length!==m.counts.existing)throw new Error('Catalog counts do not match manifest');
- return d;
+ if(m.counts.blocks<1)throw new Error('Catalog counts do not match manifest');
+ return import('./catalog/load.mjs').then(function(helpers){return helpers.assembleChunks(m,parts)});
 }
 function load(){
  if(!pending)pending=read(BASE+'manifest.json').then(function(t){return manifest(JSON.parse(t))}).then(function(m){
