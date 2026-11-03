@@ -1,6 +1,7 @@
 /* Explicit instance lifecycle for resolved previews. Texture loading remains caller-owned. */
 import {createModelMaterials} from '../models/materials.mjs';
 import {createModelTextures} from '../models/textures.mjs';
+import {prepareBannerPlan,composeBannerCanvases} from './banner-preview.mjs';
 const dictionary=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 function materialRequest(catalog,registry,plan) {
  const sources=plan.parts===undefined?[{model:plan.model,bindings:plan.mode==='sprite'?{sprite:plan.slot}:plan.bindings}]:Object.values(plan.parts).map(part=>{
@@ -33,9 +34,9 @@ function release(root,materials) {
 }
 export function withPreparedPreview(catalog,registry,Three,resolve) {
  return function(request) {
-  const plan=resolve(request),build=plan.build.bind(plan);
+  const selected=resolve(request),plan=prepareBannerPlan(catalog.records?.[selected.object?.id],selected),build=plan.build.bind(plan);
   const materialPlan=materialRequest(catalog,registry,plan);
-  function instantiate(environment,textures) {
+  function instantiateResolved(environment,textures) {
    if(!Three||typeof Three.Group!=='function')throw new Error('Prepared preview requires Three.Group');
    if(!dictionary(environment)||!environment.group||typeof environment.group.add!=='function'||typeof environment.group.remove!=='function')throw new Error('Missing prepared preview environment');
    const root=new Three.Group(),materials=createModelMaterials(Three,materialPlan.descriptor,materialPlan.bindings,textures);
@@ -50,10 +51,19 @@ export function withPreparedPreview(catalog,registry,Three,resolve) {
    });
   }
   const paths=[...new Set(Object.values(materialPlan.bindings))];
-  return {...plan,instantiate,
+  return {...plan,
+   instantiate(environment,textures) {
+    if(plan.banner)throw new Error('Banner composition requires instantiateCanvases');
+    return instantiateResolved(environment,textures);
+   },
    instantiateCanvases(environment,canvases) {
-    let batch=createModelTextures(Three,paths,canvases),instance;
-    try{instance=instantiate(environment,batch.textures);}catch(error){
+    const makeCanvas=environment?.makeCanvas??(()=>{
+     if(!globalThis.document||typeof globalThis.document.createElement!=='function')throw new Error('Banner composition requires a canvas factory');
+     return globalThis.document.createElement('canvas');
+    });
+    const upload=lookup=>plan.banner?composeBannerCanvases(plan.banner,lookup,makeCanvas):lookup;
+    let batch=createModelTextures(Three,paths,upload(canvases)),instance;
+    try{instance=instantiateResolved(environment,batch.textures);}catch(error){
      try{batch.dispose();}catch(cleanupError){throw new AggregateError([error,cleanupError],'Canvas preview creation and cleanup failed');}
      throw error;
     }
@@ -61,7 +71,7 @@ export function withPreparedPreview(catalog,registry,Three,resolve) {
     return Object.freeze({group:instance.group,
      update(lookup) {
       if(disposed)throw new Error('Canvas preview is disposed');
-      const next=createModelTextures(Three,paths,lookup);
+      const next=createModelTextures(Three,paths,upload(lookup));
       try{instance.update(next.textures);}catch(error){
        try{next.dispose();}catch(cleanupError){throw new AggregateError([error,cleanupError],'Canvas preview update and cleanup failed');}
        throw error;
