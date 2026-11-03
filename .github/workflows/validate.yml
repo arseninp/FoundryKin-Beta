@@ -71,7 +71,7 @@ jobs:
           import {createRequire} from 'node:module';
           import {join} from 'node:path';
           import {readCandidate} from './tools/model-coverage.mjs';
-          import {compileReview, REVIEW_IDS, resourcePaths} from './preview.mjs';
+          import {compileReview, REVIEW_IDS, resourcePaths, previewControlSpec} from './preview.mjs';
           import {createPreviewResolver} from './catalog/preview.mjs';
           const require = createRequire(join(process.env.RUNNER_TEMP, 'fk-preview-three', 'package.json'));
           const Three = require('three');
@@ -81,7 +81,15 @@ jobs:
           assert.equal(coverage.ready, true);
           assert.deepEqual(Object.keys(catalog.records).sort(), [...REVIEW_IDS].sort());
           assert.ok(catalog.cards.includes('closed_eyeblossom'));
-          assert.ok(catalog.cards.includes('open_eyeblossom'));
+          assert.ok(!catalog.cards.includes('open_eyeblossom'));
+          const bloomGroup = catalog.stateGroups.closed_eyeblossom;
+          assert.equal(bloomGroup.parameter, 'bloom');
+          assert.equal(bloomGroup.default, 'closed');
+          assert.deepEqual({...bloomGroup.variants}, {closed:'closed_eyeblossom',open:'open_eyeblossom'});
+          assert.deepEqual({...bloomGroup.models}, {closed:'cross',open:'emissive_cross'});
+          const bloomPaths = [...new Set(['closed_eyeblossom','open_eyeblossom'].flatMap(id => catalog.records[id].paths))].sort();
+          assert.deepEqual(bloomGroup.paths, bloomPaths);
+          for (const path of bloomPaths) assert.ok(Object.hasOwn(input.existing, path), 'Missing eyeblossom resource: ' + path);
           const resolve = createPreviewResolver(catalog, registry, Three);
           const before = JSON.stringify(catalog);
           let checks = 0;
@@ -96,18 +104,40 @@ jobs:
            try {
             instance = plan.instantiate({group}, textures);
             let meshes = 0;
+            const modelMaterials = [];
             group.traverse(node => {
-             if (node.isMesh) {meshes++;assert.ok(node.geometry?.attributes.position?.count > 0);}
+             if (node.isMesh) {meshes++;assert.ok(node.geometry?.attributes.position?.count > 0);modelMaterials.push(...(Array.isArray(node.material) ? node.material : [node.material]));}
             });
             assert.ok(meshes > 0, 'Empty preview: ' + request.id);
             if (!request.state) assert.equal(plan.object.id, request.id);
+            if (plan.object.card === 'closed_eyeblossom') {
+             const open = plan.state.bloom === 'open';
+             assert.equal(plan.model, open ? 'emissive_cross' : 'cross');
+             assert.equal(meshes, open ? 4 : 2);
+             assert.equal(modelMaterials.filter(material => material.isMeshBasicMaterial === true).length, open ? 2 : 0);
+             assert.equal(modelMaterials.filter(material => material.isMeshLambertMaterial === true).length, 2);
+            }
             checks++;
            } finally {
             try {instance?.dispose();} finally {for (const texture of Object.values(textures)) texture.dispose();}
            }
            assert.equal(group.children.length, 0);
+           return plan;
           }
           for (const id of REVIEW_IDS) check({id});
+          for (const source of ['closed_eyeblossom','open_eyeblossom']) for (const bloom of ['closed','open']) for (const slot of bloomPaths) {
+           const plan = check({id:source,state:{bloom},slot});
+           assert.equal(plan.object.card, 'closed_eyeblossom');
+           assert.equal(plan.object.id, bloomGroup.variants[bloom]);
+           assert.equal(plan.slot, slot);
+           assert.equal(plan.state.bloom, bloom);
+           const controls = previewControlSpec(catalog, plan);
+           assert.equal(controls.state.bloom, bloom);
+           assert.equal(controls.schema.length, 1);
+           assert.equal(controls.schema[0].key, 'bloom');
+           assert.deepEqual(controls.schema[0].values.map(option => option.value), ['closed','open']);
+           assert.deepEqual(controls.schema[0].values.map(option => option.label), [['Closed','Закрытый'],['Open','Открытый']]);
+          }
           for (const variant of ['plain','carved','lit']) for (const stem of [false,true]) for (const facing of ['north','south','east','west']) check({id:'pumpkin',state:{variant,stem,facing}});
           for (const stem of [false,true]) for (const facing of ['north','south','east','west']) check({id:'melon_block',state:{stem,facing}});
           for (let stage = 0; stage < 8; stage++) check({id:'melon_stem',state:{stage}});
