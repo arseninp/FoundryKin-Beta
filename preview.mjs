@@ -74,8 +74,8 @@ export function createImageSource(loadVanilla,decodePNG,options={}) {
  };
 }
 const TEXT={
- en:{back:'Editor',language:'Language',title:'New model preview',scope:'Explicit review slice: 17 source block IDs, not the full catalog or an editor release. Nothing is written to your packs.',scopeDetails:'Included source IDs',object:'Object',source:'Open source ID',open:'Open',textures:'Texture source',vanilla:'Pinned vanilla',pack:'Active pack (read only)',reload:'Reload',hint:'Drag to rotate. Manual source frames only: no playback or Bedrock animation timing. Kelp remains a static candidate.',resources:'Model resources',loading:'Loading',ready:'Displayed',failed:'Could not display',frame:'Source frame',stem:'Stem',stage:'Stem stage',facing:'Stem direction',variant:'Variant',crystals:'Crystal',growth:'Growth',face:'Block face',tall:'Tall form',hanging:'Hanging',age:'Age',off:'Without',on:'With',plain:'Plain',carved:'Carved',lit:'Lit',small:'Small',medium:'Medium',large:'Large',cluster:'Cluster',up:'Up',down:'Down',north:'North',south:'South',east:'East',west:'West',bloom:'Display',bloom_closed:'Closed',bloom_open:'Open',eyeblossom:'Eye blossom'},
- ru:{back:'Редактор',language:'Язык',title:'Новый просмотр моделей',scope:'Явный срез: 17 исходных ID блоков, не полный каталог и не выпуск редактора. В паки ничего не записывается.',scopeDetails:'Исходные ID в этом срезе',object:'Объект',source:'Открыть исходный ID',open:'Открыть',textures:'Источник текстур',vanilla:'Закреплённая ваниль',pack:'Активный пак (только чтение)',reload:'Обновить',hint:'Потяни для вращения. Кадры выбираются вручную: плеера и игрового тайминга ещё нет. Kelp остаётся статическим кандидатом.',resources:'Ресурсы модели',loading:'Загрузка',ready:'Показан',failed:'Не удалось показать',frame:'Кадр исходника',stem:'Стебель',stage:'Стадия стебля',facing:'Направление стебля',variant:'Вариант',crystals:'Нарост',growth:'Рост',face:'Грань блока',tall:'Высокая форма',hanging:'Висячий',age:'Возраст',off:'Без',on:'Со',plain:'Обычная',carved:'Вырезанная',lit:'Светящаяся',small:'Малый',medium:'Средний',large:'Большой',cluster:'Кластер',up:'Верх',down:'Низ',north:'Север',south:'Юг',east:'Восток',west:'Запад',bloom:'Отображение',bloom_closed:'Закрытый',bloom_open:'Открытый',eyeblossom:'Глазоцвет'}
+ en:{back:'Editor',language:'Language',title:'New model preview',scope:'Explicit review slice: 17 source block IDs, not the full catalog or an editor release. Nothing is written to your packs.',scopeDetails:'Included source IDs',object:'Object',source:'Open source ID',open:'Open',textures:'Texture source',vanilla:'Pinned vanilla',pack:'Active pack (read only)',reload:'Reload',hint:'Drag to rotate. Manual source frames only: no playback or Bedrock animation timing. Kelp remains a static candidate.',resources:'Model resources',loading:'Loading',ready:'Displayed',failed:'Could not display',frame:'Source frame',stem:'Stem',stage:'Stem stage',facing:'Stem direction',variant:'Variant',crystals:'Crystal',growth:'Growth',face:'Block face',tall:'Tall form',hanging:'Hanging',age:'Age',off:'Without',on:'With',plain:'Plain',carved:'Carved',lit:'Lit',small:'Small',medium:'Medium',large:'Large',cluster:'Cluster',up:'Up',down:'Down',north:'North',south:'South',east:'East',west:'West',bloom:'Display',bloom_closed:'Closed',bloom_open:'Open',eyeblossom:'Eye blossom',done:'Done'},
+ ru:{back:'Редактор',language:'Язык',title:'Новый просмотр моделей',scope:'Явный срез: 17 исходных ID блоков, не полный каталог и не выпуск редактора. В паки ничего не записывается.',scopeDetails:'Исходные ID в этом срезе',object:'Объект',source:'Открыть исходный ID',open:'Открыть',textures:'Источник текстур',vanilla:'Закреплённая ваниль',pack:'Активный пак (только чтение)',reload:'Обновить',hint:'Потяни для вращения. Кадры выбираются вручную: плеера и игрового тайминга ещё нет. Kelp остаётся статическим кандидатом.',resources:'Ресурсы модели',loading:'Загрузка',ready:'Показан',failed:'Не удалось показать',frame:'Кадр исходника',stem:'Стебель',stage:'Стадия стебля',facing:'Направление стебля',variant:'Вариант',crystals:'Нарост',growth:'Рост',face:'Грань блока',tall:'Высокая форма',hanging:'Висячий',age:'Возраст',off:'Без',on:'Со',plain:'Обычная',carved:'Вырезанная',lit:'Светящаяся',small:'Малый',medium:'Средний',large:'Большой',cluster:'Кластер',up:'Верх',down:'Низ',north:'Север',south:'Юг',east:'Восток',west:'Запад',bloom:'Отображение',bloom_closed:'Закрытый',bloom_open:'Открытый',eyeblossom:'Глазоцвет',done:'Готово'}
 };
 const bool=[['off',false],['on',true]],directions=['north','south','east','west'].map(key=>[key,key]);
 const numbers=n=>Array.from({length:n},(_,index)=>[String(index),index]);
@@ -87,6 +87,11 @@ export function previewFields(catalog,plan) {
  const fields=FIELDS[plan.object.card]??[];
  if(!group)return fields.map(([key,options,fallback])=>[key,options.map(option=>[...option]),fallback]);
  return [[group.parameter,Object.keys(group.variants).map(value=>[value,value]),group.default],...fields.filter(([key])=>key!==group.parameter).map(([key,options,fallback])=>[key,options.map(option=>[...option]),fallback])];
+}
+export function previewControlSpec(catalog,plan) {
+ const fields=previewFields(catalog,plan),label=(key,fallback=key)=>['en','ru'].map(lang=>TEXT[lang][key]??TEXT[lang][fallback]??fallback);
+ return {schema:fields.length?fields.map(([key,options])=>({key,label:label(key),values:options.map(([name,value])=>({value,label:label(key+'_'+name,name)}))})):null,
+  state:Object.fromEntries(fields.map(([key,,fallback])=>[key,plan.state[key]??fallback]))};
 }
 export async function startPreview() {
  const Three=globalThis.THREE,$=id=>document.getElementById(id),stage=$('stage'),status=$('status');
@@ -109,19 +114,18 @@ export async function startPreview() {
   });
  }
  if(!Three)throw new Error('Three.js did not load');
+ if(!globalThis.FKM||!globalThis.FKModelState)throw new Error('Shared state picker did not load');
  const scene=new Three.Scene(),camera=new Three.OrthographicCamera(-1,1,1,-1,.1,100),turn=new Three.Group();
  camera.position.set(0,0,10);camera.lookAt(0,0,0);scene.add(turn);scene.add(new Three.AmbientLight(0xffffff,.75));
  const light=new Three.DirectionalLight(0xffffff,.55);light.position.set(2,4,3);scene.add(light);
  renderer=new Three.WebGLRenderer({antialias:true,alpha:true});renderer.setClearColor(0,0);stage.appendChild(renderer.domElement);
+ const stateUi=globalThis.FKModelState.create($('controls'),()=>{
+  if(busy||disposed||lost||!controlPlan)return;
+  state={...controlPlan.state,...stateUi.value()};show();
+ },{language:()=>lang,doneLabel:()=>t('done'),manager:()=>globalThis.FKM});
  function controls(plan) {
-  controlPlan=plan;$('controls').replaceChildren();
-  for(const [key,options,fallback] of previewFields(catalog,plan)) {
-   const label=document.createElement('label'),text=document.createElement('span'),select=document.createElement('select');text.textContent=t(key);label.append(text,select);
-   const value=plan.state[key]??fallback;
-   options.forEach(([name,choice],index)=>{const option=document.createElement('option');option.value=String(index);option.textContent=TEXT[lang][key+'_'+name]??t(name);option.selected=choice===value;select.appendChild(option);});
-   select.disabled=busy;
-   select.addEventListener('change',()=>{if(busy||controlPlan!==plan)return;state={...plan.state,[key]:options[Number(select.value)][1]};show();});$('controls').appendChild(label);
-  }
+  const spec=previewControlSpec(catalog,plan);controlPlan=plan;
+  stateUi.select(plan.object.card,spec.schema,spec.state);stateUi.busy(busy||lost);
  }
  function resources(snapshot) {
   $('resources').replaceChildren();
@@ -145,7 +149,7 @@ export async function startPreview() {
  }
  async function show() {
   if(!resolve||disposed)return;if(lost){message('failed','WebGL context lost',true);return;}
-  const token=++generation;busy=true;drag=null;stage.setAttribute('aria-busy','true');renderer.domElement.style.visibility='hidden';controlPlan=null;$('controls').replaceChildren();$('resources').replaceChildren();message('loading',id);
+  const token=++generation;busy=true;stateUi.busy(true);drag=null;stage.setAttribute('aria-busy','true');renderer.domElement.style.visibility='hidden';controlPlan=null;$('resources').replaceChildren();message('loading',id);
   let next;
   try {
    const plan=resolve({id,state:{...state}}),paths=resourcePaths(plan),overrides=$('textureSource').value==='pack'?activePack(localStorage):{};
@@ -165,7 +169,7 @@ export async function startPreview() {
   }catch(error){
    try{next?.dispose();}catch(cleanupError){error=new AggregateError([error,cleanupError],'Preview cleanup failed');}
    if(token===generation&&!disposed)message('failed',error.message,true);
-  }finally{if(token===generation&&!disposed){busy=false;stage.setAttribute('aria-busy','false');$('controls').querySelectorAll('select').forEach(select=>select.disabled=false);}}
+  }finally{if(token===generation&&!disposed){busy=false;stage.setAttribute('aria-busy','false');stateUi.busy(lost);}}
  }
  function choose(value){id=value;state={};frames.clear();$('source').value=id;show();}
  $('object').addEventListener('change',()=>choose($('object').value));
@@ -175,13 +179,13 @@ export async function startPreview() {
  stage.addEventListener('pointerdown',event=>{if(busy||!current||current.plan.mode==='sprite'||drag)return;drag={id:event.pointerId,x:event.clientX,y:event.clientY};stage.setPointerCapture(event.pointerId);});
  stage.addEventListener('pointermove',event=>{if(!drag||drag.id!==event.pointerId)return;turn.rotation.y+=(event.clientX-drag.x)*.01;turn.rotation.x=Math.max(-1.4,Math.min(1.4,turn.rotation.x+(event.clientY-drag.y)*.01));drag.x=event.clientX;drag.y=event.clientY;render();});
  const end=event=>{if(drag?.id===event.pointerId)drag=null;};['pointerup','pointercancel','lostpointercapture'].forEach(name=>stage.addEventListener(name,end));
- renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();generation++;lost=true;busy=false;drag=null;stage.setAttribute('aria-busy','false');$('controls').querySelectorAll('select').forEach(select=>select.disabled=true);if(frame!==null){cancelAnimationFrame(frame);frame=null;}renderer.domElement.style.visibility='hidden';message('failed','WebGL context lost',true);});
+ renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();generation++;lost=true;busy=false;stateUi.busy(true);drag=null;stage.setAttribute('aria-busy','false');if(frame!==null){cancelAnimationFrame(frame);frame=null;}renderer.domElement.style.visibility='hidden';message('failed','WebGL context lost',true);});
  renderer.domElement.addEventListener('webglcontextrestored',()=>{lost=false;show();});
  const resize=new ResizeObserver(render);resize.observe(stage);
  document.addEventListener('visibilitychange',()=>{if(document.hidden){drag=null;if(frame!==null){cancelAnimationFrame(frame);frame=null;}}else render();});
  window.addEventListener('pageshow',event=>{if(event.persisted)render();});
  window.addEventListener('storage',event=>{if(event.key==='fk070_packs'&&$('textureSource').value==='pack'){frames.clear();show();}});
- window.addEventListener('pagehide',event=>{if(event.persisted)return;disposed=true;generation++;resize.disconnect();if(frame!==null)cancelAnimationFrame(frame);try{current?.instance.dispose();}finally{renderer.dispose();}});
+ window.addEventListener('pagehide',event=>{if(event.persisted)return;disposed=true;generation++;resize.disconnect();if(frame!==null)cancelAnimationFrame(frame);try{stateUi.dispose();}finally{try{current?.instance.dispose();}finally{renderer.dispose();}}});
  try {
   const input=await globalThis.FKCatalogData.load();if(disposed)return;
   const compiled=compileReview(input,Three);catalog=compiled.catalog;resolve=createPreviewResolver(catalog,compiled.registry,Three);

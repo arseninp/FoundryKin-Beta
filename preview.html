@@ -32,7 +32,7 @@ small{color:var(--mute)}details{margin-top:14px;font-size:12px;overflow-wrap:any
 <details><summary data-text="scopeDetails">Included source IDs</summary><p id="scopeList"></p></details>
 <div class="row"><label><span data-text="object">Object</span><select id="object" disabled></select></label></div>
 <form id="sourceForm" class="row"><label><span data-text="source">Open source ID</span><input id="source" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" disabled></label><button id="open" type="submit" data-text="open" disabled>Open</button></form>
-<div id="controls" class="row"></div>
+<div id="controls" hidden></div>
 <div class="row"><label><span data-text="textures">Texture source</span><select id="textureSource" disabled><option value="vanilla" data-text="vanilla">Pinned vanilla</option><option value="pack" data-text="pack">Active pack (read only)</option></select></label><button id="reload" type="button" data-text="reload">Reload</button></div>
 <div id="stage" class="stage" aria-busy="true"></div>
 <p id="status" role="status" aria-live="polite">Loading / Загрузка…</p>
@@ -42,6 +42,8 @@ small{color:var(--mute)}details{margin-top:14px;font-size:12px;overflow-wrap:any
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="fk-catalog-data.js?v=0.9.1"></script>
 <script src="fk-catalog.js?v=0.9.1"></script>
+<script src="fk-menu.js?v=0.9.1"></script>
+<script src="fk-model-state.js?v=0.9.1"></script>
 <script type="module" src="preview.mjs"></script>
 </body>
 </html>

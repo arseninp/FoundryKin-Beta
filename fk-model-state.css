@@ -4,3 +4,4 @@
 .fkStateValue{font-weight:500;color:var(--mute);text-align:right;overflow-wrap:anywhere}
 .fkStateOptions{display:flex;flex-direction:column;gap:6px}
 .fkStateOptions .fkStateOption{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:var(--fk-header-height);padding:10px 12px;font:inherit;text-align:left}
+.fkStateOptions .fkStateOption.on{background:var(--acc);color:var(--accink)}
