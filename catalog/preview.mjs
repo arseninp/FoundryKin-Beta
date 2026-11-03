@@ -96,6 +96,23 @@ function decoratedPotBindings(record,state) {
  state.patterns=normalized;
  return result;
 }
+function conduitBindings(record,state) {
+ if(record.model!=='conduit')return null;
+ if(record.id!=='conduit')throw new Error('Unknown conduit object');
+ state.active??=false;state.eye_open??=false;state.wind??='horizontal';
+ if(typeof state.active!=='boolean'||typeof state.eye_open!=='boolean'||!['horizontal','vertical'].includes(state.wind))throw new Error('Invalid conduit preview state');
+ if(!own(record,'conduitParts')) {
+  if(state.active)throw new Error('Missing active conduit resources');
+  return null;
+ }
+ const parts=record.conduitParts;
+ if(!dictionary(parts)||!Array.isArray(record.paths))throw new Error('Invalid conduit resources');
+ for(const role of ['base','cage','eye_closed','eye_open','wind_horizontal','wind_vertical'])if(!own(parts,role)||typeof parts[role]!=='string'||!record.paths.includes(parts[role]))throw new Error('Missing or unowned conduit resource: '+role);
+ const up=record.bindings?.up;
+ if(!Array.isArray(up)||up.length!==1||up[0]!==parts.base)throw new Error('Invalid conduit base binding');
+ if(!state.active)return {up:[parts.base]};
+ return {cage:[parts.cage],eye:[state.eye_open?parts.eye_open:parts.eye_closed],wind:[parts['wind_'+state.wind]]};
+}
 function mossBindings(record) {
  if(record.model!=='pale_moss_carpet')return null;
  const find=name=>{
@@ -225,7 +242,7 @@ export function createPreviewResolver(catalog, registry, Three) {
   const model=base==='azalea'&&previewState.potted?'potted_azalea':base, descriptor=registry.get(model);
   const faceMap={}, shared=dictionary(record.dependencies)?record.dependencies:{};
   if (view==='model') {
-   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??cubeStateBindings(record,previewState)??candleBindings(record,previewState)??decoratedPotBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??deviceBindings(record)??stageBindings(record,previewState)??frameBindings(record)??hookBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
+   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??cubeStateBindings(record,previewState)??candleBindings(record,previewState)??decoratedPotBindings(record,previewState)??conduitBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??deviceBindings(record)??stageBindings(record,previewState)??frameBindings(record)??hookBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
    if (!dictionary(bindings)||!Object.keys(bindings).length) throw new Error('Missing model bindings');
    for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
    for (const [face,paths] of Object.entries(bindings)) {
