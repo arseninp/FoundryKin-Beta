@@ -1,44 +1,53 @@
 # Review principles and handoff safety
 
-Updated 2026-11-03. Verified code HEAD before documentation write: d7fb21715a633ccd61a4caf7ca78373e1289aa2a. Read CONTEXT first. Documentation is not a release or runtime acceptance.
+Updated 2026-11-03 from OLDCHAT19 and the owner's clarification. Verified HEAD before documentation: 40c82f0e6e3be884f73d0ee61bf8a8a385e5164d. Read CONTEXT, then handoff. Not a release or runtime acceptance.
 
 ## Workflow
 
-- Respond briefly in Russian. The owner curates behaviour/appearance, not code; own technical decisions and debugging.
-- Work only in main. Do not recreate refactor-0.9 or refresh backup automatically. Never clear fk070_packs for cache issues; code backup does not include user packs.
-- Migrate remaining models and technical foundation first; jointly test assembled agreed scope; remove unnecessary/duplicate parts after success; remove pre-refactor runtime only after readiness and acceptance. Targeted syntax/diff/behaviour checks accompany migration. OLDCHAT17 reaffirms that general audits, technical cleanup and CI expansion must not displace migration.
-- Use small self-consistent packages. After verifying each write, independently begin the next step; every write still needs its own exact system confirmation of complete arguments/content. Verify full saved content/diff, not file counts alone. Files below 25000 UTF-8 bytes by responsibility.
-- Do not add new permanent test files without separate agreement. Existing tests require individual review, no blanket deletion or automatic-cleanup promise.
-- After interruption inspect GitHub before retrying. Previous attachments/sandbox do not persist. AI failures have unknown causes and do not prove a FoundryKin defect. Avoid duplicate audits, huge rewrites, patch loaders and one-off Actions migrations.
+- Respond briefly in Russian. The owner curates behaviour/appearance, not code; own technical decisions/debugging. Read responsibility and consumers; no second catalog, monkey-patch chains, adapters around adapters or special head menus.
+- Only main; no refactor-0.9 recreation/automatic backup refresh. Never clear fk070_packs for cache; code backup excludes user packs.
+- Migrate agreed models/foundation with targeted checks → joint acceptance → cleanup → remove replaced legacy only after readiness. General audits/CI expansion must not displace migration.
+- Small self-consistent packages. Each write requires exact confirmation of all arguments/content and full saved diff/content verification. Files <25000 UTF-8 bytes by responsibility. New permanent tests need separate agreement; existing tests need individual review, no blanket deletion.
+- After interruption/ambiguous errors inspect GitHub before retrying. Old attachments/sandbox do not persist. AI/connector failures do not establish app defects; do not repeat committed packages from stale TODOs.
 
 ## Actual stopping point
 
-OLDCHAT17 and GitHub history agree: d7fb217 committed four copper golem statue geometry poses (standing/sitting/running/star) and registration. Statue source sheets/cards are NOT yet connected. Next attach existing entity oxidation sheets without copying PNG or merging oxidation records. Verify whether the statue actually needs the separate eye layer before adding it. Reuse this geometry for the future copper golem entity rather than creating a second copy, as the owner requested. This is not completion of the general entity adapter.
+40c82f0 connects dragon_head to the read-only preview. Agreed heads/skulls/statues/card wiring is committed, not visually accepted or switched into the main editor. REVIEW_IDS has 27 source block IDs, not cards/full catalog; four golem sources are unwaxed stages, not acceptance of every waxed route.
 
-Already committed: preview material/composite and canvas/GPU lifecycle; isolated 17-ID read-only preview; loader timeout/cache; full bed/16 colour sources; sign geometry and species sheets; auxiliary end_gateway/lava_cauldron loading and lava content; normal/trapped/ender/copper chest sources with double/static open; shulker colours/six facings/static open candidate; banner geometry/sources/colour and ordered pattern composition/ominous sheet mode. See CONTEXT for commit IDs. Do not replay completed writes from stale task lists.
+The owner ALREADY asked whether tablet/desktop responsive layout was implemented because the narrow layout does not use larger screens. Inspect actual editor/iframe/preview CSS/size consumers and answer from code; do not wait for the question again. Wide-layout readiness is unknown; preserve mobile behaviour/paper tokens. No redesign/specific breakpoint/layout is approved.
 
-Static open/double/pose states and canvas composition do not mean a player or working-editor controls are connected. Ender chest has no double form. Shulker open pose remains a Java-reference candidate, not verified Bedrock acceptance. Banner actual TGA/WebGL remains unverified.
+The owner explicitly instructed this chat to IGNORE the final assistant reply of OLDCHAT19. Do not derive a PNG-frame bug/task/blocker from it or use it to sidestep the layout question. The owner's explanation of exhausted chat memory is not an independently verified app defect.
 
-## Possible issues, not proven defects
+## Committed scope
 
-OLDCHAT17 reviewed selected code, not the entire project. The owner requested that observations remain POSSIBLE issues pending reproduction after migration: asynchronous legacy PNG replacement using an array index; memory/storage divergence on save failure; vertical frame-strip heuristic misreading atlases; full texture replacement for a one-resource frame update. No proven leak or project-wide audit claim. Do not turn these into current migration blockers.
-
-The ceiling-sign rotation suspicion was withdrawn after reference comparison: standing/attached use rotation, ceiling/wall use facing. Do not fix it blindly. Sign geometry comparison against acacia-rs/acacia@750f657 is not original Mojang geometry export or proof of correct Bedrock UV/WebGL.
+- Eyeblossom ONE card, bloom closed/open, explicit cross/emissive_cross models. Both records/paths/routes/glow preserved; strict checks protect other groups. Old separation/auth_required statements are obsolete.
+- Existing FKModelState supports explicit dependencies/initial state/busy/stale/dispose. Single FKM/sheet CSS extracted into fk-menu.js/fk-menu.css with old implementations removed; preview uses the shared themed picker, not another head UI.
+- Existing forms/compile/access use real records/familyDefaults, no fake entity records. request.form/slot/state independent, plan.forms describes available forms. Old source IDs reopen the parent/form, unavailable Mob not presented as ready.
+- Skeleton/wither skeleton/creeper/zombie/piglin heads, statue sheets/poses, dragon head are committed. Full mobs/their skeleton/UV workflow are DEFERRED, not missing work required to finish heads. Entity sheets do not equal full entity migration.
+- Statue poses standing/sitting/running/star are static. Oxidations separate; waxed aliases require equivalence. Do not add mob eyes/flower automatically. No head rotation/statue facing menu; use gesture, retain internal builder protocols.
+- Dragon uses textures/entity/dragon/dragon, not textures/entity/enderdragon/dragon. Shared 256x256 sheet/head-jaw only/mirror UV/static closed jaw. No separate PNG/body/wings/tail/animation; Bedrock placement/scale/UV acceptance open.
+- PNG selection separate from form/pose/state, shared sheets direct without copies/crops; preserve genuinely different files. d715eca loads selected PNG outside bindings and defaults model heads/statues to bindings.sheet. Committed code is not full runtime acceptance.
 
 ## Preservation
 
-Preserve accepted legacy geometry/UV unless fixing a concrete defect, including repeater/comparator. Fruit preview shows fruit alone or with adjacent matching stem directed towards it, preserving pumpkin variants/source routes/owned PNG; pumpkin/melon separate. Budding amethyst has no growth or one selected stage/face; growth shared, cards separate. Closed/open eyeblossom stay separate by the owner's cancellation in OLDCHAT16.
+Accepted legacy geometry/UV remains unless fixing a concrete defect, including repeater/comparator. Fruit alone or adjacent matching directed stem; pumpkin variants/source IDs/owned PNG preserved, pumpkin/melon separate. Composite fruit does not need a second form selector. Budding amethyst no growth or one stage/face, growth shared/source cards separate.
 
-Distinguish duplicates/forms/states/stages/frames. Edit PNG never drives geometry. Preserve owned paths/carried/icons/indexed repeats/saved IDs. Dependencies authorize concrete shared roles, not arbitrary foreign resources or ownership transfers. Waxed/infested require equivalence; oxidation/normal/deepslate separate. Coral wall fans aliases have no mounting cards; candle cakes preserve resources with cake, ordinary candles separate. Unknown never becomes cube; use stonecutter_block.
+Distinguish aliases/forms/states/stages/frames. PNG selection never drives geometry. Preserve owned paths/carried/icons/indexed repeats/saved IDs. Dependencies authorize concrete roles, not arbitrary foreign resources/ownership transfer. Oxidation/normal/deepslate separate, waxed/infested require equivalence. Coral wall fan aliases no mounting cards; candle cakes preserve resources with cake, ordinary candles separate. Unknown never cube; use stonecutter_block.
 
-Preserve PNG dimensions/alpha/atlases/frame strips. Do not alter pixels or force opacity to manufacture success. Glow uses MeshBasicMaterial, sprite unlit, normal roles Lambert. Materials borrow textures; texture layer owns created GPU textures. Composite previews include all parts and clean up errors. Banner composition must not overwrite source images; ominous uses its own sheet without recolouring/extra layers.
+Preserve PNG dimensions/alpha/atlases/frame strips; no pixel changes/forced opacity to manufacture success. Glow/sprite Basic-unlit, ordinary Lambert. Materials borrow textures, texture layer owns GPU textures. Composite update/cleanup includes all parts/errors. Banner never overwrites sources; ominous own sheet/no recolouring/layers. Ender no double; shulker open Java-reference candidate, not accepted Bedrock.
 
-Kelp A–D are not growth; preserve six resources/animation definitions. Bedrock sides/UV/TGA/playback, stem tint, potted azalea UV, gel alpha/WebGL, decorated pot patterns, active conduit and fire player remain open. Chorus corruption repaired by 86b6d8f. Entity sheets for block entities do not equal full entity import. Full entities/cushion/bell remain deferred; agree scope before runtime switch. Preserve paper layout/design tokens; visible text/help EN/RU, IDs untranslated. Player separate from state.
+Kelp A–D not growth; six paths/animation definitions retained. Kelp sides/UV/TGA/playback, stem tint, potted azalea UV, gel alpha/WebGL, decorated pot patterns/active conduit/fire-player remain open. Chorus corruption repaired 86b6d8f. Full entities/cushion/bell deferred. Text/help EN/RU, IDs untranslated/paper tokens preserved; player separate from state.
 
-## Evidence boundaries
+## Historical possible issues
 
-This handoff read full OLDCHAT17, six documents and the latest 20 commits. History confirms package commits, but implementation source/diffs were not freshly audited here. No tests/syntax checks/full compiler/CI/PNG/TGA/Three/WebGL/Android/export were run; main HTML not reread. Archive reports of targeted mocks and prior saved-diff checks are historical, not fresh execution or transferred environments. Do not sum overlapping runs.
+OLDCHAT17 observations remain hypotheses pending reproduction: async legacy PNG array index; memory/storage divergence on save failure; vertical frame-strip heuristic/atlas confusion; full texture replacement for one-resource frame update. No proven leak/project-wide audit/blocker. These historical notes are distinct from the excluded last OLDCHAT19 reply.
 
-Separate committed code, runtime connection, registry expectations, targeted mocks, selected real input, full compiler/CI, real images/WebGL and Android/export acceptance. Builder counts are not accepted-card counts; no fresh coverage exists. Use existing model-coverage/audit/inputValidation, not a second audit. Old missing-sign/unresolved counts are stale; record validation does not prove merged cards/icons/render. Existing workflow/95 scenarios and CI fixes do not prove current successful CI.
+Ceiling-sign rotation suspicion withdrawn: standing/attached rotation, ceiling/wall facing. Do not fix blindly. acacia-rs/acacia@750f657 comparison is not Mojang export/proof of Bedrock UV/WebGL.
 
-Preserve working legacy until readiness/acceptance; reread HTML before integration changes. Accept draw/undo/redo/Add/reopen/PNG/mcpack, async/storage/import/dimensions/alpha/cache/URL lifecycle and Android before completion claims. Remove replaced runtime only afterwards and synchronize FK_V/cache. PIN Mojang/bedrock-samples: 46ba6ea985fb5a92d79a9419198f10dda14c199d; do not mix releases or request old JSON without checking need.
+## Evidence and acceptance
+
+This pass read OLDCHAT19, seven documents, latest 20 commits/current preview.mjs and rechecked HEAD. It did not freshly inspect all code/diffs or run tests/syntax/full compiler/CI/browser/PNG-TGA/WebGL/Android/export. Historical targeted Node/mocked DOM/canvas/Three runs and blob hashes prove only their scope; environments/reports do not transfer. Do not sum overlapping counts or equate builder expectations with accepted cards.
+
+Updated preview-slice does not prove successful Actions; OLDCHAT19 did not confirm success. Saved tests/inventory guards/builders are not execution/full compile/render. Use existing coverage/audit/inputValidation, not a second audit. Separate committed code/runtime wiring/mocks/selected real input/full compiler-CI/real images-WebGL/Android-export.
+
+Keep working legacy until readiness; accept draw/undo/redo/Add/reopen/PNG/mcpack, async/storage/import/dimensions/alpha/cache/URL lifecycle/Android/language-theme-pack-slot-frame. Only then remove replaced runtime and sync FK_V/cache. PIN Mojang/bedrock-samples: 46ba6ea985fb5a92d79a9419198f10dda14c199d; do not mix releases.
