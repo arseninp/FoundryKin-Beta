@@ -166,7 +166,7 @@ export function createPreviewResolver(catalog, registry, Three) {
   const forms=kind==='block'&&own(catalog.families,selected.card)?catalog.families[selected.card]:null;
   const members=forms?Object.values(forms):[selected.id];
   const available=[...new Set(forms?members.flatMap(id=>catalog.stateGroups?.[id]?.paths??catalog.records[id].paths):group?group.paths:record.paths)];
-  const slot=request.slot??record.paths[0];
+  const slot=request.slot??(kind==='block'&&request.view!=='sprite'?record.bindings?.sheet?.[0]:undefined)??record.paths[0];
   if (typeof slot!=='string'||!available.includes(slot)) throw new Error('Texture is outside the selected object');
   const view=request.view??(kind==='item'?'sprite':'model');
   if (view!=='model'&&view!=='sprite') throw new Error('Invalid preview view');
