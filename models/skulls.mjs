@@ -1,10 +1,11 @@
 /* Head cube/UV from Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d:
-   resource_pack/models/entity/{skeleton,wither_skeleton,creeper,zombie}.geo.json.
+   resource_pack/models/entity/{skeleton,wither_skeleton,creeper,zombie,ender_dragon}.geo.json.
    Detached floor head candidates; no entity body, hidden hat, charged layer, baby variant, wall mounting or animation.
-   UV Y is doubled for these 64x32 sheets; piglin uses its own 64x64 geometry module. */
+   The four cube heads use doubled UV Y for 64x32 sheets; piglin uses 64x64 and dragon 256x256. */
 import {composeShape,requireRoles} from './shapes.mjs';
 import {buildPiglinHead} from './piglin-head.mjs';
-const IDS=new Set(['skeleton_skull','wither_skeleton_skull','creeper_head','zombie_head','piglin_head']);
+import {buildDragonHead} from './dragon-head.mjs';
+const IDS=new Set(['skeleton_skull','wither_skeleton_skull','creeper_head','zombie_head','piglin_head','dragon_head']);
 const UV=Object.freeze({east:[24,16,16,32],west:[8,16,0,32],north:[16,16,8,32],south:[32,16,24,32],up:[8,16,16,0],down:[16,0,24,16]});
 export function createSkullModels(Three) {
  if(!Three||typeof Three.Mesh!=='function'||typeof Three.PlaneGeometry!=='function'||typeof Three.BoxGeometry!=='function'||Three.DoubleSide===undefined)throw new Error('Skull models require Three');
@@ -17,6 +18,7 @@ export function createSkullModels(Three) {
   if(mounting!=='standing')throw new Error('Unsupported skull mounting');
   const sheet=requireRoles(E,['sheet'],'skull').sheet;
   if(E.cur==='piglin_head')return buildPiglinHead(Three,E,sheet,rotation);
+  if(E.cur==='dragon_head')return buildDragonHead(Three,E,sheet,rotation);
   composeShape(Three,E,p=>p.turned(-rotation*Math.PI/8,q=>q.prism(.5,.5,.5,0,-.25,0,sheet,UV,64)));
  }
  return [{id:'skull',scale:1.4,mode:'volume',build}];
