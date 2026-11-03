@@ -4,6 +4,7 @@ export const SPECIAL_MODELS = Object.freeze({
   allow: 'cube', deny: 'cube', border_block: 'cube', barrier: 'cube', structure_void: 'cube',
   slime: 'slime', honey_block: 'honey_block',
   farmland: 'farmland', snow_layer: 'snow_layer', bed: 'bed',
+  chest: 'chest', trapped_chest: 'chest', ender_chest: 'chest',
   bee_nest: 'cube', beehive: 'cube',
   crafter: 'cube', suspicious_sand: 'cube', suspicious_gravel: 'cube',
   fence_gate: 'gate',
