@@ -71,12 +71,13 @@ jobs:
           import {createRequire} from 'node:module';
           import {join} from 'node:path';
           import {readCandidate} from './tools/model-coverage.mjs';
-          import {compileReview, REVIEW_IDS, resourcePaths, previewControlSpec} from './preview.mjs';
+          import {compileReview, REVIEW_IDS, resourcePaths, previewControlSpec, previewControlSelection, previewTextureField} from './preview.mjs';
           import {createPreviewResolver} from './catalog/preview.mjs';
           const require = createRequire(join(process.env.RUNNER_TEMP, 'fk-preview-three', 'package.json'));
           const Three = require('three');
           assert.equal(Three.REVISION, '128');
           const input = readCandidate('data/catalog-candidate');
+          const inputBefore = JSON.stringify(input);
           const {catalog, registry, coverage} = compileReview(input, Three);
           assert.equal(coverage.ready, true);
           assert.deepEqual(Object.keys(catalog.records).sort(), [...REVIEW_IDS].sort());
@@ -93,6 +94,22 @@ jobs:
           const resolve = createPreviewResolver(catalog, registry, Three);
           const before = JSON.stringify(catalog);
           let checks = 0;
+          const pot = catalog.records.decorated_pot, potFaces = ['north','south','east','west'];
+          assert.ok(pot);
+          assert.equal(catalog.cards.filter(id => id === 'decorated_pot').length, 1);
+          assert.equal(pot.model, 'decorated_pot');
+          const potPatterns = pot.potteryPatterns;
+          assert.equal(Object.keys(potPatterns).length, 24);
+          assert.equal(new Set(Object.values(potPatterns)).size, 24);
+          assert.equal(potPatterns.brick, 'textures/blocks/decorated_pot_side');
+          const potBase = 'textures/blocks/decorated_pot_base';
+          assert.deepEqual(pot.bindings, {side:[potPatterns.brick],base:[potBase]});
+          for (const path of [potBase,...Object.values(potPatterns)]) {
+           assert.ok(pot.paths.includes(path), 'Unowned pot resource: ' + path);
+           assert.ok(Object.hasOwn(input.existing, path), 'Missing pinned pot resource: ' + path);
+           assert.ok(catalog.resources[path].some(owner => owner.kind === 'block' && owner.id === 'decorated_pot'));
+          }
+          let potGeometry;
           function check(request) {
            const plan = resolve(request), group = new Three.Group(), textures = Object.create(null);
            for (const path of resourcePaths(plan)) {
@@ -116,6 +133,20 @@ jobs:
              assert.equal(meshes, open ? 4 : 2);
              assert.equal(modelMaterials.filter(material => material.isMeshBasicMaterial === true).length, open ? 2 : 0);
              assert.equal(modelMaterials.filter(material => material.isMeshLambertMaterial === true).length, 2);
+            }
+            if (plan.model === 'decorated_pot') {
+             assert.equal(meshes, 18);
+             assert.equal(modelMaterials.length, 18);
+             for (let index = 0; index < potFaces.length; index++) assert.equal(modelMaterials[index].map, textures[plan.bindings[potFaces[index]]]);
+             for (const material of modelMaterials.slice(4)) assert.equal(material.map, textures[potBase]);
+             assert.ok(modelMaterials.every(material => material.isMeshLambertMaterial === true));
+             const shape = [];
+             group.traverse(node => {
+              if (node.isMesh) shape.push({position:Array.from(node.geometry.attributes.position.array),uv:Array.from(node.geometry.attributes.uv.array),offset:node.position.toArray(),rotation:node.rotation.toArray()});
+             });
+             const snapshot = JSON.stringify(shape);
+             potGeometry ??= snapshot;
+             assert.equal(snapshot, potGeometry, 'Pot geometry or UV changed with pattern/slot');
             }
             checks++;
            } finally {
@@ -144,6 +175,46 @@ jobs:
           for (const growth of ['small','medium','large','cluster']) for (const face of ['up','down','north','south','east','west']) check({id:'budding_amethyst',state:{crystals:true,growth,face}});
           for (const tall of [false,true]) for (const variant of ['a','b']) check({id:'seagrass',state:{tall,variant}});
           for (const hanging of [false,true]) for (let age = 0; age < 5; age++) check({id:'mangrove_propagule',state:{hanging,age}});
+          const plainPot = resolve({id:'decorated_pot'});
+          assert.deepEqual(plainPot.state.patterns, Object.fromEntries(potFaces.map(face => [face,'brick'])));
+          const plainControls = previewControlSpec(catalog, plainPot);
+          assert.deepEqual(plainControls.schema.map(field => field.key), potFaces.map(face => 'pattern_' + face));
+          assert.deepEqual(previewTextureField(plainPot).values.map(option => option.value), pot.paths);
+          for (const field of plainControls.schema) {
+           assert.deepEqual(field.values.map(option => option.value), Object.keys(potPatterns));
+           assert.ok(field.values.every(option => option.label.length === 2 && option.label.every(text => typeof text === 'string' && text.length > 0)));
+          }
+          for (const face of potFaces) for (const pattern of Object.keys(potPatterns)) {
+           const values = {...plainControls.state,['pattern_' + face]:pattern,texture:plainPot.slot};
+           const selection = previewControlSelection(plainPot, values);
+           assert.equal(selection.slot, plainPot.slot);
+           assert.ok(!Object.keys(selection.state).some(key => key.startsWith('pattern_') || key === 'texture' || key === 'form'));
+           const plan = check({id:'decorated_pot',...selection});
+           for (const side of potFaces) {
+            const expected = side === face ? pattern : 'brick';
+            assert.equal(plan.state.patterns[side], expected);
+            assert.equal(plan.bindings[side], potPatterns[expected]);
+           }
+           const controls = previewControlSpec(catalog, plan);
+           assert.equal(controls.state['pattern_' + face], pattern);
+          }
+          const mixedPatterns = {north:'angler_pottery_sherd',south:'skull_pottery_sherd',east:'guster_pottery_sherd',west:'scrape_pottery_sherd'};
+          const mixed = resolve({id:'decorated_pot',state:{patterns:mixedPatterns}});
+          const mixedControls = previewControlSpec(catalog, mixed);
+          for (const slot of pot.paths) {
+           const values = {...mixedControls.state,texture:slot};
+           const selection = previewControlSelection(mixed, values);
+           const plan = check({id:'decorated_pot',...selection});
+           assert.equal(plan.slot, slot);
+           assert.deepEqual(plan.state.patterns, mixedPatterns);
+           assert.deepEqual(resourcePaths(plan).sort(), [...new Set([potBase,...Object.values(mixedPatterns).map(pattern => potPatterns[pattern])])].sort());
+           assert.deepEqual(previewControlSpec(catalog, plan), mixedControls);
+          }
+          for (const patterns of [null,[],{up:'brick'},{north:'unknown'}]) assert.throws(() => resolve({id:'decorated_pot',state:{patterns}}));
+          const incompleteInventory = {...input.existing};
+          delete incompleteInventory[potPatterns.angler_pottery_sherd];
+          assert.throws(() => compileReview({...input,existing:incompleteInventory}, Three), /Missing decorated pot source texture/);
+          assert.equal(JSON.stringify(input), inputBefore);
           assert.equal(JSON.stringify(catalog), before);
           console.log(JSON.stringify({source:input.source,sourceRecords:Object.keys(catalog.records).length,cards:catalog.cards.length,modelTypes:registry.ids().length,geometryChecks:checks,limits:'Synthetic one-pixel textures; no PNG/TGA, UV, WebGL or Android acceptance'},null,2));
           NODE
