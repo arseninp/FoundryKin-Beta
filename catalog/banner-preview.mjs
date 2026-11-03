@@ -1,5 +1,6 @@
 /* Banner preview composition reference: acacia-rs/acacia@750f657, banner.rs and entity/mod.rs.
-   Native Bedrock pattern names are used. Source canvases and alpha are never overwritten. */
+   Native Bedrock pattern names are used. Source canvases and alpha are never overwritten.
+   Ominous mode uses the declared pre-rendered illager sheet without dye or extra layers. */
 import {BANNER_PATTERNS} from './rules/banner-sources.mjs';
 const own=(object,key)=>Object.hasOwn(object,key);
 const dictionary=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
@@ -13,18 +14,24 @@ export function prepareBannerPlan(record,plan) {
  if(plan.model!=='banner')return plan;
  const source=record?.source,state=plan.state;
  if(record?.model!=='banner'||source?.template!=='banner'||!Array.isArray(record.paths)||!dictionary(source.patterns)||!dictionary(state)||!dictionary(plan.bindings)||plan.parts!==undefined||plan.bindings.sheet!==source.base||!record.paths.includes(source.base)||Object.keys(plan.bindings).length!==1)throw new Error('Missing banner source contract');
- const color=state.color??'white',requested=state.patterns??[];rgb(color);
+ const color=state.color??'white',requested=state.patterns??[],ominous=state.ominous??false;rgb(color);
+ if(typeof ominous!=='boolean')throw new Error('Invalid banner ominous state');
  if(!Array.isArray(requested)||requested.length>16)throw new Error('Invalid banner pattern layers');
  const bindings={...plan.bindings};
  const layers=Array.from(requested).map((layer,index)=>{
   if(!dictionary(layer)||typeof layer.pattern!=='string'||!BANNER_PATTERNS.includes(layer.pattern)||!own(source.patterns,layer.pattern))throw new Error('Invalid banner pattern');
   rgb(layer.color);const path=source.patterns[layer.pattern];
   if(path!=='textures/entity/banner/banner_'+layer.pattern||!record.paths.includes(path))throw new Error('Banner pattern is outside the source');
-  bindings['pattern_'+index]=path;
+  if(!ominous)bindings['pattern_'+index]=path;
   return Object.freeze({pattern:layer.pattern,color:layer.color,path});
  });
- const banner=Object.freeze({base:source.base,color,layers:Object.freeze(layers)});
- return {...plan,bindings,state:{...state,color,patterns:layers.map(({pattern,color})=>({pattern,color}))},banner};
+ const special=ominous?source.special?.illager:null;
+ if(ominous) {
+  if(special!=='textures/entity/banner/banner_illager'||!record.paths.includes(special))throw new Error('Illager banner is outside the source');
+  bindings.illager_sheet=special;
+ }
+ const banner=Object.freeze({base:source.base,color,layers:Object.freeze(ominous?[]:layers),ominous,...(ominous?{image:special}:{})});
+ return {...plan,bindings,state:{...state,color,patterns:layers.map(({pattern,color})=>({pattern,color})),ominous},banner};
 }
 function image(value) {
  const w=value?.width,h=value?.height,data=value?.data;
@@ -52,7 +59,7 @@ export function composeBannerPixels(base,layers,color='white') {
  return {width:w,height:h,data};
 }
 export function composeBannerCanvases(spec,canvases,makeCanvas) {
- if(!dictionary(spec)||!Array.isArray(spec.layers)||!dictionary(canvases)||typeof makeCanvas!=='function')throw new Error('Invalid banner canvas input');
+ if(!dictionary(spec)||!Array.isArray(spec.layers)||(spec.ominous!==undefined&&typeof spec.ominous!=='boolean')||!dictionary(canvases)||typeof makeCanvas!=='function')throw new Error('Invalid banner canvas input');
  function read(path) {
   const canvas=own(canvases,path)?canvases[path]:null;
   if(!canvas||typeof canvas.getContext!=='function')throw new Error('Missing banner canvas: '+path);
@@ -62,7 +69,7 @@ export function composeBannerCanvases(spec,canvases,makeCanvas) {
   if(!context||typeof context.getImageData!=='function')throw new Error('Missing banner pixels');
   return image({width:w,height:h,data:context.getImageData(0,0,w,h)?.data});
  }
- const pixels=composeBannerPixels(read(spec.base),spec.layers.map(layer=>({image:read(layer.path),color:layer.color})),spec.color),output=makeCanvas();
+ const pixels=spec.ominous?read(spec.image):composeBannerPixels(read(spec.base),spec.layers.map(layer=>({image:read(layer.path),color:layer.color})),spec.color),output=makeCanvas();
  if(!output||Object.values(canvases).includes(output)||typeof output.getContext!=='function')throw new Error('Banner output must be a new canvas');
  output.width=pixels.width;output.height=pixels.height;
  const context=output.getContext('2d');
