@@ -129,14 +129,15 @@ jobs:
           }
           function check(request) {
            const plan = resolve(request), group = new Three.Group(), textures = Object.create(null);
+           const liquid = plan.model === 'water' || plan.model === 'lava', semi = plan.model === 'water';
            for (const path of resourcePaths(plan)) {
             assert.ok(Object.hasOwn(input.existing, path), 'Missing pinned resource: ' + path);
-            const texture = new Three.DataTexture(new Uint8Array([255,255,255,255]), 1, 1, Three.RGBAFormat);
-            texture.userData = {...texture.userData, semi:false};texture.needsUpdate = true;textures[path] = texture;
+            const texture = new Three.DataTexture(new Uint8Array([255,255,255,semi ? 128 : 255]), 1, 1, Three.RGBAFormat);
+            texture.userData = {...texture.userData, semi};texture.needsUpdate = true;textures[path] = texture;
            }
            let borrowedDisposals = 0;
            const replacementTextures = Object.create(null);
-           if (plan.model === 'conduit') for (const texture of Object.values(textures)) texture.addEventListener('dispose', () => borrowedDisposals++);
+           if (plan.model === 'conduit' || liquid) for (const texture of Object.values(textures)) texture.addEventListener('dispose', () => borrowedDisposals++);
            let instance;
            try {
             instance = plan.instantiate({group}, textures);
@@ -191,9 +192,31 @@ jobs:
              assert.ok(updated.every(material => material.side === (active ? Three.DoubleSide : Three.FrontSide)));
              assert.equal(JSON.stringify(conduitShape(group)), snapshot);
             }
+            if (liquid) {
+             const water = plan.model === 'water';
+             assert.equal(meshes, 6);
+             assert.equal(plan.state.level, request.state?.level ?? 0);
+             const height = new Three.Box3().setFromObject(group).getSize(new Three.Vector3()).y;
+             assert.ok(Math.abs(height - (8-plan.state.level)/9) < 1e-6);
+             assert.deepEqual(Object.keys(plan.bindings).sort(), ['down','east','north','south','up','west']);
+             assert.ok(modelMaterials.every(material => (water ? material.isMeshLambertMaterial : material.isMeshBasicMaterial) === true));
+             assert.ok(modelMaterials.every(material => material.transparent === water && material.depthWrite === !water && material.alphaTest === (water ? 0 : .05)));
+             assert.deepEqual(new Set(modelMaterials.map(material => material.map)), new Set(Object.values(textures)));
+             const snapshot = JSON.stringify(conduitShape(group));
+             for (const path of Object.keys(textures)) {
+              const next = new Three.DataTexture(new Uint8Array([128,128,128,water ? 255 : 128]), 1, 1, Three.RGBAFormat);
+              next.userData = {...next.userData,semi:!water};next.needsUpdate = true;
+              next.addEventListener('dispose', () => borrowedDisposals++);replacementTextures[path] = next;
+             }
+             instance.update(replacementTextures);
+             assert.deepEqual(new Set(modelMaterials.map(material => material.map)), new Set(Object.values(replacementTextures)));
+             assert.ok(modelMaterials.every(material => material.transparent === !water && material.depthWrite === water && material.alphaTest === (water ? .05 : 0)));
+             assert.ok(modelMaterials.every(material => (water ? material.isMeshLambertMaterial : material.isMeshBasicMaterial) === true));
+             assert.equal(JSON.stringify(conduitShape(group)), snapshot);
+            }
             checks++;
            } finally {
-            try {instance?.dispose();if (plan.model === 'conduit') assert.equal(borrowedDisposals, 0, 'Borrowed conduit textures were disposed');}
+            try {instance?.dispose();if (plan.model === 'conduit' || liquid) assert.equal(borrowedDisposals, 0, 'Borrowed preview textures were disposed');}
             finally {for (const texture of [...Object.values(textures),...Object.values(replacementTextures)]) texture.dispose();}
            }
            assert.equal(group.children.length, 0);
@@ -284,6 +307,33 @@ jobs:
           const missingConduitInventory = {...input.existing};
           delete missingConduitInventory[conduitParts.cage];
           assert.throws(() => compileReview({...input,existing:missingConduitInventory}, Three), /Missing conduit source texture/);
+          const liquidIds = ['water','flowing_water','lava','flowing_lava'];
+          for (const id of liquidIds) {
+           const record = catalog.records[id], plain = resolve({id}), model = id.includes('water') ? 'water' : 'lava';
+           assert.equal(record.model, model);
+           assert.equal(plain.object.id, id);
+           assert.equal(plain.state.level, 0);
+           const controls = previewControlSpec(catalog, plain);
+           assert.deepEqual(controls.schema.map(field => field.key), ['level']);
+           assert.deepEqual(controls.schema[0].label, ['Liquid level','Уровень жидкости']);
+           assert.deepEqual(controls.schema[0].values.map(option => option.value), [0,1,2,3,4,5,6,7]);
+           assert.deepEqual(previewTextureField(plain).values.map(option => option.value), record.paths);
+           for (const path of record.paths) {
+            assert.ok(Object.hasOwn(input.existing, path));
+            assert.ok(catalog.resources[path].some(owner => owner.kind === 'block' && owner.id === id));
+           }
+           for (let level = 0; level < 8; level++) for (const slot of record.paths) {
+            const selection = previewControlSelection(plain, {level,texture:slot});
+            assert.deepEqual(selection.state, {level});
+            assert.equal(selection.slot, slot);
+            const plan = check({id,...selection});
+            assert.equal(plan.object.id, id);
+            assert.equal(plan.slot, slot);
+            assert.deepEqual(plan.bindings, plain.bindings);
+            assert.equal(previewControlSpec(catalog, plan).state.level, level);
+           }
+           for (const level of [-1,8,1.5,'0',true,false,NaN,Infinity,{},[]]) assert.throws(() => resolve({id,state:{level}}), /Invalid liquid preview level/);
+          }
           assert.equal(JSON.stringify(input), inputBefore);
           assert.equal(JSON.stringify(catalog), before);
           console.log(JSON.stringify({source:input.source,sourceRecords:Object.keys(catalog.records).length,cards:catalog.cards.length,modelTypes:registry.ids().length,geometryChecks:checks,limits:'Synthetic one-pixel textures; no PNG/TGA, UV, WebGL or Android acceptance'},null,2));
