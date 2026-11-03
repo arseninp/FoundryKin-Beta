@@ -12,6 +12,7 @@ import {createSignModels} from './signs.mjs';
 import {createChestModels} from './chests.mjs';
 import {createShulkerBoxModels} from './shulker-boxes.mjs';
 import {createBannerModels} from './banners.mjs';
+import {createCopperGolemStatueModels} from './copper-golem-statue.mjs';
 import {createAmethystModels} from './amethyst.mjs';
 import {createAzaleaModels} from './azalea.mjs';
 import {createPottedAzaleaModels} from './potted-azalea.mjs';
@@ -44,7 +45,7 @@ import {declaredDependencies} from '../catalog/rules/dependencies.mjs';
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 export function createModelLibrary(Three) {
  const registry = createModelRegistry();
- registry.register([...createPrimitiveModels(Three), ...createGelModels(Three), ...createStrandModels(Three), ...createLightModels(Three), ...createPlanarModels(Three), ...createFixtureModels(Three), ...createDoorModels(Three), ...createBedModels(Three), ...createSignModels(Three), ...createChestModels(Three), ...createShulkerBoxModels(Three), ...createBannerModels(Three), ...createAmethystModels(Three), ...createAzaleaModels(Three), ...createPottedAzaleaModels(Three), ...createBambooModels(Three), ...createMossModels(Three), ...createRedstoneModels(Three), ...createFittingModels(Three), ...createPlantModels(Three), ...createSpecialModels(Three), ...createGrowthModels(Three), ...createMechanismModels(Three), ...createFlowerbedModels(Three), ...createPitcherModels(Three), ...createWireModels(Three), ...createTrackModels(Three), ...createMetalModels(Three), ...createWorkshopModels(Three), ...createDripleafModels(Three), ...createSculkModels(Three), ...createDriedGhastModels(Three), ...createBarrelModels(Three), ...createStructureModels(Three), ...createCaveVineModels(Three), ...createStemModels(Three), ...createAquaticModels(Three), ...createPropaguleModels(Three)]);
+ registry.register([...createPrimitiveModels(Three), ...createGelModels(Three), ...createStrandModels(Three), ...createLightModels(Three), ...createPlanarModels(Three), ...createFixtureModels(Three), ...createDoorModels(Three), ...createBedModels(Three), ...createSignModels(Three), ...createChestModels(Three), ...createShulkerBoxModels(Three), ...createBannerModels(Three), ...createCopperGolemStatueModels(Three), ...createAmethystModels(Three), ...createAzaleaModels(Three), ...createPottedAzaleaModels(Three), ...createBambooModels(Three), ...createMossModels(Three), ...createRedstoneModels(Three), ...createFittingModels(Three), ...createPlantModels(Three), ...createSpecialModels(Three), ...createGrowthModels(Three), ...createMechanismModels(Three), ...createFlowerbedModels(Three), ...createPitcherModels(Three), ...createWireModels(Three), ...createTrackModels(Three), ...createMetalModels(Three), ...createWorkshopModels(Three), ...createDripleafModels(Three), ...createSculkModels(Three), ...createDriedGhastModels(Three), ...createBarrelModels(Three), ...createStructureModels(Three), ...createCaveVineModels(Three), ...createStemModels(Three), ...createAquaticModels(Three), ...createPropaguleModels(Three)]);
  registry.seal();
  return registry;
 }
