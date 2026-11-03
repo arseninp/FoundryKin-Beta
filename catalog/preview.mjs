@@ -215,6 +215,10 @@ export function createPreviewResolver(catalog, registry, Three) {
    if (!iconPaths.includes(slot)) throw new Error('Resource has no declared icon role');
   }
   const base=view==='sprite'?'sprite':record.model, previewState={...selected.state,...state};
+  if (base==='water'||base==='lava') {
+   previewState.level??=0;
+   if (!Number.isInteger(previewState.level)||previewState.level<0||previewState.level>7) throw new Error('Invalid liquid preview level');
+  }
   if (base==='azalea') {
    previewState.potted??=false;
    if (typeof previewState.potted!=='boolean') throw new Error('Invalid azalea preview state');
