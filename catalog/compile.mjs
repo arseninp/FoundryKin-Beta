@@ -11,7 +11,7 @@ import {compileAliases} from './identity.mjs';
 import {indexItems, resolveIcons} from './items.mjs';
 import {blockIconLinks} from './rules/icons.mjs';
 import {duplicateRules} from './rules/duplicates.mjs';
-import {familyRules} from './rules/forms.mjs';
+import {familyRules, familyDefault} from './rules/forms.mjs';
 import {attachDependencies} from './rules/dependencies.mjs';
 import {powerRules, compileStateGroups} from './states.mjs';
 const own = (object, key) => Object.hasOwn(object, key);
@@ -44,16 +44,16 @@ export function compileCatalog(input) {
   const identity = compileAliases(records, rules);
   const stateRecords = Object.fromEntries(identity.visible.map(id => [id, records[id]]));
   const states = compileStateGroups(stateRecords, powerRules(stateRecords));
-  const families = Object.create(null), owners = new Map();
+  const families = Object.create(null), familyDefaults = Object.create(null), owners = new Map();
   const canonical = id => {
     const target = own(identity.aliases, id) ? identity.aliases[id] : id;
     return own(states.routes, target) ? states.routes[target].card : target;
   };
   for (const [sourceBase, forms] of Object.entries(familyRules(records, object(input.families ?? {}, 'family rules')))) {
     object(forms, 'family forms');
-    if (!own(records, sourceBase)) throw new Error('Invalid family base: ' + sourceBase);
-    const base = canonical(sourceBase);
-    const entries = families[base] ?? {native: base};
+    const initial = familyDefault(records, sourceBase, forms), native = own(records, sourceBase);
+    const base = native ? canonical(sourceBase) : sourceBase;
+    const entries = families[base] ?? (native ? {native: base} : {});
     if (own(forms, 'native')) throw new Error('Reserved family form: native');
     for (const [form, sourceId] of Object.entries(forms)) {
       if (!/^[a-z][a-z0-9_]*$/.test(form) || !own(records, sourceId)) throw new Error('Invalid family variant: ' + sourceId);
@@ -66,10 +66,12 @@ export function compileCatalog(input) {
       if (owners.has(id)) throw new Error('Variant belongs to multiple forms: ' + id);
       owners.set(id, base);entries[form] = id;
     }
-    families[base] = entries;
+    if (!own(entries, initial)) throw new Error('Missing family default: ' + base);
+    if (own(familyDefaults, base) && familyDefaults[base] !== initial) throw new Error('Conflicting family default: ' + base);
+    families[base] = entries;familyDefaults[base] = initial;
   }
   for (const base of Object.keys(families)) if (owners.has(base)) throw new Error('Nested family base: ' + base);
-  const cards = states.cards.filter(id => !owners.has(id));
+  const cards = [...states.cards.filter(id => !owners.has(id)), ...Object.keys(families).filter(base => !own(records, base))].sort();
   const resources = new Map();
   function add(path, owner) {
     if (!resources.has(path)) resources.set(path, []);
@@ -77,7 +79,7 @@ export function compileCatalog(input) {
   }
   for (const [id, record] of Object.entries(records)) for (const path of record.paths) add(path, {kind: 'block', id});
   for (const [id, item] of Object.entries(items)) for (const path of item.paths) add(path, {kind: 'item', id});
-  const represented = new Set(cards);
+  const represented = new Set(cards.filter(id => own(records, id)));
   Object.values(families).forEach(forms => Object.values(forms).forEach(id => represented.add(id)));
   for (const [id, route] of Object.entries(states.routes)) {
     if (!represented.has(route.card)) throw new Error('State card is inaccessible: ' + id);
@@ -88,5 +90,5 @@ export function compileCatalog(input) {
     represented.add(id);
   }
   if (represented.size !== Object.keys(records).length) throw new Error('Unreachable catalog record');
-  return {schema: 1, records, items, cards, families, aliases: identity.aliases, decisions: identity.decisions, stateGroups: states.groups, stateRoutes: states.routes, resources: Object.fromEntries([...resources].sort(([a], [b]) => a.localeCompare(b)))};
+  return {schema: 1, records, items, cards, families, familyDefaults, aliases: identity.aliases, decisions: identity.decisions, stateGroups: states.groups, stateRoutes: states.routes, resources: Object.fromEntries([...resources].sort(([a], [b]) => a.localeCompare(b)))};
 }

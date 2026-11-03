@@ -5,13 +5,15 @@ function dictionary(value) {
 }
 export function createCatalogAccess(catalog) {
   if (!catalog || catalog.schema !== 1 || !['records', 'items', 'aliases', 'families', 'resources'].every(key => dictionary(catalog[key]))) throw new Error('Invalid compiled catalog');
-  const routes = catalog.stateRoutes ?? {}, groups = catalog.stateGroups ?? {};
-  if (!dictionary(routes) || !dictionary(groups)) throw new Error('Invalid state tables');
+  const routes = catalog.stateRoutes ?? {}, groups = catalog.stateGroups ?? {}, defaults = catalog.familyDefaults ?? {};
+  if (!dictionary(routes) || !dictionary(groups) || !dictionary(defaults)) throw new Error('Invalid state or family tables');
+  for (const base of Object.keys(defaults)) if (!own(catalog.families, base)) throw new Error('Unknown family default: ' + base);
   const family = new Map();
   for (const [base, forms] of Object.entries(catalog.families)) {
-    if (!dictionary(forms) || forms.native !== base) throw new Error('Invalid family: ' + base);
+    const initial = own(defaults, base) ? defaults[base] : 'native';
+    if (!dictionary(forms) || typeof initial !== 'string' || !own(forms, initial) || (own(catalog.records, base) && forms.native !== base)) throw new Error('Invalid family: ' + base);
     for (const [form, id] of Object.entries(forms)) {
-      if (!own(catalog.records, id) || family.has(id)) throw new Error('Invalid family member: ' + id);
+      if (!/^[a-z][a-z0-9_]*$/.test(form) || typeof id !== 'string' || !own(catalog.records, id) || family.has(id)) throw new Error('Invalid family member: ' + id);
       family.set(id, {card: base, form});
     }
   }
@@ -38,7 +40,11 @@ export function createCatalogAccess(catalog) {
   function describe(id, kind = 'block') {
     if (kind !== 'block' && kind !== 'item') throw new Error('Invalid catalog category');
     if (kind === 'item') return typeof id === 'string' && own(catalog.items, id) ? {kind, id, card: id, form: null} : null;
-    const target = canonical(id);
+    let target = canonical(id);
+    if (!target && typeof id === 'string' && own(catalog.families, id)) {
+      const initial = own(defaults, id) ? defaults[id] : 'native';
+      target = canonical(catalog.families[id][initial]);
+    }
     if (!target) return null;
     const route = own(routes, target) ? routes[target] : null;
     const member = route ? route.card : target, owner = family.get(member);
