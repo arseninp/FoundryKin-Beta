@@ -110,6 +110,23 @@ jobs:
            assert.ok(catalog.resources[path].some(owner => owner.kind === 'block' && owner.id === 'decorated_pot'));
           }
           let potGeometry;
+          const conduitRecord = catalog.records.conduit, conduitParts = conduitRecord.conduitParts;
+          assert.equal(conduitRecord.model, 'conduit');
+          assert.equal(catalog.cards.filter(id => id === 'conduit').length, 1);
+          assert.equal(Object.keys(conduitParts).length, 6);
+          assert.equal(new Set(Object.values(conduitParts)).size, 6);
+          assert.equal(conduitParts.base, 'textures/blocks/conduit_base');
+          for (const path of Object.values(conduitParts)) {
+           assert.ok(conduitRecord.paths.includes(path));
+           assert.ok(Object.hasOwn(input.existing, path));
+           assert.ok(catalog.resources[path].some(owner => owner.kind === 'block' && owner.id === 'conduit'));
+          }
+          const conduitShapes = new Map();
+          function conduitShape(node) {
+           const shape = {position:node.position.toArray(),rotation:node.rotation.toArray(),children:node.children.map(conduitShape)};
+           if (node.isMesh) shape.geometry = {position:Array.from(node.geometry.attributes.position.array),uv:Array.from(node.geometry.attributes.uv.array)};
+           return shape;
+          }
           function check(request) {
            const plan = resolve(request), group = new Three.Group(), textures = Object.create(null);
            for (const path of resourcePaths(plan)) {
@@ -117,6 +134,9 @@ jobs:
             const texture = new Three.DataTexture(new Uint8Array([255,255,255,255]), 1, 1, Three.RGBAFormat);
             texture.userData = {...texture.userData, semi:false};texture.needsUpdate = true;textures[path] = texture;
            }
+           let borrowedDisposals = 0;
+           const replacementTextures = Object.create(null);
+           if (plan.model === 'conduit') for (const texture of Object.values(textures)) texture.addEventListener('dispose', () => borrowedDisposals++);
            let instance;
            try {
             instance = plan.instantiate({group}, textures);
@@ -148,9 +168,33 @@ jobs:
              potGeometry ??= snapshot;
              assert.equal(snapshot, potGeometry, 'Pot geometry or UV changed with pattern/slot');
             }
+            if (plan.model === 'conduit') {
+             const active = plan.state.active;
+             assert.equal(meshes, active ? 4 : 6);
+             assert.ok(modelMaterials.every(material => material.isMeshLambertMaterial === true));
+             const expected = active ? [textures[plan.bindings.cage],textures[plan.bindings.wind],textures[plan.bindings.wind],textures[plan.bindings.eye]] : Array(6).fill(textures[conduitParts.base]);
+             assert.deepEqual(modelMaterials.map(material => material.map), expected);
+             assert.ok(modelMaterials.every(material => material.side === (active ? Three.DoubleSide : Three.FrontSide)));
+             const key = active ? 'active_' + plan.state.wind : 'inactive', snapshot = JSON.stringify(conduitShape(group));
+             if (conduitShapes.has(key)) assert.equal(snapshot, conduitShapes.get(key), 'Conduit shape changed with eye/PNG');
+             else conduitShapes.set(key, snapshot);
+             for (const path of Object.keys(textures)) {
+              const next = new Three.DataTexture(new Uint8Array([128,128,128,255]), 1, 1, Three.RGBAFormat);
+              next.userData = {...next.userData,semi:false};next.needsUpdate = true;
+              next.addEventListener('dispose', () => borrowedDisposals++);replacementTextures[path] = next;
+             }
+             instance.update(replacementTextures);
+             const updated = [];
+             group.traverse(node => {if (node.isMesh) updated.push(...(Array.isArray(node.material) ? node.material : [node.material]));});
+             const expectedUpdated = active ? [replacementTextures[plan.bindings.cage],replacementTextures[plan.bindings.wind],replacementTextures[plan.bindings.wind],replacementTextures[plan.bindings.eye]] : Array(6).fill(replacementTextures[conduitParts.base]);
+             assert.deepEqual(updated.map(material => material.map), expectedUpdated);
+             assert.ok(updated.every(material => material.side === (active ? Three.DoubleSide : Three.FrontSide)));
+             assert.equal(JSON.stringify(conduitShape(group)), snapshot);
+            }
             checks++;
            } finally {
-            try {instance?.dispose();} finally {for (const texture of Object.values(textures)) texture.dispose();}
+            try {instance?.dispose();if (plan.model === 'conduit') assert.equal(borrowedDisposals, 0, 'Borrowed conduit textures were disposed');}
+            finally {for (const texture of [...Object.values(textures),...Object.values(replacementTextures)]) texture.dispose();}
            }
            assert.equal(group.children.length, 0);
            return plan;
@@ -214,6 +258,32 @@ jobs:
           const incompleteInventory = {...input.existing};
           delete incompleteInventory[potPatterns.angler_pottery_sherd];
           assert.throws(() => compileReview({...input,existing:incompleteInventory}, Three), /Missing decorated pot source texture/);
+          const inactiveConduit = resolve({id:'conduit'});
+          assert.deepEqual(inactiveConduit.state, {active:false,eye_open:false,wind:'horizontal'});
+          assert.deepEqual(resourcePaths(inactiveConduit), [conduitParts.base]);
+          const conduitControls = previewControlSpec(catalog, inactiveConduit);
+          assert.deepEqual(conduitControls.schema.map(field => field.key), ['active','eye_open','wind']);
+          assert.deepEqual(conduitControls.schema.map(field => field.values.map(option => option.value)), [[false,true],[false,true],['horizontal','vertical']]);
+          assert.deepEqual(previewTextureField(inactiveConduit).values.map(option => option.value), conduitRecord.paths);
+          for (const field of conduitControls.schema) assert.ok(field.values.every(option => option.label.length === 2 && option.label.every(text => typeof text === 'string' && text.length > 0)));
+          for (const active of [false,true]) for (const eye_open of [false,true]) for (const wind of ['horizontal','vertical']) for (const slot of conduitRecord.paths) {
+           const selected = {active,eye_open,wind};
+           const selection = previewControlSelection(inactiveConduit, {...selected,texture:slot});
+           assert.deepEqual(selection.state, selected);
+           const plan = check({id:'conduit',...selection});
+           assert.equal(plan.slot, slot);
+           assert.deepEqual(plan.state, selected);
+           assert.deepEqual(plan.bindings, active ? {cage:conduitParts.cage,eye:conduitParts[eye_open?'eye_open':'eye_closed'],wind:conduitParts['wind_'+wind]} : {up:conduitParts.base});
+           assert.deepEqual(previewControlSpec(catalog, plan).state, selected);
+           const next = resolve({id:'conduit',state:plan.state,slot:conduitParts.base});
+           assert.deepEqual(next.bindings, plan.bindings);
+          }
+          assert.equal(conduitShapes.size, 3);
+          assert.notEqual(conduitShapes.get('active_horizontal'), conduitShapes.get('active_vertical'));
+          for (const state of [{active:1},{eye_open:'open'},{wind:'bad'}]) assert.throws(() => resolve({id:'conduit',state}), /Invalid conduit preview state/);
+          const missingConduitInventory = {...input.existing};
+          delete missingConduitInventory[conduitParts.cage];
+          assert.throws(() => compileReview({...input,existing:missingConduitInventory}, Three), /Missing conduit source texture/);
           assert.equal(JSON.stringify(input), inputBefore);
           assert.equal(JSON.stringify(catalog), before);
           console.log(JSON.stringify({source:input.source,sourceRecords:Object.keys(catalog.records).length,cards:catalog.cards.length,modelTypes:registry.ids().length,geometryChecks:checks,limits:'Synthetic one-pixel textures; no PNG/TGA, UV, WebGL or Android acceptance'},null,2));
