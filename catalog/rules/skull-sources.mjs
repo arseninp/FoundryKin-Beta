@@ -1,7 +1,7 @@
 /* Heads reuse their entity sheets; native resources and source IDs stay intact. */
 const own=(object,key)=>Object.hasOwn(object,key);
 const dictionary=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
-const SHEETS=Object.freeze({skeleton_skull:'textures/entity/skeleton/skeleton',wither_skeleton_skull:'textures/entity/skeleton/wither_skeleton',creeper_head:'textures/entity/creeper/creeper'});
+const SHEETS=Object.freeze({skeleton_skull:'textures/entity/skeleton/skeleton',wither_skeleton_skull:'textures/entity/skeleton/wither_skeleton',creeper_head:'textures/entity/creeper/creeper',zombie_head:'textures/entity/zombie/zombie'});
 export function attachSkullSource(record,definition,inventory) {
  if(!dictionary(record)||record.model!=='skull'||typeof record.id!=='string'||!dictionary(definition)||!dictionary(inventory)||!Array.isArray(record.paths))throw new Error('Invalid skull source input');
  if(!own(SHEETS,record.id))throw new Error('Unknown skull source ID: '+record.id);
