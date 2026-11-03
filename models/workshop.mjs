@@ -31,8 +31,8 @@ export function createWorkshopModels(Three) {
   composeShape(Three,E,p=>p.box([0,0,7.5],[16,16,8.5],F,{north:[0,0,16,16],south:[0,0,16,16],up:[0,0,16,1],down:[0,15,16,16],east:[0,0,1,16],west:[15,0,16,16]}));
  }
  function cauldron(E) {
-  const content=E?.state?.content??'empty';
-  if(!['empty','water','colored_water'].includes(content))throw new Error('Invalid cauldron content');
+  const lava=E?.cur==='lava_cauldron',content=E?.state?.content??(lava?'lava':'empty');
+  if(!(lava?['empty','lava']:['empty','water','colored_water']).includes(content))throw new Error('Invalid cauldron content');
   const roles=['rim','bottom','wall','floor'];if(content!=='empty')roles.push(content);
   const f=requireRoles(E,roles,'cauldron');
   composeShape(Three,E,p=>{

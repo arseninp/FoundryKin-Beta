@@ -94,9 +94,9 @@ export function utilityBindings(record) {
   return {side:find('side'),base:find('base')};
  }
  if(record.model==='cauldron') {
-  if(record.id!=='cauldron')throw new Error('Unknown cauldron object');
-  const f=record.faces??{};
-  return Object.fromEntries(Object.entries({rim:f.up,bottom:f.down,wall:f.north,floor:f.south,water:f.east,colored_water:f.west}).map(([role,paths])=>[role,single(paths,'cauldron '+role)]));
+  if(!['cauldron','lava_cauldron'].includes(record.id))throw new Error('Unknown cauldron object');
+  const f=record.faces??{},liquid=record.id==='lava_cauldron'?{lava:f.east}:{water:f.east,colored_water:f.west};
+  return Object.fromEntries(Object.entries({rim:f.up,bottom:f.down,wall:f.north,floor:f.south,...liquid}).map(([role,paths])=>[role,single(paths,'cauldron '+role)]));
  }
  if(record.model==='cocoa') {
   if(record.id!=='cocoa')throw new Error('Unknown cocoa object');

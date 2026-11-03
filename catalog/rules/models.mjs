@@ -13,7 +13,7 @@ export const SPECIAL_MODELS = Object.freeze({
   chorus_plant: 'chorus_plant', chorus_flower: 'chorus_flower',
   ladder: 'ladder', lectern: 'lectern', lever: 'lever',
   hopper: 'hopper', grindstone: 'grindstone', frame: 'frame', glow_frame: 'frame',
-  cauldron: 'cauldron', cocoa: 'cocoa', daylight_detector: 'daylight', daylight_detector_inverted: 'daylight',
+  cauldron: 'cauldron', lava_cauldron: 'cauldron', cocoa: 'cocoa', daylight_detector: 'daylight', daylight_detector_inverted: 'daylight',
   flower_pot: 'flower_pot', decorated_pot: 'decorated_pot', conduit: 'conduit',
   fire: 'fire', soul_fire: 'fire',
   big_dripleaf: 'big_dripleaf', small_dripleaf_block: 'small_dripleaf',
