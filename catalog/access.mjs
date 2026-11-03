@@ -37,8 +37,9 @@ export function createCatalogAccess(catalog) {
     if (!dictionary(group) || !dictionary(group.variants) || !own(group.variants, group.default) || !Object.values(group.variants).includes(card)) throw new Error('Invalid state group: ' + card);
     for (const id of Object.values(group.variants)) if (!own(routes, id) || routes[id].card !== card) throw new Error('Missing state route: ' + id);
   }
-  function describe(id, kind = 'block') {
+  function describe(id, kind = 'block', form) {
     if (kind !== 'block' && kind !== 'item') throw new Error('Invalid catalog category');
+    if (form !== undefined && (kind !== 'block' || typeof form !== 'string' || !/^[a-z][a-z0-9_]*$/.test(form))) throw new Error('Invalid family form selection');
     if (kind === 'item') return typeof id === 'string' && own(catalog.items, id) ? {kind, id, card: id, form: null} : null;
     let target = canonical(id);
     if (!target && typeof id === 'string' && own(catalog.families, id)) {
@@ -46,8 +47,17 @@ export function createCatalogAccess(catalog) {
       target = canonical(catalog.families[id][initial]);
     }
     if (!target) return null;
-    const route = own(routes, target) ? routes[target] : null;
-    const member = route ? route.card : target, owner = family.get(member);
+    let route = own(routes, target) ? routes[target] : null;
+    let member = route ? route.card : target, owner = family.get(member);
+    if (form !== undefined) {
+      const forms = owner ? catalog.families[owner.card] : null;
+      if (!forms || !own(forms, form)) throw new Error('Unavailable family form: ' + form);
+      if (owner.form !== form) {
+        target = canonical(forms[form]);
+        route = own(routes, target) ? routes[target] : null;
+        member = route ? route.card : target;owner = family.get(member);
+      }
+    }
     const result = {kind, id: target, card: owner?.card ?? member, form: owner?.form ?? 'native'};
     if (route) result.state = {...route.state};
     return result;

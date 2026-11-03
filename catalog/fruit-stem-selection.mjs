@@ -7,7 +7,7 @@ export function withFruitStemSelection(catalog,resolve,Three) {
  const access=createCatalogAccess(catalog);
  return function(request) {
   if(!dictionary(request)||(request.kind??'block')!=='block'||(request.view??'model')!=='model')return resolve(request);
-  const initial=access.describe(request.id),family=initial?catalog.families[initial.card]:null;
+  const initial=access.describe(request.id,'block',request.form),family=initial?catalog.families[initial.card]:null;
   if(!initial||!Object.hasOwn(PAIRS,initial.card)||family?.stem!==PAIRS[initial.card])return resolve(request);
   const state=request.state??{},choices=request.faceChoices??{};
   if(!dictionary(state)||!dictionary(choices))throw new Error('Invalid preview parameters');
@@ -17,7 +17,7 @@ export function withFruitStemSelection(catalog,resolve,Three) {
   const paths=[...new Set([...(catalog.stateGroups?.[initial.card]?.paths??catalog.records[fruitId].paths),...catalog.records[stemId].paths])];
   const slot=request.slot??catalog.records[initial.id].paths[0];
   if(typeof slot!=='string'||!paths.includes(slot))throw new Error('Texture is outside the selected fruit family');
-  const fruit=resolve({...request,id:fruitId,slot:undefined,state:{...state,stem:withStem}});
+  const fruit=resolve({...request,id:fruitId,form:undefined,slot:undefined,state:{...state,stem:withStem}});
   let stem=null;
   if(withStem) {
    const stage=state.stage===undefined?7:state.stage,attached=state.attached===undefined?true:state.attached,facing=state.facing===undefined?'west':state.facing;

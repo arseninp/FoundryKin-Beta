@@ -150,7 +150,7 @@ export function createPreviewResolver(catalog, registry, Three) {
  if (!registry || typeof registry.get !== 'function' || typeof registry.build !== 'function') throw new Error('Invalid preview registry');
  return withPreparedPreview(catalog,registry,Three,withBuddingAmethystSelection(catalog,withFruitStemSelection(catalog,function resolve(request) {
   if (!dictionary(request)) throw new Error('Invalid preview request');
-  const kind=request.kind??'block', initial=access.describe(request.id,kind);
+  const kind=request.kind??'block', initial=access.describe(request.id,kind,request.form);
   if (!initial) throw new Error('Unknown preview object: '+request.id);
   const state=request.state??{}, choices=request.faceChoices??{};
   if (!dictionary(state)||!dictionary(choices)) throw new Error('Invalid preview parameters');
@@ -163,15 +163,18 @@ export function createPreviewResolver(catalog, registry, Three) {
    selected=access.describe(group.variants[value],kind);
   }
   const record=kind==='block'?catalog.records[selected.id]:catalog.items[selected.id];
-  const available=[...new Set(group?group.paths:record.paths)];
+  const forms=kind==='block'&&own(catalog.families,selected.card)?catalog.families[selected.card]:null;
+  const members=forms?Object.values(forms):[selected.id];
+  const available=[...new Set(forms?members.flatMap(id=>catalog.stateGroups?.[id]?.paths??catalog.records[id].paths):group?group.paths:record.paths)];
   const slot=request.slot??record.paths[0];
   if (typeof slot!=='string'||!available.includes(slot)) throw new Error('Texture is outside the selected object');
   const view=request.view??(kind==='item'?'sprite':'model');
   if (view!=='model'&&view!=='sprite') throw new Error('Invalid preview view');
   if (kind==='item'&&view==='model'&&(!own(record,'model')||typeof record.model!=='string'||!record.model||!dictionary(record.bindings))) throw new Error('Item model view is not assigned');
   if (kind==='block'&&view==='sprite') {
-   const iconPaths=group?Object.values(group.variants).flatMap(id=>catalog.records[id].icons):record.icons;
-   if (!Array.isArray(iconPaths)||!iconPaths.includes(slot)) throw new Error('Resource has no declared icon role');
+   const iconIds=forms?members.flatMap(id=>Object.values(catalog.stateGroups?.[id]?.variants??{native:id})):group?Object.values(group.variants):[selected.id];
+   const iconPaths=iconIds.flatMap(id=>catalog.records[id].icons??[]);
+   if (!iconPaths.includes(slot)) throw new Error('Resource has no declared icon role');
   }
   const base=view==='sprite'?'sprite':record.model, previewState={...selected.state,...state};
   if (base==='azalea') {
@@ -218,7 +221,7 @@ export function createPreviewResolver(catalog, registry, Three) {
    if (!['down','up'].includes(previewState.direction)||typeof previewState.merged!=='boolean') throw new Error('Invalid sulfur preview state');
   }
   const buildFaces={...faceMap},buildState={...previewState},sharedPaths=[...new Set(Object.values(faceMap).filter(path=>!record.paths.includes(path)))];
-  return {object:selected,model,slot,paths:available,shared:sharedPaths,stages:stageCount(record),faceMap:{...faceMap},bindings:{...faceMap},state:{...previewState},scale:descriptor.scale,mode:descriptor.mode,
+  return {object:selected,forms:forms?{...forms}:null,model,slot,paths:available,shared:sharedPaths,stages:stageCount(record),faceMap:{...faceMap},bindings:{...faceMap},state:{...previewState},scale:descriptor.scale,mode:descriptor.mode,
    build(environment) {
     if (!dictionary(environment)) throw new Error('Invalid preview environment');
     return registry.build(model,{...environment,cur:selected.id,slot,faceMap:{...buildFaces},bindings:{...buildFaces},state:{...buildState}});
