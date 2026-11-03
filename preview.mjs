@@ -1,7 +1,7 @@
 /* Read-only entry point for an explicit block slice. Uses the production compiler and preview path. */
 import {compileModelCatalog} from './models/library.mjs';
 import {createPreviewResolver} from './catalog/preview.mjs';
-export const REVIEW_IDS=Object.freeze(['pumpkin','carved_pumpkin','lit_pumpkin','pumpkin_stem','melon_block','melon_stem','budding_amethyst','small_amethyst_bud','medium_amethyst_bud','large_amethyst_bud','amethyst_cluster','seagrass','mangrove_propagule','kelp','closed_eyeblossom','open_eyeblossom','firefly_bush']);
+export const REVIEW_IDS=Object.freeze(['pumpkin','carved_pumpkin','lit_pumpkin','pumpkin_stem','melon_block','melon_stem','budding_amethyst','small_amethyst_bud','medium_amethyst_bud','large_amethyst_bud','amethyst_cluster','seagrass','mangrove_propagule','kelp','closed_eyeblossom','open_eyeblossom','firefly_bush',...['','exposed_','weathered_','oxidized_'].map(prefix=>prefix+'copper_golem_statue')]);
 const own=(object,key)=>Object.hasOwn(object,key);
 const dictionary=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 export function compileReview(input,Three) {
@@ -74,17 +74,18 @@ export function createImageSource(loadVanilla,decodePNG,options={}) {
  };
 }
 const TEXT={
- en:{back:'Editor',language:'Language',title:'New model preview',scope:'Explicit review slice: 17 source block IDs, not the full catalog or an editor release. Nothing is written to your packs.',scopeDetails:'Included source IDs',object:'Object',source:'Open source ID',open:'Open',textures:'Texture source',vanilla:'Pinned vanilla',pack:'Active pack (read only)',reload:'Reload',hint:'Drag to rotate. Manual source frames only: no playback or Bedrock animation timing. Kelp remains a static candidate.',resources:'Model resources',loading:'Loading',ready:'Displayed',failed:'Could not display',frame:'Source frame',stem:'Stem',stage:'Stem stage',facing:'Stem direction',variant:'Variant',crystals:'Crystal',growth:'Growth',face:'Block face',tall:'Tall form',hanging:'Hanging',age:'Age',off:'Without',on:'With',plain:'Plain',carved:'Carved',lit:'Lit',small:'Small',medium:'Medium',large:'Large',cluster:'Cluster',up:'Up',down:'Down',north:'North',south:'South',east:'East',west:'West',bloom:'Display',bloom_closed:'Closed',bloom_open:'Open',eyeblossom:'Eye blossom',done:'Done'},
- ru:{back:'Редактор',language:'Язык',title:'Новый просмотр моделей',scope:'Явный срез: 17 исходных ID блоков, не полный каталог и не выпуск редактора. В паки ничего не записывается.',scopeDetails:'Исходные ID в этом срезе',object:'Объект',source:'Открыть исходный ID',open:'Открыть',textures:'Источник текстур',vanilla:'Закреплённая ваниль',pack:'Активный пак (только чтение)',reload:'Обновить',hint:'Потяни для вращения. Кадры выбираются вручную: плеера и игрового тайминга ещё нет. Kelp остаётся статическим кандидатом.',resources:'Ресурсы модели',loading:'Загрузка',ready:'Показан',failed:'Не удалось показать',frame:'Кадр исходника',stem:'Стебель',stage:'Стадия стебля',facing:'Направление стебля',variant:'Вариант',crystals:'Нарост',growth:'Рост',face:'Грань блока',tall:'Высокая форма',hanging:'Висячий',age:'Возраст',off:'Без',on:'Со',plain:'Обычная',carved:'Вырезанная',lit:'Светящаяся',small:'Малый',medium:'Средний',large:'Большой',cluster:'Кластер',up:'Верх',down:'Низ',north:'Север',south:'Юг',east:'Восток',west:'Запад',bloom:'Отображение',bloom_closed:'Закрытый',bloom_open:'Открытый',eyeblossom:'Глазоцвет',done:'Готово'}
+ en:{back:'Editor',language:'Language',title:'New model preview',scope:'Explicit review slice: {count} source block IDs, not the full catalog or an editor release. Nothing is written to your packs.',scopeDetails:'Included source IDs',object:'Object',source:'Open source ID',open:'Open',textures:'Texture source',vanilla:'Pinned vanilla',pack:'Active pack (read only)',reload:'Reload',hint:'Drag to rotate. Manual source frames only: no playback or Bedrock animation timing. Kelp remains a static candidate. Statue poses are static.',resources:'Model resources',loading:'Loading',ready:'Displayed',failed:'Could not display',frame:'Source frame',stem:'Stem',stage:'Stem stage',facing:'Stem direction',variant:'Variant',crystals:'Crystal',growth:'Growth',face:'Block face',tall:'Tall form',hanging:'Hanging',age:'Age',off:'Without',on:'With',plain:'Plain',carved:'Carved',lit:'Lit',small:'Small',medium:'Medium',large:'Large',cluster:'Cluster',up:'Up',down:'Down',north:'North',south:'South',east:'East',west:'West',bloom:'Display',bloom_closed:'Closed',bloom_open:'Open',eyeblossom:'Eye blossom',done:'Done',pose:'Pose',standing:'Standing',sitting:'Sitting',running:'Running',star:'Star',card_copper_golem:'Copper golem',card_exposed_copper_golem:'Exposed copper golem',card_weathered_copper_golem:'Weathered copper golem',card_oxidized_copper_golem:'Oxidized copper golem'},
+ ru:{back:'Редактор',language:'Язык',title:'Новый просмотр моделей',scope:'Явный срез: {count} исходных ID блоков, не полный каталог и не выпуск редактора. В паки ничего не записывается.',scopeDetails:'Исходные ID в этом срезе',object:'Объект',source:'Открыть исходный ID',open:'Открыть',textures:'Источник текстур',vanilla:'Закреплённая ваниль',pack:'Активный пак (только чтение)',reload:'Обновить',hint:'Потяни для вращения. Кадры выбираются вручную: плеера и игрового тайминга ещё нет. Kelp остаётся статическим кандидатом. Позы статуи статичные.',resources:'Ресурсы модели',loading:'Загрузка',ready:'Показан',failed:'Не удалось показать',frame:'Кадр исходника',stem:'Стебель',stage:'Стадия стебля',facing:'Направление стебля',variant:'Вариант',crystals:'Нарост',growth:'Рост',face:'Грань блока',tall:'Высокая форма',hanging:'Висячий',age:'Возраст',off:'Без',on:'Со',plain:'Обычная',carved:'Вырезанная',lit:'Светящаяся',small:'Малый',medium:'Средний',large:'Большой',cluster:'Кластер',up:'Верх',down:'Низ',north:'Север',south:'Юг',east:'Восток',west:'Запад',bloom:'Отображение',bloom_closed:'Закрытый',bloom_open:'Открытый',eyeblossom:'Глазоцвет',done:'Готово',pose:'Поза',standing:'Стоит',sitting:'Сидит',running:'Бежит',star:'Звезда',card_copper_golem:'Медный голем',card_exposed_copper_golem:'Потемневший медный голем',card_weathered_copper_golem:'Состарившийся медный голем',card_oxidized_copper_golem:'Окисленный медный голем'}
 };
 const bool=[['off',false],['on',true]],directions=['north','south','east','west'].map(key=>[key,key]);
 const numbers=n=>Array.from({length:n},(_,index)=>[String(index),index]);
 const fruit=[['stem',bool,false],['facing',directions,'west'],['stage',numbers(8),7]];
 const growth=['small','medium','large','cluster'].map(key=>[key,key]);
 const FIELDS={pumpkin:fruit,melon_block:fruit,budding_amethyst:[['crystals',bool,false],['growth',growth,'cluster'],['face',[...directions,['up','up'],['down','down']],'up']],seagrass:[['tall',bool,false],['variant',[['A','a'],['B','b']],'a']],mangrove_propagule:[['hanging',bool,false],['age',numbers(5),0]]};
+const MODEL_FIELDS={copper_golem_statue:[['pose',['standing','sitting','running','star'].map(key=>[key,key]),'standing']]};
 export function previewFields(catalog,plan) {
  const route=catalog.stateRoutes?.[plan.object.id],group=route?catalog.stateGroups?.[route.card]:null;
- const fields=FIELDS[plan.object.card]??[];
+ const fields=[...(FIELDS[plan.object.card]??[]),...(MODEL_FIELDS[plan.model]??[])];
  if(!group)return fields.map(([key,options,fallback])=>[key,options.map(option=>[...option]),fallback]);
  return [[group.parameter,Object.keys(group.variants).map(value=>[value,value]),group.default],...fields.filter(([key])=>key!==group.parameter).map(([key,options,fallback])=>[key,options.map(option=>[...option]),fallback])];
 }
@@ -96,14 +97,15 @@ export function previewControlSpec(catalog,plan) {
 export async function startPreview() {
  const Three=globalThis.THREE,$=id=>document.getElementById(id),stage=$('stage'),status=$('status');
  let lang=navigator.language.toLowerCase().startsWith('ru')?'ru':'en';
- const t=key=>TEXT[lang][key]??key,makeCanvas=()=>document.createElement('canvas');
+ const t=key=>(TEXT[lang][key]??key).replace('{count}',String(REVIEW_IDS.length)),makeCanvas=()=>document.createElement('canvas');
+ const cardText=card=>TEXT[lang]['card_'+card]??(card==='closed_eyeblossom'?t('eyeblossom'):card);
  let renderer,current=null,resolve,catalog,id='',state={},generation=0,busy=false,disposed=false,frame=null,drag=null,controlPlan=null,lost=false;
  let notice={key:'loading',detail:'',error:false};
  const frames=new Map(),readImage=createImageSource(path=>globalThis.FKCatalog.loadAny(path),data=>new Promise((ok,fail)=>{
   const image=new Image();image.onload=()=>ok(image);image.onerror=()=>fail(new Error('Saved PNG decode failed'));image.src=data;
  }));
  function message(key,detail='',error=false){notice={key,detail,error};status.className=error?'error':'';status.textContent=t(key)+(detail?' — '+detail:'');}
- function strings(){document.documentElement.lang=lang;document.querySelectorAll('[data-text]').forEach(el=>el.textContent=t(el.dataset.text));for(const option of $('object').options)option.textContent=option.value==='closed_eyeblossom'?t('eyeblossom'):option.value;}
+ function strings(){document.documentElement.lang=lang;document.querySelectorAll('[data-text]').forEach(el=>el.textContent=t(el.dataset.text));for(const option of $('object').options)option.textContent=cardText(option.value);}
  $('language').value=lang;strings();$('scopeList').textContent=REVIEW_IDS.join(', ');
  function render() {
   if(disposed||lost||!renderer||document.hidden||frame!==null)return;
@@ -189,7 +191,7 @@ export async function startPreview() {
  try {
   const input=await globalThis.FKCatalogData.load();if(disposed)return;
   const compiled=compileReview(input,Three);catalog=compiled.catalog;resolve=createPreviewResolver(catalog,compiled.registry,Three);
-  for(const card of catalog.cards){const option=document.createElement('option');option.value=card;option.textContent=card==='closed_eyeblossom'?t('eyeblossom'):card;$('object').appendChild(option);}
+  for(const card of catalog.cards){const option=document.createElement('option');option.value=card;option.textContent=cardText(card);$('object').appendChild(option);}
   ['object','source','open','textureSource','reload'].forEach(key=>$(key).disabled=false);
   choose(new URL(location.href).searchParams.get('id')||'pumpkin');
  }catch(error){message('failed',error.message,true);stage.setAttribute('aria-busy','false');}
