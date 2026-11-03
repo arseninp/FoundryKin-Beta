@@ -61,9 +61,33 @@ export function createSpecialModels(Three) {
    p.box([4,17,4],[12,20,12],six,{east:[0,4,4,5.5],north:[4,4,8,5.5],west:[8,4,12,5.5],south:[12,4,16,5.5],up:[4,0,8,4],down:[8,0,12,4]});
   });
  }
+ /* Active geometry is a static Java-reference candidate, not a Bedrock export/acceptance.
+    Reference: Blackjack200/minecraft_client_1_20_1@c129e3e3e6ca89a731d4cfc35bb606c6bd2cae2c,
+    ConduitRenderer.createCageLayer/createWindLayer/createEyeLayer. No ticking or camera billboard. */
  function conduit(E) {
-  const id=requireRoles(E,['up'],'conduit').up;
-  composeShape(Three,E,p=>p.box([5,5,5],[11,11,11],{north:id,south:id,east:id,west:id,up:id,down:id},{east:[0,4,4,8],north:[4,4,8,8],west:[8,4,12,8],south:[12,4,16,8],up:[4,0,8,4],down:[8,0,12,4]}));
+  const state=E?.state??{};
+  if(!state||typeof state!=='object'||Array.isArray(state))throw new Error('Invalid conduit state');
+  const active=state.active??false,wind=state.wind??'horizontal';
+  if(typeof active!=='boolean'||!['horizontal','vertical'].includes(wind))throw new Error('Invalid conduit preview state');
+  if(!active) {
+   const id=requireRoles(E,['up'],'conduit').up;
+   composeShape(Three,E,p=>p.box([5,5,5],[11,11,11],{north:id,south:id,east:id,west:id,up:id,down:id},{east:[0,4,4,8],north:[4,4,8,8],west:[8,4,12,8],south:[12,4,16,8],up:[4,0,8,4],down:[8,0,12,4]}));
+   return;
+  }
+  const f=requireRoles(E,['cage','eye','wind'],'active conduit');
+  function atlas(size) {
+   const s=size,rects={east:[3*s,s,2*s,2*s],west:[s,s,0,2*s],north:[2*s,s,s,2*s],south:[4*s,s,3*s,2*s],up:[s,s,2*s,0],down:[2*s,0,3*s,s]};
+   return Object.fromEntries(Object.entries(rects).map(([face,r])=>[face,[r[0],r[1]*2,r[2],r[3]*2]]));
+  }
+  const cageUV=atlas(8),windUV=atlas(16);
+  composeShape(Three,E,p=>{
+   p.prism(.5,.5,.5,0,-.05,0,f.cage,cageUV,32);
+   const outer=q=>q.prism(1,1,1,0,0,0,f.wind,windUV,64);
+   if(wind==='vertical')p.tilted([8,8,8],Math.PI/2,outer);else outer(p);
+   p.turned(Math.PI,q=>q.prism(.875,.875,.875,0,0,0,f.wind,windUV,64));
+   p.face(f.eye,1/3,1/3,0,-.05,0,0,0,[0,0,8,8],true);
+  });
+  for(const path of [f.cage,f.wind]){E.mats[path].side=Three.DoubleSide;E.mats[path].needsUpdate=true;}
  }
  /* Java-reference dragon_egg.json, blob 042d4ebedf87d6d7015a5abbc8b6e16fc065b434; Bedrock-owned material. */
  function dragonEgg(E) {
