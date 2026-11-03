@@ -1,7 +1,7 @@
 /* Read-only entry point for an explicit block slice. Uses the production compiler and preview path. */
 import {compileModelCatalog} from './models/library.mjs';
 import {createPreviewResolver} from './catalog/preview.mjs';
-export const REVIEW_IDS=Object.freeze(['pumpkin','carved_pumpkin','lit_pumpkin','pumpkin_stem','melon_block','melon_stem','budding_amethyst','small_amethyst_bud','medium_amethyst_bud','large_amethyst_bud','amethyst_cluster','seagrass','mangrove_propagule','kelp','closed_eyeblossom','open_eyeblossom','firefly_bush',...['','exposed_','weathered_','oxidized_'].map(prefix=>prefix+'copper_golem_statue')]);
+export const REVIEW_IDS=Object.freeze(['pumpkin','carved_pumpkin','lit_pumpkin','pumpkin_stem','melon_block','melon_stem','budding_amethyst','small_amethyst_bud','medium_amethyst_bud','large_amethyst_bud','amethyst_cluster','seagrass','mangrove_propagule','kelp','closed_eyeblossom','open_eyeblossom','firefly_bush',...['','exposed_','weathered_','oxidized_'].map(prefix=>prefix+'copper_golem_statue'),'skeleton_skull','wither_skeleton_skull','creeper_head','zombie_head','piglin_head']);
 const own=(object,key)=>Object.hasOwn(object,key);
 const dictionary=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 export function compileReview(input,Three) {
@@ -74,8 +74,8 @@ export function createImageSource(loadVanilla,decodePNG,options={}) {
  };
 }
 const TEXT={
- en:{back:'Editor',language:'Language',title:'New model preview',scope:'Explicit review slice: {count} source block IDs, not the full catalog or an editor release. Nothing is written to your packs.',scopeDetails:'Included source IDs',object:'Object',source:'Open source ID',open:'Open',textures:'Texture source',vanilla:'Pinned vanilla',pack:'Active pack (read only)',reload:'Reload',hint:'Drag to rotate. Manual source frames only: no playback or Bedrock animation timing. Kelp remains a static candidate. Statue poses are static.',resources:'Model resources',loading:'Loading',ready:'Displayed',failed:'Could not display',frame:'Source frame',stem:'Stem',stage:'Stem stage',facing:'Stem direction',variant:'Variant',crystals:'Crystal',growth:'Growth',face:'Block face',tall:'Tall form',hanging:'Hanging',age:'Age',off:'Without',on:'With',plain:'Plain',carved:'Carved',lit:'Lit',small:'Small',medium:'Medium',large:'Large',cluster:'Cluster',up:'Up',down:'Down',north:'North',south:'South',east:'East',west:'West',bloom:'Display',bloom_closed:'Closed',bloom_open:'Open',eyeblossom:'Eye blossom',done:'Done',pose:'Pose',standing:'Standing',sitting:'Sitting',running:'Running',star:'Star',card_copper_golem:'Copper golem',card_exposed_copper_golem:'Exposed copper golem',card_weathered_copper_golem:'Weathered copper golem',card_oxidized_copper_golem:'Oxidized copper golem'},
- ru:{back:'Редактор',language:'Язык',title:'Новый просмотр моделей',scope:'Явный срез: {count} исходных ID блоков, не полный каталог и не выпуск редактора. В паки ничего не записывается.',scopeDetails:'Исходные ID в этом срезе',object:'Объект',source:'Открыть исходный ID',open:'Открыть',textures:'Источник текстур',vanilla:'Закреплённая ваниль',pack:'Активный пак (только чтение)',reload:'Обновить',hint:'Потяни для вращения. Кадры выбираются вручную: плеера и игрового тайминга ещё нет. Kelp остаётся статическим кандидатом. Позы статуи статичные.',resources:'Ресурсы модели',loading:'Загрузка',ready:'Показан',failed:'Не удалось показать',frame:'Кадр исходника',stem:'Стебель',stage:'Стадия стебля',facing:'Направление стебля',variant:'Вариант',crystals:'Нарост',growth:'Рост',face:'Грань блока',tall:'Высокая форма',hanging:'Висячий',age:'Возраст',off:'Без',on:'Со',plain:'Обычная',carved:'Вырезанная',lit:'Светящаяся',small:'Малый',medium:'Средний',large:'Большой',cluster:'Кластер',up:'Верх',down:'Низ',north:'Север',south:'Юг',east:'Восток',west:'Запад',bloom:'Отображение',bloom_closed:'Закрытый',bloom_open:'Открытый',eyeblossom:'Глазоцвет',done:'Готово',pose:'Поза',standing:'Стоит',sitting:'Сидит',running:'Бежит',star:'Звезда',card_copper_golem:'Медный голем',card_exposed_copper_golem:'Потемневший медный голем',card_weathered_copper_golem:'Состарившийся медный голем',card_oxidized_copper_golem:'Окисленный медный голем'}
+ en:{back:'Editor',language:'Language',title:'New model preview',scope:'Explicit review slice: {count} source block IDs, not the full catalog or an editor release. Nothing is written to your packs.',scopeDetails:'Included source IDs',object:'Object',source:'Open source ID',open:'Open',textures:'Texture source',vanilla:'Pinned vanilla',pack:'Active pack (read only)',reload:'Reload',hint:'Drag to rotate. Manual source frames only: no playback or Bedrock animation timing. Kelp remains a static candidate. Statue poses are static.',resources:'Model resources',loading:'Loading',ready:'Displayed',failed:'Could not display',frame:'Source frame',stem:'Stem',stage:'Stem stage',facing:'Stem direction',variant:'Variant',crystals:'Crystal',growth:'Growth',face:'Block face',tall:'Tall form',hanging:'Hanging',age:'Age',off:'Without',on:'With',plain:'Plain',carved:'Carved',lit:'Lit',small:'Small',medium:'Medium',large:'Large',cluster:'Cluster',up:'Up',down:'Down',north:'North',south:'South',east:'East',west:'West',bloom:'Display',bloom_closed:'Closed',bloom_open:'Open',eyeblossom:'Eye blossom',done:'Done',pose:'Pose',standing:'Standing',sitting:'Sitting',running:'Running',star:'Star',card_copper_golem:'Copper golem',card_exposed_copper_golem:'Exposed copper golem',card_weathered_copper_golem:'Weathered copper golem',card_oxidized_copper_golem:'Oxidized copper golem',card_skeleton:'Skeleton',card_wither_skeleton:'Wither skeleton',card_creeper:'Creeper',card_zombie:'Zombie',card_piglin:'Piglin',form:'Representation',form_native:'Main form',form_head:'Head',form_skull:'Skull',form_statue:'Statue',form_shoot:'Shoot',form_crop:'Crop',form_stem:'Stem'},
+ ru:{back:'Редактор',language:'Язык',title:'Новый просмотр моделей',scope:'Явный срез: {count} исходных ID блоков, не полный каталог и не выпуск редактора. В паки ничего не записывается.',scopeDetails:'Исходные ID в этом срезе',object:'Объект',source:'Открыть исходный ID',open:'Открыть',textures:'Источник текстур',vanilla:'Закреплённая ваниль',pack:'Активный пак (только чтение)',reload:'Обновить',hint:'Потяни для вращения. Кадры выбираются вручную: плеера и игрового тайминга ещё нет. Kelp остаётся статическим кандидатом. Позы статуи статичные.',resources:'Ресурсы модели',loading:'Загрузка',ready:'Показан',failed:'Не удалось показать',frame:'Кадр исходника',stem:'Стебель',stage:'Стадия стебля',facing:'Направление стебля',variant:'Вариант',crystals:'Нарост',growth:'Рост',face:'Грань блока',tall:'Высокая форма',hanging:'Висячий',age:'Возраст',off:'Без',on:'Со',plain:'Обычная',carved:'Вырезанная',lit:'Светящаяся',small:'Малый',medium:'Средний',large:'Большой',cluster:'Кластер',up:'Верх',down:'Низ',north:'Север',south:'Юг',east:'Восток',west:'Запад',bloom:'Отображение',bloom_closed:'Закрытый',bloom_open:'Открытый',eyeblossom:'Глазоцвет',done:'Готово',pose:'Поза',standing:'Стоит',sitting:'Сидит',running:'Бежит',star:'Звезда',card_copper_golem:'Медный голем',card_exposed_copper_golem:'Потемневший медный голем',card_weathered_copper_golem:'Состарившийся медный голем',card_oxidized_copper_golem:'Окисленный медный голем',card_skeleton:'Скелет',card_wither_skeleton:'Скелет-иссушитель',card_creeper:'Крипер',card_zombie:'Зомби',card_piglin:'Пиглин',form:'Представление',form_native:'Основная форма',form_head:'Голова',form_skull:'Череп',form_statue:'Статуя',form_shoot:'Росток',form_crop:'Посев',form_stem:'Стебель'}
 };
 const bool=[['off',false],['on',true]],directions=['north','south','east','west'].map(key=>[key,key]);
 const numbers=n=>Array.from({length:n},(_,index)=>[String(index),index]);
@@ -91,15 +91,21 @@ export function previewFields(catalog,plan) {
 }
 export function previewControlSpec(catalog,plan) {
  const fields=previewFields(catalog,plan),label=(key,fallback=key)=>['en','ru'].map(lang=>TEXT[lang][key]??TEXT[lang][fallback]??fallback);
- return {schema:fields.length?fields.map(([key,options])=>({key,label:label(key),values:options.map(([name,value])=>({value,label:label(key+'_'+name,name)}))})):null,
-  state:Object.fromEntries(fields.map(([key,,fallback])=>[key,plan.state[key]??fallback]))};
+ const schema=fields.map(([key,options])=>({key,label:label(key),values:options.map(([name,value])=>({value,label:label(key+'_'+name,name)}))}));
+ const state=Object.fromEntries(fields.map(([key,,fallback])=>[key,plan.state[key]??fallback]));
+ if(plan.forms) {
+  if(!dictionary(plan.forms)||!own(plan.forms,plan.object.form)||schema.some(item=>item.key==='form'))throw new Error('Invalid preview form controls');
+  schema.unshift({key:'form',label:label('form'),values:Object.keys(plan.forms).map(value=>({value,label:label('form_'+value,value)}))});
+  state.form=plan.object.form;
+ }
+ return {schema:schema.length?schema:null,state};
 }
 export async function startPreview() {
  const Three=globalThis.THREE,$=id=>document.getElementById(id),stage=$('stage'),status=$('status');
  let lang=navigator.language.toLowerCase().startsWith('ru')?'ru':'en';
  const t=key=>(TEXT[lang][key]??key).replace('{count}',String(REVIEW_IDS.length)),makeCanvas=()=>document.createElement('canvas');
  const cardText=card=>TEXT[lang]['card_'+card]??(card==='closed_eyeblossom'?t('eyeblossom'):card);
- let renderer,current=null,resolve,catalog,id='',state={},generation=0,busy=false,disposed=false,frame=null,drag=null,controlPlan=null,lost=false;
+ let renderer,current=null,resolve,catalog,id='',form,slot,state={},generation=0,busy=false,disposed=false,frame=null,drag=null,controlPlan=null,lost=false;
  let notice={key:'loading',detail:'',error:false};
  const frames=new Map(),readImage=createImageSource(path=>globalThis.FKCatalog.loadAny(path),data=>new Promise((ok,fail)=>{
   const image=new Image();image.onload=()=>ok(image);image.onerror=()=>fail(new Error('Saved PNG decode failed'));image.src=data;
@@ -123,7 +129,8 @@ export async function startPreview() {
  renderer=new Three.WebGLRenderer({antialias:true,alpha:true});renderer.setClearColor(0,0);stage.appendChild(renderer.domElement);
  const stateUi=globalThis.FKModelState.create($('controls'),()=>{
   if(busy||disposed||lost||!controlPlan)return;
-  state={...controlPlan.state,...stateUi.value()};show();
+  const {form:nextForm,...nextState}=stateUi.value();
+  form=nextForm;slot=controlPlan.slot;state={...controlPlan.state,...nextState};show();
  },{language:()=>lang,doneLabel:()=>t('done'),manager:()=>globalThis.FKM});
  function controls(plan) {
   const spec=previewControlSpec(catalog,plan);controlPlan=plan;
@@ -154,7 +161,7 @@ export async function startPreview() {
   const token=++generation;busy=true;stateUi.busy(true);drag=null;stage.setAttribute('aria-busy','true');renderer.domElement.style.visibility='hidden';controlPlan=null;$('resources').replaceChildren();message('loading',id);
   let next;
   try {
-   const plan=resolve({id,state:{...state}}),paths=resourcePaths(plan),overrides=$('textureSource').value==='pack'?activePack(localStorage):{};
+   const plan=resolve({id,form,slot,state:{...state}}),paths=resourcePaths(plan),overrides=$('textureSource').value==='pack'?activePack(localStorage):{};
    controls(plan);const loaded=await Promise.all(paths.map(path=>readImage(path,overrides)));
    if(token!==generation||disposed)return;
    const images=Object.fromEntries(paths.map((path,index)=>[path,loaded[index]])),canvases=Object.fromEntries(paths.map(path=>[path,frameCanvas(images[path],frames.get(path)??0,makeCanvas)]));
@@ -163,7 +170,7 @@ export async function startPreview() {
    next.group.position.sub(bounds.getCenter(new Three.Vector3()));const extent=Math.max(.1,bounds.getSize(new Three.Vector3()).length()/2*1.15);
    if(token!==generation||disposed){next.dispose();next=null;return;}
    const previous=current;current={plan,paths,images,canvases,instance:next};next=null;turn.add(current.instance.group);
-   state={...plan.state};
+   form=plan.forms?plan.object.form:undefined;slot=plan.slot;state={...plan.state};
    turn.rotation.set(plan.mode==='sprite'?0:.6155,plan.mode==='sprite'?0:-Math.PI/4,0);
    camera.left=camera.bottom=-extent;camera.right=camera.top=extent;camera.updateProjectionMatrix();
    let cleanup='';try{previous?.instance.dispose();}catch(error){cleanup='; '+error.message;}
@@ -173,7 +180,7 @@ export async function startPreview() {
    if(token===generation&&!disposed)message('failed',error.message,true);
   }finally{if(token===generation&&!disposed){busy=false;stage.setAttribute('aria-busy','false');stateUi.busy(lost);}}
  }
- function choose(value){id=value;state={};frames.clear();$('source').value=id;show();}
+ function choose(value){id=value;form=undefined;slot=undefined;state={};frames.clear();$('source').value=id;show();}
  $('object').addEventListener('change',()=>choose($('object').value));
  $('sourceForm').addEventListener('submit',event=>{event.preventDefault();choose($('source').value.trim());});
  $('textureSource').addEventListener('change',()=>{frames.clear();show();});$('reload').addEventListener('click',()=>{if(resolve)show();else location.reload();});

@@ -28,7 +28,7 @@ export function withFruitStemSelection(catalog,resolve,Three) {
   const composed=stem?createFruitStemPreview(Three,fruit,stem):fruit;
   const resultState={...fruit.state,...(stem?stem.state:{}),stem:withStem};
   const object=initial.form==='stem'?initial:fruit.object;
-  return {...fruit,object,slot,paths,shared:[...new Set([...fruit.shared,...(stem?.shared??[])])],state:resultState,stages:stem?8:fruit.stages,scale:composed.scale,mode:composed.mode,
+  return {...fruit,object,forms:null,slot,paths,shared:[...new Set([...fruit.shared,...(stem?.shared??[])])],state:resultState,stages:stem?8:fruit.stages,scale:composed.scale,mode:composed.mode,
    parts:{fruit:{object:fruit.object,bindings:{...fruit.bindings}},...(stem?{stem:{object:stem.object,bindings:{...stem.bindings}}}:{})},
    build(environment){return composed.build(environment);}
   };
