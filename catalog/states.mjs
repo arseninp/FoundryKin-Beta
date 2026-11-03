@@ -17,7 +17,8 @@ export function powerRules(records) {
   {card:'anvil',parameter:'damage',default:'undamaged',variants:{undamaged:'anvil',chipped:'chipped_anvil',damaged:'damaged_anvil'}},
   {card:'amethyst_cluster',parameter:'growth',default:'cluster',variants:{small:'small_amethyst_bud',medium:'medium_amethyst_bud',large:'large_amethyst_bud',cluster:'amethyst_cluster'}},
   {card:'pitcher_plant',parameter:'variant',default:'grown',variants:{crop:'pitcher_crop',grown:'pitcher_plant'}},
-  {card:'daylight_detector',parameter:'mode',default:'day',variants:{day:'daylight_detector',inverted:'daylight_detector_inverted'}}
+  {card:'daylight_detector',parameter:'mode',default:'day',variants:{day:'daylight_detector',inverted:'daylight_detector_inverted'}},
+  {card:'closed_eyeblossom',parameter:'bloom',default:'closed',variants:{closed:'closed_eyeblossom',open:'open_eyeblossom'},models:{closed:'cross',open:'emissive_cross'}}
  ])if(Object.values(rule.variants).every(id=>own(records,id)))rules.push(rule);
  return rules;
 }
@@ -31,16 +32,21 @@ export function compileStateGroups(records, rules) {
   if (own(groups, rule.card) || !entries.some(([, id]) => id === rule.card)) throw new Error('Invalid state card: ' + rule.card);
   const first = records[rule.card];
   if (!first || typeof first.model !== 'string' || !first.model) throw new Error('Missing state model: ' + rule.card);
+  const explicit = own(rule, 'models'), models = Object.create(null);
+  if (explicit) {
+   if (!rule.models || typeof rule.models !== 'object' || Array.isArray(rule.models) || Object.keys(rule.models).length !== entries.length || entries.some(([value]) => !own(rule.models, value) || typeof rule.models[value] !== 'string' || !rule.models[value].trim())) throw new Error('Invalid state model contract: ' + rule.card);
+  }
   const paths = new Set(), variants = Object.create(null);
   for (const [value, id] of entries) {
    if (!KEY.test(value) || typeof id !== 'string' || !own(records, id) || claimed.has(id)) throw new Error('Invalid or repeated state member: ' + id);
-   const record = records[id];
-   if (record.model !== first.model) throw new Error('State model mismatch: ' + id);
+   const record = records[id], expected = explicit ? rule.models[value] : first.model;
+   if (record.model !== expected) throw new Error('State model mismatch: ' + id);
    if (!Array.isArray(record.paths) || !record.paths.length || record.paths.some(p => typeof p !== 'string')) throw new Error('Invalid state resources: ' + id);
    claimed.add(id);record.paths.forEach(path => paths.add(path));
    variants[value] = id;routes[id] = {card: rule.card, state: {[rule.parameter]: value}};
+   if (explicit) models[value] = expected;
   }
-  groups[rule.card] = {parameter: rule.parameter, default: rule.default, variants, paths: [...paths].sort()};
+  groups[rule.card] = {parameter: rule.parameter, default: rule.default, variants, paths: [...paths].sort(), ...(explicit ? {models} : {})};
  }
  return {groups, routes, cards: Object.keys(records).filter(id => !claimed.has(id) || own(groups, id)).sort()};
 }
