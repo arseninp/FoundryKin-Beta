@@ -1,33 +1,27 @@
-# ROADMAP — перенос, проверка, очистка
+# ROADMAP — перенос, приёмка, очистка
 
-Обновлено 2026-11-03 по OLDCHAT20. Проверенный HEAD до документации efb873044ce59c308bce2aaf11ba73c709d869bf. Контекст — CONTEXT/handoff, задачи — TODO, контракты — ARCHITECTURE. Не выпуск.
+Обновлено 2026-11-04. Проверенный HEAD до документации: 6ccafe6d7b9e8d277fd513e70bca3a8d5d1b5105. Контекст — CONTEXT/handoff, задачи — TODO, контракты — ARCHITECTURE. Не выпуск.
 
-## 1. Продолжить подключение жидкостей
+## 1. Текущая передача
 
-Головы/статуи/eyeblossom уже подключены; OLDCHAT20 добавил decorated pot с 4 независимыми pattern choices, static active conduit с общим picker и вынес controls в preview-controls.mjs. Срез 29 source IDs, не весь каталог/основной editor. Повторять эти модели не нужно.
+Конкретная чистка whole-block facing сундуков/шалкеров завершена. Модель вращается жестом; отдельные направления не возвращать. Open крышки и chest double сохранены, ender double запрещён. Не смешивать лишний поворот блока с UV-гранями/stem direction/growth face.
 
-efb8730 добавил water/lava builders/4 назначения. Следующий участок — изучить существующие consumers/bindings и связать жидкости с resolver/общими controls/срезом. Ровный уровень 0..7 не симуляция потока; slopes/falling/tint/overlays/timing отсутствуют, Bedrock appearance открыт. Не создавать второй runtime/каталог/меню.
+Срез 44 source IDs: прежние 29 + 4 liquids + 11 chests. Жидкости и сундуки уже подключены к common picker/resolver/срезу, их не переносить заново. Shulker geometry/sources/open resolver есть, UI/срез ещё нет. Следующий участок при продолжении — только open/independent PNG/цвета в существующем picker, без facing. Отклонённый черновик 17 shulkers/61 slice не записан.
 
-## 2. Уточнить остаток и широкий макет
+## 2. Продолжить согласованную основу
 
-Предварительно после четырёх жидкостей без assignments остаются bell/player_head/bubble_column по архивной сверке; подтвердить existing coverage/inputValidation/compile, не выдавать за свежий прогон. Отложенный scope не становится обязательным автоматически. Полные mobs/скелет/развёртки/cushion/bell отдельно; fire builder уже есть, плеер не geometry.
+Не повторять головы/статуи/eyeblossom/pot/conduit/bed/sign/cauldron/auxiliary/banner/fruit-stem/budding amethyst/aquatic/propagule/kelp/materials. Полные mobs/скелет/развёртки/cushion/bell отдельно, не недоделка голов. Предварительный bell/player_head/bubble_column остаток подтвердить existing coverage, не выдавать за свежий прогон/согласованный scope.
 
-Вопрос tablet/desktop layout остаётся открытым: изучить editor/iframe/CSS/size consumers, затем согласовать адаптацию. Новая раскладка/breakpoints/редизайн не утверждены, mobile/paper tokens сохранить. Не потерять вопрос, но не возвращаться к устаревшей передаче, будто pot/conduit/liquids ещё не делались.
+Макет и tablet/desktop адаптация прямо отложены владельцем на другой чат. Здесь не начинать редизайн; mobile/paper tokens сохранить.
 
-## 3. Проверить согласованный объём
+## 3. Принять результат
 
-Точечные проверки сопровождают перенос; общий аудит/расширение CI не заменяют работу. Existing workflow имеет pot/conduit checks, успешный Actions пока не подтверждён. Не суммировать перекрывающиеся исторические mocks/тестовые числа и не считать builder count числом принятых cards.
+Targeted проверки сопровождают перенос, но general audit/CI expansion не заменяет его. Workflow pot/conduit/liquids/chest записан, успешный Actions не подтверждён; mocks/synthetic/recording-painter counts не full chain и не суммируются.
 
-Проверить full PIN input/coverage/compile/validate/tests/CI и реальные PNG-TGA/UV/Three/WebGL, cards/source IDs/reopen/menu/forms/state/texture/poses/frames. Открыты pot/conduit/liquids rendering, dragon placement-scale, gel alpha/potted azalea/stem tint/kelp и прочие ограничения ARCHITECTURE. Отдельно воспроизвести гипотезы OLDCHAT17; ceiling rotation снят, исключённая реплика OLDCHAT19 не источник задач.
+Нужны full PIN input/coverage/compile/validate/tests/CI, реальные PNG-TGA/Bedrock UV-scale/Three-WebGL/Android/export, source routes/reopen/menu/forms/state/texture/poses/frames и lifecycle. Ограничения reference models/tint/alpha/kelp — ARCHITECTURE.
 
-## 4. Довести новый редактор
+## 4. Довести редактор и очистить после успеха
 
-Общий Find/editor/loaders; independent PNG/state/forms/stages/frames, EN/RU/Shared textures/role badges/design tokens. Player отдельно: timing/order/pause при рисовании/export ленты/clock-compass demo; static open/pose не player, item icon UX согласовать.
+Общий Find/editor/loaders/EN-RU/Shared textures/badges; player отдельно от static state, item icon UX согласовать. Принять draw/undo/redo/Add/reopen/PNG/mcpack, async/storage/import/dimensions/alpha/cache/URL lifecycle/pack-slot-frame-language-theme/Android. Preview не editor.
 
-Принять Android draw/undo/redo/Add/reopen/PNG/mcpack, async targets/storage transactions/import limits/dimensions/alpha/cache/URL lifecycle и pack/slot/frame/language/theme. Read-only preview не заменяет editor.
-
-## 5. Очистить после успеха
-
-После совместной приёмки убрать ненужное/дубли, тесты разбирать индивидуально. Только после готовности переключить runtime, синхронизировать HTML/FK_V/cache, удалить заменённый legacy.
-
-Только main/малые пакеты/точное подтверждение/saved diff, после обрыва сначала GitHub. Новые test files отдельно согласовать; <25000 UTF-8 байт на файл. backup/fk070_packs не трогать. Полные items/entities/IndexedDB/большие паки/user backup/PWA-offline/права на ресурсы — отдельные этапы.
+Только после совместной готовности — индивидуальная чистка тестов/дублей, runtime switch, FK_V/cache и удаление заменённого legacy. Только main/точное подтверждение/saved diff/<25000 bytes/file; новые permanent test files отдельно согласовать. Backup/fk070_packs не трогать. Полные items/entities/IndexedDB/большие паки/user backup/PWA-offline/права на ресурсы — отдельные этапы.

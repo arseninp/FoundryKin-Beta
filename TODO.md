@@ -1,43 +1,33 @@
-# TODO — перенос моделей и технической основы
+# TODO — перенос и приёмка
 
-Обновлено 2026-11-03 по OLDCHAT20. Проверенный HEAD до документации: efb873044ce59c308bce2aaf11ba73c709d869bf. [x] означает записанный код, НЕ runtime/визуальную приёмку. Начать с CONTEXT/handoff.
+Обновлено 2026-11-04. Проверенный HEAD до документации: 6ccafe6d7b9e8d277fd513e70bca3a8d5d1b5105. [x] = записанный код, не runtime/визуальная приёмка. Начать с CONTEXT/handoff.
 
-## Текущая точка
+## Точка продолжения
 
-- [ ] Изучить normalization/bindings/resolver/materials/controls жидкостей и подключить уже записанные water/lava к общему picker/срезу без повторного создания builders. level 0..7, default 0; PNG/state независимы.
-- [ ] Проверить связку на pinned данных существующими средствами. Не называть uniform-height sample симуляцией течения или принятой Bedrock моделью.
-- [ ] Вернуться к вопросу адаптивного макета tablet/desktop: editor/iframe/CSS/size consumers. Исследование не закончено, новая раскладка/редизайн не согласованы, mobile/paper tokens сохранить.
+- [x] Завершить конкретную чистку лишних направлений сундуков/шалкеров: builders/resolver/chest menu/test loops/labels. Whole-block facing не возвращать; модель вращается жестом. Крышки/double/UV сохранены.
+- [ ] При продолжении подключить существующие shulker sources/geometry к common picker/preview только с open и independent PNG, цвета отдельно, без направления всего блока. Старый черновик 17 IDs/61 slice с facing отклонён, не записан.
+- [ ] Проверить общую цепочку на PIN existing средствами; записанный workflow не доказывает успешный Actions.
 
 ## Уже записано — не повторять
 
-- [x] Materials/composite/canvas-GPU lifecycle/read-only preview/loader timeout-cache-retry.
-- [x] Bed/sign/lava cauldron/auxiliary end_gateway; chest normal-trapped-ender-copper/double/static open; shulker sheets/directions/static candidate; banners resources/color/patterns/ominous.
-- [x] Fruit+stem/budding amethyst/aquatic/propagule/kelp/emissive models.
-- [x] Golem statues 4 stages/4 poses/sheets/source-waxed routes/parent cards/preview; головы skeleton/wither_skeleton/creeper/zombie/piglin/dragon с geometry/sources/parent/source routes. Полные mobs отложены.
-- [x] Eyeblossom одна card closed/open/cross-emissive_cross/glow; общий FKModelState/FKM/CSS; familyDefaults/plan.forms и independent form/slot/state, общий пункт Текстура/default sheets голов/статуй.
-- [x] Decorated pot: 23 patterns + ordinary side, 4 независимые стороны в builder/resolver/общем picker, EN/RU и independent PNG.
-- [x] Conduit: 6 resources/static active Java-reference candidate/resolver/shared picker activity-eye-wind, default inactive.
-- [x] Controls вынесены в preview-controls.mjs, прежние определения удалены, root exports проверок сохранены.
-- [x] Срез 29 source IDs: pot/conduit добавлены; НЕ cards/весь каталог. Основной editor не переключён; жидкости ещё вне среза.
-- [x] Existing preview-slice workflow дополнен pot/conduit, без новых test files; результат Actions не подтверждён.
-- [x] Water/lava builders + назначения 4 source IDs + existing library test (ожидание 112 builders, не coverage).
+- [x] Materials/composite/canvas-GPU lifecycle/read-only preview/loader limits; общий FKModelState/FKM/CSS/preview-controls без второй реализации.
+- [x] Eyeblossom одна closed/open card/glow; parent cards голов/статуй/source routes/PNG-form-state независимы; dragon head без полного моба.
+- [x] Pot 23 patterns+ordinary/4 sides/common picker; conduit 6 resources/static active/resolver/picker/default inactive.
+- [x] Water/lava 4 assignments/level 0..7/default 0/resolver/common picker/EN-RU/срез; не flow simulator.
+- [x] Chest resources/single-double/static open/resolver/common picker/11 source IDs/waxed canonical routes, ender без double.
+- [x] Срез 44 SOURCE IDs, не cards/весь каталог. Shulker geometry/sources/open resolver есть, UI/срез ещё нет. Основной editor не переключён.
+- [x] Existing workflow pot/conduit/liquids/chest checks; новых test files не добавлено.
 
-## Остаток и ограничения
+Bed/sign/cauldron/auxiliary/banner/fruit-stem/budding amethyst/aquatic/propagule/kelp не переносить заново. Полные mobs не недоделка голов. Stem direction/growth face/UV стороны сохранить — не лишний поворот всего сундука.
 
-- [ ] Получить свежий coverage/normalization/inputValidation/full compile на PIN; архивная сверка после жидкостей предварительно оставляет bell/player_head/bubble_column, не автоматическое согласование scope.
-- [ ] Сохранить bindings/stages/indexed repeats/dependencies/aliases/forms/states/icons/carried/saved-ID/reopen/block-item icons. Unknown не cube.
-- [ ] Bedrock PNG/UV potted azalea/reference/dragon placement-scale; gel alpha/stem tint/kelp sides-UV-TGA; pot patterns/conduit/liquids реальные изображения/render.
-- [ ] Conduit animation/eye tracking и liquid slopes/falling/tint/overlays/timing отсутствуют; не объявлять обязательным новым scope без согласования. Fire geometry уже существует, player отдельный.
-- [ ] Общий Find/editor/loaders, EN/RU/Shared textures/icon badges/design tokens, адаптивность после исследования.
-- [ ] Player timing/order/pause при рисовании/export ленты/clock-compass demo отдельно от state; item icon UX согласовать. Полные entities/cushion/bell отложены.
+## Остаётся
 
-## Приёмка и очистка
+- [ ] Fresh coverage/inputValidation/full PIN compile/validate/tests/CI; bell/player_head/bubble_column пока лишь архивный предварительный остаток, не новый scope.
+- [ ] Реальные PNG-TGA/Three/WebGL/Bedrock UV-scale/Android/export. Проверить cards/source IDs/reopen/menu/forms/PNG/poses/frames/materials/texture ownership/update/cleanup.
+- [ ] Potted azalea/reference UV/dragon placement-scale/gel alpha/stem tint/kelp sides-UV-TGA; pot/conduit/liquids/chests/shulkers rendering.
+- [ ] Bindings/dependencies/indexed repeats/aliases/forms/states/icons/carried/block-item icons и saved-ID сохранность. Unknown не cube.
+- [ ] Общий Find/editor/loaders/EN-RU/Shared textures/badges; player timing/order/pause/export strip/clock-compass demo отдельно от static state. Item icon UX/scope согласовать; полные entities/cushion/bell отложены.
+- [ ] Приёмка draw/undo/redo/Add/reopen/PNG/mcpack/Android, async/storage/import/dimensions/alpha/cache/URL lifecycle и language/theme/pack/slot/frame.
+- [ ] Лишь после успеха индивидуальная чистка тестов/дублей, переключение runtime/FK_V/cache и удаление заменённого legacy.
 
-- [ ] Existing validate/tests/full compiler/CI и реальные PNG-TGA/Three/WebGL/Android/export; записанные workflow/mocks не прохождение.
-- [ ] Проверить cards/source IDs/reopen/menu/forms/poses/PNG/frames и lifecycle/texture ownership/update/cleanup.
-- [ ] Исторические гипотезы OLDCHAT17 воспроизводить отдельно (async PNG index, memory-storage save failure, atlas heuristic, full GPU update), не считать блокерами. Ceiling-sign rotation suspicion снято. Исключённую реплику OLDCHAT19 не возвращать в задачи.
-- [ ] Принять draw/undo/redo/Add/reopen/PNG/mcpack, async/storage/import/dimensions/alpha/cache/URL lifecycle и language/theme/pack/slot/frame.
-- [ ] После совместного успеха убрать ненужные/дубли; тесты разбирать индивидуально, без массового удаления.
-- [ ] Лишь затем переключить основной runtime, синхронизировать FK_V/cache, удалить заменённый legacy.
-
-Только main, малые самосогласованные пакеты, точное подтверждение и полный saved diff. Новые test files отдельно согласовать; <25000 UTF-8 байт на файл; backup/fk070_packs не трогать. Полные items/entities/IndexedDB/большие паки/user backup/PWA-offline/права на ресурсы отдельные этапы.
+Макет tablet/desktop — ДРУГОЙ чат, не текущая задача. Исторические OLDCHAT17 гипотезы воспроизводить отдельно; excluded reply OLDCHAT19 не источник багов, ceiling-sign rotation suspicion снято. Только main/малые пакеты/точное подтверждение/saved diff, <25000 bytes/file, новые test files отдельно согласовать; backup/fk070_packs не трогать.
