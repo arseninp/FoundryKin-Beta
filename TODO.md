@@ -1,12 +1,14 @@
 # TODO — перенос и приёмка
 
-Обновлено 2026-11-04. Проверенный HEAD до документации: 6ccafe6d7b9e8d277fd513e70bca3a8d5d1b5105. [x] = записанный код, не runtime/визуальная приёмка. Начать с CONTEXT/handoff.
+Обновлено 2026-11-04. Проверенный HEAD до документации: f77e3c5ea585b28837697d4f4d4416f01fa0f6a5. [x] = записанный код, не runtime/визуальная приёмка. Начать с CONTEXT/handoff.
 
 ## Точка продолжения
 
 - [x] Завершить конкретную чистку лишних направлений сундуков/шалкеров: builders/resolver/chest menu/test loops/labels. Whole-block facing не возвращать; модель вращается жестом. Крышки/double/UV сохранены.
-- [ ] При продолжении подключить существующие shulker sources/geometry к common picker/preview только с open и independent PNG, цвета отдельно, без направления всего блока. Старый черновик 17 IDs/61 slice с facing отклонён, не записан.
-- [ ] Проверить общую цепочку на PIN existing средствами; записанный workflow не доказывает успешный Actions.
+- [x] e4db3d6/196fc69: существующие шалкеры выведены в common picker/preview, только open и independent PNG, 17 цветов отдельно, EN/RU; без facing и повторного переноса geometry/sources/resolver. Отклонённый черновик с направлением не восстанавливать.
+- [x] e255fc2: записаны fixture/pinned shulker tests в existing model-library.test.mjs; старые тесты сохранены, новых файлов нет.
+- [x] f77e3c5: исправлены два устаревших model-policy ожидания без изменения production rules; локально проходят все 9 тестов этого файла.
+- [ ] Получить подтверждённый результат pinned shulker integration и общей цепочки на PIN existing средствами; сохранённый тест/workflow не доказывает успешный Actions.
 
 ## Уже записано — не повторять
 
@@ -15,10 +17,14 @@
 - [x] Pot 23 patterns+ordinary/4 sides/common picker; conduit 6 resources/static active/resolver/picker/default inactive.
 - [x] Water/lava 4 assignments/level 0..7/default 0/resolver/common picker/EN-RU/срез; не flow simulator.
 - [x] Chest resources/single-double/static open/resolver/common picker/11 source IDs/waxed canonical routes, ender без double.
-- [x] Срез 44 SOURCE IDs, не cards/весь каталог. Shulker geometry/sources/open resolver есть, UI/срез ещё нет. Основной editor не переключён.
+- [x] Срез 61 SOURCE ID = прежние 29 + liquids 4 + chest 11 + shulker 17, не cards/весь каталог. Shulker geometry/sources/open resolver/UI/срез есть. Основной editor не переключён.
 - [x] Existing workflow pot/conduit/liquids/chest checks; новых test files не добавлено.
 
 Bed/sign/cauldron/auxiliary/banner/fruit-stem/budding amethyst/aquatic/propagule/kelp не переносить заново. Полные mobs не недоделка голов. Stem direction/growth face/UV стороны сохранить — не лишний поворот всего сундука.
+
+## Доказательства локальных проверок
+
+Syntax/272 изолированных state-PNG checks используют compiler stub. Shulker source/geometry fixture выполнен на существующих модулях и Three-mock для 17 цветов; пойманы 3 намеренные ошибки. Model-policy: до 7 pass/2 fail, после 9 pass/0 fail; cube-регрессии обнаруживаются. Не суммировать и не выдавать за full PIN compile/CI/WebGL/Android/export. Workflow не расширяли из-за близости к лимиту 25000 байт.
 
 ## Остаётся
 
