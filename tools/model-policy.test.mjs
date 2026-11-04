@@ -31,17 +31,20 @@ test('all colours of glass and powder are cubes while glass panes keep their sha
  const plan=planModelAssignments(objects(ids));assert.deepEqual(plan.unresolved,[]);
  for(const id of ids)assert.equal(plan.assignments[id].model,id.endsWith('_pane')?'pane':'cube',id);
 });
-test('solid copper classes remain cubes while bars keep a dedicated model and chests or statues remain unresolved',()=>{
+test('solid copper classes remain cubes while bars, chests and statues keep dedicated models',()=>{
  const ids=[];
  for(const prefix of ['','exposed_','weathered_','oxidized_'])for(const material of ['copper','cut_copper','chiseled_copper','copper_grate','copper_bulb']){
   const id=prefix+material;ids.push(id,'waxed_'+id);
  }
  ids.push('copper_block');const plan=planModelAssignments(objects(ids));assert.deepEqual(plan.unresolved,[]);
  assert.ok(Object.values(plan.assignments).every(a=>a.model==='cube'));
- const special=['copper_bars','copper_chest','copper_golem_statue','oxidized_copper_bars','waxed_weathered_copper_chest'];
- const separate=planModelAssignments(objects(special));
- assert.deepEqual(separate.unresolved,['copper_chest','copper_golem_statue','waxed_weathered_copper_chest']);
- assert.equal(separate.assignments.copper_bars.model,'bars');assert.equal(separate.assignments.oxidized_copper_bars.model,'bars');
+ const special=Object.fromEntries(['','exposed_','weathered_','oxidized_'].flatMap(prefix=>['','waxed_'].flatMap(wax=>[
+  [wax+prefix+'copper_bars','bars'],[wax+prefix+'copper_chest','chest'],[wax+prefix+'copper_golem_statue','copper_golem_statue']
+ ])));
+ const separate=planModelAssignments(objects(Object.keys(special)));
+ assert.deepEqual(separate.unresolved,[]);
+ assert.deepEqual(Object.keys(separate.assignments),Object.keys(special).sort());
+ for(const [id,model] of Object.entries(special))assert.equal(separate.assignments[id].model,model,id);
 });
 test('leaf, nether wood and solid coral classes do not absorb plant stems or coral fans',()=>{
  const ids=['oak_leaves','azalea_leaves','azalea_leaves_flowered','orange_poplar_leaves'];
@@ -58,7 +61,8 @@ test('leaf, nether wood and solid coral classes do not absorb plant stems or cor
 test('explicit solid materials are admitted without a blanket block or PNG rule',()=>{
  const ids=['granite','andesite','deepslate','chiseled_stone_bricks','raw_iron_block','crafting_table','moss_block','quartz_pillar','sculk','sponge','wet_sponge','grass_block'];
  const plan=planModelAssignments(objects(ids));assert.deepEqual(plan.unresolved,[]);assert.ok(Object.values(plan.assignments).every(a=>a.model==='cube'));
- const special=['future_cactus','chest','mystery_block','unknown_device'];
- const blocks=Object.fromEntries(special.map(id=>[id,{textures:'stone'}]));assert.deepEqual(planModelAssignments(blocks).unresolved,[...special].sort());
- assert.deepEqual(planModelAssignments(blocks).assignments,Object.create(null));
+ const unknown=['future_cactus','unknown_chest','mystery_block','unknown_device'],chests=['chest','trapped_chest','ender_chest'];
+ const blocks=Object.fromEntries([...unknown,...chests].map(id=>[id,{textures:'stone'}])),mixed=planModelAssignments(blocks);
+ assert.deepEqual(mixed.unresolved,[...unknown].sort());assert.deepEqual(Object.keys(mixed.assignments),[...chests].sort());
+ for(const id of chests)assert.equal(mixed.assignments[id].model,'chest',id);
 });
