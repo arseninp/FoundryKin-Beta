@@ -2,6 +2,8 @@
 import {compileModelCatalog} from './models/library.mjs';
 import {createPreviewResolver} from './catalog/preview.mjs';
 import {createPreviewControls} from './preview-controls.mjs';
+import {activePack,imageFrames,frameCanvas,createImageSource} from './preview-images.mjs';
+export {activePack,imageFrames,frameCanvas,createImageSource};
 const SHULKER_BOXES=Object.freeze([
  ["undyed","Shulker box","Шалкеровый ящик"],
  ["white","White shulker box","Белый шалкеровый ящик"],
@@ -35,63 +37,6 @@ export function compileReview(input,Three) {
 export function resourcePaths(plan) {
  const maps=plan.parts?Object.values(plan.parts).map(part=>part.bindings):[plan.mode==='sprite'?{sprite:plan.slot}:plan.bindings];
  return [...new Set(maps.flatMap(map=>Object.values(map)))];
-}
-export function activePack(storage) {
- const raw=storage.getItem('fk070_packs');if(!raw)throw new Error('No saved packs');
- const data=JSON.parse(raw),pack=data?.packs?.find(pack=>pack.id===data.active);
- if(!pack||!Array.isArray(pack.textures))throw new Error('No active pack');
- const textures=Object.create(null);
- for(const row of pack.textures) {
-  if(!row.data)continue;
-  if(typeof row.path!=='string'||typeof row.data!=='string'||!row.data.startsWith('data:image/png;base64,'))throw new Error('Invalid saved PNG');
-  const path='textures/'+row.path.replace(/\.png$/i,'');
-  if(own(textures,path)&&textures[path]!==row.data)throw new Error('Ambiguous saved texture: '+path);
-  textures[path]=row.data;
- }
- return textures;
-}
-export function imageFrames(image) {
- const width=image.naturalWidth||image.width,height=image.naturalHeight||image.height;
- if(!Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1||width>16384||height>16384||width*height>16777216)throw new Error('Image exceeds review limits');
- return {width,height,count:height>width&&height%width===0?height/width:1};
-}
-export function frameCanvas(image,index,makeCanvas) {
- const {width,height,count}=imageFrames(image);
- if(!Number.isInteger(index)||index<0||index>=count)throw new Error('Invalid source frame');
- const canvas=makeCanvas();canvas.width=width;canvas.height=count>1?width:height;
- const context=canvas.getContext('2d');if(!context)throw new Error('Canvas 2D is unavailable');
- context.imageSmoothingEnabled=false;context.drawImage(image,0,count>1?index*width:0,width,canvas.height,0,0,width,canvas.height);
- return canvas;
-}
-export function createImageSource(loadVanilla,decodePNG,options={}) {
- if(typeof loadVanilla!=='function'||typeof decodePNG!=='function'||!dictionary(options))throw new Error('Invalid image source configuration');
- const timeoutMs=options.timeoutMs??20000,maxEntries=options.maxEntries??32,maxPixels=options.maxPixels??16777216;
- if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>2147483647||!Number.isSafeInteger(maxEntries)||maxEntries<1||!Number.isSafeInteger(maxPixels)||maxPixels<1)throw new Error('Invalid image source limits');
- const cache=new Map();let pixels=0;
- function remove(path) {
-  const item=cache.get(path);if(!item)return;
-  cache.delete(path);pixels-=item.pixels;
- }
- function trim() {
-  while(cache.size>maxEntries||pixels>maxPixels)remove(cache.keys().next().value);
- }
- return function(path,overrides) {
-  if(typeof path!=='string'||!path.startsWith('textures/')||path.split('/').some(part=>!part||part==='.'||part==='..'))return Promise.reject(new Error('Invalid resource path'));
-  if(!dictionary(overrides))return Promise.reject(new Error('Invalid texture overrides'));
-  const data=own(overrides,path)?overrides[path]:null,hit=cache.get(path);
-  if(hit&&hit.data===data){cache.delete(path);cache.set(path,hit);return hit.promise;}
-  remove(path);
-  const item={data,promise:null,pixels:0};let timer;
-  const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Image load timeout: '+path)),timeoutMs);});
-  const operation=Promise.resolve().then(()=>data===null?loadVanilla(path):decodePNG(data));
-  item.promise=Promise.race([operation,deadline]).then(image=>{
-   if(!image)throw new Error('Missing texture: '+path);
-   const dimensions=imageFrames(image);
-   if(cache.get(path)===item){item.pixels=dimensions.width*dimensions.height;pixels+=item.pixels;trim();}
-   return image;
-  }).catch(error=>{if(cache.get(path)===item)remove(path);throw error;}).finally(()=>clearTimeout(timer));
-  cache.set(path,item);trim();return item.promise;
- };
 }
 const TEXT={
  en:{...Object.fromEntries(SHULKER_BOXES.map(([color,en])=>['card_'+color+'_shulker_box',en])),shulker_box_open:'Lid',shulker_box_open_closed:'Closed',shulker_box_open_open:'Open',back:'Editor',language:'Language',title:'New model preview',scope:'Explicit review slice: {count} source block IDs, not the full catalog or an editor release. Nothing is written to your packs.',scopeDetails:'Included source IDs',object:'Object',source:'Open source ID',open:'Open',textures:'Texture source',vanilla:'Pinned vanilla',pack:'Active pack (read only)',reload:'Reload',hint:'Drag to rotate. Manual source frames only: no playback or Bedrock animation timing. Kelp remains a static candidate. Statue poses are static. Active conduit is a static Java-reference candidate; Bedrock appearance is not accepted. Water and lava use uniform-height samples, not a flow simulation; tint and Bedrock appearance are not accepted. Chest and shulker lid poses are static reference candidates; Bedrock appearance is not accepted.',resources:'Model and selected texture resources',loading:'Loading',ready:'Displayed',failed:'Could not display',frame:'Source frame',stem:'Stem',stage:'Stem stage',facing:'Stem direction',variant:'Variant',crystals:'Crystal',growth:'Growth',face:'Block face',tall:'Tall form',hanging:'Hanging',age:'Age',off:'Without',on:'With',plain:'Plain',carved:'Carved',lit:'Lit',small:'Small',medium:'Medium',large:'Large',cluster:'Cluster',up:'Up',down:'Down',north:'North',south:'South',east:'East',west:'West',bloom:'Display',bloom_closed:'Closed',bloom_open:'Open',eyeblossom:'Eye blossom',done:'Done',pose:'Pose',standing:'Standing',sitting:'Sitting',running:'Running',star:'Star',card_copper_golem:'Copper golem',card_exposed_copper_golem:'Exposed copper golem',card_weathered_copper_golem:'Weathered copper golem',card_oxidized_copper_golem:'Oxidized copper golem',card_skeleton:'Skeleton',card_wither_skeleton:'Wither skeleton',card_creeper:'Creeper',card_zombie:'Zombie',card_piglin:'Piglin',card_ender_dragon:'Ender dragon',card_decorated_pot:'Decorated pot',card_conduit:'Conduit',card_water:'Water',card_flowing_water:'Flowing water',card_lava:'Lava',card_flowing_lava:'Flowing lava',card_chest:'Chest',card_trapped_chest:'Trapped chest',card_ender_chest:'Ender chest',card_copper_chest:'Copper chest',card_exposed_copper_chest:'Exposed copper chest',card_weathered_copper_chest:'Weathered copper chest',card_oxidized_copper_chest:'Oxidized copper chest',chest_open:'Lid',chest_open_closed:'Closed',chest_open_open:'Open',chest_double:'Size',chest_double_single:'Single',chest_double_double:'Double',level:'Liquid level',conduit_active:'Conduit state',active_inactive:'Inactive',active_active:'Active',eye_open:'Eye',eye_open_closed:'Closed',eye_open_open:'Open',wind:'Wind variant',wind_horizontal:'Horizontal',wind_vertical:'Vertical',form:'Representation',form_native:'Main form',form_head:'Head',form_skull:'Skull',form_statue:'Statue',form_shoot:'Shoot',form_crop:'Crop',form_stem:'Stem',texture:'Texture'},
