@@ -224,6 +224,10 @@ export function createPreviewResolver(catalog, registry, Three) {
    if (!iconPaths.includes(slot)) throw new Error('Resource has no declared icon role');
   }
   const base=view==='sprite'?'sprite':record.model, previewState={...selected.state,...state};
+  if (base==='shulker_box') {
+   previewState.facing??='up';previewState.open??=false;
+   if (!['up','down','north','south','east','west'].includes(previewState.facing)||typeof previewState.open!=='boolean') throw new Error('Invalid shulker box preview state');
+  }
   if (base==='water'||base==='lava') {
    previewState.level??=0;
    if (!Number.isInteger(previewState.level)||previewState.level<0||previewState.level>7) throw new Error('Invalid liquid preview level');
