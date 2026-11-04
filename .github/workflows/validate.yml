@@ -147,7 +147,12 @@ jobs:
              if (node.isMesh) {meshes++;assert.ok(node.geometry?.attributes.position?.count > 0);modelMaterials.push(...(Array.isArray(node.material) ? node.material : [node.material]));}
             });
             assert.ok(meshes > 0, 'Empty preview: ' + request.id);
-            if (!request.state) assert.equal(plan.object.id, request.id);
+            if (!request.state) assert.equal(plan.object.id, catalog.aliases[request.id] ?? request.id);
+            if (plan.model==='chest') {
+             assert.equal(meshes,3);
+             const sheet=textures[plan.bindings[plan.state.double?'double_sheet':'sheet']];
+             assert.ok(modelMaterials.every(material=>material.isMeshLambertMaterial===true&&material.map===sheet));
+            }
             if (plan.object.card === 'closed_eyeblossom') {
              const open = plan.state.bloom === 'open';
              assert.equal(plan.model, open ? 'emissive_cross' : 'cross');
@@ -334,6 +339,17 @@ jobs:
            }
            for (const level of [-1,8,1.5,'0',true,false,NaN,Infinity,{},[]]) assert.throws(() => resolve({id,state:{level}}), /Invalid liquid preview level/);
           }
+          for (const id of REVIEW_IDS.filter(id=>catalog.records[id].model==='chest')) {
+           const target=catalog.aliases[id]??id,record=catalog.records[target],plain=resolve({id});
+           assert.equal(plain.object.id,target);
+           assert.deepEqual(previewControlSpec(catalog,plain).schema.map(field=>field.key),target==='ender_chest'?['open','facing']:['open','double','facing']);
+           for (const open of [false,true]) for (const double of (target==='ender_chest'?[false]:[false,true])) for (const facing of ['north','south','east','west']) for (const slot of record.paths) {
+            const state={open,double,facing},selection=previewControlSelection(plain,{...state,texture:slot}),plan=check({id,...selection});
+            assert.equal(plan.object.id,target);assert.equal(plan.slot,slot);assert.deepEqual(plan.state,state);
+            const role=double?'double_sheet':'sheet';assert.deepEqual(plan.bindings,{[role]:record.bindings[role][0]});
+           }
+          }
+          assert.throws(()=>resolve({id:'ender_chest',state:{double:true}}),/no double/);
           assert.equal(JSON.stringify(input), inputBefore);
           assert.equal(JSON.stringify(catalog), before);
           console.log(JSON.stringify({source:input.source,sourceRecords:Object.keys(catalog.records).length,cards:catalog.cards.length,modelTypes:registry.ids().length,geometryChecks:checks,limits:'Synthetic one-pixel textures; no PNG/TGA, UV, WebGL or Android acceptance'},null,2));
