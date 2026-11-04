@@ -85,13 +85,13 @@ test('shulker source fixtures preserve resources and move only the lid',()=>{
  }
  assert.notDeepEqual(reference.get(false),reference.get(true));
 });
-test('pinned review connects every shulker color with independent PNG and open state',async()=>{
+test('pinned review connects shulker colors and player head with independent PNG selection',async()=>{
  const {fileURLToPath}=await import('node:url'),{readCandidate}=await import('./model-coverage.mjs');
  const {compileReview,REVIEW_IDS,previewControlSpec,previewControlSelection,previewTextureField}=await import('../preview.mjs');
  const {createPreviewResolver}=await import('../catalog/preview.mjs');
  const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url))),inputBefore=JSON.stringify(input),Three=createThreeMock();
  const {catalog,registry,coverage}=compileReview(input,Three),before=JSON.stringify(catalog),resolve=createPreviewResolver(catalog,registry,Three);
- assert.equal(coverage.ready,true);assert.equal(REVIEW_IDS.length,62);assert.equal(new Set(REVIEW_IDS).size,62);
+ assert.equal(coverage.ready,true);assert.equal(REVIEW_IDS.length,63);assert.equal(new Set(REVIEW_IDS).size,63);
  const ids=SHULKER_COLORS.map(color=>color+'_shulker_box');
  assert.deepEqual(REVIEW_IDS.filter(id=>catalog.records[id].model==='shulker_box').sort(),[...ids].sort());
  assert.ok(!catalog.cards.includes('silver_shulker_box'));const sheets=new Set();
@@ -116,6 +116,14 @@ test('pinned review connects every shulker color with independent PNG and open s
   for(const open of [0,1,'true',{},[]])assert.throws(()=>resolve({id,state:{open}}),/Invalid shulker box preview state/);
  }
  assert.equal(sheets.size,17);
+ const player=resolve({id:'player_head'});
+ assert.equal(player.object.id,'player_head');assert.equal(player.object.card,'player');assert.equal(player.object.form,'head');
+ assert.deepEqual(player.forms,{head:'player_head'});assert.equal(player.bindings.sheet,'textures/entity/steve');
+ assert.deepEqual(previewControlSpec(catalog,player).schema.map(field=>field.key),['form']);
+ for(const slot of catalog.records.player_head.paths){
+  const selection=previewControlSelection(player,{form:'head',texture:slot}),plan=resolve({id:'player',...selection});
+  assert.equal(plan.object.id,'player_head');assert.equal(plan.slot,slot);assert.deepEqual(plan.bindings,player.bindings);
+ }
  const missing={...input.existing};delete missing['textures/entity/shulker/shulker_silver'];
  assert.throws(()=>compileReview({...input,existing:missing},Three),/Missing shulker source sheet/);
  assert.equal(JSON.stringify(input),inputBefore);assert.equal(JSON.stringify(catalog),before);
