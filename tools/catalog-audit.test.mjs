@@ -78,3 +78,16 @@ test('the audit does not mutate its inputs', () => {
   const input = {blocks, terrain: {texture_data: atlas}}, before = JSON.stringify(input);
   auditCatalog(input);assert.equal(JSON.stringify(input), before);
 });
+test('loose JSON preserves quoted comma-brace sequences, keys and escapes', () => {
+  const literals = [',}', ',]', 'text, \n }', 'quote: " ,}', 'backslash: \\ ,]', 'https://host/,}?q=,]', 'literal /* comment */ // text,}', 'Русский,}'];
+  for (const literal of literals) {
+    const expected = {[literal]: literal, items: [literal]}, strict = JSON.stringify(expected);
+    for (const source of [strict, '\uFEFF// source\n' + strict, '/* source */' + strict.slice(0, -1) + ',}']) assert.deepEqual(parseLooseJson(source), expected);
+  }
+});
+test('loose JSON comments cannot join separate number or keyword tokens', () => {
+  for (const source of ['[1/* gap */2]', '[1/* gap */.5]', '[1e/* gap */2]', '[t/* gap */rue]', '{"n":1/* gap */2}']) assert.throws(() => parseLooseJson(source), SyntaxError);
+});
+test('loose JSON still allows comments at separators and nested trailing commas', () => {
+  assert.deepEqual(parseLooseJson('/* source */{"a"/* key */:/* value */[1,/* gap */2,],"b":{"ok":true,},}/* end */'), {a:[1,2],b:{ok:true}});
+});

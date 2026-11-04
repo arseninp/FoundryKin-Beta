@@ -4,7 +4,7 @@ const dictionary = value => value !== null && typeof value === 'object' && !Arra
 export function parseLooseJson(text) {
   const clean = String(text).replace(/^\uFEFF/, '');
   try { return JSON.parse(clean); } catch {}
-  const stripped = clean.replace(/("(?:\\.|[^"\\])*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g, (all, quoted) => quoted ?? '').replace(/,(\s*[}\]])/g, '$1');
+  const stripped = clean.replace(/("(?:\\.|[^"\\])*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g, (all, quoted) => quoted ?? ' ').replace(/("(?:\\.|[^"\\])*")|,(\s*[}\]])/g, (all, quoted, close) => quoted ?? close);
   return JSON.parse(stripped);
 }
 /* Only these auxiliary definitions are admitted as catalog block sources. */
