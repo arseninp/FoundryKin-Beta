@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createModelLibrary, inspectModelCoverage, bindCatalogModels} from '../models/library.mjs';
 import {planModelAssignments} from '../catalog/model-policy.mjs';
+import {createThreeMock,meshesOf} from './three-mock.mjs';
+import {createShulkerBoxModels} from '../models/shulker-boxes.mjs';
+import {attachShulkerSource} from '../catalog/rules/shulker-sources.mjs';
 function three() {
  return {DoubleSide:2, BoxGeometry:class {constructor(){this.attributes={position:{count:0},normal:{},uv:{}};}},PlaneGeometry:class{},Mesh:class {constructor(){this.position={set:(x,y,z)=>Object.assign(this.position,{x,y,z})};this.rotation={};}}};
 }
@@ -47,4 +50,73 @@ test('liquid source IDs have explicit builders and separate material contracts',
  const library=createModelLibrary(three());
  assert.deepEqual(library.get('water').emissiveRoles??[],[]);
  assert.deepEqual(library.get('lava').emissiveRoles,['up','down','north','south','east','west']);
+});
+
+const SHULKER_COLORS=['undyed','white','orange','magenta','light_blue','yellow','lime','pink','gray','light_gray','cyan','purple','blue','brown','green','red','black'];
+function shulkerShape(node) {
+ return {position:[node.position.x,node.position.y,node.position.z],rotation:[node.rotation.x,node.rotation.y,node.rotation.z],...(node.geometry?{size:[...node.geometry.size],uv:node.geometry.rows.map(row=>[...row])}:{}),children:(node.children??[]).map(shulkerShape)};
+}
+test('shulker source fixtures preserve resources and move only the lid',()=>{
+ const Three=createThreeMock(),builder=createShulkerBoxModels(Three)[0],reference=new Map();
+ for(const color of SHULKER_COLORS) {
+  const id=color+'_shulker_box',native='textures/blocks/'+id,icon='textures/items/'+id,sheet='textures/entity/shulker/shulker_'+(color==='light_gray'?'silver':color);
+  const record={id,model:'shulker_box',paths:[native,icon],icons:[icon],carried:{up:[native]}},definition={textures:id},before=JSON.stringify({record,definition});
+  const attached=attachShulkerSource(record,definition,{[sheet]:{}});
+  assert.equal(attached.id,id);assert.deepEqual(attached.bindings,{sheet:[sheet]});
+  assert.deepEqual(attached.paths,[native,icon,sheet].sort());assert.deepEqual(attached.icons,record.icons);assert.deepEqual(attached.carried,record.carried);
+  assert.deepEqual(attached.source.definition,definition);assert.notEqual(attached.source.definition,definition);
+  assert.throws(()=>attachShulkerSource(record,definition,{}),/Missing shulker source sheet/);
+  for(const open of [false,true])for(const slot of [native,sheet]) {
+   const group=new Three.Group(),material={};builder.build({cur:id,bindings:{sheet},slot,state:{open},mats:{[sheet]:material},group});
+   const meshes=meshesOf(group);assert.equal(meshes.length,2);assert.ok(meshes.every(mesh=>mesh.material===material));
+   assert.deepEqual(meshes.map(mesh=>mesh.geometry.size),[[1,.75,1],[1,.5,1]]);
+   assert.equal(meshes[0].position.y,open?.625:.125);assert.equal(meshes[1].position.y,-.25);
+   assert.equal(group.rotation.y,0);assert.equal(group.children[1].rotation.y,0);
+   if(open)assert.equal(group.children[0].rotation.y,-3*Math.PI/2);
+   const shape=shulkerShape(group);
+   if(reference.has(open))assert.deepEqual(shape,reference.get(open));else reference.set(open,shape);
+  }
+  const closed=new Three.Group();builder.build({cur:id,bindings:{sheet},state:{},mats:{[sheet]:{}},group:closed});
+  assert.deepEqual(shulkerShape(closed),reference.get(false));
+  for(const open of [0,1,'true',{},[]]) {
+   const group=new Three.Group();assert.throws(()=>builder.build({cur:id,bindings:{sheet},state:{open},mats:{[sheet]:{}},group}),/Invalid shulker box open state/);assert.equal(group.children.length,0);
+  }
+  assert.equal(JSON.stringify({record,definition}),before);
+ }
+ assert.notDeepEqual(reference.get(false),reference.get(true));
+});
+test('pinned review connects every shulker color with independent PNG and open state',async()=>{
+ const {fileURLToPath}=await import('node:url'),{readCandidate}=await import('./model-coverage.mjs');
+ const {compileReview,REVIEW_IDS,previewControlSpec,previewControlSelection,previewTextureField}=await import('../preview.mjs');
+ const {createPreviewResolver}=await import('../catalog/preview.mjs');
+ const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url))),inputBefore=JSON.stringify(input),Three=createThreeMock();
+ const {catalog,registry,coverage}=compileReview(input,Three),before=JSON.stringify(catalog),resolve=createPreviewResolver(catalog,registry,Three);
+ assert.equal(coverage.ready,true);assert.equal(REVIEW_IDS.length,61);assert.equal(new Set(REVIEW_IDS).size,61);
+ const ids=SHULKER_COLORS.map(color=>color+'_shulker_box');
+ assert.deepEqual(REVIEW_IDS.filter(id=>catalog.records[id].model==='shulker_box').sort(),[...ids].sort());
+ assert.ok(!catalog.cards.includes('silver_shulker_box'));const sheets=new Set();
+ for(const color of SHULKER_COLORS) {
+  const id=color+'_shulker_box',record=catalog.records[id],sheet='textures/entity/shulker/shulker_'+(color==='light_gray'?'silver':color),plain=resolve({id});
+  assert.ok(Object.hasOwn(input.blocks,id));assert.ok(catalog.cards.includes(id));assert.equal(plain.object.id,id);assert.equal(plain.object.card,id);
+  assert.deepEqual(record.bindings,{sheet:[sheet]});assert.ok(record.paths.includes(sheet));assert.ok(Object.hasOwn(input.existing,sheet));
+  assert.ok(catalog.resources[sheet].some(owner=>owner.kind==='block'&&owner.id===id));sheets.add(sheet);
+  assert.deepEqual(plain.state,{open:false});assert.equal(plain.slot,sheet);
+  const spec=previewControlSpec(catalog,plain);
+  assert.deepEqual(spec.schema,[{key:'open',label:['Lid','Крышка'],values:[{value:false,label:['Closed','Закрыта']},{value:true,label:['Open','Открыта']}]}]);
+  assert.deepEqual(previewTextureField(plain).values.map(option=>option.value),record.paths);
+  const shapes=new Map();
+  for(const open of [false,true])for(const slot of record.paths) {
+   const selection=previewControlSelection(plain,{open,texture:slot}),plan=resolve({id,...selection});
+   assert.equal(plan.object.id,id);assert.equal(plan.slot,slot);assert.deepEqual(plan.state,{open});assert.deepEqual(plan.bindings,{sheet});
+   assert.deepEqual(previewControlSpec(catalog,plan).state,{open});
+   const group=new Three.Group();plan.build({group,mats:{[sheet]:{}}});assert.equal(meshesOf(group).length,2);
+   const shape=shulkerShape(group);if(shapes.has(open))assert.deepEqual(shape,shapes.get(open));else shapes.set(open,shape);
+  }
+  assert.notDeepEqual(shapes.get(false),shapes.get(true));
+  for(const open of [0,1,'true',{},[]])assert.throws(()=>resolve({id,state:{open}}),/Invalid shulker box preview state/);
+ }
+ assert.equal(sheets.size,17);
+ const missing={...input.existing};delete missing['textures/entity/shulker/shulker_silver'];
+ assert.throws(()=>compileReview({...input,existing:missing},Three),/Missing shulker source sheet/);
+ assert.equal(JSON.stringify(input),inputBefore);assert.equal(JSON.stringify(catalog),before);
 });
