@@ -1,4 +1,5 @@
 /* Accepted fixture geometry; no catalog mutation or editing-slot dispatch. */
+import {composeShape,requireRoles} from './shapes.mjs';
 export function createFixtureModels(Three) {
  if (!Three || typeof Three.BoxGeometry !== 'function' || typeof Three.PlaneGeometry !== 'function' || typeof Three.Mesh !== 'function' || Three.DoubleSide === undefined) throw new Error('Fixture models require Three');
  function material(E,id) {
@@ -55,5 +56,17 @@ export function createFixtureModels(Three) {
    const mesh=new Three.Mesh(g,mat);mesh.position.set(x,0,0);const pivot=new Three.Group();pivot.rotation.y=angle;pivot.add(mesh);E.group.add(pivot);
   }
  }
- return [{id:'pane',scale:1,mode:'volume',build:pane},{id:'candle',scale:1,mode:'volume',build:candle},{id:'brewing',scale:1,mode:'volume',build:brewing}];
+ function bell(E){
+  if(E?.cur!=='bell')throw new Error('Unknown bell object');
+  const {sheet,beam,posts}=requireRoles(E,['sheet','beam','posts'],'bell');
+  const uv=(w,h,d,u,v)=>({east:[u,v+d,u+d,v+d+h],north:[u+d,v+d,u+d+w,v+d+h],west:[u+d+w,v+d,u+2*d+w,v+d+h],south:[u+2*d+w,v+d,u+2*d+2*w,v+d+h],up:[u+d,v,u+d+w,v+d],down:[u+d+w,v,u+d+2*w,v+d]});
+  composeShape(Three,E,p=>{
+   const R={up:[0,0,2,4],down:[0,0,2,4],north:[0,1,2,16],south:[0,1,2,16],east:[0,1,4,16],west:[0,1,4,16]};
+   for(const x of [-.4375,.4375])p.prism(.125,1,.25,x,0,0,posts,R,16);
+   p.prism(.75,.125,.125,0,.375,0,beam,{up:[2,3,14,5],north:[2,2,14,4],south:[2,3,14,5]},16);
+   p.prism(.375,.4375,.375,0,.09375,0,sheet,uv(6,7,6,0,0),32);
+   p.prism(.5,.125,.5,0,-.1875,0,sheet,uv(8,2,8,0,13),32);
+  });
+ }
+ return [{id:'bell',scale:1,mode:'volume',build:bell},{id:'pane',scale:1,mode:'volume',build:pane},{id:'candle',scale:1,mode:'volume',build:candle},{id:'brewing',scale:1,mode:'volume',build:brewing}];
 }
