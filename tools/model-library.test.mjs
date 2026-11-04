@@ -91,7 +91,7 @@ test('pinned review connects every shulker color with independent PNG and open s
  const {createPreviewResolver}=await import('../catalog/preview.mjs');
  const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url))),inputBefore=JSON.stringify(input),Three=createThreeMock();
  const {catalog,registry,coverage}=compileReview(input,Three),before=JSON.stringify(catalog),resolve=createPreviewResolver(catalog,registry,Three);
- assert.equal(coverage.ready,true);assert.equal(REVIEW_IDS.length,61);assert.equal(new Set(REVIEW_IDS).size,61);
+ assert.equal(coverage.ready,true);assert.equal(REVIEW_IDS.length,62);assert.equal(new Set(REVIEW_IDS).size,62);
  const ids=SHULKER_COLORS.map(color=>color+'_shulker_box');
  assert.deepEqual(REVIEW_IDS.filter(id=>catalog.records[id].model==='shulker_box').sort(),[...ids].sort());
  assert.ok(!catalog.cards.includes('silver_shulker_box'));const sheets=new Set();
@@ -118,5 +118,29 @@ test('pinned review connects every shulker color with independent PNG and open s
  assert.equal(sheets.size,17);
  const missing={...input.existing};delete missing['textures/entity/shulker/shulker_silver'];
  assert.throws(()=>compileReview({...input,existing:missing},Three),/Missing shulker source sheet/);
+ assert.equal(JSON.stringify(input),inputBefore);assert.equal(JSON.stringify(catalog),before);
+});
+test('pinned bell preview preserves five legacy parts and independent PNG selection',async()=>{
+ const {fileURLToPath}=await import('node:url'),{readCandidate}=await import('./model-coverage.mjs');
+ const {compileReview,previewControlSpec,previewTextureField,resourcePaths}=await import('../preview.mjs');
+ const {TEXT}=await import('../preview-config.mjs'),{createPreviewResolver}=await import('../catalog/preview.mjs');
+ const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url))),inputBefore=JSON.stringify(input),Three=createThreeMock();
+ const {catalog,registry}=compileReview(input,Three),before=JSON.stringify(catalog),resolve=createPreviewResolver(catalog,registry,Three);
+ const record=catalog.records.bell,sheet='textures/entity/bell/bell',plain=resolve({id:'bell'});
+ assert.equal(record.model,'bell');assert.ok(catalog.cards.includes('bell'));assert.equal(plain.object.id,'bell');assert.equal(plain.object.card,'bell');
+ assert.equal(plain.slot,sheet);assert.deepEqual(plain.bindings,{sheet,beam:record.faces.east[0],posts:record.faces.west[0]});
+ assert.deepEqual(plain.state,{});assert.equal(previewControlSpec(catalog,plain).schema,null);assert.deepEqual([TEXT.en.card_bell,TEXT.ru.card_bell],['Bell','Колокол']);
+ assert.deepEqual(previewTextureField(plain).values.map(option=>option.value),record.paths);
+ for(const path of Object.values(plain.bindings)){assert.ok(Object.hasOwn(input.existing,path));assert.ok(record.paths.includes(path));assert.ok(catalog.resources[path].some(owner=>owner.kind==='block'&&owner.id==='bell'));}
+ let reference;
+ for(const slot of record.paths){
+  const plan=resolve({id:'bell',slot}),group=new Three.Group(),mats=Object.fromEntries(resourcePaths(plan).map(path=>[path,{path}]));plan.build({group,mats});
+  const meshes=meshesOf(group);assert.equal(meshes.length,5);assert.equal(plan.slot,slot);assert.deepEqual(plan.bindings,plain.bindings);
+  assert.deepEqual(meshes.map(mesh=>mesh.material.path),[plain.bindings.posts,plain.bindings.posts,plain.bindings.beam,sheet,sheet]);
+  assert.deepEqual(meshes.map(mesh=>mesh.geometry.size),[[.125,1,.25],[.125,1,.25],[.75,.125,.125],[.375,.4375,.375],[.5,.125,.5]]);
+  const shape=JSON.stringify(meshes.map(mesh=>({size:mesh.geometry.size,uv:mesh.geometry.rows,position:[mesh.position.x,mesh.position.y,mesh.position.z]})));
+  reference??=shape;assert.equal(shape,reference);
+ }
+ const missing={...input.existing};delete missing[sheet];assert.throws(()=>compileReview({...input,existing:missing},Three),/Missing bell source sheet/);
  assert.equal(JSON.stringify(input),inputBefore);assert.equal(JSON.stringify(catalog),before);
 });
