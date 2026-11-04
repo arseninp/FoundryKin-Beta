@@ -7,7 +7,7 @@ export const SPECIAL_MODELS = Object.freeze({
   chest: 'chest', trapped_chest: 'chest', ender_chest: 'chest',
   bell: 'bell',
   standing_banner: 'banner', wall_banner: 'banner',
-  skeleton_skull: 'skull', wither_skeleton_skull: 'skull', creeper_head: 'skull', zombie_head: 'skull', piglin_head: 'skull', dragon_head: 'skull',
+  skeleton_skull: 'skull', wither_skeleton_skull: 'skull', creeper_head: 'skull', zombie_head: 'skull', piglin_head: 'skull', dragon_head: 'skull', player_head: 'skull',
   bee_nest: 'cube', beehive: 'cube',
   crafter: 'cube', suspicious_sand: 'cube', suspicious_gravel: 'cube',
   fence_gate: 'gate',

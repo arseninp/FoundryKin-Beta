@@ -14,6 +14,7 @@ const PRESENTATIONS=Object.freeze(Object.fromEntries([
  ['zombie','head','zombie_head','skull'],
  ['piglin','head','piglin_head','skull'],
  ['ender_dragon','head','dragon_head','skull'],
+ ['player','head','player_head','skull'],
  ...['','exposed_','weathered_','oxidized_'].map(prefix=>[prefix+'copper_golem','statue',prefix+'copper_golem_statue','copper_golem_statue'])
 ].map(([card,form,id,model])=>[card,Object.freeze({form,id,model})])));
 export function familyDefault(records,base,forms) {
