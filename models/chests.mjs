@@ -1,7 +1,6 @@
 /* Single/double chest geometry reference: acacia-rs/acacia@750f657, entity/block_models.json and bake.rs.
    Static lid poses are preview candidates, not Mojang animation data or Bedrock PNG/UV acceptance. */
 import {composeShape,requireRoles} from './shapes.mjs';
-const FACING=Object.freeze({north:0,east:-Math.PI/2,south:Math.PI,west:Math.PI/2});
 const COPPER=/^(?:waxed_)?(?:(?:exposed|weathered|oxidized)_)?copper_chest$/;
 export function createChestModels(Three) {
  if(!Three||typeof Three.Mesh!=='function'||typeof Three.PlaneGeometry!=='function'||typeof Three.BoxGeometry!=='function'||Three.DoubleSide===undefined)throw new Error('Chest models require Three');
@@ -9,8 +8,7 @@ export function createChestModels(Three) {
   if(!['chest','trapped_chest','ender_chest'].includes(E?.cur)&&!(typeof E?.cur==='string'&&COPPER.test(E.cur)))throw new Error('Unknown chest object');
   const state=E.state??{};
   if(!state||typeof state!=='object'||Array.isArray(state))throw new Error('Invalid chest state');
-  const facing=state.facing??'north',double=state.double??false,open=state.open??false;
-  if(typeof facing!=='string'||!Object.hasOwn(FACING,facing))throw new Error('Invalid chest facing');
+  const double=state.double??false,open=state.open??false;
   if(typeof double!=='boolean')throw new Error('Invalid chest double state');
   if(typeof open!=='boolean')throw new Error('Invalid chest open state');
   if(double&&E.cur==='ender_chest')throw new Error('Ender chest has no double form');
@@ -32,7 +30,7 @@ export function createChestModels(Three) {
     /* Rear lid edge: x=0, y=9, z=7 in reference model units. */
     if(open)q.tilted([8,9,15],Math.PI/2,lid);else lid(q);
    }
-   if(FACING[facing])p.turned(FACING[facing],draw);else draw(p);
+   draw(p);
   });
  }
  return [{id:'chest',scale:1,mode:'volume',build}];

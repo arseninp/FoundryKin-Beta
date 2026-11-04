@@ -115,8 +115,8 @@ function conduitBindings(record,state) {
 }
 function chestBindings(record,state) {
  if(record.model!=='chest')return null;
- state.facing??='north';state.double??=false;state.open??=false;
- if(!['north','south','east','west'].includes(state.facing)||typeof state.double!=='boolean'||typeof state.open!=='boolean')throw new Error('Invalid chest preview state');
+ state.double??=false;state.open??=false;
+ if(typeof state.double!=='boolean'||typeof state.open!=='boolean')throw new Error('Invalid chest preview state');
  if(state.double&&record.id==='ender_chest')throw new Error('Ender chest has no double form');
  const role=state.double?'double_sheet':'sheet',paths=record.bindings?.[role];
  if(!Array.isArray(record.paths)||!Array.isArray(paths)||paths.length!==1||typeof paths[0]!=='string'||!record.paths.includes(paths[0]))throw new Error('Missing or unowned chest binding: '+role);
@@ -225,8 +225,8 @@ export function createPreviewResolver(catalog, registry, Three) {
   }
   const base=view==='sprite'?'sprite':record.model, previewState={...selected.state,...state};
   if (base==='shulker_box') {
-   previewState.facing??='up';previewState.open??=false;
-   if (!['up','down','north','south','east','west'].includes(previewState.facing)||typeof previewState.open!=='boolean') throw new Error('Invalid shulker box preview state');
+   previewState.open??=false;
+   if (typeof previewState.open!=='boolean') throw new Error('Invalid shulker box preview state');
   }
   if (base==='water'||base==='lava') {
    previewState.level??=0;
