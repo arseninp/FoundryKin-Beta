@@ -65,3 +65,30 @@ test('missing selected materials and allocation failures dispose geometry withou
   assert.throws(s.build,/allocation/);assert.deepEqual(s.E.group.children,[existing]);assert.ok(s.Three.created.every(g=>g.disposed));assert.equal(JSON.stringify(s.E.mats),before);
  }
 });
+test('composter and scaffolding review controls preserve every state independently of PNG selection',async()=>{
+ const {REVIEW_IDS,TEXT}=await import('../preview-config.mjs');
+ const {createPreviewControls}=await import('../preview-controls.mjs');
+ const controls=createPreviewControls(TEXT);
+ for(const [id,key,values,fallback,label] of [['composter','level',[0,1,2,3,4,5,6,7,8],0,['Fill level','Уровень заполнения']],['scaffolding','bottom',[false,true],false,['Bottom platform','Нижняя площадка']]]) {
+  assert.equal(REVIEW_IDS.filter(value=>value===id).length,1);
+  for(const lang of ['en','ru'])assert.ok(typeof TEXT[lang]['card_'+id]==='string'&&TEXT[lang]['card_'+id].length);
+  const paths=Object.keys(setup(id).E.mats),base={object:{id,card:id},model:id,forms:null,state:{},paths,slot:paths[0]};
+  const initial=controls.previewControlSpec({},base);assert.deepEqual(initial.state,{[key]:fallback});
+  assert.equal(initial.schema.length,1);assert.equal(initial.schema[0].key,key);assert.deepEqual(initial.schema[0].label,label);
+  assert.deepEqual(initial.schema[0].values.map(item=>item.value),values);
+  if(id==='scaffolding')assert.deepEqual(initial.schema[0].values.map(item=>item.label),[['Without','Без'],['With','С']]);
+  for(const value of values) {
+   let expected;
+   for(const slot of paths) {
+    const plan={...base,state:{[key]:value},slot},before=JSON.stringify(plan),spec=controls.previewControlSpec({},plan);
+    assert.deepEqual(spec.state,{[key]:value});
+    const selection=controls.previewControlSelection(plan,{...spec.state,texture:slot});
+    assert.equal(selection.slot,slot);assert.deepEqual(selection.state,{[key]:value});
+    assert.deepEqual(controls.previewTextureField(plan).values.map(item=>item.value),paths);
+    const s=setup(id,selection.state,selection.slot);s.build();
+    expected??=snapshot(s.E);assert.deepEqual(snapshot(s.E),expected);assert.equal(JSON.stringify(plan),before);
+    assert.equal(meshesOf(s.E.group).length,id==='composter'?(value===0?18:19):(value?48:34));
+   }
+  }
+ }
+});
