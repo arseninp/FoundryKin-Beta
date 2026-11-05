@@ -91,7 +91,7 @@ test('pinned review connects shulker colors and player head with independent PNG
  const {createPreviewResolver}=await import('../catalog/preview.mjs');
  const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url))),inputBefore=JSON.stringify(input),Three=createThreeMock();
  const {catalog,registry,coverage}=compileReview(input,Three),before=JSON.stringify(catalog),resolve=createPreviewResolver(catalog,registry,Three);
- assert.equal(coverage.ready,true);assert.equal(REVIEW_IDS.length,63);assert.equal(new Set(REVIEW_IDS).size,63);
+ assert.equal(coverage.ready,true);assert.equal(REVIEW_IDS.length,65);assert.equal(new Set(REVIEW_IDS).size,65);
  const ids=SHULKER_COLORS.map(color=>color+'_shulker_box');
  assert.deepEqual(REVIEW_IDS.filter(id=>catalog.records[id].model==='shulker_box').sort(),[...ids].sort());
  assert.ok(!catalog.cards.includes('silver_shulker_box'));const sheets=new Set();
@@ -150,5 +150,40 @@ test('pinned bell preview preserves five legacy parts and independent PNG select
   reference??=shape;assert.equal(shape,reference);
  }
  const missing={...input.existing};delete missing[sheet];assert.throws(()=>compileReview({...input,existing:missing},Three),/Missing bell source sheet/);
+ assert.equal(JSON.stringify(input),inputBefore);assert.equal(JSON.stringify(catalog),before);
+});
+test('pinned fire preview connects both source IDs, unlit materials and independent PNG variants',async()=>{
+ const {fileURLToPath}=await import('node:url'),{readCandidate}=await import('./model-coverage.mjs');
+ const {compileReview,previewControlSpec,previewControlSelection,previewTextureField}=await import('../preview.mjs');
+ const {TEXT}=await import('../preview-config.mjs'),{createPreviewResolver}=await import('../catalog/preview.mjs'),{createModelMaterials}=await import('../models/materials.mjs');
+ const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url))),inputBefore=JSON.stringify(input),Three=createThreeMock();
+ Three.MeshBasicMaterial=class {constructor(options){Object.assign(this,options);this.isMeshBasicMaterial=true;}dispose(){}};
+ Three.MeshLambertMaterial=class {constructor(){throw new Error('Fire must be unlit');}};
+ const {catalog,registry,coverage}=compileReview(input,Three),before=JSON.stringify(catalog),resolve=createPreviewResolver(catalog,registry,Three);
+ assert.equal(coverage.ready,true);
+ for(const [id,en,ru] of [['fire','Fire','Огонь'],['soul_fire','Soul fire','Огонь душ']]) {
+  const record=catalog.records[id],plain=resolve({id}),descriptor=registry.get('fire');
+  assert.ok(Object.hasOwn(input.blocks,id));assert.ok(catalog.cards.includes(id));assert.equal(record.model,'fire');
+  assert.equal(plain.object.id,id);assert.equal(plain.object.card,id);assert.deepEqual([TEXT.en['card_'+id],TEXT.ru['card_'+id]],[en,ru]);
+  assert.deepEqual(descriptor.emissiveRoles,['up','down','north','south','east','west']);
+  assert.deepEqual(previewControlSpec(catalog,plain).state,{variant:'primary'});
+  assert.deepEqual(previewControlSpec(catalog,plain).schema,[{key:'variant',label:['Variant','Вариант'],values:[{value:'primary',label:['A','A']},{value:'alternate',label:['B','B']}]}]);
+  assert.deepEqual(previewTextureField(plain).values.map(option=>option.value),record.paths);
+  for(const path of record.paths){assert.ok(Object.hasOwn(input.existing,path));assert.ok(catalog.resources[path].some(owner=>owner.kind==='block'&&owner.id===id));}
+  let shape;
+  for(const variant of ['primary','alternate'])for(const slot of record.paths) {
+   const selection=previewControlSelection(plain,{variant,texture:slot}),plan=resolve({id,...selection}),group=new Three.Group();
+   assert.equal(plan.slot,slot);assert.deepEqual(plan.state,{variant});assert.deepEqual(plan.bindings,plain.bindings);
+   const textures=Object.fromEntries([...new Set(Object.values(plan.bindings))].map(path=>[path,{isTexture:true,userData:{semi:true}}]));
+   const materials=createModelMaterials(Three,descriptor,plan.bindings,textures);
+   try {
+    plan.build({group,mats:materials.mats});const meshes=meshesOf(group),path=plan.bindings[variant==='primary'?'up':'down'];
+    assert.equal(meshes.length,8);assert.ok(meshes.every(mesh=>mesh.material.isMeshBasicMaterial&&mesh.material.map===textures[path]&&mesh.material.side===Three.DoubleSide));
+    const next=shulkerShape(group);shape??=next;assert.deepEqual(next,shape);
+   } finally {materials.dispose();}
+  }
+ }
+ const missing={...input.existing};delete missing[catalog.records.fire.faces.up[0]];
+ assert.throws(()=>compileReview({...input,existing:missing},Three),/Missing resource/);
  assert.equal(JSON.stringify(input),inputBefore);assert.equal(JSON.stringify(catalog),before);
 });
