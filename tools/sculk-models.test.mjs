@@ -76,3 +76,30 @@ test('invalid states, missing owned alternatives and late material failure rejec
  const r=record('sculk_shrieker');r.paths=r.paths.filter(path=>!path.includes('can_summon'));assert.throws(()=>utilityBindings(r),/Missing or ambiguous/);
  const c=setup('calibrated_sculk_sensor');delete c.E.mats[c.E.bindings.amethyst];assert.throws(c.build,/Missing model material/);assert.equal(c.E.group.children.length,0);assert.ok(c.Three.created.every(g=>g.disposed));
 });
+test('four sculk review entries use one shared boolean picker each and preserve independent PNG selection',async()=>{
+ const {REVIEW_IDS,TEXT}=await import('../preview-config.mjs');
+ const {createPreviewControls}=await import('../preview-controls.mjs');
+ const controls=createPreviewControls(TEXT);
+ for(const [id,key,label] of [['sculk_sensor','active',['Activity','Активность']],['calibrated_sculk_sensor','active',['Activity','Активность']],['sculk_shrieker','can_summon',['Summoning capability','Возможность призыва']],['sculk_catalyst','bloom',['Bloom','Цветение']]]) {
+  assert.equal(REVIEW_IDS.filter(value=>value===id).length,1);
+  for(const lang of ['en','ru'])assert.ok(typeof TEXT[lang]['card_'+id]==='string'&&TEXT[lang]['card_'+id].length);
+  const r=record(id),base={object:{id,card:id},model:r.model,forms:null,state:{},paths:r.paths,slot:r.paths[0]};
+  const initial=controls.previewControlSpec({},base);assert.deepEqual(initial.state,{[key]:false});
+  assert.equal(initial.schema.length,1);assert.equal(initial.schema[0].key,key);assert.deepEqual(initial.schema[0].label,label);
+  assert.deepEqual(initial.schema[0].values.map(item=>item.value),[false,true]);
+  assert.deepEqual(initial.schema[0].values.map(item=>item.label),['off','on'].map(name=>['en','ru'].map(lang=>TEXT[lang][r.model+'_'+key+'_'+name])));
+  for(const value of [false,true]) {
+   let expected;
+   for(const slot of r.paths) {
+    const plan={...base,state:{[key]:value},slot},before=JSON.stringify(plan),spec=controls.previewControlSpec({},plan);
+    assert.deepEqual(spec.state,{[key]:value});
+    const selection=controls.previewControlSelection(plan,{...spec.state,texture:slot});
+    assert.equal(selection.slot,slot);assert.deepEqual(selection.state,{[key]:value});
+    assert.deepEqual(controls.previewTextureField(plan).values.map(item=>item.value),r.paths);
+    const s=setup(id,selection.state,selection.slot);s.build();
+    const snapshot=meshesOf(s.E.group).map(mesh=>({path:mesh.material.path,uv:mesh.geometry.rows,pos:[mesh.position.x,mesh.position.y,mesh.position.z]}));
+    expected??=snapshot;assert.deepEqual(snapshot,expected);assert.equal(JSON.stringify(plan),before);
+   }
+  }
+ }
+});
