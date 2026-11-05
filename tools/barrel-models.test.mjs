@@ -45,3 +45,26 @@ test('missing materials never attach a partial barrel and free prepared geometry
  const s=setup({open:true});delete s.E.mats[P+'barrel_side'];assert.throws(s.build,/Missing model material/);
  assert.equal(s.E.group.children.length,0);assert.ok(s.Three.created.every(g=>g.disposed));
 });
+test('barrel review entry and shared picker preserve default closed and independent PNG selection',async()=>{
+ const {REVIEW_IDS,TEXT}=await import('../preview-config.mjs');
+ const {createPreviewControls}=await import('../preview-controls.mjs');
+ assert.equal(REVIEW_IDS.filter(id=>id==='barrel').length,1);
+ assert.equal(TEXT.en.card_barrel,'Barrel');assert.equal(TEXT.ru.card_barrel,'Бочка');
+ const controls=createPreviewControls(TEXT),paths=setup().r.paths;
+ const base={object:{id:'barrel',card:'barrel'},model:'barrel',forms:null,state:{},paths,slot:paths[0]};
+ const initial=controls.previewControlSpec({},base);
+ assert.deepEqual(initial.state,{open:false});
+ assert.deepEqual(initial.schema,[{key:'open',label:['Opening','Открытие'],values:[{value:false,label:['Closed','Закрыта']},{value:true,label:['Open','Открыта']}]}]);
+ for(const open of [false,true])for(const slot of paths) {
+  const plan={...base,state:{open},slot},before=JSON.stringify(plan);
+  const spec=controls.previewControlSpec({},plan);
+  assert.deepEqual(spec.state,{open});
+  const selected=controls.previewControlSelection(plan,{...spec.state,texture:slot});
+  assert.equal(selected.slot,slot);assert.deepEqual(selected.state,{open});
+  assert.deepEqual(controls.previewTextureField(plan).values.map(item=>item.value),paths);
+  const s=setup(selected.state,selected.slot);s.build();
+  const top=meshesOf(s.E.group).find(mesh=>mesh.rotation.x===-Math.PI/2);
+  assert.equal(top.material.path,P+(open?'barrel_top_open':'barrel_top'));
+  assert.equal(JSON.stringify(plan),before);
+ }
+});
