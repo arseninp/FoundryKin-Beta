@@ -1,12 +1,20 @@
 # TODO — модели, перенос и приёмка
 
-Обновлено 2026-11-05 по OLDCHAT22/GitHub. Проверенный HEAD до документации: 60ec0ad78b28e17a5087a4849f1cb972e35752c0. [x] = записанный код, не runtime/визуальная приёмка. Начать с CONTEXT/handoff.
+Обновлено 2026-11-05 по OLDCHAT22/GitHub. Проверенный HEAD до документации: 60ec0ad78b28e17a5087a4849f1cb972e35752c0. [x] = записанный код, не runtime/визуальная приёмка. Начать с CONTEXT/handoff. Дополнение 2026-11-05 по решению владельца после c3cb01e: проверку внешнего вида bubble_column вести отдельно, не задерживать на ней остальную работу.
 
 ## Точка продолжения
 
-- [ ] Следующий согласованный модельный участок bubble_column: проверить исходные records/resources и корректное представление; unknown не cube. Не объявлять его единственным остатком без свежего existing coverage.
+- [ ] Продолжить проверку покрытия и подключение существующих моделей; внешний вид и движение bubble_column вынесены в отдельную отложенную проверку ниже. Это НЕ означает, что builder/назначение/подключение bubble_column реализованы. Не подставлять cube fallback и не объявлять весь модельный этап завершённым.
 - [ ] Получить existing coverage/inputValidation/full PIN compile/validate/tests и подтверждённый результат записанных pinned shulker/bell/player checks. Не создавать второй аудит; saved workflow не доказывает Actions.
 - [x] Bell и player_head записаны. Последняя реплика OLDCHAT22 о несохранённой голове опровергнута GitHub; не повторять старую запись. Продолжать модели, а не дробление файлов.
+
+## Отдельная проверка bubble_column
+
+- [x] c3cb01e: в existing aquatic-parts.mjs подготовлены 18 именованных owned texture roles (up_top 4/down_top 4/outer 8/inner 2) и три регрессии в existing resource-variants.test.mjs. Исходные варианты/пути сохранены; pumpkin_side остаётся в source record, но не в ролях модели. Автоматическое назначение модели не добавлялось.
+- [x] После записи выполнен локальный прогон всего resource-variants.test.mjs: 9 pass/0 fail на восьми исходных файлах, сверенных по Git blob SHA. Тесты обнаружили три локальные намеренные поломки: отсутствие ownership check, отключение bubble bindings и изменение порядка source variants. Это не полный PIN compile/CI/WebGL.
+- [ ] Вернуться к геометрии, UV, прозрачности и движению пузырей при общей визуальной приёмке. Эталон — два присланных владельцем скриншота Bedrock из текущего чата, файлы 1000053516.jpg и 1000053518.jpg; в репозиторий изображения не загружались. На кадрах видны отдельные пузырьки в толще воды. Со слов владельца: над магмой движение спирально вниз, над soul sand — прямо вверх. Траектория сообщена владельцем, не установлена по неподвижным кадрам.
+- [ ] Проверить соответствие texture-layer/Fancy Bubbles режима реальному отображению на устройстве, размещение слоёв и UV по игровому эталону. Не утверждать, что один набор текстурных поверхностей воспроизводит все режимы. Подготовленные роли не доказывают геометрию или готовую анимацию.
+- [ ] Если согласуется предварительное статичное представление, явно обозначить его ограничение и не выдавать за точную модель Bedrock. Не назначать фиктивную геометрию ради зелёного coverage; сохранённой реализации builder/preview для bubble_column пока нет.
 
 ## Уже записано — не повторять
 
@@ -26,14 +34,14 @@ Bed/sign/cauldron/auxiliary/banner/fruit-stem/budding amethyst/aquatic/propagule
 
 ## Проверки и ограничения
 
-OLDCHAT22 сообщает targeted результаты: 272 изолированных state-PNG/compiler stub; shulker fixture 17 цветов/Three-mock/3 намеренные ошибки; policy 9/9; loader 6/6; image helpers 14; config 8 с compiler-resolver stubs; bell comparisons; player head 12 mock/metadata checks. Это исторические результаты, здесь не перезапускались. Не суммировать и не выдавать за полный PIN/CI/WebGL/Android/export. Pinned tests записаны, успешное выполнение не подтверждено.
+OLDCHAT22 сообщает targeted результаты: 272 изолированных state-PNG/compiler stub; shulker fixture 17 цветов/Three-mock/3 намеренные ошибки; policy 9/9; loader 6/6; image helpers 14; config 8 с compiler-resolver stubs; bell comparisons; player head 12 mock/metadata checks. Это исторические результаты, здесь не перезапускались. Не суммировать и не выдавать за полный PIN/CI/WebGL/Android/export. Pinned tests записаны, успешное выполнение не подтверждено. Новый локальный прогон resource-variants указан отдельно выше.
 
 - [ ] Реальные PNG-TGA/Three-WebGL/Bedrock UV-scale/Android/export; cards/source-ID reopen/menu/forms/PNG/poses/frames/materials/texture ownership/update/cleanup.
 - [ ] Potted azalea UV/dragon placement-scale/gel alpha/stem tint/kelp sides-UV-TGA; pot/conduit/liquids/chests/shulkers/bell/player appearance.
 - [ ] Bindings/dependencies/indexed repeats/aliases/forms/states/icons/carried/block-item icons/saved-ID сохранность.
 - [ ] Общий Find/editor/loaders/EN-RU/Shared textures/badges; animation player timing/order/pause/export strip/clock-compass demo отдельно от static state, item icon UX/scope согласовать.
 - [ ] Приёмка draw/undo/redo/Add/reopen/PNG/mcpack/Android/async/storage/import/dimensions/alpha/cache/URL lifecycle/language-theme-pack-slot-frame.
-- [ ] Только после успеха индивидуальная чистка тестов/дублей, runtime switch/FK_V/cache/удаление заменённого legacy.
+- [ ] Только после успеха индивидуальная чистка тестов/дублей, runtime switch/FK_V/cache/удаление заменённого legacy. Просьба владельца впоследствии убрать ненужные файлы не разрешает удалять используемый код до проверки нового пути.
 
 ## Отложенный план владельца
 
