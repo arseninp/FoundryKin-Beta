@@ -87,10 +87,27 @@ test('missing materials and allocation failure leave the scene and material poli
   assert.throws(t.build,/allocation/);assert.deepEqual(t.E.group.children,[existing]);assert.equal(JSON.stringify(t.E.mats),materials);assert.ok(t.Three.created.every(g=>g.disposed));
  }
 });
-test('weeping and twisting columns retain their existing orientation and bindings',()=>{
+test('weeping and twisting columns retain their existing orientation and bindings',async()=>{
+ const {REVIEW_IDS,TEXT}=await import('../preview-config.mjs');
+ const {createPreviewControls}=await import('../preview-controls.mjs');
+ const controls=createPreviewControls(TEXT);
+ const labels={weeping_vines:['Weeping vines','Плакучие лианы'],twisting_vines:['Twisting vines','Вьющиеся лианы']};
  for(const id of ['weeping_vines','twisting_vines']) {
+  assert.equal(SPECIAL_MODELS[id],'vines');assert.equal(REVIEW_IDS.filter(value=>value===id).length,1);
+  assert.deepEqual(['en','ru'].map(lang=>TEXT[lang]['card_'+id]),labels[id]);
   const Three=createThreeMock(),E={cur:id,bindings:{up:'up',down:'down'},mats:{up:{path:'up'},down:{path:'down'}},group:new Three.Group()};
-  createGrowthModels(Three).find(m=>m.id==='vines').build(E);const meshes=meshesOf(E.group);assert.equal(meshes.length,4);
+  const model=createGrowthModels(Three).find(m=>m.id==='vines');assert.equal(model.scale,1.4);
+  model.build(E);const meshes=meshesOf(E.group);assert.equal(meshes.length,4);
   assert.deepEqual(meshes.map(m=>m.material.path),['down','down','up','up']);assert.deepEqual(meshes.map(m=>m.position.y),id==='weeping_vines'?[-.5,-.5,.5,.5]:[.5,.5,-.5,-.5]);
+  const paths=Object.keys(E.mats),expected=snapshot(E);
+  for(const slot of paths) {
+   const plan={object:{id,card:id},model:'vines',forms:null,state:{},paths,slot},before=JSON.stringify(plan);
+   assert.deepEqual(controls.previewControlSpec({},plan),{schema:null,state:{}});
+   const selection=controls.previewControlSelection(plan,{texture:slot});
+   assert.equal(selection.slot,slot);assert.deepEqual(selection.state,{});
+   assert.deepEqual(controls.previewTextureField(plan).values.map(item=>item.value),paths);
+   const next={cur:id,state:selection.state,slot:selection.slot,bindings:{...E.bindings},mats:{up:{path:'up'},down:{path:'down'}},group:new Three.Group()};
+   model.build(next);assert.deepEqual(snapshot(next),expected);assert.equal(JSON.stringify(plan),before);
+  }
  }
 });
