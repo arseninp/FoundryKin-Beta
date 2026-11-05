@@ -102,3 +102,23 @@ test('fire resolver rejects invalid variants before dispatching any geometry',()
   assert.equal(s.calls.length,0);assert.equal(JSON.stringify(s.catalog),before);
  }
 });
+test('both campfires share boolean burning controls independent of the edited PNG',()=>{
+ const labels={en:{campfire_lit:'Burning',campfire_lit_off:'Unlit',campfire_lit_on:'Lit',texture:'Texture'},ru:{campfire_lit:'Горение',campfire_lit_off:'Не горит',campfire_lit_on:'Горит',texture:'Текстура'}},controls=createPreviewControls(labels);
+ for(const id of ['campfire','soul_campfire']) {
+  const paths=['textures/blocks/'+id,'textures/blocks/campfire_log','textures/blocks/'+id+'_log_lit'];
+  const plain={object:{id,card:id},model:'campfire',forms:null,state:{},paths,slot:paths[0]},before=JSON.stringify(plain);
+  const initial=controls.previewControlSpec({},plain);
+  assert.deepEqual(initial.state,{lit:true});
+  assert.deepEqual(initial.schema,[{key:'lit',label:['Burning','Горение'],values:[{value:false,label:['Unlit','Не горит']},{value:true,label:['Lit','Горит']}]}]);
+  assert.deepEqual(controls.previewTextureField(plain).values.map(option=>option.value),paths);
+  for(const lit of [false,true])for(const texture of paths) {
+   const plan={...plain,state:{lit}},spec=controls.previewControlSpec({},plan);
+   assert.deepEqual(spec.state,{lit});
+   const selection=controls.previewControlSelection(plan,{...spec.state,texture});
+   assert.equal(selection.slot,texture);assert.deepEqual(selection.state,{lit});assert.equal(selection.form,undefined);
+   assert.equal(JSON.stringify(plain),before);
+  }
+  initial.schema[0].values[0].value='changed';
+  assert.equal(controls.previewControlSpec({},plain).schema[0].values[0].value,false);
+ }
+});
