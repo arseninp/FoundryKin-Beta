@@ -75,3 +75,30 @@ test('fire picker keeps PNG selection independent from the primary or alternate 
   }
  }
 });
+function fireResolverFixture(id) {
+ const plan=firePlan(id),faces=Object.fromEntries(['up','down','north','south','east','west'].map(face=>[face,[plan.paths[face==='down'?1:0]]]));
+ const record={id,model:'fire',paths:plan.paths,icons:[],faces};
+ const catalog={schema:1,records:{[id]:record},items:{},aliases:{},families:{},resources:{}},calls=[];
+ const registry={get(model){assert.equal(model,'fire');return {scale:1,mode:'volume'};},build(model,env){calls.push({model,env});return env;}};
+ return {catalog,calls,resolve:createPreviewResolver(catalog,registry)};
+}
+test('fire resolver normalizes primary once and preserves explicit variants independently of PNG',()=>{
+ for(const id of ['fire','soul_fire']) {
+  const s=fireResolverFixture(id),before=JSON.stringify(s.catalog),state={},plain=s.resolve({id,state});
+  assert.deepEqual(plain.state,{variant:'primary'});assert.deepEqual(state,{});
+  assert.deepEqual(plain.build({}).state,{variant:'primary'});
+  for(const variant of ['primary','alternate'])for(const slot of plain.paths) {
+   const request={id,slot,state:{variant}},saved=JSON.stringify(request),plan=s.resolve(request);
+   assert.deepEqual(plan.state,{variant});assert.equal(plan.slot,slot);assert.deepEqual(plan.bindings,plain.bindings);
+   assert.deepEqual(plan.build({}).state,{variant});assert.equal(JSON.stringify(request),saved);
+  }
+  assert.equal(JSON.stringify(s.catalog),before);
+ }
+});
+test('fire resolver rejects invalid variants before dispatching any geometry',()=>{
+ for(const id of ['fire','soul_fire']) {
+  const s=fireResolverFixture(id),before=JSON.stringify(s.catalog);
+  for(const variant of [null,'A','B','bad',false,true,0,1,{},[]])assert.throws(()=>s.resolve({id,state:{variant}}),/Invalid fire preview variant/);
+  assert.equal(s.calls.length,0);assert.equal(JSON.stringify(s.catalog),before);
+ }
+});

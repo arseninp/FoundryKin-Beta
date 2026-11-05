@@ -224,6 +224,10 @@ export function createPreviewResolver(catalog, registry, Three) {
    if (!iconPaths.includes(slot)) throw new Error('Resource has no declared icon role');
   }
   const base=view==='sprite'?'sprite':record.model, previewState={...selected.state,...state};
+  if (base==='fire') {
+   if (previewState.variant===undefined) previewState.variant='primary';
+   if (!['primary','alternate'].includes(previewState.variant)) throw new Error('Invalid fire preview variant');
+  }
   if (base==='shulker_box') {
    previewState.open??=false;
    if (typeof previewState.open!=='boolean') throw new Error('Invalid shulker box preview state');
