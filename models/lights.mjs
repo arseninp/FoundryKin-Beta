@@ -51,5 +51,5 @@ export function createLightModels(Three) {
   box(E,[5,0,0],[11,1,16],{north:uv(L,[0,15,6,16]),south:uv(L,[10,15,16,16]),up:uv(T,[0,8,16,14],90),down:uv(L,[0,8,16,14],90)});
   if(!off){const w=.9*Math.SQRT2;face(E,f.up,w,1,0,1/16,0,0,Math.PI/4,[0,0,16,16],true);face(E,f.up,w,1,0,1/16,0,0,-Math.PI/4,[0,0,16,16],true);}
  }
- return [{id:'lantern',scale:1,mode:'volume',build:lantern},{id:'chain',scale:1,mode:'volume',build:chain},{id:'torch',scale:1,mode:'volume',build:torch},{id:'campfire',scale:1,mode:'volume',build:campfire}];
+ return [{id:'lantern',scale:1,mode:'volume',build:lantern},{id:'chain',scale:1,mode:'volume',build:chain},{id:'torch',scale:1,mode:'volume',build:torch},{id:'campfire',scale:1,mode:'volume',emissiveRoles:['up'],build:campfire}];
 }

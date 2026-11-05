@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLightModels} from '../models/lights.mjs';
+import {createModelMaterials} from '../models/materials.mjs';
 function setup(id,state,slot='fire'){
  const Three={DoubleSide:2,PlaneGeometry:class{constructor(w,h){this.w=w;this.h=h;this.coords=[];const xy=[[0,1],[1,1],[0,0],[1,0]];this.attributes={uv:{count:4,getX:i=>xy[i][0],getY:i=>xy[i][1],setXY:(i,u,v)=>{this.coords[i]=[u,v];}}};}},Mesh:class{constructor(geometry,material){this.geometry=geometry;this.material=material;this.position={set:(x,y,z)=>{this.xyz=[x,y,z];}};this.rotation={set:(x,y,z)=>{this.angles=[x,y,z];}};}}};
  const env={faceMap:{up:'fire',down:'log',north:'lit'},mats:{fire:{id:'fire'},log:{id:'log'},lit:{id:'lit'}},hiddenMat:{},state,slot,group:{children:[],add(m){this.children.push(m);}}};
- return {env,build:()=>createLightModels(Three).find(m=>m.id===id).build(env)};
+ return {Three,env,build:()=>createLightModels(Three).find(m=>m.id===id).build(env)};
 }
 function snapshot(env){return env.group.children.map(m=>[m.material.id,m.geometry.w,m.geometry.h,m.xyz,m.angles,m.geometry.coords]);}
 test('campfire power is independent of all selected texture slots',()=>{
@@ -39,4 +40,25 @@ test('ordinary torch retains six faces and cropped shaft UVs',()=>{
 test('missing material and missing Three dependency fail explicitly',()=>{
  const s=setup('lantern');delete s.env.mats.fire;assert.throws(()=>s.build(),/Missing light material/);
  assert.throws(()=>createLightModels({}),/require Three/);
+});
+test('campfire flames are unlit while logs retain lit materials and borrowed textures',()=>{
+ for(const id of ['campfire','soul_campfire'])for(const lit of [false,true])for(const semi of [false,true]) {
+  const s=setup('campfire',{lit}),Three=s.Three,fire='textures/blocks/'+id,log='textures/blocks/campfire_log',burning='textures/blocks/'+id+'_log_lit',disposed=[];
+  Three.FrontSide=0;
+  Three.MeshBasicMaterial=class {constructor(options){Object.assign(this,options);this.isMeshBasicMaterial=true;}dispose(){disposed.push(this);}};
+  Three.MeshLambertMaterial=class {constructor(options){Object.assign(this,options);this.isMeshLambertMaterial=true;}dispose(){disposed.push(this);}};
+  const descriptor=createLightModels(Three).find(model=>model.id==='campfire'),bindings={up:fire,down:log,north:burning,south:burning,east:burning,west:burning};
+  assert.deepEqual(descriptor.emissiveRoles,['up']);
+  const textures=Object.fromEntries([fire,log,burning].map(path=>[path,{isTexture:true,userData:{semi:path===fire&&semi},dispose(){throw new Error('Borrowed texture disposal');}}]));
+  const materials=createModelMaterials(Three,descriptor,bindings,textures);
+  s.env.cur=id;s.env.faceMap=bindings;s.env.mats=materials.mats;
+  try {
+   s.build();const flames=s.env.group.children.filter(mesh=>mesh.material.map===textures[fire]),logs=s.env.group.children.filter(mesh=>mesh.material.map!==textures[fire]);
+   assert.equal(flames.length,lit?2:0);assert.equal(logs.length,28);
+   assert.ok(flames.every(mesh=>mesh.material.isMeshBasicMaterial===true&&mesh.material.side===Three.DoubleSide&&mesh.material.transparent===semi&&mesh.material.depthWrite===!semi));
+   assert.ok(logs.every(mesh=>mesh.material.isMeshLambertMaterial===true&&mesh.material.transparent===false));
+   if(!lit)assert.ok(logs.every(mesh=>mesh.material.map===textures[log]));
+  } finally {materials.dispose();materials.dispose();}
+  assert.equal(disposed.length,3);
+ }
 });
