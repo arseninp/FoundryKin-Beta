@@ -4,22 +4,22 @@
 
 Приложение: https://arseninp.github.io/FoundryKin-Beta/app.html
 
-## Статус на 2026-11-04
+## Статус на 2026-11-05
 
-Проверенный HEAD до документации: 6ccafe6d7b9e8d277fd513e70bca3a8d5d1b5105. Рефакторинг/блоковый этап не завершены; основной editor не переключён, это не выпуск/визуальная приёмка. Legacy UI 0.9.1 по прежним проверкам; HTML здесь заново не исследован.
+Проверенный HEAD до документации: 60ec0ad78b28e17a5087a4849f1cb972e35752c0. Рефакторинг/модельный этап не завершены, основной editor не переключён. Не выпуск/визуальная приёмка. Legacy UI 0.9.1 по прежним проверкам, HTML здесь заново не исследован.
 
-Отдельный read-only preview включает 44 исходных ID, не 44 cards/весь каталог: к прежним 29 добавлены вода/лава (4 IDs) и сундуки (11 IDs, включая waxed copper routes). Общий picker, независимые PNG/form/state; liquids level 0..7, chests open/double, ender без double.
+Отдельный read-only preview включает 63 исходных ID, не 63 cards/полный каталог: прежние 29 + вода/лава 4 + сундуки 11 + шалкеры 17 + колокол + голова игрока. Общий picker/независимые PNG-form-state; liquids level 0..7, chests open/double (ender без double), shulkers open. Вращение жестом, лишнее whole-block facing сундуков/шалкеров удалено.
 
-Чистка лишних направлений сундуков/шалкеров завершена: удалены whole-block facing из builders/resolver, меню сундука, циклов проверок и подписей. Вращение жестом, открытие крышек/UV/размеры сохранены. Макет отложен на другой чат.
+Колокол — статичная модель на стойках, без других креплений/звона. Карточка Игрок пока содержит только голову с внешним слоем и полным Steve sheet, не тело/редактор скинов. Оба объекта сохранены; последняя реплика OLDCHAT22 о несохранённой голове неверна. Конфигурация/REVIEW_IDS находятся в preview-config.mjs, image helpers — preview-images.mjs, прежние экспорты preview.mjs сохранены.
 
-Shulker geometry/sources/open resolver уже есть, но ящики ещё не включены в срез/меню. Продолжение — подключение без facing, только open/PNG/раздельные цвета. Старый черновик 17 shulkers/61 slice отклонён и не записан.
+Следующий известный согласованный кандидат — bubble_column, но свежий полный coverage ещё нужен. Готовые модели повторно не переносить. Pinned integration tests записаны, успешный full compile/Actions/реальные PNG-TGA/WebGL/Android/export не подтверждены. Mocks/static reference poses не заменяют приёмку/плеер; read-only preview не пишет в паки.
 
-Головы/статуи/eyeblossom/pot patterns/static active conduit и предыдущие модели уже переносились. Полные mobs отложены, не недоделка голов. Liquids не flow simulator, static poses не player.
+## Дальнейшее развитие
 
-Workflow дополнен проверками, но successful Actions/full compile/реальные PNG-TGA/WebGL/Android/export пока не подтверждены. Локальные mocks этого не заменяют.
+После моделей/приёмки — подключение к основному редактору. По предложению владельца запланирован будущий полноценный редактор скинов и позднее тело для примерки брони; head/hat UV/лист скина сохранить для переиспользования. Это отложенный план, не готовая функция. Полные mobs и макет tablet/desktop отдельно; текущий макет не переделывать.
 
 ## Навигация и сохранность
 
-CONTEXT.md → docs/handoff-unified-cards.md → ARCHITECTURE.md → TODO.md → ROADMAP.md → docs/review-principles.md. Предыдущие подробные документы — 3fe2d82; актуальная передача основана на текущем разговоре/GitHub, не на выдуманном новом архиве.
+CONTEXT.md → docs/handoff-unified-cards.md → ARCHITECTURE.md → TODO.md → ROADMAP.md → docs/review-principles.md. Текущая передача — полностью прочитанный OLDCHAT22 и GitHub; история 1043175/3fe2d82.
 
-Только main/точное подтверждение/saved diff; новые test files отдельно согласовать, существующие не удалять массово. Backup не обновлять автоматически/refactor-0.9 не воссоздавать. fk070_packs не очищать: backup кода не сохраняет пользовательские паки. Перенос → совместная приёмка → чистка/переключение legacy после успеха. PIN Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d; Three.js r128/JSZip 3.10.1. Остальные контракты — CONTEXT/ARCHITECTURE.
+Только main/точное подтверждение/saved diff; документы менять по указанию владельца, новые test files отдельно согласовать, существующие не удалять массово. Backup не обновлять автоматически/refactor-0.9 не воссоздавать. fk070_packs не очищать: backup кода не сохраняет пользовательские паки. Перенос → совместная приёмка → чистка/переключение legacy после успеха. PIN Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d; Three.js r128/JSZip 3.10.1. Остальные контракты — CONTEXT/ARCHITECTURE.
