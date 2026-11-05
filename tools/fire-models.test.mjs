@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createFireModels} from '../models/fire.mjs';
+import {createModelMaterials} from '../models/materials.mjs';
 import {createSpecialModels} from '../models/specials.mjs';
 import {SPECIAL_MODELS} from '../catalog/rules/models.mjs';
 import {createThreeMock,meshesOf} from './three-mock.mjs';
@@ -47,4 +48,54 @@ test('allocation failure frees prepared geometry without attaching or mutating t
  s.Three.PlaneGeometry=class extends Base {constructor(...args){if(s.Three.created.length===3)throw new Error('allocation');super(...args);}};
  assert.throws(s.build,/allocation/);assert.equal(s.E.group.children.length,0);assert.ok(s.Three.created.every(g=>g.disposed));
  assert.equal(s.E.mats[s.E.bindings.up].side,undefined);
+});
+function worldPoint(point,node) {
+ let [x,y,z]=point;const r=node.rotation,p=node.position;
+ [x,y]=[x*Math.cos(r.z)-y*Math.sin(r.z),x*Math.sin(r.z)+y*Math.cos(r.z)];
+ [x,z]=[x*Math.cos(r.y)+z*Math.sin(r.y),-x*Math.sin(r.y)+z*Math.cos(r.y)];
+ [y,z]=[y*Math.cos(r.x)-z*Math.sin(r.x),y*Math.sin(r.x)+z*Math.cos(r.x)];
+ return [x+p.x,y+p.y,z+p.z];
+}
+test('fire world-space corners stay above the floor and UVs cover the source frame',()=>{
+ for(const id of ['fire','soul_fire'])for(const variant of ['primary','alternate']) {
+  const s=setup(id,{variant});s.build();let top=-Infinity;
+  for(const part of s.E.group.children) {
+   const mesh=part.children?part.children[0]:part,[w,h]=mesh.geometry.size;
+   const points=[[-w/2,-h/2,0],[w/2,-h/2,0],[-w/2,h/2,0],[w/2,h/2,0]].map(point=>{
+    const local=worldPoint(point,mesh);return part===mesh?local:worldPoint(local,part);
+   });
+   const low=Math.min(...points.map(point=>point[1]));assert.ok(Math.abs(low+.5)<1e-12);
+   assert.ok(points.every(point=>point.every(Number.isFinite)&&point[1]>=-.5-1e-12));
+   top=Math.max(top,...points.map(point=>point[1]));
+   assert.deepEqual(mesh.geometry.rows,[[0,1],[1,1],[0,0],[1,0]]);
+  }
+  assert.ok(Math.abs(top-.9)<1e-12);
+ }
+});
+test('fire rejects foreign identities and cleans every allocation even when cleanup throws',()=>{
+ const wrong=setup('other');assert.throws(wrong.build,/Unknown fire object/);assert.equal(wrong.Three.created.length,0);
+ const invalid=setup('fire',[]);assert.throws(invalid.build,/Invalid fire variant/);assert.equal(invalid.Three.created.length,0);
+ const s=setup(),Base=s.Three.Mesh,material=s.E.mats[s.E.bindings.up],disposed=[];
+ s.Three.Mesh=class extends Base {constructor(...args){if(s.Three.created.length===3)throw new Error('mesh allocation');super(...args);}};
+ const Plane=s.Three.PlaneGeometry;
+ s.Three.PlaneGeometry=class extends Plane {constructor(...args){super(...args);const index=s.Three.created.length;this.dispose=()=>{disposed.push(index);if(index===1)throw new Error('dispose');};}};
+ assert.throws(s.build,error=>error instanceof AggregateError&&error.errors.some(item=>item.message==='mesh allocation')&&error.errors.some(item=>item.message==='dispose'));
+ assert.deepEqual(disposed,[1,2,3]);assert.equal(s.E.group.children.length,0);assert.equal(material.side,undefined);
+});
+test('both fires use unlit materials without changing texture ownership or alpha policy',()=>{
+ for(const id of ['fire','soul_fire'])for(const variant of ['primary','alternate'])for(const semi of [false,true]) {
+  const s=setup(id,{variant}),a=s.E.bindings.up,b=s.E.bindings.down;
+  const bindings={up:a,down:b,north:a,south:a,east:a,west:a},disposed=[];
+  s.Three.MeshBasicMaterial=class {constructor(options){Object.assign(this,options);this.isMeshBasicMaterial=true;}dispose(){disposed.push(this);}};
+  s.Three.MeshLambertMaterial=class {constructor(){throw new Error('Fire must not depend on scene lighting');}};
+  const textures=Object.fromEntries([a,b].map(path=>[path,{isTexture:true,userData:{semi},dispose(){throw new Error('Borrowed texture disposal');}}]));
+  const owned=createModelMaterials(s.Three,s.descriptor,bindings,textures);s.E.bindings=bindings;s.E.mats=owned.mats;s.build();
+  assert.deepEqual(s.descriptor.emissiveRoles,Object.keys(bindings));
+  for(const mesh of meshesOf(s.E.group)) {
+   const mat=mesh.material;assert.equal(mat.isMeshBasicMaterial,true);assert.equal(mat.side,s.Three.DoubleSide);
+   assert.equal(mat.map,textures[variant==='primary'?a:b]);assert.equal(mat.transparent,semi);assert.equal(mat.alphaTest,semi?0:.05);assert.equal(mat.depthWrite,!semi);
+  }
+  const next=Object.fromEntries([a,b].map(path=>[path,{isTexture:true,userData:{semi:!semi}}]));owned.update(next);
+  assert.equal(owned.mats[a].map,next[a]);assert.equal(owned.mats[a].transparent,!semi);owned.dispose();owned.dispose();assert.equal(disposed.length,2);
+ }
 });
