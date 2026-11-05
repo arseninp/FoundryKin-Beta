@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createPreviewResolver} from '../catalog/preview.mjs';
+import {createPreviewControls} from '../preview-controls.mjs';
 const body='textures/entity/sample_body',head='textures/entity/sample_head',alt='textures/entity/sample_head_alt';
 function fixture(kind='block'){
  const record={id:'sample',model:'assembled',paths:[body,head,alt],icons:[],bindings:{body:[body],head:[head,alt]}};
@@ -46,4 +47,31 @@ test('public selection objects and previous builds cannot change subsequent disp
 test('ordinary face-based blocks remain compatible',()=>{
  const s=fixture();delete s.record.bindings;s.record.faces={up:[body],south:[head]};
  const p=s.resolve({id:'sample'});assert.deepEqual(p.build({}).faceMap,{up:body,south:head});
+});
+const fireLabels={en:{variant:'Variant',texture:'Texture'},ru:{variant:'Вариант',texture:'Текстура'}};
+function firePlan(id,state={}) {
+ const paths=['textures/blocks/'+id+'_0','textures/blocks/'+id+'_1'];
+ return {object:{id,card:id},model:'fire',forms:null,state,paths,slot:paths[0],bindings:{up:paths[0],down:paths[1]}};
+}
+test('both fires expose one shared variant field with primary default and bilingual labels',()=>{
+ const controls=createPreviewControls(fireLabels);
+ for(const id of ['fire','soul_fire']) {
+  const plan=firePlan(id),before=JSON.stringify(plan),spec=controls.previewControlSpec({},plan);
+  assert.deepEqual(spec.schema,[{key:'variant',label:['Variant','Вариант'],values:[{value:'primary',label:['A','A']},{value:'alternate',label:['B','B']}]}]);
+  assert.deepEqual(spec.state,{variant:'primary'});assert.equal(JSON.stringify(plan),before);
+  spec.schema[0].values[0].value='changed';assert.equal(controls.previewControlSpec({},plan).schema[0].values[0].value,'primary');
+ }
+});
+test('fire picker keeps PNG selection independent from the primary or alternate model variant',()=>{
+ const controls=createPreviewControls(fireLabels);
+ for(const id of ['fire','soul_fire'])for(const variant of ['primary','alternate']) {
+  const plan=firePlan(id,{variant}),before=JSON.stringify(plan),spec=controls.previewControlSpec({},plan);
+  assert.equal(spec.state.variant,variant);
+  assert.deepEqual(controls.previewTextureField(plan).values.map(option=>option.value),plan.paths);
+  for(const texture of plan.paths) {
+   const selection=controls.previewControlSelection(plan,{...spec.state,texture});
+   assert.equal(selection.slot,texture);assert.deepEqual(selection.state,{variant});assert.equal(selection.form,undefined);
+   assert.equal(JSON.stringify(plan),before);
+  }
+ }
 });
