@@ -44,3 +44,25 @@ test('invalid stages and missing materials reject before attaching a partial mod
  for(const stage of [-1,4,1.5,'1']) {const s=setup(stage);assert.throws(s.build,/Invalid dried ghast stage/);assert.equal(s.E.group.children.length,0);}
  const s=setup();delete s.E.mats[P+'1_tentacles'];assert.throws(s.build,/Missing model material/);assert.equal(s.E.group.children.length,0);assert.ok(s.Three.created.every(g=>g.disposed));
 });
+test('dried ghast review entry and shared picker keep all four stages independent of the edited image',async()=>{
+ const {REVIEW_IDS,TEXT}=await import('../preview-config.mjs');
+ const {createPreviewControls}=await import('../preview-controls.mjs');
+ assert.equal(REVIEW_IDS.filter(id=>id==='dried_ghast').length,1);
+ assert.equal(TEXT.en.card_dried_ghast,'Dried ghast');assert.equal(TEXT.ru.card_dried_ghast,'Высушенный гаст');
+ const controls=createPreviewControls(TEXT),paths=record().paths;
+ const base={object:{id:'dried_ghast',card:'dried_ghast'},model:'dried_ghast',forms:null,state:{},paths,slot:paths[0]};
+ const initial=controls.previewControlSpec({},base);
+ assert.deepEqual(initial.state,{stage:0});
+ assert.deepEqual(initial.schema,[{key:'stage',label:['Stage','Стадия'],values:[0,1,2,3].map(value=>({value,label:[String(value),String(value)]}))}]);
+ for(let stage=0;stage<4;stage++)for(const slot of paths) {
+  const plan={...base,state:{stage},slot},before=JSON.stringify(plan);
+  const spec=controls.previewControlSpec({},plan);assert.deepEqual(spec.state,{stage});
+  const selected=controls.previewControlSelection(plan,{...spec.state,texture:slot});
+  assert.equal(selected.slot,slot);assert.deepEqual(selected.state,{stage});
+  assert.deepEqual(controls.previewTextureField(plan).values.map(item=>item.value),paths);
+  const s=setup(selected.state.stage,selected.slot);s.build();const m=meshesOf(s.E.group);
+  assert.equal(m.length,42);
+  assert.ok(m.every(mesh=>mesh.material.path.startsWith(P+(stage+1)+'_')));
+  assert.equal(JSON.stringify(plan),before);
+ }
+});
