@@ -1,51 +1,36 @@
-# TODO — модели, перенос и приёмка
+# TODO — следующие модели и общая приёмка
 
-Обновлено 2026-11-05 по OLDCHAT22/GitHub. Проверенный HEAD до документации: 60ec0ad78b28e17a5087a4849f1cb972e35752c0. [x] = записанный код, не runtime/визуальная приёмка. Начать с CONTEXT/handoff. Дополнение 2026-11-05 по решению владельца после c3cb01e: проверку внешнего вида bubble_column вести отдельно, не задерживать на ней остальную работу.
+Обновлено 2026-11-05. Кодовый HEAD перед документацией: 05f7a62f42a021b2c67d0cfbd3c87515db428aa6. [x] означает записанный код/указанный локальный результат, не визуальную приёмку всего приложения. Начать с CONTEXT/handoff. Подробные прежние задачи — 5b083a7 и e1b4cd2; архитектурные ограничения сохраняются.
 
-## Точка продолжения
+## Точка продолжения для нового чата
 
-- [ ] Продолжить проверку покрытия и подключение существующих моделей; внешний вид и движение bubble_column вынесены в отдельную отложенную проверку ниже. Это НЕ означает, что builder/назначение/подключение bubble_column реализованы. Не подставлять cube fallback и не объявлять весь модельный этап завершённым.
-- [ ] Получить existing coverage/inputValidation/full PIN compile/validate/tests и подтверждённый результат записанных pinned shulker/bell/player checks. Не создавать второй аудит; saved workflow не доказывает Actions.
-- [x] Bell и player_head записаны. Последняя реплика OLDCHAT22 о несохранённой голове опровергнута GitHub; не повторять старую запись. Продолжать модели, а не дробление файлов.
+- [x] Закрыть согласованный статичный пакет campfire/soul_campfire в отдельном preview: builder/пламя unlit/брёвна Lambert, общий lit picker/default true, independent PNG, source IDs/EN-RU. Не ставить повторную реализацию или подключение костров первой задачей нового чата.
+- [ ] Перейти к следующему согласованному объекту/группе, сначала сверив уже существующие assignment/builder/resources. Не дублировать модели и не заменять работу новым аудитом/бесконечным дроблением файлов.
+- [ ] Получить результат existing coverage/inputValidation/full PIN compile/tests/Actions. В manifest 1275 block IDs; ручная сверка не является полным вычисленным покрытием.
 
-## Отдельная проверка bubble_column
+## Сохранено в этом разговоре
 
-- [x] c3cb01e: в existing aquatic-parts.mjs подготовлены 18 именованных owned texture roles (up_top 4/down_top 4/outer 8/inner 2) и три регрессии в existing resource-variants.test.mjs. Исходные варианты/пути сохранены; pumpkin_side остаётся в source record, но не в ролях модели. Автоматическое назначение модели не добавлялось.
-- [x] После записи выполнен локальный прогон всего resource-variants.test.mjs: 9 pass/0 fail на восьми исходных файлах, сверенных по Git blob SHA. Тесты обнаружили три локальные намеренные поломки: отсутствие ownership check, отключение bubble bindings и изменение порядка source variants. Это не полный PIN compile/CI/WebGL.
-- [ ] Вернуться к геометрии, UV, прозрачности и движению пузырей при общей визуальной приёмке. Эталон — два присланных владельцем скриншота Bedrock из текущего чата, файлы 1000053516.jpg и 1000053518.jpg; в репозиторий изображения не загружались. На кадрах видны отдельные пузырьки в толще воды. Со слов владельца: над магмой движение спирально вниз, над soul sand — прямо вверх. Траектория сообщена владельцем, не установлена по неподвижным кадрам.
-- [ ] Проверить соответствие texture-layer/Fancy Bubbles режима реальному отображению на устройстве, размещение слоёв и UV по игровому эталону. Не утверждать, что один набор текстурных поверхностей воспроизводит все режимы. Подготовленные роли не доказывают геометрию или готовую анимацию.
-- [ ] Если согласуется предварительное статичное представление, явно обозначить его ограничение и не выдавать за точную модель Bedrock. Не назначать фиктивную геометрию ради зелёного coverage; сохранённой реализации builder/preview для bubble_column пока нет.
+- [x] c3cb01e: bubble_column — 18 named owned roles и регрессии, source paths/variants сохранены, pumpkin_side не используется как роль модели; assignment/builder не добавлен.
+- [x] e076117/c5134e5/8116bb5/3fea102: fire/soul_fire — явная сборка восьми плоскостей, unlit/cleanup, общий A/B picker/PNG, EN-RU/срез, resolver default primary/early validation. StageCount не менялся.
+- [x] 2b7d82c/d578dc8/05f7a62: оба костра — unlit только пламя, старые geometry/UV сохранены, lit/PNG/EN-RU/срез и расширенные pinned checks.
+- [x] REVIEW_IDS = 67 source IDs, не cards/полный каталог; конфигурация в preview-config.mjs, image helpers в preview-images.mjs, прежние экспорты preview.mjs сохранены.
+- [x] Локальные полные resource-variants 9/9, fire-models 8/8, light-models 7/7; новые регрессии чувствительны к установленным подменам.
+- [x] Дополнительный связанный локальный стенд на production registry/controls/materials/campfire builder (4 модуля сверены по SHA): 12 state/PNG сочетаний, 2 defaults, 6 invalid-state случаев, material update/dispose/borrowed texture checks. Синтетические fixtures/recording Three, не PIN compile/WebGL. Counts не суммировать.
 
-## Уже записано — не повторять
+## Общие проверки, не повторный перенос костров
 
-- [x] Materials/composite/canvas-GPU lifecycle/read-only preview/loader limits, FKModelState/FKM/CSS/preview-controls без второй реализации.
-- [x] Eyeblossom одна closed/open card/glow; parent cards голов/статуй/source routes/независимые PNG-form-state; dragon head без полного моба.
-- [x] Pot 23 patterns+ordinary/4 sides/common picker; conduit 6 resources/static active/default inactive/eye-wind picker.
-- [x] Water/lava 4 assignments/level 0..7/default 0/common picker/EN-RU; не flow simulator. Chest single-double/open/resolver/11 source IDs/waxed canonical routes, ender без double.
-- [x] Whole-block facing сундуков/шалкеров полностью удалён, вращение жестом; крышки/double/UV сохранены. Stem direction/growth face/UV стороны не удалять.
-- [x] e4db3d6/196fc69: 17 shulkers/open/independent PNG/EN-RU без facing; e255fc2: fixture/pinned checks в existing model-library.test.mjs.
-- [x] f77e3c5: актуальные model-policy ожидания без production changes. 2f6c30e: parseLooseJson/string/comment-boundary fix и регрессии.
-- [x] b2c6eb2/afd199b: preview-images.mjs и preview-config.mjs, совместимые экспорты preview.mjs сохранены.
-- [x] 9cf2a6f/d2333b3/2fe3362: bell geometry/sources/assignment/resolver/preview/independent PNG/EN-RU/pinned test. Только статичный колокол на стойках; нет других креплений/звона.
-- [x] 1df7ce9/60ec0ad: player_head/skull/head+hat/Steve sheet → player/head, source-parent routes/independent PNG/EN-RU/записанные integration assertions. Не полное тело.
-- [x] REVIEW_IDS в preview-config.mjs: 63 source IDs = 29+4+11+17+1+1, не cards/полный каталог; library expectation 113 builders не приёмка объектов. Основной editor не переключён.
+- [ ] Подтверждённый запуск записанных pinned shulker/bell/player/fire/campfire tests; наличие workflow/тестов не равно успешному исполнению.
+- [ ] Реальные PNG/TGA/Three-WebGL/Bedrock UV-scale-alpha/Android/export, включая огонь и костры. Дым и animation player — отдельный scope, не заявленные возможности статичного preview.
+- [ ] Potted azalea UV/dragon placement-scale/gel alpha/stem tint/kelp sides-UV-TGA; pot/conduit/liquids/chests/shulkers/bell appearance.
+- [ ] Проверить source-ID reopen/owned/carried/icons/indexed repeats/dependencies/aliases/forms/states, independent PNG и GPU texture ownership/update/cleanup.
+- [ ] Довести общий Find/editor/loaders/EN-RU/Shared textures/badges; animation timing/order/pause/export strip/clock-compass и item icon UX отдельно от static state.
+- [ ] Подключить новый путь к основному редактору и принять draw/undo/redo/Add/reopen/PNG/mcpack/Android/async/storage/import/dimensions/alpha/cache/URL lifecycle/language-theme-pack-slot-frame. Сейчас editor НЕ переключён.
+- [ ] Только после готовности — индивидуальная чистка дублей/тестов, runtime switch/FK_V/cache и удаление заменённого legacy. Просьба убрать ненужные файлы не разрешает удалять используемый код заранее.
 
-Bed/sign/cauldron/auxiliary/banner/fruit-stem/budding amethyst/aquatic/propagule/kelp не переносить заново. Полные mobs не недоделка голов. Existing workflow pot/conduit/liquids/chest сохранён.
+## Отложенное владельцем
 
-## Проверки и ограничения
+- [ ] Bubble_column: референс — скриншоты 1000053516.jpg и 1000053518.jpg текущего чата, в репозиторий не загружены. На кадрах отдельные пузырьки; траектория со слов владельца — над магмой спирально вниз, над soul sand прямо вверх. Проверить геометрию/UV/alpha/режим Fancy Bubbles; роли текстур не доказывают geometry/animation. Builder/assignment/preview отсутствуют; не делать cube fallback.
+- [ ] Полноценный skin editor в карточке Игрок, позже тело для примерки брони. Сохранить player/head/hat UV/полный Steve sheet/source routes; фиктивное тело не показывать.
+- [ ] Полные mobs/entities/cushion/большие items этапы отдельно; полные мобы не недоделка перенесённых голов. Макет tablet/desktop — другой чат, mobile/paper tokens сохранять.
 
-OLDCHAT22 сообщает targeted результаты: 272 изолированных state-PNG/compiler stub; shulker fixture 17 цветов/Three-mock/3 намеренные ошибки; policy 9/9; loader 6/6; image helpers 14; config 8 с compiler-resolver stubs; bell comparisons; player head 12 mock/metadata checks. Это исторические результаты, здесь не перезапускались. Не суммировать и не выдавать за полный PIN/CI/WebGL/Android/export. Pinned tests записаны, успешное выполнение не подтверждено. Новый локальный прогон resource-variants указан отдельно выше.
-
-- [ ] Реальные PNG-TGA/Three-WebGL/Bedrock UV-scale/Android/export; cards/source-ID reopen/menu/forms/PNG/poses/frames/materials/texture ownership/update/cleanup.
-- [ ] Potted azalea UV/dragon placement-scale/gel alpha/stem tint/kelp sides-UV-TGA; pot/conduit/liquids/chests/shulkers/bell/player appearance.
-- [ ] Bindings/dependencies/indexed repeats/aliases/forms/states/icons/carried/block-item icons/saved-ID сохранность.
-- [ ] Общий Find/editor/loaders/EN-RU/Shared textures/badges; animation player timing/order/pause/export strip/clock-compass demo отдельно от static state, item icon UX/scope согласовать.
-- [ ] Приёмка draw/undo/redo/Add/reopen/PNG/mcpack/Android/async/storage/import/dimensions/alpha/cache/URL lifecycle/language-theme-pack-slot-frame.
-- [ ] Только после успеха индивидуальная чистка тестов/дублей, runtime switch/FK_V/cache/удаление заменённого legacy. Просьба владельца впоследствии убрать ненужные файлы не разрешает удалять используемый код до проверки нового пути.
-
-## Отложенный план владельца
-
-- [ ] Полноценный редактор скинов в карточке Игрок; сохранить head/hat UV/полный sheet/routes. При полной модели выделить общую деталь с независимым размещением, не переписывать голову с нуля. Сейчас доступна только head, фиктивное тело не показывать.
-- [ ] Позднее полное тело для примерки брони; не готовая функция/не обещание простой реализации. Полные mobs/cushion/большие items-entities этапы отдельно.
-
-Макет tablet/desktop — другой чат. Документы менять только по указанию владельца. OLDCHAT17 гипотезы воспроизводить отдельно; excluded OLDCHAT19 reply не источник багов, ceiling-sign suspicion снято. Только main/малые пакеты/точное подтверждение/saved diff/<25000 UTF-8 bytes/file; новые test files отдельно согласовать, backup/fk070_packs не трогать.
+Готовые bed/sign/cauldron/auxiliary/banner/fruit-stem/budding amethyst/aquatic/propagule/kelp/eyeblossom/pot/conduit/головы/статуи/liquids/chests/shulkers/bell/player_head повторно не переносить. Chest/shulker facing не возвращать; stem direction/growth face/UV стороны сохранить. OLDCHAT19 final reply исключён, OLDCHAT17 гипотезы не доказанные баги, ceiling-sign suspicion снято. Только main/exact confirmation/saved diff/<25000 bytes/file, новые permanent test files отдельно согласовать; документы только по указанию владельца, backup/fk070_packs не трогать.

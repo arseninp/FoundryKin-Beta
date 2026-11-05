@@ -1,29 +1,23 @@
-# ROADMAP — модели, приёмка и развитие редактора
+# ROADMAP — модели, приёмка, подключение редактора
 
-Обновлено 2026-11-05 по OLDCHAT22/GitHub. Проверенный HEAD до документации: 60ec0ad78b28e17a5087a4849f1cb972e35752c0. CONTEXT/handoff — вход, TODO — задачи, ARCHITECTURE — контракты. Не выпуск.
+Обновлено 2026-11-05. Кодовый HEAD перед документацией: 05f7a62f42a021b2c67d0cfbd3c87515db428aa6. Контекст — CONTEXT/handoff, задачи — TODO, контракты — ARCHITECTURE и история 5b083a7. Не выпуск.
 
-## 1. Доделать модельный этап
+## 1. Продолжить следующие модели
 
-Шалкеры/колокол/голова игрока уже подключены. REVIEW_IDS в preview-config.mjs: 63 source IDs (29 прежних + liquids 4 + chests 11 + shulkers 17 + bell + player_head), не cards/весь каталог. Bell статичный на стойках; player только head+hat в карточке Игрок. Не восстанавливать ошибочную последнюю реплику OLDCHAT22 о несохранённой голове.
+Кодовый объём статичных campfire/soul_campfire в отдельном preview закрыт. Огонь и костры не переносить/подключать повторно без установленного дефекта. Срез — 67 source IDs, не полный каталог; основной editor не переключён. Следующий чат начинает следующую согласованную группу с проверки уже существующих builder/assignment/resources. Не дробить файлы и не строить второй аудит вместо работы.
 
-Следующий согласованный кандидат bubble_column: проверить исходники/ресурсы и выбрать корректное представление, не куб-заглушку. Свежий existing coverage/inputValidation/full PIN compile ещё нужен, чтобы определить реальный остаток; ровно один пробел не доказан. Завершать модели, не подменять перенос бесконечным дроблением файлов/вторым аудитом.
+Bubble_column: только 18 ресурсных ролей, без builder/assignment/preview; geometry/UV/движение по скриншотам отложены. Не подставлять cube. Полный existing coverage/inputValidation/compile результат ещё нужен; ручное чтение не подтверждает весь остаток.
 
-Whole-block facing сундуков/шалкеров удалён полностью; вращение жестом, chest open/double, ender без double, shulker open. Крышки/UV/stem direction/growth face сохранить. Готовые головы/статуи/eyeblossom/pot/conduit/bed/sign/banner/предыдущие переносы не повторять.
+## 2. Общая приёмка
 
-## 2. Принять модельную цепочку
+Локальные unit/fixture результаты не равны полному PIN compile/CI/WebGL. Pinned shulker/bell/player/fire/campfire tests записаны, успешный запуск не подтверждён. Нужны real PNG-TGA/Bedrock UV-scale-alpha/Three-WebGL/Android/export/source routes/reopen/PNG-form-state/poses/frames/materials/lifecycle. Это приёмка готового кода, не автоматическая задача повторной реализации костров. Animation player/дым/игровой timing отдельно от static state.
 
-Targeted mocks/исторические локальные результаты не full PIN/CI/WebGL. Pinned shulker/bell/player tests записаны, успех не подтверждён; workflow сам не доказывает Actions. Нужны existing input/coverage/compile/validate/tests/CI и реальные PNG-TGA/Bedrock UV-scale/Three-WebGL/Android/export/source routes/reopen/forms/PNG/state/poses/frames/materials/lifecycle. Ограничения reference models/tint/alpha/kelp/dragon — ARCHITECTURE.
+## 3. Довести основной редактор
 
-## 3. Подключить к основному редактору
+Новый путь Find/editor/loaders/EN-RU/Shared textures/badges подключить и принять draw/undo/redo/Add/reopen/PNG/mcpack/async/storage/import/dimensions/alpha/cache/URL lifecycle/pack-slot-frame-language-theme/Android. Legacy пока работает. Только после совместной готовности — точечная чистка дублей/тестов, runtime switch/FK_V/cache/удаление заменённого кода.
 
-Общий Find/editor/loaders/EN-RU/Shared textures/badges; animation player отдельно от static state, item icon UX согласовать. Принять draw/undo/redo/Add/reopen/PNG/mcpack/async/storage/import/dimensions/alpha/cache/URL lifecycle/pack-slot-frame-language-theme/Android. Read-only preview не редактор, основной путь пока legacy.
+## 4. Будущие отдельные этапы
 
-Только после совместной готовности — индивидуальная чистка тестов/дублей, runtime switch/FK_V/cache/удаление заменённого legacy. Сохранность пользовательских паков важнее технической чистки.
+Полноценный skin editor в карточке Игрок, позднее тело для примерки брони: переиспользовать head/hat UV/полный sheet/routes, не показывать фиктивное тело сейчас и не обещать лёгкость. Полные mobs/items/entities/cushion, IndexedDB/большие паки/user backup/PWA-offline/права на ресурсы — отдельный scope. Макет tablet/desktop прямо отложен, mobile/paper tokens сохранить.
 
-## 4. Будущий редактор скинов и примерка брони
-
-По предложению владельца в конце OLDCHAT22: полноценный редактор скинов в карточке Игрок, позднее полное тело для примерки брони. Текущие head/hat UV/полный Steve sheet/routes — переиспользуемая основа, не готовый редактор скинов. При втором потребителе отделить описание головы от её размещения; не создавать обрезанные листы/фиктивное тело сейчас. Сложность/объём отдельно оценить, лёгкость реализации не обещана. Это не текущая задача вместо bubble_column.
-
-## 5. Остальные отдельные этапы
-
-Полные items/entities/mobs/cushion, IndexedDB/большие паки/user backup/PWA-offline/права на ресурсы — отдельный scope. Макет tablet/desktop прямо отложен на другой чат, mobile/paper tokens сохранить. Документы обновлять только по указанию владельца. Только main/точное подтверждение/saved diff/<25000 UTF-8 bytes/file; новые permanent test files отдельно согласовать. Backup/fk070_packs не трогать.
+Только main/exact confirmation/saved diff/<25000 bytes/file; документы по указанию владельца, новые permanent test files отдельно согласовать. Backup/fk070_packs не трогать.

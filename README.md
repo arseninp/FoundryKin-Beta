@@ -6,20 +6,18 @@
 
 ## Статус на 2026-11-05
 
-Проверенный HEAD до документации: 60ec0ad78b28e17a5087a4849f1cb972e35752c0. Рефакторинг/модельный этап не завершены, основной editor не переключён. Не выпуск/визуальная приёмка. Legacy UI 0.9.1 по прежним проверкам, HTML здесь заново не исследован.
+Проверенный кодовый HEAD перед документацией: 05f7a62f42a021b2c67d0cfbd3c87515db428aa6. Основной редактор остаётся на legacy 0.9.1; index.html заново проверен. Новый каталог/renderer ещё не интегрирован с рисованием/undo/reopen/export основного пути. Это не выпуск и не завершение всего рефакторинга.
 
-Отдельный read-only preview включает 63 исходных ID, не 63 cards/полный каталог: прежние 29 + вода/лава 4 + сундуки 11 + шалкеры 17 + колокол + голова игрока. Общий picker/независимые PNG-form-state; liquids level 0..7, chests open/double (ender без double), shulkers open. Вращение жестом, лишнее whole-block facing сундуков/шалкеров удалено.
+Отдельный read-only preview содержит 67 исходных ID, не число карточек/весь каталог: прежние 29 + liquids 4 + chests 11 + shulkers 17 + bell + player_head + fire/soul_fire + campfire/soul_campfire. REVIEW_IDS/TEXT — preview-config.mjs, image helpers — preview-images.mjs. В паки этот просмотр не пишет.
 
-Колокол — статичная модель на стойках, без других креплений/звона. Карточка Игрок пока содержит только голову с внешним слоем и полным Steve sheet, не тело/редактор скинов. Оба объекта сохранены; последняя реплика OLDCHAT22 о несохранённой голове неверна. Конфигурация/REVIEW_IDS находятся в preview-config.mjs, image helpers — preview-images.mjs, прежние экспорты preview.mjs сохранены.
+Статичное подключение костров закончено: два source IDs/EN-RU, общий lit picker/default true и независимая PNG, unlit-пламя и Lambert-брёвна. Огонь имеет A/B вариант независимо от PNG. Дым/animation playback не реализованы. Этот кодовый пакет не нужно начинать заново в следующем чате; вид в Bedrock ещё подлежит общей приёмке.
 
-Следующий известный согласованный кандидат — bubble_column, но свежий полный coverage ещё нужен. Готовые модели повторно не переносить. Pinned integration tests записаны, успешный full compile/Actions/реальные PNG-TGA/WebGL/Android/export не подтверждены. Mocks/static reference poses не заменяют приёмку/плеер; read-only preview не пишет в паки.
+Локальные файлы тестов: resource-variants 9/9, fire-models 8/8, light-models 7/7. Связанный campfire стенд на production modules проверил 12 state/PNG сочетаний, defaults/invalid inputs/material updates; Three/источники синтетические. Полный PIN compile/успешный CI/реальные PNG-TGA/WebGL/Android/export не подтверждены. Записанные pinned tests и workflow не доказывают успешный запуск.
 
-## Дальнейшее развитие
+## Продолжение и сохранность
 
-После моделей/приёмки — подключение к основному редактору. По предложению владельца запланирован будущий полноценный редактор скинов и позднее тело для примерки брони; head/hat UV/лист скина сохранить для переиспользования. Это отложенный план, не готовая функция. Полные mobs и макет tablet/desktop отдельно; текущий макет не переделывать.
+Следующий чат — следующие согласованные модели, не повторная реализация костров. Bubble_column имеет только роли ресурсов, без builder/assignment/preview; точный вид и движение отложены по скриншотам владельца. Будущий skin editor/примерка брони и полные mobs — отдельные этапы.
 
-## Навигация и сохранность
+Читать CONTEXT → docs/handoff-unified-cards.md → ARCHITECTURE → TODO → ROADMAP → docs/review-principles.md. Полностью прочитанный архив — OLDCHAT22; текущий разговор не объявлять новым архивом до его реального появления.
 
-CONTEXT.md → docs/handoff-unified-cards.md → ARCHITECTURE.md → TODO.md → ROADMAP.md → docs/review-principles.md. Текущая передача — полностью прочитанный OLDCHAT22 и GitHub; история 1043175/3fe2d82.
-
-Только main/точное подтверждение/saved diff; документы менять по указанию владельца, новые test files отдельно согласовать, существующие не удалять массово. Backup не обновлять автоматически/refactor-0.9 не воссоздавать. fk070_packs не очищать: backup кода не сохраняет пользовательские паки. Перенос → совместная приёмка → чистка/переключение legacy после успеха. PIN Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d; Three.js r128/JSZip 3.10.1. Остальные контракты — CONTEXT/ARCHITECTURE.
+Только main/точное подтверждение/saved diff, файлы <25000 UTF-8 bytes, новые test files отдельно согласовать. Документы по указанию владельца. Backup/refactor-0.9 не обновлять автоматически, fk070_packs/localStorage не очищать: backup кода не сохраняет пользовательские паки. Перенос → приёмка → чистка/runtime switch/удаление заменённого legacy. PIN Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d; Three.js r128/JSZip 3.10.1.
