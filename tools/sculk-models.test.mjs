@@ -54,10 +54,26 @@ test('catalyst bloom changes top and sides together while keeping the bottom',()
   assert.equal(m.filter(mesh=>mesh.material.path===s.E.bindings.bottom).length,1);
  }
 });
-test('cactus retains full-width caps and four inset sides instead of a generic cube',()=>{
+test('cactus retains full-width caps and four inset sides instead of a generic cube',async()=>{
+ const {REVIEW_IDS,TEXT}=await import('../preview-config.mjs');
+ const {createPreviewControls}=await import('../preview-controls.mjs');
+ assert.equal(REVIEW_IDS.filter(id=>id==='cactus').length,1);
+ assert.equal(TEXT.en.card_cactus,'Cactus');assert.equal(TEXT.ru.card_cactus,'Кактус');
+ const controls=createPreviewControls(TEXT);
  const s=setup('cactus');s.build();const m=meshesOf(s.E.group);assert.equal(m.length,6);
  assert.deepEqual(m.map(mesh=>[mesh.position.x,mesh.position.y,mesh.position.z]),[[0,.5,0],[0,-.5,0],[0,0,-7/16],[0,0,7/16],[7/16,0,0],[-7/16,0,0]]);
  assert.ok(m.every(mesh=>JSON.stringify(mesh.geometry.size)==='[1,1]'));
+ const signature=env=>meshesOf(env.group).map(mesh=>({path:mesh.material.path,uv:mesh.geometry.rows,size:mesh.geometry.size,pos:[mesh.position.x,mesh.position.y,mesh.position.z]}));
+ const expected=signature(s.E);
+ for(const slot of s.r.paths) {
+  const plan={object:{id:'cactus',card:'cactus'},model:'cactus',forms:null,state:{},paths:s.r.paths,slot},before=JSON.stringify(plan);
+  assert.deepEqual(controls.previewControlSpec({},plan),{schema:null,state:{}});
+  const selection=controls.previewControlSelection(plan,{texture:slot});
+  assert.equal(selection.slot,slot);assert.deepEqual(selection.state,{});
+  assert.deepEqual(controls.previewTextureField(plan).values.map(item=>item.value),s.r.paths);
+  const next=setup('cactus',selection.state,selection.slot);next.build();
+  assert.deepEqual(signature(next.E),expected);assert.equal(JSON.stringify(plan),before);
+ }
 });
 test('states are independent of all edited resources and do not mutate source records',()=>{
  for(const [id,state] of [['sculk_sensor',{active:true}],['calibrated_sculk_sensor',{active:false}],['sculk_shrieker',{can_summon:true}],['sculk_catalyst',{bloom:true}],['cactus',{}]]) {
