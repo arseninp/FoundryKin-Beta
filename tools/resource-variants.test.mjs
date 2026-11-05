@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {resourceVariants, resourcePaths, normalizeBlock, resourceSignature} from '../catalog/resources.mjs';
 import {indexItems, resolveIcons} from '../catalog/items.mjs';
+import {aquaticBindings} from '../catalog/rules/aquatic-parts.mjs';
 const a='textures/blocks/a', b='textures/blocks/b';
 test('repeated alternatives keep every original index while file paths remain unique',()=>{
  const value=[a,a,{path:b}];
@@ -33,4 +34,39 @@ test('door assignments select their own halves without retaining other woods',()
 });
 test('unsafe paths and unsupported variant structures still fail closed',()=>{
  for(const value of ['textures/../secret',null,{},[a,{weight:1}]])assert.throws(()=>resourceVariants(value));
+});
+function bubbleFixture() {
+ const definition={isotropic:false,textures:{up:'bubble_column_up_top',down:'bubble_column_down_top',north:'bubble_column_outer',south:'bubble_column_mid',east:'pumpkin_side',west:'pumpkin_side'}},atlas={},expected={};
+ for(const [part,key,count] of [['up_top','bubble_column_up_top',4],['down_top','bubble_column_down_top',4],['outer','bubble_column_outer',8],['inner','bubble_column_mid',2]]) {
+  const paths=Array.from({length:count},(_,index)=>'textures/blocks/bubble_column_'+part+'_'+String.fromCharCode(97+index));
+  atlas[key]={textures:paths};
+  for(const [index,path] of paths.entries())expected[part+'_'+String.fromCharCode(97+index)]=[path];
+ }
+ atlas.pumpkin_side={textures:'textures/blocks/pumpkin_side'};
+ const existing=Object.fromEntries(Object.values(atlas).flatMap(row=>resourcePaths(row.textures)).map(path=>[path,1]));
+ return {definition,atlas,existing,expected};
+}
+test('bubble column normalization declares 18 owned roles without losing source variants',()=>{
+ const f=bubbleFixture(),before=JSON.stringify(f),record=normalizeBlock('bubble_column',f.definition,f.atlas,{model:'bubble_column',existing:f.existing});
+ assert.deepEqual(record.bindings,f.expected);assert.equal(Object.keys(record.bindings).length,18);assert.equal(record.paths.length,19);
+ assert.deepEqual(record.variants.up,f.atlas.bubble_column_up_top.textures);assert.deepEqual(record.variants.down,f.atlas.bubble_column_down_top.textures);
+ assert.deepEqual(record.variants.north,f.atlas.bubble_column_outer.textures);assert.deepEqual(record.variants.south,f.atlas.bubble_column_mid.textures);
+ assert.deepEqual(record.faces.east,['textures/blocks/pumpkin_side']);assert.deepEqual(record.faces.west,record.faces.east);
+ assert.ok(!Object.values(record.bindings).flat().includes('textures/blocks/pumpkin_side'));assert.equal(JSON.stringify(f),before);
+ const saved=JSON.stringify(record.variants);record.bindings.outer_a[0]='textures/blocks/changed';assert.equal(JSON.stringify(record.variants),saved);
+ assert.deepEqual(aquaticBindings(record),f.expected);
+});
+test('bubble column roles reject wrong identities, reordered, missing and unowned resources',()=>{
+ for(const mutate of [record=>{record.id='other';},record=>{record.variants.north.pop();},record=>{record.variants.up.reverse();},record=>{delete record.variants.south[0];},record=>{record.variants.north[0]='textures/blocks/pumpkin_side';},record=>{record.paths=record.paths.filter(path=>path!==record.variants.down[0]);}]) {
+  const f=bubbleFixture(),record=normalizeBlock('bubble_column',f.definition,f.atlas,{model:'bubble_column',existing:f.existing});
+  mutate(record);assert.throws(()=>aquaticBindings(record),/bubble column/);
+ }
+ const f=bubbleFixture();delete f.existing[f.atlas.bubble_column_outer.textures[0]];
+ assert.throws(()=>normalizeBlock('bubble_column',f.definition,f.atlas,{model:'bubble_column',existing:f.existing}),/Missing resource file/);
+});
+test('bubble column resources do not implicitly assign a model or rewrite atlas metadata',()=>{
+ const f=bubbleFixture();f.atlas.bubble_column_outer.textures=f.atlas.bubble_column_outer.textures.map(path=>({path}));
+ const before=JSON.stringify(f),record=normalizeBlock('bubble_column',f.definition,f.atlas,{existing:f.existing});
+ assert.equal(record.model,null);assert.ok(!Object.hasOwn(record,'bindings'));assert.equal(aquaticBindings(record),null);
+ assert.equal(record.variants.north.length,8);assert.equal(JSON.stringify(f),before);
 });
