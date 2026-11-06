@@ -13,13 +13,19 @@ const MODEL_FIELDS={end_portal_frame:[['eye',bool,false]],tripwire_hook:[['attac
 function previewFields(catalog,plan) {
  const route=catalog.stateRoutes?.[plan.object.id],group=route?catalog.stateGroups?.[route.card]:null;
  const fields=[...(FIELDS[plan.object.card]??[]),...(MODEL_FIELDS[plan.model]??[])].filter(([key])=>!(plan.model==='chest'&&plan.object.id==='ender_chest'&&key==='double'));
+ if(plan.model==='stage_cross') {
+  if(!Number.isInteger(plan.stages)||plan.stages<1)throw new Error('Invalid staged cross control stages');
+  const stage=plan.state?.stage??0;
+  if(!Number.isInteger(stage)||stage<0||stage>=plan.stages)throw new Error('Invalid staged cross control stage');
+  fields.push(['stage',numbers(plan.stages),0]);
+ }
  if(!group)return fields.map(([key,options,fallback])=>[key,options.map(option=>[...option]),fallback]);
  return [[group.parameter,Object.keys(group.variants).map(value=>[value,value]),group.default],...fields.filter(([key])=>key!==group.parameter).map(([key,options,fallback])=>[key,options.map(option=>[...option]),fallback])];
 }
 const POT_FACES=Object.freeze(['north','south','east','west']);
 const POT_LABELS=Object.freeze({brick:['Plain','Без рисунка'],angler_pottery_sherd:['Angler','Рыболов'],archer_pottery_sherd:['Archer','Лучник'],arms_up_pottery_sherd:['Arms up','Руки вверх'],blade_pottery_sherd:['Blade','Клинок'],brewer_pottery_sherd:['Brewer','Пивовар'],burn_pottery_sherd:['Burn','Пламя'],danger_pottery_sherd:['Danger','Опасность'],explorer_pottery_sherd:['Explorer','Исследователь'],friend_pottery_sherd:['Friend','Друг'],heart_pottery_sherd:['Heart','Сердце'],heartbreak_pottery_sherd:['Heartbreak','Разбитое сердце'],howl_pottery_sherd:['Howl','Вой'],miner_pottery_sherd:['Miner','Шахтёр'],mourner_pottery_sherd:['Mourner','Скорбящий'],plenty_pottery_sherd:['Plenty','Изобилие'],prize_pottery_sherd:['Prize','Награда'],sheaf_pottery_sherd:['Sheaf','Сноп'],shelter_pottery_sherd:['Shelter','Укрытие'],skull_pottery_sherd:['Skull','Череп'],snort_pottery_sherd:['Snort','Фырканье'],flow_pottery_sherd:['Flow','Поток'],guster_pottery_sherd:['Guster','Вихрь'],scrape_pottery_sherd:['Scrape','Соскоб']});
 function previewControlSpec(catalog,plan) {
- const fields=previewFields(catalog,plan),label=(key,fallback=key)=>['en','ru'].map(lang=>TEXT[lang][plan.model+'_'+key]??TEXT[lang][key]??TEXT[lang][fallback]??fallback);
+ const fields=previewFields(catalog,plan),label=(key,fallback=key)=>['en','ru'].map((lang,index)=>TEXT[lang][plan.model+'_'+key]??(plan.model==='stage_cross'&&key==='stage'?['Growth stage','Стадия роста'][index]:TEXT[lang][key]??TEXT[lang][fallback]??fallback));
  const schema=fields.map(([key,options])=>({key,label:label(key),values:options.map(([name,value])=>({value,label:label(key+'_'+name,name)}))}));
  const state=Object.fromEntries(fields.map(([key,,fallback])=>[key,plan.state[key]??fallback]));
  if(plan.forms) {
