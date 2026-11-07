@@ -2,7 +2,11 @@
 import {chorusPlantResources} from './shared.mjs';
 const FIXED_PRIMITIVES=Object.freeze({
  wooden_button:['button','planks_oak',6],wooden_pressure_plate:['plate','planks_oak',6],
- stone_button:['button','stone',7],stone_pressure_plate:['plate','stone',7]
+ stone_button:['button','stone',7],stone_pressure_plate:['plate','stone',7],
+ normal_stone_stairs:['stairs','stone',7],stone_brick_stairs:['stairs','stonebrick',4],
+ prismarine_stairs:['stairs','prismarine_rough',3],
+ sandstone_stairs:['stairs',{up:'sandstone_top',down:'sandstone_bottom',side:'sandstone_normal'},4],
+ red_sandstone_stairs:['stairs',{up:'red_sandstone_top',down:'red_sandstone_bottom',side:'red_sandstone_normal'},4]
 });
 export function utilityBindings(record) {
  const single=(paths,label)=>{
@@ -17,7 +21,7 @@ export function utilityBindings(record) {
   for(const face of ['up','down','north','south','east','west']) {
    const paths=record.variants?.[face];
    if(!Array.isArray(paths)||paths.length!==count)throw new Error('Incomplete indexed primitive resources: '+record.id+': '+face);
-   bindings[face]=named(paths,name);
+   bindings[face]=named(paths,typeof name==='string'?name:(name[face]??name.side));
   }
   return bindings;
  }
