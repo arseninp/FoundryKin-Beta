@@ -13,11 +13,19 @@ function pitcherControlState(plan,state) {
  if(typeof pod_only!=='boolean')throw new Error('Invalid pitcher pod control');
  return {stage,pod_only};
 }
+function caveVineControlState(plan,state) {
+ if(!dictionary(state))throw new Error('Invalid cave vine control state');
+ const berries=state.berries===undefined?plan.model==='cave_vines_part':state.berries;
+ if(typeof berries!=='boolean')throw new Error('Invalid cave vine berries control');
+ return {berries};
+}
 const fruit=[['stem',bool,false],['facing',directions,'west'],['stage',numbers(8),7]];
 const growth=['small','medium','large','cluster'].map(key=>[key,key]);
 const FIELDS={pumpkin:fruit,melon_block:fruit,budding_amethyst:[['crystals',bool,false],['growth',growth,'cluster'],['face',[...directions,['up','up'],['down','down']],'up']],seagrass:[['tall',bool,false],['variant',[['A','a'],['B','b']],'a']],mangrove_propagule:[['hanging',bool,false],['age',numbers(5),0]]};
 const liquid=[['level',numbers(8),0]];
 const MODEL_FIELDS={azalea:[['potted',bool,false]],potted_azalea:[['potted',bool,false]],end_portal_frame:[['eye',bool,false]],tripwire_hook:[['attached',bool,false]],composter:[['level',numbers(9),0]],scaffolding:[['bottom',bool,false]],sculk_sensor:[['active',bool,false]],sculk_shrieker:[['can_summon',bool,false]],sculk_catalyst:[['bloom',bool,false]],dried_ghast:[['stage',numbers(4),0]],barrel:[['open',[['closed',false],['open',true]],false]],campfire:[['lit',[['off',false],['on',true]],true]],fire:[['variant',[['A','primary'],['B','alternate']],'primary']],shulker_box:[['open',[['closed',false],['open',true]],false]],chest:[['open',[['closed',false],['open',true]],false],['double',[['single',false],['double',true]],false]],water:liquid,lava:liquid,copper_golem_statue:[['pose',['standing','sitting','running','star'].map(key=>[key,key]),'standing']],conduit:[['active',[['inactive',false],['active',true]],false],['eye_open',[['closed',false],['open',true]],false],['wind',[['horizontal','horizontal'],['vertical','vertical']],'horizontal']]};
+MODEL_FIELDS.cave_vines=[['berries',bool,false]];
+MODEL_FIELDS.cave_vines_part=[['berries',bool,true]];
 const MOSS_SIDES=['north','south','east','west'],MOSS_LEVELS=['none','short','tall'];
 MODEL_FIELDS.pale_moss_carpet=[['upper_block_bit',bool,false],...MOSS_SIDES.map(side=>['pale_moss_carpet_side_'+side,MOSS_LEVELS.map(value=>[value,value]),'none'])];
 const MOSS_LABELS={upper_block_bit:['Upper part','Верхняя часть'],pale_moss_carpet_side_north:['North side','Северная сторона'],pale_moss_carpet_side_south:['South side','Южная сторона'],pale_moss_carpet_side_east:['East side','Восточная сторона'],pale_moss_carpet_side_west:['West side','Западная сторона']};
@@ -31,6 +39,7 @@ function mossControlState(state) {
 }
 function previewFields(catalog,plan) {
  if(plan.model==='pale_moss_carpet')mossControlState(plan.state);
+ if(plan.model==='cave_vines'||plan.model==='cave_vines_part')caveVineControlState(plan,plan.state);
  const route=catalog.stateRoutes?.[plan.object.id],group=route?catalog.stateGroups?.[route.card]:null;
  const fields=[...(FIELDS[plan.object.card]??[]),...(MODEL_FIELDS[plan.model]??[])].filter(([key])=>!(plan.model==='chest'&&plan.object.id==='ender_chest'&&key==='double'));
  if(plan.model==='pitcher') {
@@ -51,8 +60,9 @@ const POT_FACES=Object.freeze(['north','south','east','west']);
 const POT_LABELS=Object.freeze({brick:['Plain','Без рисунка'],angler_pottery_sherd:['Angler','Рыболов'],archer_pottery_sherd:['Archer','Лучник'],arms_up_pottery_sherd:['Arms up','Руки вверх'],blade_pottery_sherd:['Blade','Клинок'],brewer_pottery_sherd:['Brewer','Пивовар'],burn_pottery_sherd:['Burn','Пламя'],danger_pottery_sherd:['Danger','Опасность'],explorer_pottery_sherd:['Explorer','Исследователь'],friend_pottery_sherd:['Friend','Друг'],heart_pottery_sherd:['Heart','Сердце'],heartbreak_pottery_sherd:['Heartbreak','Разбитое сердце'],howl_pottery_sherd:['Howl','Вой'],miner_pottery_sherd:['Miner','Шахтёр'],mourner_pottery_sherd:['Mourner','Скорбящий'],plenty_pottery_sherd:['Plenty','Изобилие'],prize_pottery_sherd:['Prize','Награда'],sheaf_pottery_sherd:['Sheaf','Сноп'],shelter_pottery_sherd:['Shelter','Укрытие'],skull_pottery_sherd:['Skull','Череп'],snort_pottery_sherd:['Snort','Фырканье'],flow_pottery_sherd:['Flow','Поток'],guster_pottery_sherd:['Guster','Вихрь'],scrape_pottery_sherd:['Scrape','Соскоб']});
 function previewControlSpec(catalog,plan) {
  const azaleaLabels={potted:['Pot','Горшок'],potted_off:['Without pot','Без горшка'],potted_on:['Potted','В горшке']};
+ const vineLabels={berries:['Glow berries','Светящиеся ягоды'],berries_off:['Without berries','Без ягод'],berries_on:['With berries','С ягодами']};
  const pitcherLabels={stage:['Growth stage','Стадия роста'],pod_only:['View','Отображение'],pod_only_off:['Whole plant','Всё растение'],pod_only_on:['Pod only','Только стручок']};
- const fields=previewFields(catalog,plan),label=(key,fallback=key)=>['en','ru'].map((lang,index)=>TEXT[lang][plan.model+'_'+key]??(plan.model==='pitcher'&&own(pitcherLabels,key)?pitcherLabels[key][index]:(plan.model==='azalea'||plan.model==='potted_azalea')&&own(azaleaLabels,key)?azaleaLabels[key][index]:(plan.model==='stage_cross'||plan.model==='crop')&&key==='stage'?['Growth stage','Стадия роста'][index]:TEXT[lang][key]??TEXT[lang][fallback]??fallback));
+ const fields=previewFields(catalog,plan),label=(key,fallback=key)=>['en','ru'].map((lang,index)=>TEXT[lang][plan.model+'_'+key]??((plan.model==='cave_vines'||plan.model==='cave_vines_part')&&own(vineLabels,key)?vineLabels[key][index]:plan.model==='pitcher'&&own(pitcherLabels,key)?pitcherLabels[key][index]:(plan.model==='azalea'||plan.model==='potted_azalea')&&own(azaleaLabels,key)?azaleaLabels[key][index]:(plan.model==='stage_cross'||plan.model==='crop')&&key==='stage'?['Growth stage','Стадия роста'][index]:TEXT[lang][key]??TEXT[lang][fallback]??fallback));
  const schema=fields.map(([key,options])=>({key,label:label(key),values:options.map(([name,value])=>({value,label:label(key+'_'+name,name)}))}));
  const state=Object.fromEntries(fields.map(([key,,fallback])=>[key,plan.state[key]??fallback]));
  if(plan.model==='pale_moss_carpet') {
@@ -86,6 +96,7 @@ function previewControlSpec(catalog,plan) {
 function previewControlSelection(plan,values) {
  if(!dictionary(values))throw new Error('Invalid preview control values');
  const {form,texture,...chosen}=values,state={...plan.state,...chosen};
+ if(plan.model==='cave_vines'||plan.model==='cave_vines_part')Object.assign(state,caveVineControlState(plan,state));
  if(plan.model==='pitcher')Object.assign(state,pitcherControlState(plan,state));
  if(plan.model==='pale_moss_carpet')Object.assign(state,mossControlState(state));
  if(plan.model==='decorated_pot') {
