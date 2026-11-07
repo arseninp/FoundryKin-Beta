@@ -1,40 +1,60 @@
 # CONTEXT — вход новому чату
 
-Обновлено 2026-11-05 по OLDCHAT22, текущему разговору и GitHub. Репозиторий arseninp/FoundryKin-Beta, только main. Проверенный кодовый HEAD перед документацией: 05f7a62f42a021b2c67d0cfbd3c87515db428aa6. Это не выпуск и не завершение всего рефакторинга.
+Обновлено 2026-11-07. Репозиторий arseninp/FoundryKin-Beta, только main. Проверенный кодовый HEAD перед этим обновлением документации: 989bba4db0f6c999ce7d2efa2c5eee28099fb761. Это не выпуск и не завершение всего рефакторинга. Документационный коммит будет следующим за указанным кодовым HEAD.
 
 ## Точка продолжения
 
-Владелец просит закрыть костры и перейти в новом чате к следующим моделям. Согласованный кодовый объём статичных campfire/soul_campfire в отдельном preview ЗАКРЫТ: builders существуют, пламя unlit/брёвна Lambert, общий lit picker/default true, независимая PNG, исходные ID и подписи EN/RU подключены. Не начинать повторную реализацию/подключение огня и костров и не ставить их снова первой задачей без конкретного воспроизводимого дефекта. Дым и воспроизведение анимации в этот статичный объём не входили.
+Владелец хочет закончить подключение моделей, обновить документацию и перенести дальнейший анализ кода в новый чат со свежим контекстом. Последний согласованный пакет из восьми природных блоков записан: moss_carpet, mangrove_roots, muddy_mangrove_roots, dirt_with_roots, podzol, mycelium, crimson_nylium, warped_nylium. Не предлагать его повторно. Полный остаток всего каталога не вычислен; 228 ID не означают, что весь каталог подключён. Не обещать полное завершение по числу последних пакетов.
 
-Дальше — следующий согласованный объект/группа каталога: сначала проверить уже существующие assignment/builder/resources, затем делать недостающее подключение. Не подменять работу очередным дроблением файлов или новой инфраструктурой аудита. Полный existing coverage/inputValidation/compile всё ещё требует подтверждённого результата; чтение исходников не является свежим вычисленным отчётом.
+Перед продолжением сверить фактический main. Для нового анализа отделять: назначение модели, наличие builder/resources, подключение исходного ID в preview, тесты, визуальную приёмку и интеграцию в основной редактор. Это разные статусы. Не дублировать существующие модели и не подменять работу новой инфраструктурой аудита или бесконечным дроблением файлов.
 
-Читать: CONTEXT → docs/handoff-unified-cards.md → ARCHITECTURE → TODO → ROADMAP → README → docs/review-principles.md. Последний полностью прочитанный архив Диска — OLDCHAT22; текущий разговор не объявлять выдуманным OLDCHAT23. Подробные прежние контракты сохранены в документах коммита 5b083a7 и истории 1043175/3fe2d82; они не отменены новой передачей.
+Читать: CONTEXT → docs/handoff-unified-cards.md → ARCHITECTURE → TODO → ROADMAP → README → docs/review-principles.md. Этот CONTEXT и TODO обновлены позже прежнего handoff; старые числа и старую точку продолжения в остальных документах не принимать за свежий статус. Последний полностью прочитанный архив Диска в прежней передаче — OLDCHAT22; текущий разговор не объявлять выдуманным OLDCHAT23. Подробные прежние контракты сохранены в документах коммита 5b083a7 и истории 1043175/3fe2d82; они не отменены новой передачей.
 
 ## Что действительно подключено
 
-Отдельный read-only preview: 67 SOURCE BLOCK IDs, не cards/полный каталог. Формула: прежние 29 + liquids 4 + chests 11 + shulkers 17 + bell + player_head + fire/soul_fire 2 + campfire/soul_campfire 2. REVIEW_IDS/TEXT находятся в preview-config.mjs, image helpers в preview-images.mjs, совместимые экспорты preview.mjs сохранены. Ожидание library test 113 builders не означает 113 принятых карточек.
+Отдельный read-only preview: REVIEW_IDS содержит 228 SOURCE BLOCK IDs, не 228 уникальных builders/карточек и не полный каталог. Предыдущий список содержал 220 ID; последний пакет добавил восемь. До подготовки последнего пакета локальная проверка списка в Node подтвердила прежний порядок, отсутствие дублей и Object.freeze; сохранённый diff 989bba4 проверен целиком. Это не полный compile/coverage и не запуск приложения.
 
-Основной редактор НЕ переключён: index.html заново проверен и по-прежнему загружает fk-catalog/fk-shapes/fk-details/fk-core и другие legacy-модули с 0.9.1. Новый каталог/renderer не интегрирован с рисованием/undo/redo/reopen/export основного пути. Поэтому нельзя говорить, что все модели подключены к приложению или можно удалить legacy.
+REVIEW_IDS, таблица SHULKER_BOXES и TEXT остаются вместе в preview-config.mjs; image helpers — в preview-images.mjs. Разделение в preview-review-ids.mjs предлагалось, но НЕ записано. Владелец 2026-11-07 прямо решил пока сохранить один файл и вернуться к разделению только при реальной невозможности прочитать его полностью. Не выполнять прежний двухфайловый черновик.
 
-## Итог текущего разговора
+В текущем списке есть растения Нижнего мира, травы/папоротники, живые и мёртвые кораллы и веера, цветы/саженцы, двухчастные растения, культуры, азалии, бамбук, каплелисты, кувшинница, пещерные лианы, хорус и какао. Также подключены, среди прочих, грядка, слой снега, стержень Края, рамки, стол зачарований, пчелиные блоки, грибные блоки, блоки наростов, грибосвет и мох. Это описание групп, не доказательство полного покрытия каждой семьи. Точный перечень — REVIEW_IDS.
 
-- c3cb01e: bubble_column — только 18 owned texture roles и регрессии. Нет builder/assignment/preview. Внешний вид и движение отложены владельцем; не делать куб-заглушку.
-- e076117: fire builder переписан через явную схему восьми плоскостей, текущая раскладка/UV сохранены как кандидат; объявлены шесть unlit roles, усилены валидация и cleanup. c5134e5: общий A/B picker. 8116bb5: fire/soul_fire в срезе и EN/RU, pinned checks записаны. 3fea102: resolver default primary и ранний отказ неверного variant; stageCount не менялся.
-- 2b7d82c: только campfire.up unlit, брёвна Lambert, geometry/UV/другие lights не менялись. d578dc8: общий boolean lit picker/default true. 05f7a62: оба костра в срезе, EN/RU, expanded pinned checks. Листы/PNG не изменялись, дым/player не добавлялись.
-- Bell/player_head уже записаны ранее. Последняя реплика ассистента OLDCHAT22 о несохранённой голове неверна: 1df7ce9/60ec0ad проверены в GitHub. Не повторять старый пакет.
+Последняя группа плоских объектов: vine/glow_lichen/sculk_vein/resin_clump используют существующую decal; waterlily/leaf_litter/frog_spawn — rail. Это статичные плоскости; выбор сторон крепления, плотность опавшей листвы и анимация этим подключением не добавлены. moss_carpet использует готовую carpet; семь остальных ID последнего пакета — существующую cube. Не обещать более полную геометрию или поведение, чем реализует builder.
+
+Основной редактор в прежней передаче НЕ был переключён: index.html загружал fk-catalog/fk-shapes/fk-details/fk-core и другие legacy-модули с 0.9.1. Последние коммиты подключений меняли только конфиг; новой проверки интеграции основного редактора здесь не выполнялось. Нельзя говорить, что все модели подключены к приложению или можно удалить legacy. Ожидание library test 113 builders в прежних документах не означает 113 принятых карточек и не является свежим пересчётом.
+
+## Последние проверенные записи
+
+- 1ad0456: brown_mushroom_block, red_mushroom_block, mushroom_stem, EN/RU.
+- 79d6527: nether_wart_block, warped_wart_block, shroomlight, EN/RU.
+- d969a04: moss_block, pale_moss_block, EN/RU.
+- 49c21dc: vine, glow_lichen, sculk_vein, resin_clump, waterlily, leaf_litter, frog_spawn, EN/RU.
+- 989bba4: восемь ID из точки продолжения и 16 подписей EN/RU. Только preview-config.mjs; прежние подключения/подписи сохранены, модели/контролы/PNG/цвет не менялись, новые файлы не создавались. Полный saved diff проверен.
+
+По предшествующей передаче записаны контролы стадии роста stage_cross/crop и обратимый переключатель горшка для azalea/potted_azalea; сообщалось о локальных регрессиях. Их результаты не выдавать за свежий полный прогон: проверить актуальный preview-controls.mjs и existing tests в новом анализе. Выбор PNG не заменяет stage/form/state и должен оставаться независимым.
+
+## Историческая передача до 2026-11-05
+
+Согласованный статичный объём campfire/soul_campfire в отдельном preview был закрыт: builders, пламя unlit/брёвна Lambert, общий lit picker/default true, независимая PNG, source IDs/EN-RU. Не начинать повторную реализацию/подключение огня и костров без воспроизводимого дефекта. Дым и playback в этот объём не входили.
+
+- c3cb01e: bubble_column — только 18 owned texture roles и регрессии. Нет builder/assignment/preview; внешний вид и движение отложены владельцем, не делать куб-заглушку.
+- e076117/c5134e5/8116bb5/3fea102: fire builder через восемь плоскостей, unlit roles, валидация/cleanup, общий A/B picker, source IDs/EN-RU и pinned checks, resolver default primary/ранний отказ неверного variant; stageCount не менялся.
+- 2b7d82c/d578dc8/05f7a62: campfire.up unlit, брёвна Lambert, общий boolean lit picker/default true, оба костра в срезе/EN-RU/expanded pinned checks. Geometry/UV/PNG/другие lights не менялись.
+- Bell/player_head были записаны ранее; 1df7ce9/60ec0ad проверены в прежней передаче. Старая реплика о несохранённой голове неверна, не повторять пакет.
 
 ## Проверки и границы завершения
 
-В этом разговоре выполнены: весь resource-variants.test.mjs 9/9; весь fire-models.test.mjs 8/8, включая регистрацию; весь light-models.test.mjs 7/7, новая регрессия падает на старом коде; отдельные pure-controls/state checks. Последний связанный локальный стенд на четырёх production-модулях, сверенных по blob SHA: registry → controls → materials → campfire builder, 12 state/PNG сочетаний, 2 defaults, 6 invalid-state случаев, material update/dispose и сохранность borrowed textures. Использованы синтетические фикстуры и recording Three classes, не pinned catalog/PNG/TGA/WebGL/Android. Не суммировать пересекающиеся результаты.
+Свежие проверки последнего этапа: чтение актуального main, исходных записей/назначений/builders, локальная проверка списка 220 → 228 ID, полный сохранённый diff последнего подключения. Полный набор тестов проекта, full PIN compile, свежий coverage/Actions и браузерная проверка последних подключений НЕ запускались/не подтверждены. Наличие builder или тестового файла не равно успешному выполнению и визуальной приёмке.
 
-Pinned shulker/bell/player/fire/campfire tests ЗАПИСАНЫ, успешный полный прогон не подтверждён. Existing validate автоматически запускает tools/*.test.mjs; workflow также строит REVIEW_IDS на real Three r128 без WebGL. Это не доказательство успешного Actions. Визуальные UV/scale/alpha, draw/export/Android и полная приёмка остаются общей задачей, а не поводом автоматически переделывать закрытые костры.
+В исторической передаче до 2026-11-05 указаны: resource-variants 9/9, fire-models 8/8, light-models 7/7; отдельные pure-controls/state checks; связанный локальный стенд registry → controls → materials → campfire builder на четырёх production-модулях, сверенных по blob SHA: 12 state/PNG сочетаний, 2 defaults, 6 invalid-state случаев, material update/dispose/borrowed textures. Синтетические фикстуры и recording Three, не PIN/PNG/TGA/WebGL/Android. Не суммировать пересекающиеся результаты и не называть их новым прогоном на HEAD 989bba4.
+
+Pinned shulker/bell/player/fire/campfire tests записаны по прежней передаче; успешный полный прогон не подтверждён. Existing validate запускает tools/*.test.mjs, workflow строит REVIEW_IDS на real Three r128 без WebGL по прежней документации; это не доказательство успешного Actions. Визуальные UV/scale/alpha, draw/export/Android и полная приёмка остаются открытыми, а не поводом автоматически переделывать закрытые костры.
 
 ## Обязательные решения и сохранность
 
-Только main; exact confirmation каждой записи и полный saved diff/content, после неоднозначного сбоя сначала GitHub. Малые самосогласованные пакеты, каждый файл <25000 UTF-8 bytes; новые permanent test files отдельно согласовать, existing tests не удалять массово. Документы менять по указанию владельца. Backup/refactor-0.9 не обновлять/не воссоздавать автоматически. fk070_packs/localStorage не очищать: backup кода не сохраняет пользовательские паки. Коротко по-русски, техническую отладку на владельца не перекладывать.
+Только main; exact confirmation каждой записи и полный saved diff/content, после неоднозначного сбоя сначала GitHub. Самосогласованные пакеты; после каждого коммита сразу проверять/готовить следующий этап без отдельного «продолжай», но запись требует конкретного подтверждения. Прежнее правило <25000 UTF-8 bytes/file не использовать для навязывания разделения preview-config.mjs: решение владельца от 2026-11-07 описано выше. Новые permanent test files отдельно согласовать, existing tests не удалять массово. Документы менять по указанию владельца; обновление для переноса им запрошено. Backup/refactor-0.9 не обновлять/не воссоздавать автоматически. fk070_packs/localStorage не очищать: backup кода не сохраняет пользовательские паки. Коротко по-русски, техническую отладку на владельца не перекладывать.
 
 Без второго каталога/меню/monkey patches/адаптеров вокруг адаптеров. Unknown не cube; aliases требуют эквивалентности, не общей PNG. Сохранять source-ID reopen/owned/carried/icons/indexed repeats/shared dependencies без ownership transfer; PNG/form/slot/state/pose независимы, shared sheets без копирования/обрезки, dimensions/alpha/atlases/frame strips сохранить.
 
-Chest/shulker whole-block facing удалён полностью: вращение жестом; chest open/double, ender без double, shulker open. Крышки сохранить; stem direction/amethyst growth face/UV стороны не удалять массово. Макет tablet/desktop отложен на другой чат, mobile/paper tokens сохранить. Полные mobs отложены, не недоделка голов. Будущий редактор скинов и поздняя примерка брони — план владельца, не готовая функция; player/head/hat UV/полный Steve sheet сохранить.
+Chest/shulker whole-block facing удалён полностью: вращение жестом; chest open/double, ender без double, shulker open. Крышки сохранить; stem direction/amethyst growth face/UV стороны не удалять массово. Макет tablet/desktop отложен на другой чат, mobile/paper tokens сохранить. Полные mobs отложены, не недоделка голов. Будущий skin editor и поздняя примерка брони — план, не готовая функция; player/head/hat UV/полный Steve sheet/source routes сохранить.
 
 PIN Mojang/bedrock-samples 46ba6ea985fb5a92d79a9419198f10dda14c199d, выпуски не смешивать. OLDCHAT19 final assistant reply исключён владельцем. OLDCHAT17 async PNG index/storage divergence/atlas heuristic/full GPU update — гипотезы, не доказанные блокеры. Ceiling-sign rotation suspicion снято. Сбои AI/коннектора не доказывают баг приложения. Перенос → совместная приёмка → чистка → runtime switch/FK_V/cache/удаление заменённого legacy после готовности.
