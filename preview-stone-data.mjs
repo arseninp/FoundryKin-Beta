@@ -1,0 +1,60 @@
+/* Review IDs and labels only. Resource ownership and model policy stay in catalog/. */
+const FORMS=Object.freeze(['slab','double_slab','stairs','wall']);
+const LABELS=Object.freeze({slab:['slab','Плита из '],double_slab:['double slab','Двойная плита из '],stairs:['stairs','Ступени из '],wall:['wall','Стена из ']});
+const SOURCE_IDS=Object.freeze({cobblestone_stairs:'stone_stairs',end_stone_brick_stairs:'end_brick_stairs',prismarine_brick_stairs:'prismarine_bricks_stairs'});
+const FAMILIES=[
+ ['andesite','andesite','Andesite','Андезит','андезита'],
+ ['diorite','diorite','Diorite','Диорит','диорита'],
+ ['granite','granite','Granite','Гранит','гранита'],
+ ['cobbled_deepslate','cobbled_deepslate','Cobbled deepslate','Колотый глубинный сланец','колотого глубинного сланца'],
+ ['polished_deepslate','polished_deepslate','Polished deepslate','Полированный глубинный сланец','полированного глубинного сланца'],
+ ['blackstone','blackstone','Blackstone','Чернит','чернита'],
+ ['polished_blackstone','polished_blackstone','Polished blackstone','Полированный чернит','полированного чернита'],
+ ['tuff','tuff','Tuff','Туф','туфа'],
+ ['polished_tuff','polished_tuff','Polished tuff','Полированный туф','полированного туфа'],
+ ['cinnabar','cinnabar','Cinnabar','Киноварь','киновари'],
+ ['polished_cinnabar','polished_cinnabar','Polished cinnabar','Полированная киноварь','полированной киновари'],
+ ['sulfur','sulfur','Sulfur','Сера','серы'],
+ ['polished_sulfur','polished_sulfur','Polished sulfur','Полированная сера','полированной серы'],
+ ['mossy_cobblestone','mossy_cobblestone','Mossy cobblestone','Замшелый булыжник','замшелого булыжника'],
+ ['deepslate_bricks','deepslate_brick','Deepslate bricks','Кирпичи из глубинного сланца','кирпичей из глубинного сланца'],
+ ['deepslate_tiles','deepslate_tile','Deepslate tiles','Плитки из глубинного сланца','плиток из глубинного сланца'],
+ ['polished_blackstone_bricks','polished_blackstone_brick','Polished blackstone bricks','Кирпичи из полированного чернита','кирпичей из полированного чернита'],
+ ['brick_block','brick','Bricks','Кирпичи','кирпичей'],
+ ['mud_bricks','mud_brick','Mud bricks','Саманные кирпичи','саманных кирпичей'],
+ ['resin_bricks','resin_brick','Resin bricks','Смоляные кирпичи','смоляных кирпичей'],
+ ['tuff_bricks','tuff_brick','Tuff bricks','Туфовые кирпичи','туфовых кирпичей'],
+ ['cinnabar_bricks','cinnabar_brick','Cinnabar bricks','Киноварные кирпичи','киноварных кирпичей'],
+ ['sulfur_bricks','sulfur_brick','Sulfur bricks','Серные кирпичи','серных кирпичей'],
+ ['mossy_stone_bricks','mossy_stone_brick','Mossy stone bricks','Замшелые каменные кирпичи','замшелых каменных кирпичей'],
+ ['nether_brick','nether_brick','Nether bricks','Кирпичи Нижнего мира','кирпичей Нижнего мира'],
+ ['red_nether_brick','red_nether_brick','Red nether bricks','Красные кирпичи Нижнего мира','красных кирпичей Нижнего мира'],
+ ['polished_andesite','polished_andesite','Polished andesite','Полированный андезит','полированного андезита',['slab','double_slab','stairs']],
+ ['polished_diorite','polished_diorite','Polished diorite','Полированный диорит','полированного диорита',['slab','double_slab','stairs']],
+ ['polished_granite','polished_granite','Polished granite','Полированный гранит','полированного гранита',['slab','double_slab','stairs']],
+ ['purpur_block','purpur','Purpur block','Пурпур','пурпура',['slab','double_slab','stairs']],
+ ['smooth_quartz','smooth_quartz','Smooth quartz','Гладкий кварц','гладкого кварца',['slab','double_slab','stairs']],
+ ['dark_prismarine','dark_prismarine','Dark prismarine','Тёмный призмарин','тёмного призмарина',['slab','double_slab','stairs']],
+ ['smooth_sandstone','smooth_sandstone','Smooth sandstone','Гладкий песчаник','гладкого песчаника',['slab','double_slab','stairs']],
+ ['smooth_red_sandstone','smooth_red_sandstone','Smooth red sandstone','Гладкий красный песчаник','гладкого красного песчаника',['slab','double_slab','stairs']],
+ ['quartz_block','quartz','Quartz block','Кварцевый блок','кварца',['slab','double_slab','stairs']],
+ ['prismarine_bricks','prismarine_brick','Prismarine bricks','Призмариновые кирпичи','призмариновых кирпичей',['slab','double_slab','stairs']],
+ ['cut_sandstone','cut_sandstone','Cut sandstone','Пиленый песчаник','пиленого песчаника',['slab','double_slab']],
+ ['cut_red_sandstone','cut_red_sandstone','Cut red sandstone','Пиленый красный песчаник','пиленого красного песчаника',['slab','double_slab']],
+ ['sandstone','sandstone','Sandstone','Песчаник','песчаника'],
+ ['red_sandstone','red_sandstone','Red sandstone','Красный песчаник','красного песчаника'],
+ ['stone_bricks','stone_brick','Stone bricks','Каменные кирпичи','каменных кирпичей'],
+ ['prismarine','prismarine','Prismarine','Призмарин','призмарина'],
+ ['stone','normal_stone','Stone','Камень','камня',['slab','double_slab','stairs']],
+ ['smooth_stone','smooth_stone','Smooth stone','Гладкий камень','гладкого камня',['slab','double_slab']],
+ ['end_bricks','end_stone_brick','End stone bricks','Кирпичи из эндерняка','кирпичей из эндерняка'],
+ ['cobblestone','cobblestone','Cobblestone','Булыжник','булыжника']
+];
+export const STONE_REVIEW_BLOCKS=Object.freeze(FAMILIES.flatMap(([id,stem,en,ru,material,forms=FORMS])=>[
+ Object.freeze([id,en,ru]),
+ ...forms.map(form=>{
+  const raw=stem+'_'+form,source=Object.hasOwn(SOURCE_IDS,raw)?SOURCE_IDS[raw]:raw;
+  const name=en.replace(/(bricks|tiles)$/i,word=>word.slice(0,-1)).replace(/ block$/,'');
+  return Object.freeze([source,name+' '+LABELS[form][0],LABELS[form][1]+material]);
+ })
+]));
