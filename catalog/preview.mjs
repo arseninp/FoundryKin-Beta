@@ -1,5 +1,6 @@
 /* Selection and model resources are independent of the edited PNG. */
 import {createCatalogAccess} from './access.mjs';
+import {leafPreviewSelection} from './leaf-preview.mjs';
 import {withPreparedPreview} from './prepared-preview.mjs';
 import {withFruitStemSelection} from './fruit-stem-selection.mjs';
 import {withBuddingAmethystSelection} from './budding-amethyst-selection.mjs';
@@ -263,7 +264,9 @@ export function createPreviewResolver(catalog, registry, Three) {
   const model=base==='azalea'&&previewState.potted?'potted_azalea':base, descriptor=registry.get(model);
   const faceMap={}, shared=dictionary(record.dependencies)?record.dependencies:{};
   if (view==='model') {
-   const bindings=(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??cubeStateBindings(record,previewState)??candleBindings(record,previewState)??decoratedPotBindings(record,previewState)??conduitBindings(record,previewState)??chestBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??deviceBindings(record)??stageBindings(record,previewState)??frameBindings(record)??hookBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
+   const leaf=leafPreviewSelection(record,previewState);
+   if(leaf)Object.assign(previewState,leaf.state);
+   const bindings=leaf?.bindings??(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??cubeStateBindings(record,previewState)??candleBindings(record,previewState)??decoratedPotBindings(record,previewState)??conduitBindings(record,previewState)??chestBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??deviceBindings(record)??stageBindings(record,previewState)??frameBindings(record)??hookBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
    if (!dictionary(bindings)||!Object.keys(bindings).length) throw new Error('Missing model bindings');
    for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
    for (const [face,paths] of Object.entries(bindings)) {
