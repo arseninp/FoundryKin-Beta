@@ -1,11 +1,26 @@
 /* Named resources for utility models, independent of edited slots. */
 import {chorusPlantResources} from './shared.mjs';
+const FIXED_PRIMITIVES=Object.freeze({
+ wooden_button:['button','planks_oak',6],wooden_pressure_plate:['plate','planks_oak',6],
+ stone_button:['button','stone',7],stone_pressure_plate:['plate','stone',7]
+});
 export function utilityBindings(record) {
  const single=(paths,label)=>{
   if(!Array.isArray(paths)||paths.length!==1||typeof paths[0]!=='string'||!record.paths.includes(paths[0]))throw new Error('Missing or ambiguous '+label);
   return [...paths];
  };
  const named=(paths,name)=>single([...new Set(paths??[])].filter(path=>typeof path==='string'&&path.split('/').pop()===name),name);
+ if(Object.hasOwn(FIXED_PRIMITIVES,record.id)) {
+  const [model,name,count]=FIXED_PRIMITIVES[record.id];
+  if(record.model!==model)return null;
+  const bindings={};
+  for(const face of ['up','down','north','south','east','west']) {
+   const paths=record.variants?.[face];
+   if(!Array.isArray(paths)||paths.length!==count)throw new Error('Incomplete indexed primitive resources: '+record.id+': '+face);
+   bindings[face]=named(paths,name);
+  }
+  return bindings;
+ }
  if(record.model==='emissive_cross') {
   const specs={open_eyeblossom:['eyeblossom_stem_blooming','eyeblossom_eyes_blooming'],firefly_bush:['firefly_bush','firefly_bush_firefly']};
   const names=Object.hasOwn(specs,record.id)?specs[record.id]:null;
