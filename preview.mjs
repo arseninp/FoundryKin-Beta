@@ -5,9 +5,11 @@ import {createPreviewControls} from './preview-controls.mjs';
 import {activePack,imageFrames,frameCanvas,createImageSource} from './preview-images.mjs';
 import {REVIEW_IDS as BASE_REVIEW_IDS,TEXT as BASE_TEXT} from './preview-config.mjs';
 import {STONE_REVIEW_BLOCKS} from './preview-stone-data.mjs';
-const REVIEW_IDS=Object.freeze([...BASE_REVIEW_IDS,...STONE_REVIEW_BLOCKS.map(([id])=>id)]);
+import {WOOD_REVIEW_BLOCKS} from './preview-wood-data.mjs';
+const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS]);
+const REVIEW_IDS=Object.freeze([...BASE_REVIEW_IDS,...ADDITIONAL_REVIEW_BLOCKS.map(([id])=>id)]);
 const TEXT=Object.fromEntries(Object.entries(BASE_TEXT).map(([lang,labels])=>[lang,{
- ...labels,...Object.fromEntries(STONE_REVIEW_BLOCKS.map(([id,en,ru])=>['card_'+id,lang==='ru'?ru:en]))
+ ...labels,...Object.fromEntries(ADDITIONAL_REVIEW_BLOCKS.map(([id,en,ru])=>['card_'+id,lang==='ru'?ru:en]))
 }]));
 export {activePack,imageFrames,frameCanvas,createImageSource};
 export {REVIEW_IDS};
