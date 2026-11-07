@@ -50,11 +50,47 @@ const FAMILIES=[
  ['end_bricks','end_stone_brick','End stone bricks','Кирпичи из эндерняка','кирпичей из эндерняка'],
  ['cobblestone','cobblestone','Cobblestone','Булыжник','булыжника']
 ];
-export const STONE_REVIEW_BLOCKS=Object.freeze(FAMILIES.flatMap(([id,stem,en,ru,material,forms=FORMS])=>[
+const MINERAL_BLOCKS=[
+ ["amethyst_block","Amethyst block","Блок аметиста"],
+ ["bedrock","Bedrock","Бедрок"],
+ ["calcite","Calcite","Кальцит"],
+ ["chiseled_cinnabar","Chiseled cinnabar","Резная киноварь"],
+ ["chiseled_deepslate","Chiseled deepslate","Резной глубинный сланец"],
+ ["chiseled_nether_bricks","Chiseled nether bricks","Резные кирпичи Нижнего мира"],
+ ["chiseled_polished_blackstone","Chiseled polished blackstone","Резной полированный чернит"],
+ ["chiseled_resin_bricks","Chiseled resin bricks","Резные смоляные кирпичи"],
+ ["chiseled_sulfur","Chiseled sulfur","Резная сера"],
+ ["clay","Clay","Глина"],
+ ["coal_block","Coal block","Угольный блок"],
+ ["coal_ore","Coal ore","Угольная руда"],
+ ["coarse_dirt","Coarse dirt","Каменистая земля"],
+ ["copper_block","Copper block","Медный блок"],
+ ["copper_ore","Copper ore","Медная руда"],
+ ["cracked_deepslate_bricks","Cracked deepslate bricks","Потрескавшиеся кирпичи из глубинного сланца"],
+ ["cracked_deepslate_tiles","Cracked deepslate tiles","Потрескавшиеся плитки из глубинного сланца"],
+ ["cracked_nether_bricks","Cracked nether bricks","Потрескавшиеся кирпичи Нижнего мира"],
+ ["cracked_polished_blackstone_bricks","Cracked polished blackstone bricks","Потрескавшиеся кирпичи из полированного чернита"],
+ ["deepslate_coal_ore","Deepslate coal ore","Глубинная угольная руда"],
+ ["deepslate_copper_ore","Deepslate copper ore","Глубинная медная руда"],
+ ["deepslate_diamond_ore","Deepslate diamond ore","Глубинная алмазная руда"],
+ ["deepslate_emerald_ore","Deepslate emerald ore","Глубинная изумрудная руда"],
+ ["deepslate_gold_ore","Deepslate gold ore","Глубинная золотая руда"],
+ ["deepslate_iron_ore","Deepslate iron ore","Глубинная железная руда"],
+ ["deepslate_lapis_ore","Deepslate lapis ore","Глубинная лазуритовая руда"],
+ ["deepslate_redstone_ore","Deepslate redstone ore","Глубинная редстоуновая руда"],
+ ["diamond_block","Diamond block","Алмазный блок"],
+ ["diamond_ore","Diamond ore","Алмазная руда"],
+ ["dirt","Dirt","Земля"],
+ ["dripstone_block","Dripstone block","Блок натёчного камня"],
+ ["emerald_block","Emerald block","Изумрудный блок"],
+ ["emerald_ore","Emerald ore","Изумрудная руда"],
+ ["end_stone","End stone","Эндерняк"]
+];
+export const STONE_REVIEW_BLOCKS=Object.freeze([...FAMILIES.flatMap(([id,stem,en,ru,material,forms=FORMS])=>[
  Object.freeze([id,en,ru]),
  ...forms.map(form=>{
   const raw=stem+'_'+form,source=Object.hasOwn(SOURCE_IDS,raw)?SOURCE_IDS[raw]:raw;
   const name=en.replace(/(bricks|tiles)$/i,word=>word.slice(0,-1)).replace(/ block$/,'');
   return Object.freeze([source,name+' '+LABELS[form][0],LABELS[form][1]+material]);
  })
-]));
+]),...MINERAL_BLOCKS.map(row=>Object.freeze([...row]))]);
