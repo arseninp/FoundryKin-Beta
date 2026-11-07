@@ -5,6 +5,17 @@ export function createPreviewControls(TEXT) {
  if(!dictionary(TEXT)||!dictionary(TEXT.en)||!dictionary(TEXT.ru))throw new Error('Invalid preview control labels');
 const bool=[['off',false],['on',true]],directions=['north','south','east','west'].map(key=>[key,key]);
 const numbers=n=>Array.from({length:n},(_,index)=>[String(index),index]);
+const CHORUS_FIELDS={chorus_plant:['north','south','east','west','up','down'],chorus_flower:['dead']};
+const CHORUS_LABELS={north:['North connection','Соединение: север'],south:['South connection','Соединение: юг'],east:['East connection','Соединение: восток'],west:['West connection','Соединение: запад'],up:['Upper connection','Соединение: верх'],down:['Lower connection','Соединение: низ'],dead:['Flower state','Состояние цветка'],dead_off:['Living','Живой'],dead_on:['Dead','Мёртвый']};
+for(const key of CHORUS_FIELDS.chorus_plant){CHORUS_LABELS[key+'_off']=['Disconnected','Нет'];CHORUS_LABELS[key+'_on']=['Connected','Есть'];}
+function chorusControlState(plan,state) {
+ if(!dictionary(state))throw new Error('Invalid chorus control state');
+ return Object.fromEntries(CHORUS_FIELDS[plan.model].map(key=>{
+  const value=state[key]===undefined?false:state[key];
+  if(typeof value!=='boolean')throw new Error('Invalid chorus control: '+key);
+  return [key,value];
+ }));
+}
 function pitcherControlState(plan,state) {
  const id=plan.object.id;
  if(!['pitcher_crop','pitcher_plant'].includes(id)||!dictionary(state))throw new Error('Invalid pitcher control state');
@@ -24,6 +35,7 @@ const growth=['small','medium','large','cluster'].map(key=>[key,key]);
 const FIELDS={pumpkin:fruit,melon_block:fruit,budding_amethyst:[['crystals',bool,false],['growth',growth,'cluster'],['face',[...directions,['up','up'],['down','down']],'up']],seagrass:[['tall',bool,false],['variant',[['A','a'],['B','b']],'a']],mangrove_propagule:[['hanging',bool,false],['age',numbers(5),0]]};
 const liquid=[['level',numbers(8),0]];
 const MODEL_FIELDS={azalea:[['potted',bool,false]],potted_azalea:[['potted',bool,false]],end_portal_frame:[['eye',bool,false]],tripwire_hook:[['attached',bool,false]],composter:[['level',numbers(9),0]],scaffolding:[['bottom',bool,false]],sculk_sensor:[['active',bool,false]],sculk_shrieker:[['can_summon',bool,false]],sculk_catalyst:[['bloom',bool,false]],dried_ghast:[['stage',numbers(4),0]],barrel:[['open',[['closed',false],['open',true]],false]],campfire:[['lit',[['off',false],['on',true]],true]],fire:[['variant',[['A','primary'],['B','alternate']],'primary']],shulker_box:[['open',[['closed',false],['open',true]],false]],chest:[['open',[['closed',false],['open',true]],false],['double',[['single',false],['double',true]],false]],water:liquid,lava:liquid,copper_golem_statue:[['pose',['standing','sitting','running','star'].map(key=>[key,key]),'standing']],conduit:[['active',[['inactive',false],['active',true]],false],['eye_open',[['closed',false],['open',true]],false],['wind',[['horizontal','horizontal'],['vertical','vertical']],'horizontal']]};
+for(const [model,keys] of Object.entries(CHORUS_FIELDS))MODEL_FIELDS[model]=keys.map(key=>[key,bool,false]);
 MODEL_FIELDS.cave_vines=[['berries',bool,false]];
 MODEL_FIELDS.cave_vines_part=[['berries',bool,true]];
 const MOSS_SIDES=['north','south','east','west'],MOSS_LEVELS=['none','short','tall'];
@@ -38,6 +50,7 @@ function mossControlState(state) {
  }));
 }
 function previewFields(catalog,plan) {
+ if(own(CHORUS_FIELDS,plan.model))chorusControlState(plan,plan.state);
  if(plan.model==='pale_moss_carpet')mossControlState(plan.state);
  if(plan.model==='cave_vines'||plan.model==='cave_vines_part')caveVineControlState(plan,plan.state);
  const route=catalog.stateRoutes?.[plan.object.id],group=route?catalog.stateGroups?.[route.card]:null;
@@ -62,7 +75,7 @@ function previewControlSpec(catalog,plan) {
  const azaleaLabels={potted:['Pot','Горшок'],potted_off:['Without pot','Без горшка'],potted_on:['Potted','В горшке']};
  const vineLabels={berries:['Glow berries','Светящиеся ягоды'],berries_off:['Without berries','Без ягод'],berries_on:['With berries','С ягодами']};
  const pitcherLabels={stage:['Growth stage','Стадия роста'],pod_only:['View','Отображение'],pod_only_off:['Whole plant','Всё растение'],pod_only_on:['Pod only','Только стручок']};
- const fields=previewFields(catalog,plan),label=(key,fallback=key)=>['en','ru'].map((lang,index)=>TEXT[lang][plan.model+'_'+key]??((plan.model==='cave_vines'||plan.model==='cave_vines_part')&&own(vineLabels,key)?vineLabels[key][index]:plan.model==='pitcher'&&own(pitcherLabels,key)?pitcherLabels[key][index]:(plan.model==='azalea'||plan.model==='potted_azalea')&&own(azaleaLabels,key)?azaleaLabels[key][index]:(plan.model==='stage_cross'||plan.model==='crop')&&key==='stage'?['Growth stage','Стадия роста'][index]:TEXT[lang][key]??TEXT[lang][fallback]??fallback));
+ const fields=previewFields(catalog,plan),label=(key,fallback=key)=>['en','ru'].map((lang,index)=>TEXT[lang][plan.model+'_'+key]??(own(CHORUS_FIELDS,plan.model)&&own(CHORUS_LABELS,key)?CHORUS_LABELS[key][index]:(plan.model==='cave_vines'||plan.model==='cave_vines_part')&&own(vineLabels,key)?vineLabels[key][index]:plan.model==='pitcher'&&own(pitcherLabels,key)?pitcherLabels[key][index]:(plan.model==='azalea'||plan.model==='potted_azalea')&&own(azaleaLabels,key)?azaleaLabels[key][index]:(plan.model==='stage_cross'||plan.model==='crop')&&key==='stage'?['Growth stage','Стадия роста'][index]:TEXT[lang][key]??TEXT[lang][fallback]??fallback));
  const schema=fields.map(([key,options])=>({key,label:label(key),values:options.map(([name,value])=>({value,label:label(key+'_'+name,name)}))}));
  const state=Object.fromEntries(fields.map(([key,,fallback])=>[key,plan.state[key]??fallback]));
  if(plan.model==='pale_moss_carpet') {
@@ -96,6 +109,7 @@ function previewControlSpec(catalog,plan) {
 function previewControlSelection(plan,values) {
  if(!dictionary(values))throw new Error('Invalid preview control values');
  const {form,texture,...chosen}=values,state={...plan.state,...chosen};
+ if(own(CHORUS_FIELDS,plan.model))Object.assign(state,chorusControlState(plan,state));
  if(plan.model==='cave_vines'||plan.model==='cave_vines_part')Object.assign(state,caveVineControlState(plan,state));
  if(plan.model==='pitcher')Object.assign(state,pitcherControlState(plan,state));
  if(plan.model==='pale_moss_carpet')Object.assign(state,mossControlState(state));
