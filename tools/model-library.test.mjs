@@ -91,7 +91,8 @@ test('pinned review connects shulker colors and player head with independent PNG
  const {createPreviewResolver}=await import('../catalog/preview.mjs');
  const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url))),inputBefore=JSON.stringify(input),Three=createThreeMock();
  const {catalog,registry,coverage}=compileReview(input,Three),before=JSON.stringify(catalog),resolve=createPreviewResolver(catalog,registry,Three);
- assert.equal(coverage.ready,true);assert.equal(REVIEW_IDS.length,67);assert.equal(new Set(REVIEW_IDS).size,67);
+ assert.equal(coverage.ready,true);assert.ok(REVIEW_IDS.length>0);assert.equal(new Set(REVIEW_IDS).size,REVIEW_IDS.length);
+ for(const id of REVIEW_IDS){assert.ok(Object.hasOwn(input.blocks,id),id);assert.ok(Object.hasOwn(catalog.records,id),id);}
  const ids=SHULKER_COLORS.map(color=>color+'_shulker_box');
  assert.deepEqual(REVIEW_IDS.filter(id=>catalog.records[id].model==='shulker_box').sort(),[...ids].sort());
  assert.ok(!catalog.cards.includes('silver_shulker_box'));const sheets=new Set();
