@@ -70,3 +70,24 @@ test('bubble column resources do not implicitly assign a model or rewrite atlas 
  assert.equal(record.model,null);assert.ok(!Object.hasOwn(record,'bindings'));assert.equal(aquaticBindings(record),null);
  assert.equal(record.variants.north.length,8);assert.equal(JSON.stringify(f),before);
 });
+test('bubble column sprite retains all owned roles and original variants',()=>{
+ const f=bubbleFixture(),before=JSON.stringify(f),record=normalizeBlock('bubble_column',f.definition,f.atlas,{model:'sprite',existing:f.existing});
+ assert.equal(record.model,'sprite');assert.deepEqual(record.bindings,f.expected);assert.equal(record.paths.length,19);
+ for(const [face,key] of [['up','bubble_column_up_top'],['down','bubble_column_down_top'],['north','bubble_column_outer'],['south','bubble_column_mid']])assert.deepEqual(record.variants[face],f.atlas[key].textures);
+ assert.equal(JSON.stringify(f),before);
+});
+test('indexed oak and stone primitives bind named materials without losing alternatives',()=>{
+ const faces=['up','down','north','south','east','west'],wood=['planks_oak','planks_spruce','planks_birch','planks_jungle','planks_acacia','planks_big_oak'],stone=['stone','stone_granite','stone_granite_smooth','stone_diorite','stone_diorite_smooth','stone_andesite','stone_andesite_smooth'];
+ for(const [id,model,names] of [['wooden_button','button',wood],['wooden_pressure_plate','plate',wood],['stone_button','button',stone],['stone_pressure_plate','plate',stone]]) {
+  const paths=names.map(name=>'textures/blocks/'+name),definition={textures:'shared'},atlas={shared:{textures:paths}},existing=Object.fromEntries(paths.map(path=>[path,1])),before=JSON.stringify({definition,atlas,existing});
+  const record=normalizeBlock(id,definition,atlas,{model,existing});
+  assert.deepEqual(record.paths,[...paths].sort());
+  for(const face of faces){assert.deepEqual(record.variants[face],paths);assert.deepEqual(record.faces[face],paths);assert.deepEqual(record.bindings[face],[paths[0]]);}
+  const saved=JSON.stringify(record.variants);record.bindings.up[0]=paths[1];assert.equal(JSON.stringify(record.variants),saved);
+  assert.equal(JSON.stringify({definition,atlas,existing}),before);
+  assert.throws(()=>normalizeBlock(id,definition,{shared:{textures:paths.slice(1)}},{model,existing}),/Incomplete indexed primitive/);
+  assert.throws(()=>normalizeBlock(id,definition,{shared:{textures:[paths[1],...paths.slice(1)]}},{model,existing}),/Missing or ambiguous/);
+  const absent={...existing};delete absent[paths[0]];assert.throws(()=>normalizeBlock(id,definition,atlas,{model,existing:absent}),/Missing resource file/);
+  assert.ok(!Object.hasOwn(normalizeBlock(id,definition,atlas,{model:'cube',existing}),'bindings'));
+ }
+});
