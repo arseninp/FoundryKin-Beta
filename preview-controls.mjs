@@ -10,7 +10,19 @@ const growth=['small','medium','large','cluster'].map(key=>[key,key]);
 const FIELDS={pumpkin:fruit,melon_block:fruit,budding_amethyst:[['crystals',bool,false],['growth',growth,'cluster'],['face',[...directions,['up','up'],['down','down']],'up']],seagrass:[['tall',bool,false],['variant',[['A','a'],['B','b']],'a']],mangrove_propagule:[['hanging',bool,false],['age',numbers(5),0]]};
 const liquid=[['level',numbers(8),0]];
 const MODEL_FIELDS={azalea:[['potted',bool,false]],potted_azalea:[['potted',bool,false]],end_portal_frame:[['eye',bool,false]],tripwire_hook:[['attached',bool,false]],composter:[['level',numbers(9),0]],scaffolding:[['bottom',bool,false]],sculk_sensor:[['active',bool,false]],sculk_shrieker:[['can_summon',bool,false]],sculk_catalyst:[['bloom',bool,false]],dried_ghast:[['stage',numbers(4),0]],barrel:[['open',[['closed',false],['open',true]],false]],campfire:[['lit',[['off',false],['on',true]],true]],fire:[['variant',[['A','primary'],['B','alternate']],'primary']],shulker_box:[['open',[['closed',false],['open',true]],false]],chest:[['open',[['closed',false],['open',true]],false],['double',[['single',false],['double',true]],false]],water:liquid,lava:liquid,copper_golem_statue:[['pose',['standing','sitting','running','star'].map(key=>[key,key]),'standing']],conduit:[['active',[['inactive',false],['active',true]],false],['eye_open',[['closed',false],['open',true]],false],['wind',[['horizontal','horizontal'],['vertical','vertical']],'horizontal']]};
+const MOSS_SIDES=['north','south','east','west'],MOSS_LEVELS=['none','short','tall'];
+MODEL_FIELDS.pale_moss_carpet=[['upper_block_bit',bool,false],...MOSS_SIDES.map(side=>['pale_moss_carpet_side_'+side,MOSS_LEVELS.map(value=>[value,value]),'none'])];
+const MOSS_LABELS={upper_block_bit:['Upper part','Верхняя часть'],pale_moss_carpet_side_north:['North side','Северная сторона'],pale_moss_carpet_side_south:['South side','Южная сторона'],pale_moss_carpet_side_east:['East side','Восточная сторона'],pale_moss_carpet_side_west:['West side','Западная сторона']};
+function mossControlState(state) {
+ if(!dictionary(state))throw new Error('Invalid pale moss control state');
+ return Object.fromEntries(MODEL_FIELDS.pale_moss_carpet.map(([key,options,fallback])=>{
+  const value=state[key]===undefined?fallback:state[key];
+  if(!options.some(([,allowed])=>value===allowed))throw new Error('Invalid pale moss control: '+key);
+  return [key,value];
+ }));
+}
 function previewFields(catalog,plan) {
+ if(plan.model==='pale_moss_carpet')mossControlState(plan.state);
  const route=catalog.stateRoutes?.[plan.object.id],group=route?catalog.stateGroups?.[route.card]:null;
  const fields=[...(FIELDS[plan.object.card]??[]),...(MODEL_FIELDS[plan.model]??[])].filter(([key])=>!(plan.model==='chest'&&plan.object.id==='ender_chest'&&key==='double'));
  if(plan.model==='stage_cross'||plan.model==='crop') {
@@ -29,6 +41,16 @@ function previewControlSpec(catalog,plan) {
  const fields=previewFields(catalog,plan),label=(key,fallback=key)=>['en','ru'].map((lang,index)=>TEXT[lang][plan.model+'_'+key]??((plan.model==='azalea'||plan.model==='potted_azalea')&&own(azaleaLabels,key)?azaleaLabels[key][index]:(plan.model==='stage_cross'||plan.model==='crop')&&key==='stage'?['Growth stage','Стадия роста'][index]:TEXT[lang][key]??TEXT[lang][fallback]??fallback));
  const schema=fields.map(([key,options])=>({key,label:label(key),values:options.map(([name,value])=>({value,label:label(key+'_'+name,name)}))}));
  const state=Object.fromEntries(fields.map(([key,,fallback])=>[key,plan.state[key]??fallback]));
+ if(plan.model==='pale_moss_carpet') {
+  for(const item of schema) {
+   item.label=['en','ru'].map((lang,index)=>TEXT[lang][plan.model+'_'+item.key]??MOSS_LABELS[item.key][index]);
+   for(const option of item.values) {
+    const name=typeof option.value==='boolean'?(option.value?'on':'off'):option.value;
+    const labels={off:['Lower','Нижняя'],on:['Upper','Верхняя'],none:['None','Нет'],short:['Short','Короткий'],tall:['Tall','Высокий']}[name];
+    option.label=['en','ru'].map((lang,index)=>TEXT[lang][plan.model+'_'+item.key+'_'+name]??labels[index]);
+   }
+  }
+ }
  if(plan.forms) {
   if(!dictionary(plan.forms)||!own(plan.forms,plan.object.form)||schema.some(item=>item.key==='form'))throw new Error('Invalid preview form controls');
   schema.unshift({key:'form',label:label('form'),values:Object.keys(plan.forms).map(value=>({value,label:label('form_'+value,value)}))});
@@ -50,6 +72,7 @@ function previewControlSpec(catalog,plan) {
 function previewControlSelection(plan,values) {
  if(!dictionary(values))throw new Error('Invalid preview control values');
  const {form,texture,...chosen}=values,state={...plan.state,...chosen};
+ if(plan.model==='pale_moss_carpet')Object.assign(state,mossControlState(state));
  if(plan.model==='decorated_pot') {
   const patterns={};
   for(const face of POT_FACES) {
