@@ -26,7 +26,7 @@ test('invalid hive booleans fail in schemas and selections',()=>{
  assert.throws(()=>c.previewControlSpec({},plan('beehive',null)),/Invalid hive control state/);
 });
 test('honey controls do not leak to other cubes or mismatched models',()=>{
- for(const id of ['stone','red_mushroom_block','crafter'])assert.equal(c.previewControlSpec({},plan(id)).schema,null);
+ for(const id of ['stone','red_mushroom_block','crafter'])assert.equal((c.previewControlSpec({},plan(id)).schema??[]).some(field=>field.key==='honey'),false);
  assert.equal(c.previewControlSpec({},plan('bee_nest',{},'cross')).schema,null);
  const fields=c.previewFields({},plan());fields[0][1][0][1]='invalid';assert.equal(c.previewFields({},plan())[0][1][0][1],false);
 });
