@@ -18,7 +18,7 @@ function bubbleBindings(record) {
  return result;
 }
 export function aquaticBindings(record) {
- if(record.model==='bubble_column')return bubbleBindings(record);
+ if(record.model==='bubble_column'||(record.model==='sprite'&&record.id==='bubble_column'))return bubbleBindings(record);
  if(!Object.hasOwn(SPECS,record.model))return null;
  if(record.id!==record.model)throw new Error('Unknown aquatic plant object');
  const result={};

@@ -20,6 +20,7 @@ export const SPECIAL_MODELS = Object.freeze({
   cauldron: 'cauldron', lava_cauldron: 'cauldron', cocoa: 'cocoa', daylight_detector: 'daylight', daylight_detector_inverted: 'daylight',
   flower_pot: 'flower_pot', decorated_pot: 'decorated_pot', conduit: 'conduit',
   fire: 'fire', soul_fire: 'fire',
+  bubble_column: 'sprite',
   water: 'water', flowing_water: 'water', lava: 'lava', flowing_lava: 'lava',
   big_dripleaf: 'big_dripleaf', small_dripleaf_block: 'small_dripleaf',
   sculk_sensor: 'sculk_sensor', calibrated_sculk_sensor: 'sculk_sensor', sculk_shrieker: 'sculk_shrieker', sculk_catalyst: 'sculk_catalyst', cactus: 'cactus',
