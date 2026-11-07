@@ -16,6 +16,13 @@ function chorusControlState(plan,state) {
   return [key,value];
  }));
 }
+const isHivePlan=plan=>plan.model==='cube'&&['bee_nest','beehive'].includes(plan.object.id);
+function hiveControlHoney(state) {
+ if(!dictionary(state))throw new Error('Invalid hive control state');
+ const honey=state.honey===undefined?false:state.honey;
+ if(typeof honey!=='boolean')throw new Error('Invalid hive control honey');
+ return honey;
+}
 function snowControlLayers(state) {
  if(!dictionary(state))throw new Error('Invalid snow control state');
  const layers=state.layers===undefined?1:state.layers;
@@ -71,6 +78,7 @@ function mossControlState(state) {
  }));
 }
 function previewFields(catalog,plan) {
+ if(isHivePlan(plan))hiveControlHoney(plan.state);
  if(plan.model==='snow_layer')snowControlLayers(plan.state);
  if(plan.model==='farmland')farmlandControlWet(plan.state);
  if(plan.model==='cocoa')cocoaControlStage(plan.state);
@@ -79,6 +87,7 @@ function previewFields(catalog,plan) {
  if(plan.model==='cave_vines'||plan.model==='cave_vines_part')caveVineControlState(plan,plan.state);
  const route=catalog.stateRoutes?.[plan.object.id],group=route?catalog.stateGroups?.[route.card]:null;
  const fields=[...(FIELDS[plan.object.card]??[]),...(MODEL_FIELDS[plan.model]??[])].filter(([key])=>!(plan.model==='chest'&&plan.object.id==='ender_chest'&&key==='double'));
+ if(isHivePlan(plan))fields.push(['honey',bool,false]);
  if(plan.model==='pitcher') {
   pitcherControlState(plan,plan.state);
   const plant=plan.object.id==='pitcher_plant';
@@ -103,6 +112,14 @@ function previewControlSpec(catalog,plan) {
  const fields=previewFields(catalog,plan),label=(key,fallback=key)=>['en','ru'].map((lang,index)=>TEXT[lang][plan.model+'_'+key]??(plan.model==='snow_layer'&&key==='layers'?['Layers','Слои'][index]:plan.model==='farmland'&&own(farmlandLabels,key)?farmlandLabels[key][index]:own(CHORUS_FIELDS,plan.model)&&own(CHORUS_LABELS,key)?CHORUS_LABELS[key][index]:(plan.model==='cave_vines'||plan.model==='cave_vines_part')&&own(vineLabels,key)?vineLabels[key][index]:plan.model==='pitcher'&&own(pitcherLabels,key)?pitcherLabels[key][index]:(plan.model==='azalea'||plan.model==='potted_azalea')&&own(azaleaLabels,key)?azaleaLabels[key][index]:(plan.model==='stage_cross'||plan.model==='crop'||plan.model==='cocoa')&&key==='stage'?['Growth stage','Стадия роста'][index]:TEXT[lang][key]??TEXT[lang][fallback]??fallback));
  const schema=fields.map(([key,options])=>({key,label:label(key),values:options.map(([name,value])=>({value,label:label(key+'_'+name,name)}))}));
  const state=Object.fromEntries(fields.map(([key,,fallback])=>[key,plan.state[key]??fallback]));
+ if(isHivePlan(plan)) {
+  const item=schema.find(field=>field.key==='honey');
+  item.label=['en','ru'].map((lang,index)=>TEXT[lang][plan.object.id+'_honey']??['Honey','Мёд'][index]);
+  for(const option of item.values) {
+   const name=option.value?'on':'off',labels=option.value?['With honey','С мёдом']:['Without honey','Без мёда'];
+   option.label=['en','ru'].map((lang,index)=>TEXT[lang][plan.object.id+'_honey_'+name]??labels[index]);
+  }
+ }
  if(plan.model==='pale_moss_carpet') {
   for(const item of schema) {
    item.label=['en','ru'].map((lang,index)=>TEXT[lang][plan.model+'_'+item.key]??MOSS_LABELS[item.key][index]);
@@ -134,6 +151,7 @@ function previewControlSpec(catalog,plan) {
 function previewControlSelection(plan,values) {
  if(!dictionary(values))throw new Error('Invalid preview control values');
  const {form,texture,...chosen}=values,state={...plan.state,...chosen};
+ if(isHivePlan(plan))state.honey=hiveControlHoney(state);
  if(plan.model==='snow_layer')state.layers=snowControlLayers(state);
  if(plan.model==='farmland')state.wet=farmlandControlWet(state);
  if(plan.model==='cocoa')state.stage=cocoaControlStage(state);
