@@ -24,8 +24,8 @@ test('wood review records cannot be mutated through exported arrays',()=>{
  assert.throws(()=>{rows[0][0]='other';},TypeError);
  assert.equal(JSON.stringify(rows),before);
 });
-test('review entry point includes base, mineral and wood source IDs exactly once',async()=>{
- const [{REVIEW_IDS},base,{STONE_REVIEW_BLOCKS}]=await Promise.all([import('../preview.mjs'),import('../preview-config.mjs'),import('../preview-stone-data.mjs')]);
- const expected=[...base.REVIEW_IDS,...STONE_REVIEW_BLOCKS.map(([id])=>id),...rows.map(([id])=>id)];
- assert.equal(REVIEW_IDS.length,925);assert.deepEqual(REVIEW_IDS,expected);assert.equal(new Set(REVIEW_IDS).size,925);assert.ok(Object.isFrozen(REVIEW_IDS));
+test('review entry point includes base, mineral, wood and leaf source IDs exactly once',async()=>{
+ const [{REVIEW_IDS},base,{STONE_REVIEW_BLOCKS},{LEAF_REVIEW_BLOCKS}]=await Promise.all([import('../preview.mjs'),import('../preview-config.mjs'),import('../preview-stone-data.mjs'),import('../preview-leaf-data.mjs')]);
+ const expected=[...base.REVIEW_IDS,...STONE_REVIEW_BLOCKS.map(([id])=>id),...rows.map(([id])=>id),...LEAF_REVIEW_BLOCKS.map(([id])=>id)];
+ assert.equal(REVIEW_IDS.length,939);assert.deepEqual(REVIEW_IDS,expected);assert.equal(new Set(REVIEW_IDS).size,939);assert.ok(Object.isFrozen(REVIEW_IDS));
 });
