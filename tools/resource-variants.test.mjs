@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {resourceVariants, resourcePaths, normalizeBlock, resourceSignature} from '../catalog/resources.mjs';
 import {indexItems, resolveIcons} from '../catalog/items.mjs';
 import {aquaticBindings} from '../catalog/rules/aquatic-parts.mjs';
+import {utilityBindings} from '../catalog/rules/utility-parts.mjs';
 const a='textures/blocks/a', b='textures/blocks/b';
 test('repeated alternatives keep every original index while file paths remain unique',()=>{
  const value=[a,a,{path:b}];
@@ -90,4 +91,33 @@ test('indexed oak and stone primitives bind named materials without losing alter
   const absent={...existing};delete absent[paths[0]];assert.throws(()=>normalizeBlock(id,definition,atlas,{model,existing:absent}),/Missing resource file/);
   assert.ok(!Object.hasOwn(normalizeBlock(id,definition,atlas,{model:'cube',existing}),'bindings'));
  }
+});
+
+function indexedStairFixture(id) {
+ const faces=['up','down','north','south','east','west'],path=name=>'textures/blocks/'+name;
+ const shared={normal_stone_stairs:['stone','stone_granite','stone_granite_smooth','stone_diorite','stone_diorite_smooth','stone_andesite','stone_andesite_smooth'],stone_brick_stairs:['stonebrick','stonebrick_mossy','stonebrick_cracked','stonebrick_carved'],prismarine_stairs:['prismarine_rough','prismarine_dark','prismarine_bricks']};
+ const prefix=id.replace(/_stairs$/,''),sand=id==='sandstone_stairs'||id==='red_sandstone_stairs';
+ const definition={textures:{}},atlas={},expected={},variants={};
+ for(const face of faces) {
+  const names=sand?(face==='up'?Array(4).fill(prefix+'_top'):face==='down'?[prefix+'_bottom',prefix+'_top',prefix+'_top',prefix+'_top']:[prefix+'_normal',prefix+'_carved',prefix+'_smooth',prefix+'_top']):shared[id];
+  const key=id+'_'+face;definition.textures[face]=key;variants[face]=names.map(path);atlas[key]={textures:[...variants[face]]};
+  expected[face]=[path(sand?prefix+(face==='up'?'_top':face==='down'?'_bottom':'_normal'):names[0])];
+ }
+ const existing=Object.fromEntries(Object.values(variants).flat().map(p=>[p,1]));
+ return {definition,atlas,existing,expected,variants};
+}
+for(const id of ['normal_stone_stairs','stone_brick_stairs','prismarine_stairs','sandstone_stairs','red_sandstone_stairs'])test('indexed stair bindings preserve sequences and reject invalid resources: '+id,()=>{
+ const f=indexedStairFixture(id),before=JSON.stringify(f),record=normalizeBlock(id,f.definition,f.atlas,{model:'stairs',existing:f.existing});
+ assert.deepEqual(record.bindings,f.expected);assert.deepEqual(record.variants,f.variants);assert.equal(JSON.stringify(f),before);
+ for(const face of Object.keys(f.variants)) {
+  const incomplete=structuredClone(record);incomplete.variants[face].pop();assert.throws(()=>utilityBindings(incomplete),/Incomplete indexed primitive/);
+  const missing=structuredClone(record),target=f.expected[face][0],other=record.paths.find(p=>p!==target);
+  missing.variants[face]=missing.variants[face].map(p=>p===target?other:p);assert.throws(()=>utilityBindings(missing),/Missing or ambiguous/);
+ }
+ const unowned=structuredClone(record);unowned.paths=unowned.paths.filter(p=>p!==f.expected.up[0]);assert.throws(()=>utilityBindings(unowned),/Missing or ambiguous/);
+ const reordered=structuredClone(record);for(const paths of Object.values(reordered.variants))paths.reverse();assert.deepEqual(utilityBindings(reordered),f.expected);
+ const saved=JSON.stringify(record.variants);record.bindings.up[0]='textures/blocks/changed';assert.equal(JSON.stringify(record.variants),saved);
+ assert.deepEqual(utilityBindings(record),f.expected);
+ const absent={...f.existing};delete absent[f.expected.up[0]];assert.throws(()=>normalizeBlock(id,f.definition,f.atlas,{model:'stairs',existing:absent}),/Missing resource file/);
+ assert.equal(utilityBindings({...record,model:'cube'}),null);assert.equal(utilityBindings({...record,id:'future_'+id}),null);
 });
