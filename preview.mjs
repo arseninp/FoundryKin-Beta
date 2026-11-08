@@ -100,7 +100,15 @@ const SIGN_REVIEW_BLOCKS=Object.freeze(SIGN_WOODS.flatMap(([wood,en,ru])=>SIGN_P
  const source=placement==='hanging'?wood:wood==='oak'?'':wood==='dark_oak'?'darkoak':wood;
  return Object.freeze([(source?source+'_':'')+placement+'_sign',en+suffix,prefix+ru]);
 })));
-const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS,...FIXTURE_REVIEW_BLOCKS,...SIGN_REVIEW_BLOCKS]);
+const JOINERY_REVIEW_BLOCKS=Object.freeze([
+ ...SIGN_WOODS.flatMap(([wood,en,ru])=>[[wood==='oak'?'wooden_door':wood+'_door',en+' door','Дверь из '+ru],[wood+'_shelf',en+' shelf','Полка из '+ru]]),
+ ['iron_door','Iron door','Железная дверь'],
+ ...COPPER_STAGES.flatMap(([prefix,enStage,ruStage])=>{
+  const id=prefix+'copper_door',name=prefix?enStage+'copper door':'Copper door',suffix=ruStage?' ('+ruStage+')':'';
+  return [[id,name,'Медная дверь'+suffix],['waxed_'+id,'Waxed '+name.toLowerCase(),'Вощёная медная дверь'+suffix]];
+ })
+].map(row=>Object.freeze(row)));
+const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS,...FIXTURE_REVIEW_BLOCKS,...SIGN_REVIEW_BLOCKS,...JOINERY_REVIEW_BLOCKS]);
 const REVIEW_IDS=Object.freeze([...BASE_REVIEW_IDS,...ADDITIONAL_REVIEW_BLOCKS.map(([id])=>id)]);
 const TEXT=Object.fromEntries(Object.entries(BASE_TEXT).map(([lang,labels])=>[lang,{
  ...labels,...Object.fromEntries(ADDITIONAL_REVIEW_BLOCKS.map(([id,en,ru])=>['card_'+id,lang==='ru'?ru:en]))
