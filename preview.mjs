@@ -116,7 +116,15 @@ const EXTRA_SOURCE_REVIEW_BLOCKS=Object.freeze([
  ...COPPER_STAGES.map(([prefix,enStage,ruStage])=>['waxed_'+prefix+'copper_golem_statue','Waxed '+enStage.toLowerCase()+'copper golem statue','Вощёная статуя медного голема'+(ruStage?' (медь: '+ruStage+')':'')]),
  ['allow','Allow block','Разрешающий блок'],['deny','Deny block','Запрещающий блок'],['border_block','Border block','Пограничный блок'],['barrier','Barrier','Барьер'],['structure_void','Structure void','Структурная пустота']
 ].map(row=>Object.freeze(row)));
-const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS,...FIXTURE_REVIEW_BLOCKS,...SIGN_REVIEW_BLOCKS,...JOINERY_REVIEW_BLOCKS,...EXTRA_SOURCE_REVIEW_BLOCKS]);
+const MECHANISM_REVIEW_BLOCKS=Object.freeze([
+ ['rail','Rail','Рельсы'],['golden_rail','Powered rail','Электрические рельсы'],['detector_rail','Detector rail','Нажимные рельсы'],['activator_rail','Activator rail','Активирующие рельсы'],
+ ...[false,true].flatMap(waxed=>COPPER_STAGES.map(([prefix,enStage,ruStage])=>[(waxed?'waxed_':'')+prefix+'lightning_rod',(waxed?'Waxed ':'')+enStage+((waxed||prefix)?'lightning rod':'Lightning rod'),'Громоотвод'+(ruStage||waxed?' ('+[ruStage,waxed?'вощёный':''].filter(Boolean).join(', ')+')':'')])),
+ ['piston','Piston','Поршень'],['sticky_piston','Sticky piston','Липкий поршень'],
+ ['redstone_torch','Redstone torch','Редстоун-факел'],['unlit_redstone_torch','Unlit redstone torch','Выключенный редстоун-факел'],
+ ['unpowered_repeater','Repeater','Повторитель'],['powered_repeater','Powered repeater','Включённый повторитель'],
+ ['unpowered_comparator','Comparator','Компаратор'],['powered_comparator','Powered comparator','Включённый компаратор']
+].map(row=>Object.freeze(row)));
+const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS,...FIXTURE_REVIEW_BLOCKS,...SIGN_REVIEW_BLOCKS,...JOINERY_REVIEW_BLOCKS,...EXTRA_SOURCE_REVIEW_BLOCKS,...MECHANISM_REVIEW_BLOCKS]);
 const REVIEW_IDS=Object.freeze([...BASE_REVIEW_IDS,...ADDITIONAL_REVIEW_BLOCKS.map(([id])=>id)]);
 const TEXT=Object.fromEntries(Object.entries(BASE_TEXT).map(([lang,labels])=>[lang,{
  ...labels,...Object.fromEntries(ADDITIONAL_REVIEW_BLOCKS.map(([id,en,ru])=>['card_'+id,lang==='ru'?ru:en]))
