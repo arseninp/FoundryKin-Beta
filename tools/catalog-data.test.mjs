@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { webcrypto, createHash } from 'node:crypto';
-const source = await readFile(new URL('../fk-catalog-data.js', import.meta.url), 'utf8');
+const sourceURL = new URL('../fk-catalog-data.js', import.meta.url);
+const source = await readFile(sourceURL, 'utf8');
 const commit = '46ba6ea985fb5a92d79a9419198f10dda14c199d';
 function fixture() {
  const parts = {'blocks-000.json': {stone: {textures: 'stone'}}, 'terrain-000.json': {stone: {textures: 'textures/blocks/stone'}}, 'existing-000.json': {'textures/blocks/stone': 1}, 'auxiliary-000.json': {end_gateway: {textures: 'portal'}}, 'report.json': {admitted: 1}};
@@ -13,7 +15,10 @@ function fixture() {
 }
 function loader(fetcher, crypto = webcrypto) {
  const window = {crypto, TextEncoder};
- vm.runInNewContext(source, {window, fetch: fetcher, Uint8Array});
+ vm.runInNewContext(source, {window, fetch: fetcher, Uint8Array}, {
+  filename: fileURLToPath(sourceURL),
+  importModuleDynamically: vm.constants.USE_MAIN_CONTEXT_DEFAULT_LOADER
+ });
  return window.FKCatalogData;
 }
 function response(text) {return {ok: true, text: async () => text}}
@@ -35,7 +40,7 @@ test('rejects source mismatch before reading sections', async () => {
 });
 test('rejects count mismatch', async () => {
  const files = fixture(), m = JSON.parse(files['manifest.json']); m.counts.blocks = 2; files['manifest.json'] = JSON.stringify(m);
- await assert.rejects(loader(fake(files)).load(), /counts do not match/);
+ await assert.rejects(loader(fake(files)).load(), /Catalog count mismatch: blocks/);
 });
 test('rejects duplicate descriptors and path traversal', async () => {
  for (const invalid of ['duplicate', 'path']) {
