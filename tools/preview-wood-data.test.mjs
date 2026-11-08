@@ -55,7 +55,7 @@ test('copper extension has pinned single-path resources, explicit assignments an
   const model=id.endsWith('_stairs')?'stairs':id.endsWith('_slab')&&!id.includes('double_')?'slab':'cube';
   assert.equal(plan.assignments[id].model,model,id);assert.ok(builders.has(model),id);
   const key=blocks[id].textures;assert.equal(typeof key,'string',id);
-  const path=input.terrain[key]?.textures;assert.equal(typeof path,'string',id);assert.ok(Object.hasOwn(input.existing,path),path);
+  const path=input.terrain.texture_data[key]?.textures;assert.equal(typeof path,'string',id);assert.ok(Object.hasOwn(input.existing,path),path);
   const faceMap=Object.fromEntries(['up','down','north','south','east','west'].map(face=>[face,path])),group=new Three.Group(),material={};
   builders.get(model).build({cur:id,faceMap,mats:{[path]:material},group});
   const meshes=meshesOf(group);assert.equal(meshes.length,model==='stairs'?2:1,id);
@@ -75,7 +75,7 @@ test('41 cube sources normalize real pinned faces without ambiguous variants and
  const Three=createThreeMock(),builder=createPrimitiveModels(Three).find(row=>row.id==='cube');
  for(const id of CUBE_IDS){
   assert.equal(plan.assignments[id].model,'cube',id);
-  const record=normalizeBlock(id,blocks[id],input.terrain,{model:'cube',existing:input.existing});
+  const record=normalizeBlock(id,blocks[id],input.terrain.texture_data,{model:'cube',existing:input.existing});
   const faceMap={};for(const face of ['up','down','north','south','east','west']){assert.equal(record.faces[face].length,1,id+': '+face);faceMap[face]=record.faces[face][0];}
   for(const path of record.paths)assert.ok(Object.hasOwn(input.existing,path),path);
   const mats=Object.fromEntries(record.paths.map(path=>[path,{path}])),group=new Three.Group();builder.build({cur:id,faceMap,mats,group});
