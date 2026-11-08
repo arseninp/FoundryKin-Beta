@@ -1,21 +1,23 @@
 # ROADMAP — завершить перенос, принять, очистить
 
-Обновлено 2026-11-08. Проверенный HEAD main до документации: 836ad36a953f49dd2f08cc7996b0f6172b87385b. Не выпуск. Контекст — CONTEXT/handoff, детали — ARCHITECTURE/TODO.
+Обновлено 2026-11-08 по OLDCHAT26 и сохранённому main 6289e137144a70929084e9d1c2a7e5722c170bae. Не выпуск. CONTEXT/handoff — текущая точка, ARCHITECTURE/TODO — контракты/задачи.
 
 ## 1. Закончить каталог и техническую основу
 
-Текущий состав отдельного preview — 939 source IDs (602 base + 273 stone/mineral + 50 wood + 14 leaf), не число геометрий и не полный каталог. Полная таблица статусов для 1275 исходных ID ещё нужна; auxiliary отдельно. Массово сверять и подключать готовые семейства, исправлять только доказанные пробелы, не создавать модели повторно. Bubble_column уже sprite/18 owned roles/preview без симуляции; foliage cutout/opaque и leaf ID уже подключены. Старые числа 67/228 и финальный повторный leaf draft OLDCHAT25 не использовать как актуальный статус.
+По статическому составу preview ожидается 1177 записей: прежние 939 + 55 copper + 41 cube + 10 indexed + 39 fixtures + 39 signs + 35 joinery + 19 extra. Не число геометрий/карточек и не свежий успешный compile. Проверить unique/membership; 98 до 1275 лишь арифметика, auxiliary отдельно. Полная по-ID classification ещё нужна.
+
+Продолжать крупные реальные готовые семейства, адресно закрывать доказанные resource/state пробелы, не переносить geometry повторно. Bulb/ice/anchor controls уже есть, signs/doors/shelves/extra сохранены. Bed из оборванного конца OLDCHAT26 не считать подключённым: в прочитанном preview.mjs явного bed нет. Повторные commit messages не два пакета. Bubble sprite и leaf cutout/opaque не начинать заново.
 
 ## 2. Совместная проверка и editor integration
 
-Получить full coverage/inputValidation/PIN compile/tests/Actions на конкретном SHA. Локальные metadata/fixtures/registry spy не заменяют реальных PNG-TGA/WebGL/Bedrock UV-scale-alpha/Android. Перенести оставшиеся editor Find/resources/states/draw/history/reopen/export пути на новую основу; определить фактический остаток по коду. Preview read-only не означает editor switch. Принять draw/undo/redo/Add/reopen/PNG/mcpack/async/storage/import/lifecycle/language-theme-pack-slot-frame.
+Fresh full coverage/inputValidation/PIN compile/tests/Actions на конкретном SHA. Исторические Node mock/fixture/metadata/registry-spy проверки не заменяют real PNG-TGA/WebGL/Bedrock UV-scale-alpha/Android. По коду определить и перенести оставшиеся editor Find/resources/states/draw/history/Add/reopen/export пути. Preview read-only не editor switch. Принять async/storage/import/lifecycle/language-theme-pack-slot-frame.
 
 ## 3. Чистка после готовности
 
-После совместной приёмки удалить конкретные заменённые пути/дубли, проверить тесты индивидуально, выполнить runtime switch/FK_V/cache. Не удалять работающий legacy заранее, не очищать паки/localStorage.
+После совместной приёмки удалить конкретные заменённые пути/дубли, индивидуально проверить тесты, выполнить runtime switch/FK_V/cache. Legacy заранее не удалять, user packs/localStorage не очищать.
 
-## 4. Будущие отдельные этапы
+## 4. Будущие этапы
 
-Skin editor в карточке Игрок, позже body/примерка брони с переиспользованием head/hat/full sheet/routes; full mobs/entities/items/cushion; animation playback/smoke/particle simulation; tablet/desktop layout; IndexedDB/большие паки/user backup/PWA-offline/права на ресурсы — отдельный scope. Фиктивные готовые формы не показывать.
+Skin editor в карточке Игрок, позже body/armor fitting с переиспользованием head/hat/full sheet/routes; full mobs/entities/items/cushion; animation playback/smoke/particles; tablet/desktop layout; IndexedDB/большие паки/user backup/PWA-offline/права на ресурсы отдельно. Фиктивные готовые формы не показывать.
 
-Одна большая задача — без остановок ради отчётности: после подтверждения записать/проверить/готовить следующий пакет. Новая запись требует точного подтверждения; изменение направления/материалы/реальный блокер обсуждать отдельно. Только main/<25000 UTF-8 bytes/file, новые permanent tests отдельно согласовать, документы по просьбе владельца. Backup/refactor-0.9/fk070_packs не трогать.
+Одна большая задача без искусственных остановок: после подтверждения записать/проверить/готовить следующий пакет. Каждая новая запись требует точного подтверждения. Только main/<25000 UTF-8 bytes/file, новые permanent tests отдельно согласовать, документы по просьбе владельца. Backup/refactor-0.9/fk070_packs/localStorage не трогать.

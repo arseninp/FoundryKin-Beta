@@ -1,25 +1,29 @@
-# Передача — массовое подключение каталога после OLDCHAT25
+# Передача — подключение каталога после OLDCHAT26
 
-Обновлено 2026-11-08. Проверенный HEAD main до документации: 836ad36a953f49dd2f08cc7996b0f6172b87385b. Начать с CONTEXT; прежние модельные контракты сохраняются.
+Обновлено 2026-11-08. Проверенный main HEAD до документации: 6289e137144a70929084e9d1c2a7e5722c170bae. Начать с CONTEXT. Все прежние модельные контракты, включая полную передачу 3e503a8, сохраняются. Не выпуск.
 
 ## Сохранённая точка
 
-В preview.mjs итоговый список собирается как 602 base + 273 stone/mineral + 50 wood + 14 leaf = 939 source IDs. Базовый экспорт preview-config.mjs — не весь срез. TEXT создаётся в preview-text.mjs и дополняется переводами таблиц в preview.mjs. Источники групп: preview-stone-data.mjs, preview-wood-data.mjs, preview-leaf-data.mjs. Helpers — preview-images.mjs. Разделение edfc234 уже записано ради лимита валидатора; не восстанавливать старый монолит автоматически.
+Статический состав preview.mjs: прежние 939 (602 base + 273 stone/mineral + 50 wood + 14 leaf) + 55 copper + 41 cube + 10 indexed + 39 fixtures + 39 signs + 35 joinery + 19 extra = ожидаемые 1177 записей. Это не свежий compile/unique-membership audit. Арифметические 98 до 1275 не проверенный список отсутствующих моделей; auxiliary отдельно.
 
-Bubble_column уже назначен существующему sprite и подключён (4dbdcd2/4f1ef0b); сохранены 18 owned roles и исходные variants/paths. Показывать одну выбранную текстуру, не все одновременно; не создавать particle engine/новый builder/склеенную PNG ради этой карточки. Точная игровая симуляция не входит в статичный scope.
+Сохранены 90be95e/625f3c5 (55+41), 17da1cf (terrain.texture_data tests), 1b4d8c9/7a347c0 (общие indexed controls и 10 ID), 68b797e (39 fixtures), 7026a8b (39 signs), 87ecba5 (extensible membership test по истории), a05134a (22 doors + 13 shelves). Door/shelf scope статичный, не обещание открывания.
 
-79 fixture IDs сохранены в 0dd77aa; отрицание из чата не является состоянием репозитория. Старое ожидание 67 уже исправлено в b41c99b. Явные bindings четырёх кнопок/плит и пяти индексированных лестниц и регрессии записаны. 14 ID листвы подключены в 4b37171; общий foliage cutout/opaque проходит через catalog/leaf-preview.mjs, resolver и picker независимо от edited PNG. 836ad36 добавляет только три integration tests в existing tools/leaf-preview.test.mjs. Повторное подключение листьев из конца OLDCHAT25 не выполнять. Биомная окраска не реализована по передаче.
+В EXTRA_SOURCE_REVIEW_BLOCKS есть 10 coral wall fans + 4 waxed statues + 5 technical ID. dba560c/6289e13 с одинаковым commit message не два пакета по 19. Последний get_commit не вернул files/patch; полный diff не установлен. Финальная реплика OLDCHAT26 про bed не подтверждается текущим preview.mjs: явного bed нет. Не считать кровать подключённой и не повторять оборванный пакет без сверки.
 
-## Следующая работа
+Indexed cube picker уже сохранён: bulb mode off/lit/powered/lit_powered, frosted_ice stage 0..3, respawn_anchor charges 0..4, EN/RU и validation. PNG независимо. Sign source имена standing_sign/wall_sign, darkoak_* сохранять.
 
-Продолжить оставшиеся исходные ID крупными проверенными группами, отделяя реальные пробелы ресурсов/состояний от отсутствия в preview. Полная по-ID таблица пяти категорий ещё не закончена. 1275 исходных и 2 auxiliary — разные множества; 336 вне списка 939 не означают 336 новых геометрий. Существующие builders/модели не переносить заново, использовать existing coverage/inputValidation.
+Базовые IDs/TEXT — preview-config.mjs/preview-text.mjs; stone/wood/leaf в отдельных таблицах, новые группы сейчас в preview.mjs; там итоговая сборка. Helpers — preview-images.mjs. Общий FKModelState/FKM и preview-controls.mjs, без второго меню. Сохранённое разделение edfc234 не отменять.
 
-После подключения моделей и технической основы — совместные проверки, интеграция рабочих операций editor, затем удаление заменённого legacy. Отдельный read-only preview не доказывает готовность основного редактора; HTML/runtime в этой документальной сессии заново не проверялись.
+## Не повторять старую работу
 
-## Доказательства и рабочий ритм
+Bubble_column уже sprite/preview с одной выбранной texture и 18 owned roles, без симуляции. 79 fixtures из 0dd77aa сохранены, stale 67 исправлено b41c99b. Explicit indexed button/plate/stair bindings и existing regressions сохранены. 14 leaf ID подключены, foliage cutout/opaque независимо от PNG; biome tint не заявлен готовым. 836ad36 только три integration cases, не повторное подключение.
 
-OLDCHAT25 сообщает resource-variants 16/16 на 11b7b83 и частные mock/metadata/control проверки. Не выдавать их за запуск на последнем HEAD. Новые resolver tests используют normalized fixtures/registry spy, не реальную геометрию/PNG/WebGL. Полный compile/coverage/tests/Actions/PNG-TGA/Android и визуальная приёмка здесь не выполнены.
+## Продолжение и проверки
 
-Одна большая задача — без лишних остановок: после подтверждения записать, проверить и сразу готовить следующий пакет без ожидания «продолжай». Результат предыдущей записи объединять со следующим подтверждением. Каждая новая запись всё равно требует точного подтверждения; изменения направления, нужные материалы и реальные блокеры обсуждать отдельно. Малую самостоятельную задачу завершать итогом; фон не обещать. ZIP в реплике владельца — ошибка диктовки, не обязательный workflow.
+Сверять реальные оставшиеся source IDs по assignment → builder → resources/bindings/states → preview; готовое подключать крупными группами, геометрию повторно не писать. Full per-ID classification ещё нет. Пользовательское «все модели готовы?» не основание утверждать полноту ресурсов/состояний всех ID.
 
-Только main/exact confirmation/saved diff; <25000 UTF-8 bytes/file, без ослабления валидатора. Новые permanent tests отдельно согласовать; существующие не удалять массово. Документы по запросу владельца. Backup/refactor-0.9/fk070_packs/localStorage не трогать. Все контракты source IDs/resources/PNG-state/forms/shared sheets/material lifecycle сохранять. Полные mobs/skin editor/примерка брони и макет tablet/desktop отложены.
+OLDCHAT26 сообщает 13 Node mock checks (7 light + 6 primitive) и sign adapter 39 positive/39 negative на synthetic records, 26 sheet entries. OLDCHAT25: resource-variants 16/16 на 11b7b83. Это история, не прогон на HEAD. В этой сессии только чтение/статическая сверка; full compile/coverage/tests/Actions/images/WebGL/Android не выполнялись.
+
+После подключения — совместная приёмка и editor draw/history/reopen/export integration, затем индивидуальная чистка/runtime switch. Read-only preview не означает готовность основного legacy editor.
+
+После подтверждённой записи проверить saved content/diff и сразу готовить следующий пакет без ожидания «продолжай»; новая запись требует точного подтверждения. Только main/<25000 UTF-8 bytes/file. Новые permanent tests отдельно согласовать; существующие не удалять массово. Документы по запросу владельца. Backup/refactor-0.9/fk070_packs/localStorage не трогать. Full mobs/skin editor/body/armor/layout — отдельный scope. Подробные контракты и исключённые реплики — CONTEXT/ARCHITECTURE.

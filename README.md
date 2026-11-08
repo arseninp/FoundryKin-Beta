@@ -6,16 +6,18 @@
 
 ## Статус на 2026-11-08
 
-Проверенный HEAD main перед документацией: 836ad36a953f49dd2f08cc7996b0f6172b87385b. Рефакторинг продолжается, это не выпуск. Основной editor по прежней передаче остаётся legacy; его runtime/HTML в этой документальной сессии заново не проверяли. Новый preview не доказывает готовность editor draw/undo/reopen/export.
+Проверенный main HEAD перед документацией: 6289e137144a70929084e9d1c2a7e5722c170bae. Последний прочитанный архив — OLDCHAT26. Рефакторинг продолжается, это не выпуск. Основной editor по прежней передаче legacy; HTML/runtime в этом документальном проходе заново не проверены. Read-only preview не доказывает editor draw/undo/reopen/export.
 
-Отдельный read-only preview собирает 939 исходных ID: 602 базовых + 273 каменных/минеральных + 50 древесных + 14 лиственных. Это состав кода и интеграционное ожидание, не результат свежего полного compile и не число уникальных моделей/карточек. Базовый список — preview-config.mjs; переводы — preview-text.mjs; дополнительные группы — preview-stone-data.mjs, preview-wood-data.mjs, preview-leaf-data.mjs; итоговая сборка — preview.mjs. В паки просмотр не пишет.
+Статический состав preview ожидается 1177 записей: прежние 939 (602 base + 273 stone/mineral + 50 wood + 14 leaf) и новые 55 copper + 41 cube + 10 indexed + 39 fixtures + 39 signs + 35 doors/shelves + 19 alias/technical. Это не свежий compile/unique audit и не число моделей/карточек. Base — preview-config.mjs, text — preview-text.mjs, stone/wood/leaf — отдельные data modules, новые группы и итоговая сборка — preview.mjs. Просмотр в паки не пишет.
 
-Bubble_column использует существующий sprite с одной выбранной текстурой, сохранены 18 owned roles; симуляции потока нет. Листва имеет общий cutout/opaque picker независимо от edited PNG; биомный tint не реализован по передаче. Огонь A/B и костры lit/unlit статичны, smoke/playback не входят в реализованный scope.
+Copper bulb 4 modes, frosted ice 4 stages и respawn anchor 5 charge values выведены в общий picker независимо от PNG. Двери/полки подключены в статичном scope. Финальная реплика архива про bed не подтверждена текущим preview.mjs; готовность всех моделей/ресурсов ещё не установлена.
 
-Полные coverage/inputValidation/PIN compile/tests/Actions, реальные PNG-TGA/WebGL/Android и визуальная приёмка не подтверждены этой сессией. Исторические локальные результаты и новые normalized-fixture/registry-spy tests не заменяют эти проверки.
+Bubble_column использует existing sprite с одной texture и 18 owned roles без симуляции. Leaf cutout/opaque независим от edited PNG, biome tint не заявлен готовым. Fire A/B/campfire lit-unlit статичны, без smoke/playback.
+
+Full coverage/inputValidation/PIN compile/tests/Actions, реальные PNG-TGA/WebGL/Android и визуальная приёмка этим проходом не подтверждены. Старые частичные Node mock/fixture результаты не заменяют полный прогон.
 
 ## Продолжение и сохранность
 
-Читать CONTEXT → docs/handoff-unified-cards.md → ARCHITECTURE → TODO → ROADMAP → docs/review-principles.md. Последний прочитанный архив — OLDCHAT25; его ненадёжный конец не основание повторного leaf подключения. Продолжение — массовая сверка/подключение оставшихся реальных ID, затем editor integration/совместная приёмка/чистка.
+Читать CONTEXT → docs/handoff-unified-cards.md → ARCHITECTURE → TODO → ROADMAP → docs/review-principles.md. Продолжение — сверка реальных оставшихся ID/подключение готового, затем editor integration/совместная приёмка/чистка. Ненадёжный конец чата не основание отката проверенного прогресса или повтора неподтверждённой записи.
 
-Только main, точное подтверждение каждой записи и saved diff; <25000 UTF-8 bytes/file. После подтверждения продолжать одну большую задачу без лишнего ожидания «продолжай». Документы по запросу владельца; новые permanent tests отдельно согласовать. Backup/refactor-0.9/fk070_packs/localStorage не трогать. Полные mobs/skin editor/примерка брони/tablet-desktop layout — будущие этапы. PIN Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d; Three.js r128/JSZip 3.10.1.
+Только main/точное подтверждение каждой записи/saved content-diff/<25000 UTF-8 bytes/file. Внутри одной большой задачи после подтверждения продолжать без ожидания «продолжай». Документы по запросу владельца, новые permanent tests отдельно согласовать. Backup/refactor-0.9/fk070_packs/localStorage не трогать. Full mobs/skin editor/body/armor/tablet-desktop layout — будущие этапы. PIN Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d; Three.js r128/JSZip 3.10.1.
