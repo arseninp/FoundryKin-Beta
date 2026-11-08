@@ -3,7 +3,7 @@
 'use strict';
 var KEY='fk_pixel_grid.v1',NS='http://www.w3.org/2000/svg';
 function validStep(value){var n=Number(value);return isFinite(n)&&n>=1&&Math.floor(n)===n?n:1}
-function segments(size,step){var d='';for(var k=step;k<size;k+=step)d+='M'+k+' 0V'+size+'M0 '+k+'H'+size;return d}
+function segments(width,height,step){var d='';for(var x=step;x<width;x+=step)d+='M'+x+' 0V'+height;for(var y=step;y<height;y+=step)d+='M0 '+y+'H'+width;return d}
 function create(options){
   var canvas=options.canvas,settings=options.settings,getResolution=options.getResolution,labels=options.labels;
   if(!canvas||!canvas.parentNode||!settings||typeof getResolution!=='function'||!labels)throw new Error('Pixel grid needs canvas, settings, resolution and labels');
@@ -24,15 +24,15 @@ function create(options){
   function save(){try{root.localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
   function refresh(){
     if(destroyed)return;
-    var n=Number(getResolution());
-    if(!isFinite(n)||n<1||Math.floor(n)!==n){overlay.style.display='none';return}
-    toggle.checked=state.enabled;input.max=String(n);input.value=String(state.step);input.disabled=!state.enabled;
+    var w=Number(canvas.width),h=Number(canvas.height);
+    if(!isFinite(w)||!isFinite(h)||w<1||h<1||Math.floor(w)!==w||Math.floor(h)!==h){overlay.style.display='none';return}
+    toggle.checked=state.enabled;input.max=String(Math.max(w,h));input.value=String(state.step);input.disabled=!state.enabled;
     var hidden=canvas.style.visibility==='hidden'||canvas.hidden;
     overlay.style.display=state.enabled&&!hidden?'block':'none';
-    overlay.setAttribute('viewBox','0 0 '+n+' '+n);path.setAttribute('d',segments(n,state.step));
+    overlay.setAttribute('viewBox','0 0 '+w+' '+h);path.setAttribute('d',segments(w,h,state.step));
   }
   function onToggle(){state.enabled=toggle.checked;save();refresh()}
-  function onStep(){var n=Number(getResolution()),v=validStep(input.value);state.step=Math.min(v,isFinite(n)&&n>=1?Math.floor(n):v);save();refresh()}
+  function onStep(){var n=Math.max(Number(canvas.width),Number(canvas.height)),v=validStep(input.value);state.step=Math.min(v,isFinite(n)&&n>=1?Math.floor(n):v);save();refresh()}
   toggle.addEventListener('change',onToggle);input.addEventListener('change',onStep);
   if(root.MutationObserver){observer=new root.MutationObserver(refresh);observer.observe(canvas,{attributes:true,attributeFilter:['width','height','style','hidden']})}
   refresh();
