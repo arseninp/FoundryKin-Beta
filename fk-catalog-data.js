@@ -1,4 +1,4 @@
-/* Pinned catalog inputs. No editor state or storage access. */
+/* Pinned catalog inputs and compilation. No editor state or storage access. */
 (function(root){
 'use strict';
 var COMMIT='46ba6ea985fb5a92d79a9419198f10dda14c199d';
@@ -27,5 +27,11 @@ function load(){
  }).catch(function(e){pending=null;throw e});
  return pending;
 }
-root.FKCatalogData={load:load,commit:COMMIT};
+function loadCompiled(Three){
+ return Promise.all([load(),import('./models/library.mjs'),import('./catalog/access.mjs'),import('./catalog/preview.mjs')]).then(function(parts){
+  var compiled=parts[1].compileModelCatalog(parts[0],Three);
+  return Object.freeze({catalog:compiled.catalog,registry:compiled.registry,coverage:compiled.coverage,access:parts[2].createCatalogAccess(compiled.catalog),resolve:parts[3].createPreviewResolver(compiled.catalog,compiled.registry,Three),source:parts[0].source});
+ });
+}
+root.FKCatalogData={load:load,loadCompiled:loadCompiled,commit:COMMIT};
 })(window);
