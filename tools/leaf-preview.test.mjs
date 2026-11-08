@@ -47,3 +47,62 @@ test('leaf controls expose bilingual texture options and reject invalid values w
   assert.equal(JSON.stringify(plan),before);
  }
 });
+
+// Normalized fixtures and a declared test icon; registry spy checks build arguments, not geometry or PNGs.
+function resolverFixture() {
+ const records=Object.fromEntries(Object.keys(SOURCES).map(id=>{
+  const record=fixture(id);return [id,{...record,icons:[record.paths[2]]}];
+ }));
+ return {schema:1,records,items:{},aliases:{},families:{},resources:{}};
+}
+async function resolverIntegration(catalog=resolverFixture()) {
+ const [{createPreviewResolver},{createPreviewControls}]=await Promise.all([import('../catalog/preview.mjs'),import('../preview-controls.mjs')]);
+ const registry={
+  get(id){assert.ok(['cube','sprite'].includes(id));return {scale:1,mode:id==='sprite'?'sprite':'volume'};},
+  build(model,environment){return {model,environment};}
+ };
+ const controls=createPreviewControls({en:{texture:'Texture'},ru:{texture:'Текстура'}});
+ return {catalog,resolve:createPreviewResolver(catalog,registry),controls};
+}
+test('leaf resolver integration round-trips picker state and edited PNG for every source ID',async()=>{
+ const {catalog,resolve,controls}=await resolverIntegration(),before=JSON.stringify(catalog);
+ for(const id of Object.keys(SOURCES)) {
+  const initial=resolve({id});assert.equal(initial.state.foliage,'cutout');
+  assert.deepEqual(controls.previewControlSpec(catalog,initial).schema[0].values.map(row=>row.value),['cutout','opaque']);
+  for(const [index,foliage]of ['cutout','opaque'].entries())for(const slot of catalog.records[id].paths) {
+   const values={foliage,texture:slot},saved=JSON.stringify(values),selection=controls.previewControlSelection(initial,values),plan=resolve({id,...selection});
+   assert.equal(plan.slot,slot);assert.equal(plan.state.foliage,foliage);assert.equal(plan.model,'cube');
+   for(const face of FACES)assert.equal(plan.bindings[face],catalog.records[id].variants[face][index]);
+   assert.equal(controls.previewControlSpec(catalog,plan).state.foliage,foliage);assert.equal(JSON.stringify(values),saved);
+  }
+ }
+ assert.equal(JSON.stringify(catalog),before);
+});
+test('leaf resolver integration captures selected bindings and state independently of later mutations',async()=>{
+ const {catalog,resolve}=await resolverIntegration(),before=JSON.stringify(catalog);
+ for(const id of Object.keys(SOURCES))for(const foliage of ['cutout','opaque']) {
+  const slot=catalog.records[id].paths[2],plan=resolve({id,slot,state:{foliage}}),expected={...plan.bindings};
+  plan.state.foliage='bad';plan.bindings.up='bad';
+  const first=plan.build({state:{foliage:'bad'},bindings:{up:'bad'}});
+  assert.equal(first.model,'cube');assert.equal(first.environment.cur,id);assert.equal(first.environment.slot,slot);
+  assert.equal(first.environment.state.foliage,foliage);assert.deepEqual(first.environment.bindings,expected);
+  first.environment.state.foliage='bad';first.environment.bindings.up='bad';
+  const second=plan.build({});assert.equal(second.environment.state.foliage,foliage);assert.deepEqual(second.environment.bindings,expected);
+ }
+ assert.equal(JSON.stringify(catalog),before);
+});
+test('leaf resolver integration rejects contradictory faces and foreign slots without consuming leaf states in icons',async()=>{
+ const {catalog,resolve,controls}=await resolverIntegration();
+ for(const id of Object.keys(SOURCES)) {
+  for(const foliage of [null,true,0,'bad'])assert.throws(()=>resolve({id,state:{foliage}}),/Invalid leaf preview state/);
+  assert.throws(()=>resolve({id,state:{foliage:'opaque'},faceChoices:{up:catalog.records[id].variants.up[0]}}),/Explicit face variant required/);
+  const selection=controls.previewControlSelection(resolve({id}),{foliage:'cutout',texture:'textures/blocks/foreign'});
+  assert.throws(()=>resolve({id,...selection}),/Texture is outside/);
+  const bad=structuredClone(catalog);bad.records[id].variants.up[1]=bad.records[id].paths[2];
+  const next=await resolverIntegration(bad);assert.throws(()=>next.resolve({id}),/leaf variants/);
+ }
+ const icon=resolve({id:'oak_leaves',view:'sprite',slot:catalog.records.oak_leaves.icons[0],state:{foliage:'bad'}});
+ assert.equal(icon.model,'sprite');assert.deepEqual(icon.bindings,{});assert.equal(controls.previewControlSpec(catalog,icon).schema,null);
+ catalog.records.future_oak_leaves={...fixture('oak_leaves'),id:'future_oak_leaves'};
+ assert.throws(()=>resolve({id:'future_oak_leaves'}),/Explicit face variant required/);
+});
