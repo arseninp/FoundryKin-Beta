@@ -4,7 +4,7 @@ var FK=window.FK,V=window.FKView;
 function tt(k,p){return FK.t(k,p)}
 var res=16,shape='cube',slots=[],slot=null,faceMap={},cv={},tex={},mats={},undoS={},redoS={},ph={},applyGen=0,fr={},fi={},hs={};
 var files={},cur='',dirty={},catalog=null,existing=null,shapeKeys=['cube'],decoded={},sourceLoads={};
-var FACES=['up','down','north','south','east','west'],ALL_SHAPES=['cube','slab','stairs','wall','fence','gate','button','plate','pane','carpet'];
+var selection=null;
 var $=function(s){return document.querySelector(s)};
 try{var PD=parent.document.documentElement;var syncTheme=function(){document.documentElement.setAttribute('data-theme',PD.getAttribute('data-theme')||'light')};syncTheme();new MutationObserver(syncTheme).observe(PD,{attributes:true,attributeFilter:['data-theme']})}catch(e){}
 var ed=$('#ed'),ectx=ed.getContext('2d'),listeners=[],stateUi=window.FKModelState.create($('#shapesRow'),function(){build()});
@@ -17,25 +17,6 @@ function say(key,p){S.message=key?{key:key,params:p||{}}:null;$('#msg').textCont
 function rnd(x,y,s){var h=Math.sin(x*127.1+y*311.7+s*74.7)*43758.5453;return h-Math.floor(h)}
 function placeholder(g,r){for(var y=0;y<r;y++)for(var x=0;x<r;x++){var v=118+Math.round(rnd(Math.floor(x*16/r),Math.floor(y*16/r),5)*50);g.fillStyle='rgb('+v+','+v+','+v+')';g.fillRect(x,y,1,1)}}
 function ctxOf(k){return cv[k].getContext('2d')}
-function shapeOfId(id){var m=/_(slab|stairs|wall|fence_gate|fence|button|pressure_plate|pane|carpet)$/.exec(id),map={fence_gate:'gate',pressure_plate:'plate'};return /_trapdoor$/.test(id)?'trapdoor':m?(map[m[1]]||m[1]):'cube'}
-function isDoorBlock(m){return !!(catalog&&catalog.sp&&catalog.sp[m]&&catalog.sp[m].kind==='door')}
-function modelOf(m){if(m==='beacon')return 'beacon';if(m==='azalea'||m==='flowering_azalea')return 'azalea';return (m==='bamboo'||(catalog&&catalog.p&&catalog.p[m]))?'plant':null}
-function doubleSided(m){var mo=modelOf(m);return /leaves/.test(m)||mo==='plant'||mo==='azalea'}
-function shapeKeysFor(m){
-  var base=catalog.familyOf&&catalog.familyOf[m],fe=base&&catalog.formEntries[base];if(fe)return Object.keys(fe).sort(function(a,b){return ALL_SHAPES.indexOf(a)-ALL_SHAPES.indexOf(b)});
-  if(isDoorBlock(m))return ['door'];if(m==='anvil')return ['anvil'];if(m==='cake')return ['cake'];if(m==='bell')return ['bell'];
-  if(m==='big_dripleaf'||m==='small_dripleaf_block')return ['dripleaf'];if(/_bed$/.test(m))return ['bed'];
-  if(/(^|_)candle$/.test(m))return ['candle'];if(/(^|_)carpet$/.test(m))return ['carpet'];
-  if(/(^|_)rail$/.test(m)||m==='waterlily'||m==='leaf_litter'||m==='frog_spawn')return ['rail'];
-  if(m==='vine'||m==='glow_lichen'||m==='sculk_vein'||m==='resin_clump')return ['decal'];
-  var mo=modelOf(m);if(mo)return [mo];if(/_trapdoor$/.test(m))return ['trapdoor'];
-  var ks=[shapeOfId(m)],f=catalog.forms&&catalog.forms[m];if(f)Object.keys(f).forEach(function(k){if(ks.indexOf(k)<0)ks.push(k)});
-  ks.sort(function(a,b){return ALL_SHAPES.indexOf(a)-ALL_SHAPES.indexOf(b)});return ks;
-}
-function slotsOf(p){var list=[],seen={},fm={};FACES.forEach(function(f,i){var path=p[i];fm[f]=path;if(!seen[path]){seen[path]=1;list.push({id:path})}});return {list:list,fm:fm}}
-function slotsFor(m){if(catalog.sp&&catalog.sp[m])return {list:catalog.sp[m].list,fm:catalog.sp[m].fm};var so=slotsOf(catalog.b[m]),cp=catalog.cr&&catalog.cr[m];if(cp&&!so.list.some(function(s){return s.id===cp}))so.list.push({id:cp,carried:true});return so}
-function pathsFor(m){if(catalog.sp&&catalog.sp[m])return catalog.sp[m].list.map(function(s){return s.id});var o=[];catalog.b[m].forEach(function(x){if(o.indexOf(x)<0)o.push(x)});var q=catalog.cr&&catalog.cr[m];if(q&&o.indexOf(q)<0)o.push(q);return o}
-function describe(id){var m=catalog.mother[id]||id,mo=modelOf(m),keys=shapeKeysFor(m),want=(catalog.variantForm&&catalog.variantForm[m])||(isDoorBlock(m)?'door':(mo||shapeOfId(id)));return {id:m,model:mo,keys:keys,shape:keys.indexOf(want)>=0?want:keys[0],so:slotsFor(m)}}
 var stage=$('#stage'),W=stage.clientWidth||360,gl=typeof THREE!=='undefined'&&!!V,view=null,group=null,frames=0,renderFrame=null,resetView=true;
 if(!gl)showErr('three_missing');
 if(gl){try{view=V.createStage();group=view.group;V.mount(stage)}catch(err){gl=false;showErr('webgl_unavailable',err.message)}}
@@ -58,11 +39,11 @@ document.addEventListener('visibilitychange',function(){if(document.hidden){endD
 function setupSlots(list,fm){
   applyGen++;clearModel();Object.keys(tex).forEach(function(k){if(tex[k])tex[k].dispose()});Object.keys(mats).forEach(function(k){if(mats[k])mats[k].dispose()});
   tex={};mats={};cv={};undoS={};redoS={};ph={};fr={};fi={};hs={};slots=list;faceMap=fm;resetView=true;
-  list.forEach(function(s){var f=files[s.id],n=(f&&f.frames)||1,a=[];for(var i=0;i<n;i++){var c=document.createElement('canvas');c.width=f?f.res:16;c.height=f?Math.max(1,Math.round(f.res*(f.aspect||1))):16;a.push(c)}fr[s.id]=a;fi[s.id]=0;hs[s.id]=[];cv[s.id]=a[0];undoS[s.id]=[];redoS[s.id]=[];if(gl)mats[s.id]=V.material(doubleSided(cur))});
+  list.forEach(function(s){var f=files[s.id],n=(f&&f.frames)||1,a=[];for(var i=0;i<n;i++){var c=document.createElement('canvas');c.width=f?f.res:16;c.height=f?Math.max(1,Math.round(f.res*(f.aspect||1))):16;a.push(c)}fr[s.id]=a;fi[s.id]=0;hs[s.id]=[];cv[s.id]=a[0];undoS[s.id]=[];redoS[s.id]=[];if(gl)mats[s.id]=V.material(selection.doubleSided(catalog,cur))});
   if(gl&&shape==='door')mats.__door=V.material(false);slot=list[0].id;buildSlotUi();
 }
 function buildSlotUi(){var boxEl=$('#slots');boxEl.innerHTML='';slots.forEach(function(s){var b=document.createElement('button');b.type='button';b.textContent=String(s.id).split('/').pop();b.title=s.id;b.dataset.id=s.id;if(s.id===slot)b.className='on';b.onclick=function(){setSlot(s.id)};boxEl.appendChild(b)});boxEl.style.display=slots.length?'flex':'none';frameUi()}
-function setSlot(id){if(API.busy||!cv[id])return;slot=id;$('#slots').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.id===id)});drawEd();frameUi();if(slots.some(function(s){return s.carried})){var so=slotsFor(cur),isC=slots.some(function(s){return s.carried&&s.id===id}),nf={};if(isC){Object.keys(faceMap).forEach(function(k){nf[k]=id});faceMap=nf}else faceMap=so.fm}build()}
+function setSlot(id){if(API.busy||!cv[id])return;slot=id;$('#slots').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.id===id)});drawEd();frameUi();if(slots.some(function(s){return s.carried})){var so=selection.slotsFor(catalog,cur),isC=slots.some(function(s){return s.carried&&s.id===id}),nf={};if(isC){Object.keys(faceMap).forEach(function(k){nf[k]=id});faceMap=nf}else faceMap=so.fm}build()}
 function frameUi(){var f=fr[slot],n=f?f.length:0;$('#frames').style.display=n>1?'flex':'none';if(n>1)$('#fNum').textContent=(fi[slot]+1)+' / '+n}
 function setFrame(k){if(API.busy)return;var id=slot,f=fr[id];if(!f||k<0||k>=f.length||k===fi[id])return;hs[id][fi[id]]={u:undoS[id],r:redoS[id]};fi[id]=k;cv[id]=f[k];var h=hs[id][k]||{u:[],r:[]};undoS[id]=h.u;redoS[id]=h.r;refreshTex(id);drawEd();frameUi()}
 $('#fPrev').onclick=function(){setFrame(fi[slot]-1)};$('#fNext').onclick=function(){setFrame(fi[slot]+1)};
@@ -105,6 +86,9 @@ function useCatalog(B,Tx,src){
  catalog=prepared;catalogReady(src);return true;
 }
 function loadCatalog(){
+ import('./catalog/editor-selection.mjs').then(function(module){selection=module;loadLegacyCatalog()}).catch(function(err){catalogFailed('catalog_fetch',err.message)});
+}
+function loadLegacyCatalog(){
   try{
     var cached=JSON.parse(localStorage.getItem(CAT_KEY));
     if(cached&&cached.commit===window.FKCatalogData.commit&&cached.version===API.version&&cached.b&&cached.existing&&cached.familyPlan){
@@ -121,25 +105,25 @@ function loadCatalog(){
   });
 }
 $('#catfile').onchange=function(e){var inp=e.target,fl=[].slice.call(inp.files),left=fl.length,B=null,Tx=null;if(!left)return;fl.forEach(function(f){var fr=new FileReader();fr.onload=function(){try{var j=FKCatalog.parseLoose(fr.result);if(j&&j.texture_data)Tx=j;else B=j}catch(err){say('msg.file_not_json',{name:f.name,detail:err.message})}if(--left===0){if(!useCatalog(B,Tx,'file')&&!lastB&&!catalog)catalogFailed('catalog_no_blocks')}};fr.onerror=function(){if(--left===0)say('msg.file_unreadable')};fr.readAsText(f)});inp.value=''};
-function familyPaths(id){var base=catalog.familyOf&&catalog.familyOf[id],entries=base&&catalog.formEntries[base],out=[];(entries?Object.keys(entries).map(function(k){return entries[k]}):[id]).forEach(function(x){pathsFor(x).forEach(function(p){if(out.indexOf(p)<0)out.push(p)})});return out}
+function familyPaths(id){var base=catalog.familyOf&&catalog.familyOf[id],entries=base&&catalog.formEntries[base],out=[];(entries?Object.keys(entries).map(function(k){return entries[k]}):[id]).forEach(function(x){selection.pathsFor(catalog,x).forEach(function(p){if(out.indexOf(p)<0)out.push(p)})});return out}
 function isEdited(id){return familyPaths(id).some(function(p){return dirty[p]})}
 function familyFiles(){packCur();return familyPaths(cur).filter(function(p){return dirty[p]&&files[p]}).map(function(p){return {path:p+'.png',data:files[p].data}})}
-function setBlockInfo(id,m,note,mo){var grp=catalog.members[catalog.sig[m]],fo=catalog.forms&&catalog.forms[m];S.info={id:id,files:pathsFor(m),shared:grp.filter(function(x){return x!==m}),forms:fo?Object.keys(fo):[],note:note,kind:isDoorBlock(m)?'door':(mo||'shape')};emit()}
+function setBlockInfo(id,m,note,mo){var grp=catalog.members[catalog.sig[m]],fo=catalog.forms&&catalog.forms[m];S.info={id:id,files:selection.pathsFor(catalog,m),shared:grp.filter(function(x){return x!==m}),forms:fo?Object.keys(fo):[],note:note,kind:selection.isDoorBlock(catalog,m)?'door':(mo||'shape')};emit()}
 function fcount(w,h){return h>w&&h%w===0?h/w:1}
 function loadSource(path){if(!sourceLoads[path])sourceLoads[path]=FKCatalog.loadAny(path).then(function(im){if(!im)delete sourceLoads[path];return im},function(err){delete sourceLoads[path];throw err});return sourceLoads[path]}
 function ensureFiles(m){
-  var need=[];pathsFor(m).forEach(function(x){if(!files[x]&&need.indexOf(x)<0)need.push(x)});if(!need.length)return Promise.resolve({vanilla:true,missing:0,loaded:false});
+  var need=[];selection.pathsFor(catalog,m).forEach(function(x){if(!files[x]&&need.indexOf(x)<0)need.push(x)});if(!need.length)return Promise.resolve({vanilla:true,missing:0,loaded:false});
   return Promise.all(need.map(loadSource)).then(function(imgs){var first=imgs.filter(Boolean)[0],miss=0,c=document.createElement('canvas');need.forEach(function(x,i){var im=imgs[i];if(!im){miss++;return}if(files[x])return;var meta=imageMeta(x,im.naturalWidth||im.width,im.naturalHeight||im.height);c.width=meta.res;c.height=Math.round(meta.res*meta.aspect*meta.frames);var g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(im,0,0);files[x]={res:meta.res,data:c.toDataURL('image/png'),frames:meta.frames,aspect:meta.aspect}});return {vanilla:!!first,missing:miss,loaded:true}});
 }
 /* Snapshot state is local; no editor selection, history or canvas is modified. */
 function previewBlock(id,valid){
   if(!gl||!catalog||!catalog.b[id]||!valid())return Promise.resolve(null);
-  var cat=catalog,spec=describe(id);
+  var cat=catalog,spec=selection.describe(catalog,id);
   return ensureFiles(spec.id).then(function(){if(!valid()||catalog!==cat)return null;var e=entryFor(spec.so.list);return Promise.all(spec.so.list.map(function(s){return readImage(s.id,e.slots[s.id])})).then(function(imgs){
     if(!valid()||catalog!==cat)return null;
     var canvases={},materials={},textures=[];
     try{
-      spec.so.list.forEach(function(s,i){if(materials[s.id])return;var c=document.createElement('canvas');drawFrame(c,imgs[i],0,s.id);canvases[s.id]=c;var mat=V.material(doubleSided(spec.id));materials[s.id]=mat;var tx=V.texture(c);textures.push(tx);V.mapMaterial(mat,tx)});
+      spec.so.list.forEach(function(s,i){if(materials[s.id])return;var c=document.createElement('canvas');drawFrame(c,imgs[i],0,s.id);canvases[s.id]=c;var mat=V.material(selection.doubleSided(catalog,spec.id));materials[s.id]=mat;var tx=V.texture(c);textures.push(tx);V.mapMaterial(mat,tx)});
       if(spec.shape==='door'){materials.__door=V.material(false);var door=V.doorTexture(canvases[spec.so.fm.down],canvases[spec.so.fm.north]);textures.push(door);V.mapMaterial(materials.__door,door)}
       return V.capture({shape:spec.shape,cur:spec.id,slot:spec.so.list[0].id,faceMap:spec.so.fm,mats:materials},256);
     }finally{Object.keys(materials).forEach(function(k){materials[k].dispose()});textures.forEach(function(t){t.dispose()})}
@@ -147,7 +131,7 @@ function previewBlock(id,valid){
 }
 var selTok=0;
 function selectBlock(id,reopened){
-  if(!catalog||!catalog.b[id])return;var spec=describe(id),m=spec.id,tok=++selTok;
+  if(!catalog||!catalog.b[id])return;var spec=selection.describe(catalog,id),m=spec.id,tok=++selTok;
   if(!API.busy)packCur();applyGen++;endDrag();if(gl){clearModel();requestRender()}
   if(reopened){files[reopened.key]=mkFile(reopened.data,reopened.key);dirty[reopened.key]=true;API.want=reopened.key}
   function go(note){if(tok!==selTok)return;cur=m;stateUi.select(m,FKShapes.stateSchema?FKShapes.stateSchema(m):null);shape=spec.shape;setupSlots(spec.so.list,spec.so.fm);updShapeUi(spec.keys);applyEntry(entryFor(spec.so.list),function(){if(tok!==selTok)return;build();setBlockInfo(id,m,note,spec.model);API.loaded(m)})}
@@ -165,7 +149,7 @@ var API={
   openTexture:function(path,data,preferredId){
     if(!catalog)return null;
     if(typeof path!=='string')return false;
-    var key='textures/'+path,hit=null,candidates=Object.keys(catalog.b).filter(function(id){return pathsFor(id).indexOf(key)>=0});
+    var key='textures/'+path,hit=null,candidates=Object.keys(catalog.b).filter(function(id){return selection.pathsFor(catalog,id).indexOf(key)>=0});
     if(preferredId!==undefined&&preferredId!==null&&preferredId!==''){
       if(typeof preferredId!=='string'||!Object.prototype.hasOwnProperty.call(catalog.b,preferredId))return false;
       if(candidates.indexOf(preferredId)>=0)hit=preferredId;
@@ -179,7 +163,7 @@ var API={
     discard:function(){slots.forEach(function(s){ph[s.id]=true})},
     obj:function(){return API.busy?{id:API.pending||null,paths:[]}:{id:(catalog.familyOf&&catalog.familyOf[cur])||cur||null,paths:cur?familyPaths(cur):[]}},
     setPack:function(map){Object.keys(dirty).forEach(function(k){if(!(k in map)){delete dirty[k];delete files[k];delete decoded[k]}});Object.keys(map).forEach(function(k){if(!files[k]||files[k].data!==map[k]){files[k]=mkFile(map[k],k);delete decoded[k]}dirty[k]=true})},
-    shapeFor:function(id){return describe(id).shape}}}
+    shapeFor:function(id){return selection.describe(catalog,id).shape}}}
 };
 ctx.el={ed:ed};ctx.res=function(){return res};ctx.setRes=setRes;ctx.ready=function(){return !API.busy&&!!cv[slot]};ctx.g=function(){return ctxOf(slot)};
 ctx.pushUndo=pushUndo;ctx.undo=doUndo;ctx.redo=doRedo;ctx.touched=touched;ctx.syncHist=updHist;ctx.files=curFiles;ctx.say=say;
