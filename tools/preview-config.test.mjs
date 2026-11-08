@@ -8,19 +8,20 @@ const digest=value=>createHash('sha256').update(JSON.stringify(value)).digest('h
 const BED_LABELS=[['white','White','Белая'],['orange','Orange','Оранжевая'],['magenta','Magenta','Пурпурная'],['light_blue','Light blue','Голубая'],['yellow','Yellow','Жёлтая'],['lime','Lime','Лаймовая'],['pink','Pink','Розовая'],['gray','Gray','Серая'],['light_gray','Light gray','Светло-серая'],['cyan','Cyan','Бирюзовая'],['purple','Purple','Фиолетовая'],['blue','Blue','Синяя'],['brown','Brown','Коричневая'],['green','Green','Зелёная'],['red','Red','Красная'],['black','Black','Чёрная']];
 const bedKeys=new Set(['card_bed',...BED_LABELS.map(([color])=>'card_'+color+'_bed')]);
 const CANDLES=[['candle','Candle','Свеча'],...BED_LABELS.map(([color,en,ru])=>[color+'_candle',en+' candle',ru+' свеча'])];
-const extensionKeys=new Set([...bedKeys,...CANDLES.map(([id])=>'card_'+id)]);
-// Preserve the original snapshots; beds and candles are explicit appended extensions.
-test('split config preserves original 602 ordered IDs before bed and seventeen candles',()=>{
+const CAKES=['cake','candle_cake',...BED_LABELS.map(([color])=>color+'_candle_cake')];
+const extensionKeys=new Set([...bedKeys,...CANDLES.map(([id])=>'card_'+id),'card_cake']);
+// Preserve the original snapshots; reviewed groups are explicit appended extensions.
+test('split config preserves original 602 ordered IDs before reviewed bed candle and cake groups',()=>{
  assert.deepEqual(Object.keys(config).sort(),['REVIEW_IDS','TEXT']);
- assert.equal(config.REVIEW_IDS.length,620);assert.equal(new Set(config.REVIEW_IDS).size,620);
+ assert.equal(config.REVIEW_IDS.length,638);assert.equal(new Set(config.REVIEW_IDS).size,638);
  assert.ok(Object.isFrozen(config.REVIEW_IDS));
  assert.equal(digest(config.REVIEW_IDS.slice(0,602)),'383f57f30d695202881230ee6769ee0bec1a4729b89ba4b27d09b471ed958fba');
- assert.deepEqual(config.REVIEW_IDS.slice(602),['bed',...CANDLES.map(([id])=>id)]);
+ assert.deepEqual(config.REVIEW_IDS.slice(602),['bed',...CANDLES.map(([id])=>id),...CAKES]);
  for(const [color] of BED_LABELS)assert.ok(!config.REVIEW_IDS.includes(color+'_bed'));
 });
 test('split config retains all original translations and their key order',()=>{
  assert.deepEqual(Object.keys(config.TEXT),['en','ru']);
- assert.equal(Object.keys(config.TEXT.en).length,718);
+ assert.equal(Object.keys(config.TEXT.en).length,719);
  assert.deepEqual(Object.keys(config.TEXT.en),Object.keys(config.TEXT.ru));
  for(const labels of Object.values(config.TEXT))for(const value of Object.values(labels))assert.ok(typeof value==='string'&&value.length>0);
  const baseline=Object.fromEntries(Object.entries(config.TEXT).map(([lang,labels])=>[lang,Object.fromEntries(Object.entries(labels).filter(([key])=>!extensionKeys.has(key)))]));
@@ -29,6 +30,7 @@ test('split config retains all original translations and their key order',()=>{
  assert.equal(config.TEXT.en.card_bed,'Bed');assert.equal(config.TEXT.ru.card_bed,'Кровать');
  for(const [color,en,ru] of BED_LABELS){assert.equal(config.TEXT.en['card_'+color+'_bed'],en+' bed');assert.equal(config.TEXT.ru['card_'+color+'_bed'],ru+' кровать');}
  for(const [id,en,ru] of CANDLES){assert.equal(config.TEXT.en['card_'+id],en);assert.equal(config.TEXT.ru['card_'+id],ru);}
+ assert.equal(config.TEXT.en.card_cake,'Cake');assert.equal(config.TEXT.ru.card_cake,'Торт');
 });
 test('stone review data has 273 immutable distinct IDs with EN/RU labels',()=>{
  assert.equal(STONE_REVIEW_BLOCKS.length,273);assert.ok(Object.isFrozen(STONE_REVIEW_BLOCKS));
@@ -37,10 +39,10 @@ test('stone review data has 273 immutable distinct IDs with EN/RU labels',()=>{
  for(const id of ['stone_stairs','end_brick_stairs','prismarine_bricks_stairs','normal_stone_stairs','stone_brick_stairs','sandstone_stairs','red_sandstone_stairs'])assert.ok(ids.has(id),id);
  for(const id of ['cobblestone_stairs','end_stone_brick_stairs','prismarine_brick_stairs'])assert.ok(!ids.has(id),id);
 });
-test('base and stone source datasets compose to 893 IDs without collisions or mutation',()=>{
+test('base and stone source datasets compose to 911 IDs without collisions or mutation',()=>{
  const before=JSON.stringify({config,STONE_REVIEW_BLOCKS});
  const combined=[...config.REVIEW_IDS,...STONE_REVIEW_BLOCKS.map(([id])=>id)];
- assert.equal(combined.length,893);assert.equal(new Set(combined).size,893);
+ assert.equal(combined.length,911);assert.equal(new Set(combined).size,911);
  assert.deepEqual(combined.slice(0,config.REVIEW_IDS.length),config.REVIEW_IDS);
  assert.equal(JSON.stringify({config,STONE_REVIEW_BLOCKS}),before);
 });
@@ -110,4 +112,28 @@ test('pinned candles use shared lit controls without coupling state to edited PN
   for(const lit of [null,0,1,'true',{},[]]){assert.throws(()=>previewControlSelection(plain,{lit}),/Invalid candle/);assert.throws(()=>resolve({id,state:{lit}}),/Invalid candle/);}
  }
  assert.equal(JSON.stringify(input),before);
+});
+test('pinned cake source aliases retain indexed resources and reopen one whole cake',async()=>{
+ const {fileURLToPath}=await import('node:url'),{readCandidate}=await import('./model-coverage.mjs');
+ const {createThreeMock,meshesOf}=await import('./three-mock.mjs');
+ const {compileReview,REVIEW_IDS,previewTextureField}=await import('../preview.mjs');
+ const {createPreviewResolver}=await import('../catalog/preview.mjs');
+ const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url))),before=JSON.stringify(input),Three=createThreeMock();
+ const {catalog,registry,coverage}=compileReview(input,Three),resolve=createPreviewResolver(catalog,registry,Three);assert.equal(coverage.ready,true);
+ const original=JSON.stringify(catalog),expected={up:'textures/blocks/cake_top',down:'textures/blocks/cake_bottom',north:'textures/blocks/cake_side',south:'textures/blocks/cake_side',east:'textures/blocks/cake_side',west:'textures/blocks/cake_side'};
+ assert.ok(catalog.cards.includes('cake'));
+ for(const id of CAKES){
+  assert.ok(Object.hasOwn(input.blocks,id));assert.equal(REVIEW_IDS.filter(source=>source===id).length,1);
+  const record=catalog.records[id];assert.equal(record.model,'cake');
+  assert.deepEqual(record.variants,catalog.records.cake.variants);assert.deepEqual(record.paths,catalog.records.cake.paths);
+  assert.equal(record.variants.up.length,2);assert.equal(record.variants.west.length,2);assert.ok(record.paths.includes('textures/blocks/cake_inner'));
+  if(id!=='cake'){assert.equal(catalog.aliases[id],'cake');assert.ok(!catalog.cards.includes(id));}
+  const plain=resolve({id});assert.equal(plain.object.id,'cake');assert.equal(plain.object.card,'cake');assert.deepEqual(plain.bindings,expected);
+  assert.deepEqual(previewTextureField(plain).values.map(option=>option.value),plain.paths);
+  for(const slot of record.paths){
+   const plan=resolve({id,slot}),group=new Three.Group(),mats=Object.fromEntries([...new Set(Object.values(expected))].map(path=>[path,{path}]));
+   assert.equal(plan.slot,slot);assert.deepEqual(plan.bindings,expected);plan.build({group,mats});assert.equal(meshesOf(group).length,1);
+  }
+ }
+ assert.equal(JSON.stringify(catalog),original);assert.equal(JSON.stringify(input),before);
 });
