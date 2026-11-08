@@ -281,15 +281,20 @@ function build(root){
   ed.addEventListener('pointerup',up);ed.addEventListener('pointercancel',up);
 
   /* replace from PNG, clear, download */
+  var importGen=0;
+  window.FKAPI.subscribe(function(s){if(s.mode!=='edit'||window.FKAPI.busy)importGen++});
   file.addEventListener('change',function(e){
-    var inp=e.target,f=inp.files[0];if(!f)return;var fr=new FileReader();
-    fr.onload=function(){var img=new Image();
+    var inp=e.target,f=inp.files[0],gen=++importGen;inp.value='';
+    if(!f||!C.ready()||window.FKAPI.state.mode!=='edit')return;
+    var n=C.res(),g=C.g(),edits=window.FKAPI.edits,fr=new FileReader();
+    function current(){return gen===importGen&&C.ready()&&window.FKAPI.state.mode==='edit'&&C.res()===n&&C.g()===g&&window.FKAPI.edits===edits}
+    fr.onload=function(){if(!current())return;var img=new Image();
       img.onload=function(){
-        if(!C.ready())return;
-        var n=C.res(),g=C.g();C.pushUndo();g.clearRect(0,0,n,n);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,n,n);C.touched();
+        if(!current())return;
+        C.pushUndo();g.clearRect(0,0,n,n);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,n,n);C.touched();
       };
       img.src=fr.result};
-    fr.readAsDataURL(f);inp.value='';
+    fr.readAsDataURL(f);
   });
   clr.addEventListener('click',function(){if(!C.ready())return;var n=C.res();C.pushUndo();C.g().clearRect(0,0,n,n);C.touched()});
   dl.addEventListener('click',function(){
