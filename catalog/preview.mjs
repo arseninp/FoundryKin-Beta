@@ -67,12 +67,23 @@ function cubeStateBindings(record,state) {
 }
 function candleBindings(record,state) {
  if(record.model!=='candle')return null;
- state.lit??=false;
+ if(state.lit===undefined)state.lit=false;
  if(typeof state.lit!=='boolean')throw new Error('Invalid candle preview state');
  const name=record.id+(state.lit?'_lit':'');
  return Object.fromEntries(Object.entries(record.faces).map(([face,paths])=>{
   const found=paths.filter(path=>path.split('/').pop()===name);
   if(found.length!==1)throw new Error('Missing or ambiguous candle resource: '+name);
+  return [face,found];
+ }));
+}
+function cakeBindings(record) {
+ if(record.model!=='cake')return null;
+ const names={up:'cake_top',down:'cake_bottom',north:'cake_side',south:'cake_side',east:'cake_side',west:'cake_side'};
+ return Object.fromEntries(Object.entries(names).map(([face,name])=>{
+  const paths=record.faces?.[face];
+  if(!Array.isArray(paths))throw new Error('Missing cake face: '+face);
+  const found=[...new Set(paths.filter(path=>typeof path==='string'&&path.split('/').pop()===name))];
+  if(found.length!==1)throw new Error('Missing or ambiguous whole cake resource: '+face);
   return [face,found];
  }));
 }
@@ -266,7 +277,7 @@ export function createPreviewResolver(catalog, registry, Three) {
   if (view==='model') {
    const leaf=leafPreviewSelection(record,previewState);
    if(leaf)Object.assign(previewState,leaf.state);
-   const bindings=leaf?.bindings??(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??cubeStateBindings(record,previewState)??candleBindings(record,previewState)??decoratedPotBindings(record,previewState)??conduitBindings(record,previewState)??chestBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??deviceBindings(record)??stageBindings(record,previewState)??frameBindings(record)??hookBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
+   const bindings=leaf?.bindings??(model==='potted_azalea'?pottedAzaleaBindings(record):azaleaBindings(record))??doorBindings(record)??pumpkinBindings(record)??cubeStateBindings(record,previewState)??candleBindings(record,previewState)??cakeBindings(record)??decoratedPotBindings(record,previewState)??conduitBindings(record,previewState)??chestBindings(record,previewState)??mossBindings(record)??pistonBindings(record)??deviceBindings(record)??stageBindings(record,previewState)??frameBindings(record)??hookBindings(record)??segmentedBindings(record)??(own(record,'bindings')?record.bindings:record.faces);
    if (!dictionary(bindings)||!Object.keys(bindings).length) throw new Error('Missing model bindings');
    for (const face of Object.keys(choices)) if (!own(bindings,face)) throw new Error('Unknown face choice: '+face);
    for (const [face,paths] of Object.entries(bindings)) {
