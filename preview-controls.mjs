@@ -6,6 +6,25 @@ export function createPreviewControls(TEXT) {
  if(!dictionary(TEXT)||!dictionary(TEXT.en)||!dictionary(TEXT.ru))throw new Error('Invalid preview control labels');
 const bool=[['off',false],['on',true]],directions=['north','south','east','west'].map(key=>[key,key]);
 const numbers=n=>Array.from({length:n},(_,index)=>[String(index),index]);
+const BULB_MODES=['off','lit','powered','lit_powered'];
+const INDEXED_CUBE_FIELDS={
+ ...Object.fromEntries(['','exposed_','weathered_','oxidized_'].flatMap(prefix=>{
+  const id=prefix+'copper_bulb',field=['mode',BULB_MODES.map(value=>[value,value]),'off'];
+  return [[id,field],['waxed_'+id,field]];
+ })),
+ frosted_ice:['stage',numbers(4),0],respawn_anchor:['charges',numbers(5),0]
+};
+const INDEXED_CUBE_LABELS={mode:['Operating state','Режим'],mode_off:['Unlit, unpowered','Не горит, без сигнала'],mode_lit:['Lit, unpowered','Горит, без сигнала'],mode_powered:['Unlit, powered','Не горит, с сигналом'],mode_lit_powered:['Lit, powered','Горит, с сигналом'],stage:['Crack stage','Стадия трещин'],charges:['Charges','Заряды']};
+function indexedCubeControlState(plan,state) {
+ if(plan.model!=='cube'||!own(INDEXED_CUBE_FIELDS,plan.object.id))return null;
+ if(!dictionary(state))throw new Error('Invalid indexed cube control state');
+ const [key,options,fallback]=INDEXED_CUBE_FIELDS[plan.object.id],value=state[key]===undefined?fallback:state[key];
+ if(!options.some(([,allowed])=>value===allowed))throw new Error('Invalid indexed cube control: '+key);
+ return {[key]:value};
+}
+function indexedCubeLabel(plan,key) {
+ return plan.model==='cube'&&own(INDEXED_CUBE_FIELDS,plan.object.id)&&own(INDEXED_CUBE_LABELS,key)?INDEXED_CUBE_LABELS[key]:null;
+}
 const CHORUS_FIELDS={chorus_plant:['north','south','east','west','up','down'],chorus_flower:['dead']};
 const CHORUS_LABELS={north:['North connection','Соединение: север'],south:['South connection','Соединение: юг'],east:['East connection','Соединение: восток'],west:['West connection','Соединение: запад'],up:['Upper connection','Соединение: верх'],down:['Lower connection','Соединение: низ'],dead:['Flower state','Состояние цветка'],dead_off:['Living','Живой'],dead_on:['Dead','Мёртвый']};
 for(const key of CHORUS_FIELDS.chorus_plant){CHORUS_LABELS[key+'_off']=['Disconnected','Нет'];CHORUS_LABELS[key+'_on']=['Connected','Есть'];}
@@ -87,6 +106,7 @@ function mossControlState(state) {
  }));
 }
 function previewFields(catalog,plan) {
+ const indexedCube=indexedCubeControlState(plan,plan.state);
  if(isMushroomPlan(plan))mushroomControlVariant(plan,plan.state);
  if(isHivePlan(plan))hiveControlHoney(plan.state);
  if(plan.model==='snow_layer')snowControlLayers(plan.state);
@@ -97,6 +117,7 @@ function previewFields(catalog,plan) {
  if(plan.model==='cave_vines'||plan.model==='cave_vines_part')caveVineControlState(plan,plan.state);
  const route=catalog.stateRoutes?.[plan.object.id],group=route?catalog.stateGroups?.[route.card]:null;
  const fields=[...(FIELDS[plan.object.card]??[]),...(MODEL_FIELDS[plan.model]??[])].filter(([key])=>!(plan.model==='chest'&&plan.object.id==='ender_chest'&&key==='double'));
+ if(indexedCube)fields.push(INDEXED_CUBE_FIELDS[plan.object.id]);
  const leafField=leafPreviewField(plan);if(leafField)fields.push(leafField);
  if(isMushroomPlan(plan))fields.push(['variant',numbers(16),MUSHROOM_DEFAULTS[plan.object.id]]);
  if(isHivePlan(plan))fields.push(['honey',bool,false]);
@@ -121,7 +142,7 @@ function previewControlSpec(catalog,plan) {
  const azaleaLabels={potted:['Pot','Горшок'],potted_off:['Without pot','Без горшка'],potted_on:['Potted','В горшке']};
  const vineLabels={berries:['Glow berries','Светящиеся ягоды'],berries_off:['Without berries','Без ягод'],berries_on:['With berries','С ягодами']};
  const pitcherLabels={stage:['Growth stage','Стадия роста'],pod_only:['View','Отображение'],pod_only_off:['Whole plant','Всё растение'],pod_only_on:['Pod only','Только стручок']};
- const fields=previewFields(catalog,plan),label=(key,fallback=key)=>['en','ru'].map((lang,index)=>TEXT[lang][plan.model+'_'+key]??leafPreviewLabel(plan,key)?.[index]??(plan.model==='snow_layer'&&key==='layers'?['Layers','Слои'][index]:plan.model==='farmland'&&own(farmlandLabels,key)?farmlandLabels[key][index]:own(CHORUS_FIELDS,plan.model)&&own(CHORUS_LABELS,key)?CHORUS_LABELS[key][index]:(plan.model==='cave_vines'||plan.model==='cave_vines_part')&&own(vineLabels,key)?vineLabels[key][index]:plan.model==='pitcher'&&own(pitcherLabels,key)?pitcherLabels[key][index]:(plan.model==='azalea'||plan.model==='potted_azalea')&&own(azaleaLabels,key)?azaleaLabels[key][index]:(plan.model==='stage_cross'||plan.model==='crop'||plan.model==='cocoa')&&key==='stage'?['Growth stage','Стадия роста'][index]:TEXT[lang][key]??TEXT[lang][fallback]??fallback));
+ const fields=previewFields(catalog,plan),label=(key,fallback=key)=>['en','ru'].map((lang,index)=>TEXT[lang][plan.model+'_'+key]??indexedCubeLabel(plan,key)?.[index]??leafPreviewLabel(plan,key)?.[index]??(plan.model==='snow_layer'&&key==='layers'?['Layers','Слои'][index]:plan.model==='farmland'&&own(farmlandLabels,key)?farmlandLabels[key][index]:own(CHORUS_FIELDS,plan.model)&&own(CHORUS_LABELS,key)?CHORUS_LABELS[key][index]:(plan.model==='cave_vines'||plan.model==='cave_vines_part')&&own(vineLabels,key)?vineLabels[key][index]:plan.model==='pitcher'&&own(pitcherLabels,key)?pitcherLabels[key][index]:(plan.model==='azalea'||plan.model==='potted_azalea')&&own(azaleaLabels,key)?azaleaLabels[key][index]:(plan.model==='stage_cross'||plan.model==='crop'||plan.model==='cocoa')&&key==='stage'?['Growth stage','Стадия роста'][index]:TEXT[lang][key]??TEXT[lang][fallback]??fallback));
  const schema=fields.map(([key,options])=>({key,label:label(key),values:options.map(([name,value])=>({value,label:label(key+'_'+name,name)}))}));
  const state=Object.fromEntries(fields.map(([key,,fallback])=>[key,plan.state[key]??fallback]));
  if(isMushroomPlan(plan))schema.find(field=>field.key==='variant').label=['en','ru'].map((lang,index)=>TEXT[lang][plan.object.id+'_variant']??['Variant','Вариант'][index]);
@@ -164,6 +185,7 @@ function previewControlSpec(catalog,plan) {
 function previewControlSelection(plan,values) {
  if(!dictionary(values))throw new Error('Invalid preview control values');
  const {form,texture,...chosen}=values,state={...plan.state,...chosen};
+ const indexedCube=indexedCubeControlState(plan,state);if(indexedCube)Object.assign(state,indexedCube);
  const leafState=leafControlState(plan,state);if(leafState)Object.assign(state,leafState);
  if(isMushroomPlan(plan))state.variant=mushroomControlVariant(plan,state);
  if(isHivePlan(plan))state.honey=hiveControlHoney(state);
