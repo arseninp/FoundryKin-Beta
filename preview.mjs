@@ -66,7 +66,15 @@ const CUBE_REVIEW_BLOCKS=Object.freeze([
  ['verdant_froglight','Verdant froglight','Зелёный квампосвет'],
  ['wet_sponge','Wet sponge','Мокрая губка']
 ].map(row=>Object.freeze(row)));
-const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS]);
+const INDEXED_REVIEW_BLOCKS=Object.freeze([
+ ...COPPER_STAGES.flatMap(([prefix,enStage,ruStage])=>{
+  const id=prefix+'copper_bulb',name=prefix?enStage+'copper bulb':'Copper bulb',suffix=ruStage?' ('+ruStage+')':'';
+  return [[id,name,'Медная лампа'+suffix],['waxed_'+id,'Waxed '+name.toLowerCase(),'Вощёная медная лампа'+suffix]];
+ }),
+ ['frosted_ice','Frosted ice','Подмороженный лёд'],
+ ['respawn_anchor','Respawn anchor','Якорь возрождения']
+].map(row=>Object.freeze(row)));
+const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS]);
 const REVIEW_IDS=Object.freeze([...BASE_REVIEW_IDS,...ADDITIONAL_REVIEW_BLOCKS.map(([id])=>id)]);
 const TEXT=Object.fromEntries(Object.entries(BASE_TEXT).map(([lang,labels])=>[lang,{
  ...labels,...Object.fromEntries(ADDITIONAL_REVIEW_BLOCKS.map(([id,en,ru])=>['card_'+id,lang==='ru'?ru:en]))

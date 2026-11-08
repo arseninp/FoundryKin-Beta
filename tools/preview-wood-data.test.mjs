@@ -11,6 +11,7 @@ waxed_exposed_copper waxed_exposed_chiseled_copper waxed_exposed_copper_grate wa
 waxed_weathered_copper waxed_weathered_chiseled_copper waxed_weathered_copper_grate waxed_weathered_cut_copper waxed_weathered_cut_copper_slab waxed_weathered_double_cut_copper_slab waxed_weathered_cut_copper_stairs
 waxed_oxidized_copper waxed_oxidized_chiseled_copper waxed_oxidized_copper_grate waxed_oxidized_cut_copper waxed_oxidized_cut_copper_slab waxed_oxidized_double_cut_copper_slab waxed_oxidized_cut_copper_stairs`.split(/\s+/);
 const CUBE_IDS='ancient_debris basalt blue_ice bone_block bookshelf cartography_table crafting_table crying_obsidian deepslate dried_kelp_block fletching_table glowstone hay_block honeycomb_block ice jukebox lodestone loom magma mud noteblock ochre_froglight packed_ice pearlescent_froglight polished_basalt potent_sulfur powder_snow purpur_pillar quartz_pillar reinforced_deepslate sculk sea_lantern smithing_table snow soul_sand soul_soil sponge target tnt verdant_froglight wet_sponge'.split(' ');
+const INDEXED_IDS='copper_bulb waxed_copper_bulb exposed_copper_bulb waxed_exposed_copper_bulb weathered_copper_bulb waxed_weathered_copper_bulb oxidized_copper_bulb waxed_oxidized_copper_bulb frosted_ice respawn_anchor'.split(' ');
 test('wood review data exports exactly 50 immutable distinct source records',()=>{
  assert.deepEqual(Object.keys(data),['WOOD_REVIEW_BLOCKS']);assert.equal(rows.length,50);assert.ok(Object.isFrozen(rows));
  assert.equal(new Set(rows.map(([id])=>id)).size,50);
@@ -33,13 +34,14 @@ test('wood review records cannot be mutated through exported arrays',()=>{
  assert.throws(()=>{rows[0][0]='other';},TypeError);
  assert.equal(JSON.stringify(rows),before);
 });
-test('review entry point preserves ordered previous IDs and appends copper then 41 cubes exactly once',async()=>{
+test('review entry point preserves prior ordered IDs and appends ten indexed cubes exactly once',async()=>{
  const [{REVIEW_IDS},base,{STONE_REVIEW_BLOCKS},{LEAF_REVIEW_BLOCKS}]=await Promise.all([import('../preview.mjs'),import('../preview-config.mjs'),import('../preview-stone-data.mjs'),import('../preview-leaf-data.mjs')]);
  const previous=[...base.REVIEW_IDS,...STONE_REVIEW_BLOCKS.map(([id])=>id),...rows.map(([id])=>id),...LEAF_REVIEW_BLOCKS.map(([id])=>id)];
  assert.equal(previous.length,939);assert.equal(COPPER_IDS.length,55);assert.equal(new Set(COPPER_IDS).size,55);
  assert.deepEqual(REVIEW_IDS.slice(0,939),previous);assert.deepEqual(REVIEW_IDS.slice(939,994),COPPER_IDS);
- assert.equal(CUBE_IDS.length,41);assert.deepEqual(REVIEW_IDS.slice(994),CUBE_IDS);
- assert.equal(REVIEW_IDS.length,1035);assert.equal(new Set(REVIEW_IDS).size,1035);assert.ok(Object.isFrozen(REVIEW_IDS));
+ assert.equal(CUBE_IDS.length,41);assert.deepEqual(REVIEW_IDS.slice(994,1035),CUBE_IDS);
+ assert.equal(INDEXED_IDS.length,10);assert.deepEqual(REVIEW_IDS.slice(1035),INDEXED_IDS);
+ assert.equal(REVIEW_IDS.length,1045);assert.equal(new Set(REVIEW_IDS).size,1045);assert.ok(Object.isFrozen(REVIEW_IDS));
  assert.equal(REVIEW_IDS.filter(id=>id==='copper_block').length,1);assert.ok(!COPPER_IDS.some(id=>id.endsWith('copper_bulb')));
 });
 test('copper extension has pinned single-path resources, explicit assignments and ordinary waxed counterparts',async()=>{
@@ -81,6 +83,22 @@ test('41 cube sources normalize real pinned faces without ambiguous variants and
   const mats=Object.fromEntries(record.paths.map(path=>[path,{path}])),group=new Three.Group();builder.build({cur:id,faceMap,mats,group});
   const meshes=meshesOf(group);assert.equal(meshes.length,1,id);assert.deepEqual(meshes[0].geometry.size,[1,1,1],id);
   assert.deepEqual(meshes[0].material.map(material=>material.path),['east','west','up','down','south','north'].map(face=>faceMap[face]),id);
+ }
+ assert.equal(JSON.stringify(input),before);
+});
+test('ten indexed review sources retain all pinned state indices and existing resources',async()=>{
+ const {fileURLToPath}=await import('node:url'),{readCandidate}=await import('./model-coverage.mjs');
+ const {planModelAssignments}=await import('../catalog/model-policy.mjs'),{normalizeBlock}=await import('../catalog/resources.mjs');
+ const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url))),before=JSON.stringify(input);
+ const blocks=Object.fromEntries(INDEXED_IDS.map(id=>{assert.ok(Object.hasOwn(input.blocks,id),id);return [id,input.blocks[id]];})),plan=planModelAssignments(blocks);
+ assert.deepEqual(plan.unresolved,[]);
+ for(const id of INDEXED_IDS){
+  assert.equal(plan.assignments[id].model,'cube',id);
+  const record=normalizeBlock(id,blocks[id],input.terrain.texture_data,{model:'cube',existing:input.existing}),count=id==='respawn_anchor'?5:4;
+  for(const face of ['up','down','north','south','east','west'])assert.equal(record.variants[face].length,count,id+': '+face);
+  for(const path of record.paths)assert.ok(Object.hasOwn(input.existing,path),path);
+  if(id==='respawn_anchor'){assert.equal(new Set(record.variants.down).size,1);assert.equal(new Set(record.variants.up).size,2);}
+  if(id.startsWith('waxed_'))assert.deepEqual(blocks[id].textures,blocks[id.slice(6)].textures,id);
  }
  assert.equal(JSON.stringify(input),before);
 });
