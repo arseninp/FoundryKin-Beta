@@ -21,6 +21,7 @@ function attach(a){
 function editorUrl(url){
   var u=new URL(url,document.baseURI);
   u.searchParams.set('v',window.FK_V||VERSION);
+  u.searchParams.set('catalog','unified');
   return u.href;
 }
 function open(f,url,c){
