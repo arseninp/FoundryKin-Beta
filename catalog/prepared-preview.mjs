@@ -51,7 +51,7 @@ export function withPreparedPreview(catalog,registry,Three,resolve) {
    });
   }
   const paths=[...new Set(Object.values(materialPlan.bindings))];
-  return {...plan,
+  return {...plan,modelResourcePaths:Object.freeze([...paths]),
    instantiate(environment,textures) {
     if(plan.banner)throw new Error('Banner composition requires instantiateCanvases');
     return instantiateResolved(environment,textures);

@@ -44,7 +44,17 @@ function addPage(){var c=A.grid();if(!c.catalog)return;var end=Math.min(shown+PA
 function note(text){obs.disconnect();box.innerHTML='';ids=[];var m=document.createElement('div');m.id='fkEmpty';m.textContent=text;box.appendChild(m)}
 function statusNote(s){if(s.status==='failed')return s.error&&s.error.code==='catalog_no_blocks'?T('cat.no_blocks'):T('cat.failed',{detail:s.error?s.error.detail:''});if(s.status==='empty')return T('cat.empty');return T('cat.loading')}
 function sig(c){return Object.keys(c.dirty||{}).length+'|'+(A.edits||0)}
-function render(){invalidatePreviews();obs.disconnect();var c=A.grid();mobs.unobserve(more);shown=0;if(!c.catalog){note(statusNote(A.state));return}if(migrated!==c.catalog){migrated=c.catalog;try{if(parent.FKAPP)parent.FKAPP.migrate(c)}catch(e){}}var qv=qi.value.trim().toLowerCase().replace(/\s+/g,'_');ids=c.catalog.ids.filter(function(id){return (!qv||id.indexOf(qv)>=0)&&(category==='all'||categoryOf(c.catalog,id)===category)});lastCat=c.catalog;lastSig=sig(c);box.innerHTML='';if(!ids.length){if(category==='all'||category==='blocks')note(T('cat.none'));return}addPage();mobs.observe(more)}
+function render(){
+  invalidatePreviews();obs.disconnect();var c=A.grid();mobs.unobserve(more);shown=0;
+  if(!c.catalog){note(statusNote(A.state));return}
+  if(migrated!==c.catalog){migrated=c.catalog;if(c.catalog.schema!==1)try{if(parent.FKAPP)parent.FKAPP.migrate(c)}catch(e){}}
+  var qv=qi.value.trim().toLowerCase().replace(/\s+/g,'_'),cards=c.catalog.schema===1?c.catalog.cards:c.catalog.ids;
+  var found=typeof c.search==='function'?c.search(qv):cards.filter(function(id){return !qv||id.indexOf(qv)>=0});
+  ids=found.filter(function(id){return category==='all'||categoryOf(c.catalog,id)===category});
+  lastCat=c.catalog;lastSig=sig(c);box.innerHTML='';
+  if(!ids.length){if(category==='all'||category==='blocks')note(T('cat.none'));return}
+  addPage();mobs.observe(more);
+}
 function refresh(){invalidatePreviews();obs.disconnect();var c=A.grid();Array.prototype.forEach.call(box.querySelectorAll('.fkc'),function(k){k.classList.toggle('fk-edited',!!c.edited(k.getAttribute('data-id')));obs.observe(k)})}
 function restoreScroll(y){var de=document.documentElement;while(shown<ids.length&&de.scrollHeight<y+window.innerHeight)addPage();window.scrollTo(0,y);requestAnimationFrame(function(){window.scrollTo(0,y)})}
 qi.addEventListener('input',function(){invalidatePreviews();clearTimeout(tmr);tmr=setTimeout(render,150)});
