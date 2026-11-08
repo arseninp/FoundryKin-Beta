@@ -19,7 +19,7 @@ export function createThreeMock() {
     P.push(n[0] ? [n[0] * w / 2, b * h / 2, a * d / 2] : n[1] ? [a * w / 2, n[1] * h / 2, b * d / 2] : [a * w / 2, b * h / 2, n[2] * d / 2]);N.push(n);rows.push([0, 0]);
    }
    this.rows = rows;
-   this.attributes = {position: {count: 24, getX: i => P[i][0], getY: i => P[i][1], getZ: i => P[i][2]}, normal: {getX: i => N[i][0], getY: i => N[i][1], getZ: i => N[i][2]}, uv: {count: 24, getX: i => rows[i][0], getY: i => rows[i][1], setXY(i, u, v) {rows[i] = [u, v];}}};created.push(this);
+   this.attributes = {position: {count: 24, getX: i => P[i][0], getY: i => P[i][1], getZ: i => P[i][2]}, normal: {count: 24, getX: i => N[i][0], getY: i => N[i][1], getZ: i => N[i][2]}, uv: {count: 24, getX: i => rows[i][0], getY: i => rows[i][1], setXY(i, u, v) {rows[i] = [u, v];}}};created.push(this);
   }
   dispose() {this.disposed = true;}
  }
