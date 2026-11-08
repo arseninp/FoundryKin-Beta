@@ -40,6 +40,7 @@ const MUSHROOM_VARIANTS=Array.from({length:16},(_,index)=>index);
 const CUBE_STATES={
  bee_nest:HIVE_STATE,beehive:HIVE_STATE,
  crafter:['mode',['idle','triggered','crafting'],CUBE_FACES],
+ structure_block:['mode',['default','data','save','load','corner','export'],CUBE_FACES],
  chiseled_bookshelf:['occupied',[false,true],['north']],
  creaking_heart:['mode',['inactive','dormant','active'],CUBE_FACES],
  suspicious_sand:['brushing',[0,1,2,3],CUBE_FACES],
