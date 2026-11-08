@@ -7,7 +7,23 @@ import {REVIEW_IDS as BASE_REVIEW_IDS,TEXT as BASE_TEXT} from './preview-config.
 import {STONE_REVIEW_BLOCKS} from './preview-stone-data.mjs';
 import {WOOD_REVIEW_BLOCKS} from './preview-wood-data.mjs';
 import {LEAF_REVIEW_BLOCKS} from './preview-leaf-data.mjs';
-const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS]);
+const COPPER_STAGES=[['','',''],['exposed_','Exposed ','потемневшая'],['weathered_','Weathered ','состарившаяся'],['oxidized_','Oxidized ','окисленная']];
+const COPPER_FORMS=[
+ ['copper','Copper block','Медный блок'],
+ ['chiseled_copper','Chiseled copper','Резной медный блок'],
+ ['copper_grate','Copper grate','Медная решётка'],
+ ['cut_copper','Cut copper','Резная медь'],
+ ['cut_copper_slab','Cut copper slab','Плита из резной меди'],
+ ['double_cut_copper_slab','Double cut copper slab','Двойная плита из резной меди'],
+ ['cut_copper_stairs','Cut copper stairs','Ступени из резной меди']
+];
+const COPPER_REVIEW_BLOCKS=Object.freeze([false,true].flatMap(waxed=>COPPER_STAGES.flatMap(([prefix,enStage,ruStage])=>COPPER_FORMS.map(([form,en,ru])=>{
+ const id=!waxed&&!prefix&&form==='copper'?'copper_block':(waxed?'waxed_':'')+prefix+form;
+ const details=[ruStage,waxed?'вощёная':''].filter(Boolean);
+ const name=(waxed?'Waxed ':'')+enStage+((waxed||prefix)?en.toLowerCase():en);
+ return Object.freeze([id,name,ru+(details.length?' (медь: '+details.join(', ')+')':'')]);
+}))).filter(([id])=>id!=='copper_block'));
+const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS]);
 const REVIEW_IDS=Object.freeze([...BASE_REVIEW_IDS,...ADDITIONAL_REVIEW_BLOCKS.map(([id])=>id)]);
 const TEXT=Object.fromEntries(Object.entries(BASE_TEXT).map(([lang,labels])=>[lang,{
  ...labels,...Object.fromEntries(ADDITIONAL_REVIEW_BLOCKS.map(([id,en,ru])=>['card_'+id,lang==='ru'?ru:en]))

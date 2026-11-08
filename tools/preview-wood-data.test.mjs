@@ -2,6 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as data from '../preview-wood-data.mjs';
 const rows=data.WOOD_REVIEW_BLOCKS;
+const COPPER_IDS=`chiseled_copper copper_grate cut_copper cut_copper_slab double_cut_copper_slab cut_copper_stairs
+exposed_copper exposed_chiseled_copper exposed_copper_grate exposed_cut_copper exposed_cut_copper_slab exposed_double_cut_copper_slab exposed_cut_copper_stairs
+weathered_copper weathered_chiseled_copper weathered_copper_grate weathered_cut_copper weathered_cut_copper_slab weathered_double_cut_copper_slab weathered_cut_copper_stairs
+oxidized_copper oxidized_chiseled_copper oxidized_copper_grate oxidized_cut_copper oxidized_cut_copper_slab oxidized_double_cut_copper_slab oxidized_cut_copper_stairs
+waxed_copper waxed_chiseled_copper waxed_copper_grate waxed_cut_copper waxed_cut_copper_slab waxed_double_cut_copper_slab waxed_cut_copper_stairs
+waxed_exposed_copper waxed_exposed_chiseled_copper waxed_exposed_copper_grate waxed_exposed_cut_copper waxed_exposed_cut_copper_slab waxed_exposed_double_cut_copper_slab waxed_exposed_cut_copper_stairs
+waxed_weathered_copper waxed_weathered_chiseled_copper waxed_weathered_copper_grate waxed_weathered_cut_copper waxed_weathered_cut_copper_slab waxed_weathered_double_cut_copper_slab waxed_weathered_cut_copper_stairs
+waxed_oxidized_copper waxed_oxidized_chiseled_copper waxed_oxidized_copper_grate waxed_oxidized_cut_copper waxed_oxidized_cut_copper_slab waxed_oxidized_double_cut_copper_slab waxed_oxidized_cut_copper_stairs`.split(/\s+/);
 test('wood review data exports exactly 50 immutable distinct source records',()=>{
  assert.deepEqual(Object.keys(data),['WOOD_REVIEW_BLOCKS']);assert.equal(rows.length,50);assert.ok(Object.isFrozen(rows));
  assert.equal(new Set(rows.map(([id])=>id)).size,50);
@@ -24,8 +32,34 @@ test('wood review records cannot be mutated through exported arrays',()=>{
  assert.throws(()=>{rows[0][0]='other';},TypeError);
  assert.equal(JSON.stringify(rows),before);
 });
-test('review entry point includes base, mineral, wood and leaf source IDs exactly once',async()=>{
+test('review entry point preserves 939 ordered IDs and appends 55 copper source IDs exactly once',async()=>{
  const [{REVIEW_IDS},base,{STONE_REVIEW_BLOCKS},{LEAF_REVIEW_BLOCKS}]=await Promise.all([import('../preview.mjs'),import('../preview-config.mjs'),import('../preview-stone-data.mjs'),import('../preview-leaf-data.mjs')]);
- const expected=[...base.REVIEW_IDS,...STONE_REVIEW_BLOCKS.map(([id])=>id),...rows.map(([id])=>id),...LEAF_REVIEW_BLOCKS.map(([id])=>id)];
- assert.equal(REVIEW_IDS.length,939);assert.deepEqual(REVIEW_IDS,expected);assert.equal(new Set(REVIEW_IDS).size,939);assert.ok(Object.isFrozen(REVIEW_IDS));
+ const previous=[...base.REVIEW_IDS,...STONE_REVIEW_BLOCKS.map(([id])=>id),...rows.map(([id])=>id),...LEAF_REVIEW_BLOCKS.map(([id])=>id)];
+ assert.equal(previous.length,939);assert.equal(COPPER_IDS.length,55);assert.equal(new Set(COPPER_IDS).size,55);
+ assert.deepEqual(REVIEW_IDS.slice(0,939),previous);assert.deepEqual(REVIEW_IDS.slice(939),COPPER_IDS);
+ assert.equal(REVIEW_IDS.length,994);assert.equal(new Set(REVIEW_IDS).size,994);assert.ok(Object.isFrozen(REVIEW_IDS));
+ assert.equal(REVIEW_IDS.filter(id=>id==='copper_block').length,1);assert.ok(!COPPER_IDS.some(id=>id.endsWith('copper_bulb')));
+});
+test('copper extension has pinned single-path resources, explicit assignments and ordinary waxed counterparts',async()=>{
+ const {fileURLToPath}=await import('node:url'),{readCandidate}=await import('./model-coverage.mjs');
+ const {planModelAssignments}=await import('../catalog/model-policy.mjs'),{duplicateRules}=await import('../catalog/rules/duplicates.mjs');
+ const {createPrimitiveModels}=await import('../models/primitives.mjs'),{createThreeMock,meshesOf}=await import('./three-mock.mjs');
+ const {REVIEW_IDS}=await import('../preview.mjs');
+ const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url))),before=JSON.stringify(input);
+ const blocks=Object.fromEntries(['copper_block',...COPPER_IDS].map(id=>{assert.ok(Object.hasOwn(input.blocks,id),id);return [id,input.blocks[id]];}));
+ const plan=planModelAssignments(blocks),aliases=duplicateRules(blocks),Three=createThreeMock(),builders=new Map(createPrimitiveModels(Three).map(row=>[row.id,row]));
+ assert.deepEqual(plan.unresolved,[]);
+ for(const id of COPPER_IDS){
+  const model=id.endsWith('_stairs')?'stairs':id.endsWith('_slab')&&!id.includes('double_')?'slab':'cube';
+  assert.equal(plan.assignments[id].model,model,id);assert.ok(builders.has(model),id);
+  const key=blocks[id].textures;assert.equal(typeof key,'string',id);
+  const path=input.terrain[key]?.textures;assert.equal(typeof path,'string',id);assert.ok(Object.hasOwn(input.existing,path),path);
+  const faceMap=Object.fromEntries(['up','down','north','south','east','west'].map(face=>[face,path])),group=new Three.Group(),material={};
+  builders.get(model).build({cur:id,faceMap,mats:{[path]:material},group});
+  const meshes=meshesOf(group);assert.equal(meshes.length,model==='stairs'?2:1,id);
+  assert.ok(meshes.every(mesh=>mesh.material.every(value=>value===material)),id);
+  const empty=new Three.Group();assert.throws(()=>builders.get(model).build({cur:id,faceMap,mats:{},group:empty}),/Missing primitive material/);assert.equal(empty.children.length,0,id);
+  if(id.startsWith('waxed_')){const raw=id.slice(6),target=raw==='copper'?'copper_block':raw;assert.equal(aliases[id].target,target,id);assert.ok(REVIEW_IDS.includes(target),target);assert.deepEqual(blocks[id].textures,blocks[target].textures,id);}
+ }
+ assert.equal(JSON.stringify(input),before);
 });
