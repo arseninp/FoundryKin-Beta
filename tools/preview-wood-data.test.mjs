@@ -52,16 +52,17 @@ test('wood review records cannot be mutated through exported arrays',()=>{
  assert.throws(()=>{rows[0][0]='other';},TypeError);
  assert.equal(JSON.stringify(rows),before);
 });
-test('review entry point preserves the reviewed 1123-ID prefix and validates every listed source',async()=>{
+test('review entry point preserves the expanded base and reviewed group order and validates every listed source',async()=>{
  const [{REVIEW_IDS},base,{STONE_REVIEW_BLOCKS},{LEAF_REVIEW_BLOCKS}]=await Promise.all([import('../preview.mjs'),import('../preview-config.mjs'),import('../preview-stone-data.mjs'),import('../preview-leaf-data.mjs')]);
  const previous=[...base.REVIEW_IDS,...STONE_REVIEW_BLOCKS.map(([id])=>id),...rows.map(([id])=>id),...LEAF_REVIEW_BLOCKS.map(([id])=>id)];
- assert.equal(previous.length,939);assert.equal(COPPER_IDS.length,55);assert.equal(new Set(COPPER_IDS).size,55);
- assert.deepEqual(REVIEW_IDS.slice(0,939),previous);assert.deepEqual(REVIEW_IDS.slice(939,994),COPPER_IDS);
- assert.equal(CUBE_IDS.length,41);assert.deepEqual(REVIEW_IDS.slice(994,1035),CUBE_IDS);
- assert.equal(INDEXED_IDS.length,10);assert.deepEqual(REVIEW_IDS.slice(1035,1045),INDEXED_IDS);
- assert.equal(FIXTURE_IDS.length,39);assert.deepEqual(REVIEW_IDS.slice(1045,1084),FIXTURE_IDS);
- assert.equal(SIGN_IDS.length,39);assert.deepEqual(REVIEW_IDS.slice(1084,1123),SIGN_IDS);
- assert.ok(REVIEW_IDS.length>=1123);assert.equal(new Set(REVIEW_IDS).size,REVIEW_IDS.length);assert.ok(Object.isFrozen(REVIEW_IDS));
+ assert.equal(base.REVIEW_IDS.length,638);assert.equal(previous.length,975);
+ assert.deepEqual(REVIEW_IDS.slice(0,previous.length),previous);
+ let offset=previous.length;
+ for(const [ids,count] of [[COPPER_IDS,55],[CUBE_IDS,41],[INDEXED_IDS,10],[FIXTURE_IDS,39],[SIGN_IDS,39]]) {
+  assert.equal(ids.length,count);assert.equal(new Set(ids).size,count);
+  assert.deepEqual(REVIEW_IDS.slice(offset,offset+count),ids);offset+=count;
+ }
+ assert.ok(REVIEW_IDS.length>=offset);assert.equal(new Set(REVIEW_IDS).size,REVIEW_IDS.length);assert.ok(Object.isFrozen(REVIEW_IDS));
  const {fileURLToPath}=await import('node:url'),{readCandidate}=await import('./model-coverage.mjs');
  const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url)));
  for(const id of REVIEW_IDS)assert.ok(Object.hasOwn(input.blocks,id),id);
