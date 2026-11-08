@@ -8,143 +8,90 @@ import {STONE_REVIEW_BLOCKS} from './preview-stone-data.mjs';
 import {WOOD_REVIEW_BLOCKS} from './preview-wood-data.mjs';
 import {LEAF_REVIEW_BLOCKS} from './preview-leaf-data.mjs';
 const COPPER_STAGES=[['','',''],['exposed_','Exposed ','потемневшая'],['weathered_','Weathered ','состарившаяся'],['oxidized_','Oxidized ','окисленная']];
+const reviewRows=data=>Object.freeze(data.map(([id,ru,en])=>Object.freeze([id,en??id[0].toUpperCase()+id.slice(1).replaceAll('_',' '),ru])));
 const COPPER_FORMS=[
- ['copper','Copper block','Медный блок'],
- ['chiseled_copper','Chiseled copper','Резной медный блок'],
- ['copper_grate','Copper grate','Медная решётка'],
- ['cut_copper','Cut copper','Резная медь'],
- ['cut_copper_slab','Cut copper slab','Плита из резной меди'],
- ['double_cut_copper_slab','Double cut copper slab','Двойная плита из резной меди'],
- ['cut_copper_stairs','Cut copper stairs','Ступени из резной меди']
+['copper','Copper block','Медный блок'],
+['chiseled_copper','Chiseled copper','Резной медный блок'],
+['copper_grate','Copper grate','Медная решётка'],
+['cut_copper','Cut copper','Резная медь'],
+['cut_copper_slab','Cut copper slab','Плита из резной меди'],
+['double_cut_copper_slab','Double cut copper slab','Двойная плита из резной меди'],
+['cut_copper_stairs','Cut copper stairs','Ступени из резной меди']
 ];
 const COPPER_REVIEW_BLOCKS=Object.freeze([false,true].flatMap(waxed=>COPPER_STAGES.flatMap(([prefix,enStage,ruStage])=>COPPER_FORMS.map(([form,en,ru])=>{
- const id=!waxed&&!prefix&&form==='copper'?'copper_block':(waxed?'waxed_':'')+prefix+form;
- const details=[ruStage,waxed?'вощёная':''].filter(Boolean);
- const name=(waxed?'Waxed ':'')+enStage+((waxed||prefix)?en.toLowerCase():en);
- return Object.freeze([id,name,ru+(details.length?' (медь: '+details.join(', ')+')':'')]);
+const id=!waxed&&!prefix&&form==='copper'?'copper_block':(waxed?'waxed_':'')+prefix+form;
+const details=[ruStage,waxed?'вощёная':''].filter(Boolean);
+const name=(waxed?'Waxed ':'')+enStage+((waxed||prefix)?en.toLowerCase():en);
+return Object.freeze([id,name,ru+(details.length?' (медь: '+details.join(', ')+')':'')]);
 }))).filter(([id])=>id!=='copper_block'));
-const CUBE_REVIEW_BLOCKS=Object.freeze([
- ['ancient_debris','Ancient debris','Древние обломки'],
- ['basalt','Basalt','Базальт'],
- ['blue_ice','Blue ice','Синий лёд'],
- ['bone_block','Bone block','Костный блок'],
- ['bookshelf','Bookshelf','Книжная полка'],
- ['cartography_table','Cartography table','Стол картографа'],
- ['crafting_table','Crafting table','Верстак'],
- ['crying_obsidian','Crying obsidian','Плачущий обсидиан'],
- ['deepslate','Deepslate','Глубинный сланец'],
- ['dried_kelp_block','Dried kelp block','Блок сушёной ламинарии'],
- ['fletching_table','Fletching table','Стол лучника'],
- ['glowstone','Glowstone','Светокамень'],
- ['hay_block','Hay bale','Сноп сена'],
- ['honeycomb_block','Honeycomb block','Блок пчелиных сот'],
- ['ice','Ice','Лёд'],
- ['jukebox','Jukebox','Проигрыватель'],
- ['lodestone','Lodestone','Магнетит'],
- ['loom','Loom','Ткацкий станок'],
- ['magma','Magma block','Магмовый блок'],
- ['mud','Mud','Грязь'],
- ['noteblock','Note block','Нотный блок'],
- ['ochre_froglight','Ochre froglight','Охристый квампосвет'],
- ['packed_ice','Packed ice','Плотный лёд'],
- ['pearlescent_froglight','Pearlescent froglight','Перламутровый квампосвет'],
- ['polished_basalt','Polished basalt','Полированный базальт'],
- ['potent_sulfur','Potent sulfur','Активная сера'],
- ['powder_snow','Powder snow','Рыхлый снег'],
- ['purpur_pillar','Purpur pillar','Пурпуровый пилон'],
- ['quartz_pillar','Quartz pillar','Кварцевая колонна'],
- ['reinforced_deepslate','Reinforced deepslate','Укреплённый глубинный сланец'],
- ['sculk','Sculk','Скалк'],
- ['sea_lantern','Sea lantern','Морской фонарь'],
- ['smithing_table','Smithing table','Кузнечный стол'],
- ['snow','Snow block','Блок снега'],
- ['soul_sand','Soul sand','Песок душ'],
- ['soul_soil','Soul soil','Почва душ'],
- ['sponge','Sponge','Губка'],
- ['target','Target','Мишень'],
- ['tnt','TNT','Динамит'],
- ['verdant_froglight','Verdant froglight','Зелёный квампосвет'],
- ['wet_sponge','Wet sponge','Мокрая губка']
-].map(row=>Object.freeze(row)));
+const CUBE_REVIEW_BLOCKS=reviewRows([["ancient_debris","Древние обломки"],["basalt","Базальт"],["blue_ice","Синий лёд"],["bone_block","Костный блок"],["bookshelf","Книжная полка"],["cartography_table","Стол картографа"],["crafting_table","Верстак"],["crying_obsidian","Плачущий обсидиан"],["deepslate","Глубинный сланец"],["dried_kelp_block","Блок сушёной ламинарии"],["fletching_table","Стол лучника"],["glowstone","Светокамень"],["hay_block","Сноп сена","Hay bale"],["honeycomb_block","Блок пчелиных сот"],["ice","Лёд"],["jukebox","Проигрыватель"],["lodestone","Магнетит"],["loom","Ткацкий станок"],["magma","Магмовый блок","Magma block"],["mud","Грязь"],["noteblock","Нотный блок","Note block"],["ochre_froglight","Охристый квампосвет"],["packed_ice","Плотный лёд"],["pearlescent_froglight","Перламутровый квампосвет"],["polished_basalt","Полированный базальт"],["potent_sulfur","Активная сера"],["powder_snow","Рыхлый снег"],["purpur_pillar","Пурпуровый пилон"],["quartz_pillar","Кварцевая колонна"],["reinforced_deepslate","Укреплённый глубинный сланец"],["sculk","Скалк"],["sea_lantern","Морской фонарь"],["smithing_table","Кузнечный стол"],["snow","Блок снега","Snow block"],["soul_sand","Песок душ"],["soul_soil","Почва душ"],["sponge","Губка"],["target","Мишень"],["tnt","Динамит","TNT"],["verdant_froglight","Зелёный квампосвет"],["wet_sponge","Мокрая губка"]]);
 const INDEXED_REVIEW_BLOCKS=Object.freeze([
- ...COPPER_STAGES.flatMap(([prefix,enStage,ruStage])=>{
-  const id=prefix+'copper_bulb',name=prefix?enStage+'copper bulb':'Copper bulb',suffix=ruStage?' ('+ruStage+')':'';
-  return [[id,name,'Медная лампа'+suffix],['waxed_'+id,'Waxed '+name.toLowerCase(),'Вощёная медная лампа'+suffix]];
- }),
- ['frosted_ice','Frosted ice','Подмороженный лёд'],
- ['respawn_anchor','Respawn anchor','Якорь возрождения']
+...COPPER_STAGES.flatMap(([prefix,enStage,ruStage])=>{
+const id=prefix+'copper_bulb',name=prefix?enStage+'copper bulb':'Copper bulb',suffix=ruStage?' ('+ruStage+')':'';
+return [[id,name,'Медная лампа'+suffix],['waxed_'+id,'Waxed '+name.toLowerCase(),'Вощёная медная лампа'+suffix]];
+}),
+['frosted_ice','Frosted ice','Подмороженный лёд'],
+['respawn_anchor','Respawn anchor','Якорь возрождения']
 ].map(row=>Object.freeze(row)));
 const FIXTURE_REVIEW_BLOCKS=Object.freeze([
- ['torch','Torch','Факел'],['soul_torch','Soul torch','Факел душ'],['copper_torch','Copper torch','Медный факел'],
- ['lantern','Lantern','Фонарь'],['soul_lantern','Soul lantern','Фонарь душ'],['iron_chain','Iron chain','Железная цепь'],
- ...[false,true].flatMap(waxed=>COPPER_STAGES.flatMap(([prefix,enStage,ruStage])=>{
-  const enPrefix=(waxed?'Waxed ':'')+(waxed?enStage.toLowerCase():enStage),details=[ruStage,waxed?'вощёная':''].filter(Boolean),suffix=details.length?' (медь: '+details.join(', ')+')':'';
-  return [['copper_lantern','Copper lantern','Медный фонарь'],['copper_chain','Copper chain','Медная цепь']].map(([form,en,ru])=>[(waxed?'waxed_':'')+prefix+form,enPrefix+((waxed||prefix)?en.toLowerCase():en),ru+suffix]);
- })),
- ['bamboo_fence','Bamboo fence','Бамбуковый забор'],['bamboo_fence_gate','Bamboo fence gate','Бамбуковая калитка'],
- ['anvil','Anvil','Наковальня'],['chipped_anvil','Chipped anvil','Повреждённая наковальня'],['damaged_anvil','Damaged anvil','Разбитая наковальня'],
- ['beacon','Beacon','Маяк'],['brewing_stand','Brewing stand','Варочная стойка'],['end_portal','End portal','Портал Края'],
- ['petrified_oak_slab','Petrified oak slab','Окаменевшая дубовая плита'],['petrified_oak_double_slab','Double petrified oak slab','Двойная окаменевшая дубовая плита'],
- ['infested_stone','Infested stone','Заражённый камень'],['infested_cobblestone','Infested cobblestone','Заражённый булыжник'],
- ['infested_stone_bricks','Infested stone bricks','Заражённые каменные кирпичи'],['infested_mossy_stone_bricks','Infested mossy stone bricks','Заражённые замшелые каменные кирпичи'],
- ['infested_cracked_stone_bricks','Infested cracked stone bricks','Заражённые потрескавшиеся каменные кирпичи'],['infested_chiseled_stone_bricks','Infested chiseled stone bricks','Заражённые резные каменные кирпичи'],
- ['infested_deepslate','Infested deepslate','Заражённый глубинный сланец']
+['torch','Torch','Факел'],['soul_torch','Soul torch','Факел душ'],['copper_torch','Copper torch','Медный факел'],
+['lantern','Lantern','Фонарь'],['soul_lantern','Soul lantern','Фонарь душ'],['iron_chain','Iron chain','Железная цепь'],
+...[false,true].flatMap(waxed=>COPPER_STAGES.flatMap(([prefix,enStage,ruStage])=>{
+const enPrefix=(waxed?'Waxed ':'')+(waxed?enStage.toLowerCase():enStage),details=[ruStage,waxed?'вощёная':''].filter(Boolean),suffix=details.length?' (медь: '+details.join(', ')+')':'';
+return [['copper_lantern','Copper lantern','Медный фонарь'],['copper_chain','Copper chain','Медная цепь']].map(([form,en,ru])=>[(waxed?'waxed_':'')+prefix+form,enPrefix+((waxed||prefix)?en.toLowerCase():en),ru+suffix]);
+})),
+['bamboo_fence','Bamboo fence','Бамбуковый забор'],['bamboo_fence_gate','Bamboo fence gate','Бамбуковая калитка'],
+['anvil','Anvil','Наковальня'],['chipped_anvil','Chipped anvil','Повреждённая наковальня'],['damaged_anvil','Damaged anvil','Разбитая наковальня'],
+['beacon','Beacon','Маяк'],['brewing_stand','Brewing stand','Варочная стойка'],['end_portal','End portal','Портал Края'],
+['petrified_oak_slab','Petrified oak slab','Окаменевшая дубовая плита'],['petrified_oak_double_slab','Double petrified oak slab','Двойная окаменевшая дубовая плита'],
+['infested_stone','Infested stone','Заражённый камень'],['infested_cobblestone','Infested cobblestone','Заражённый булыжник'],
+['infested_stone_bricks','Infested stone bricks','Заражённые каменные кирпичи'],['infested_mossy_stone_bricks','Infested mossy stone bricks','Заражённые замшелые каменные кирпичи'],
+['infested_cracked_stone_bricks','Infested cracked stone bricks','Заражённые потрескавшиеся каменные кирпичи'],['infested_chiseled_stone_bricks','Infested chiseled stone bricks','Заражённые резные каменные кирпичи'],
+['infested_deepslate','Infested deepslate','Заражённый глубинный сланец']
 ].map(row=>Object.freeze(row)));
 const SIGN_WOODS=[
- ['oak','Oak','дуба'],['spruce','Spruce','ели'],['birch','Birch','берёзы'],['jungle','Jungle','тропического дерева'],
- ['acacia','Acacia','акации'],['dark_oak','Dark oak','тёмного дуба'],['crimson','Crimson','багрового дерева'],['warped','Warped','искажённого дерева'],
- ['mangrove','Mangrove','мангрового дерева'],['cherry','Cherry','вишни'],['bamboo','Bamboo','бамбука'],['pale_oak','Pale oak','бледного дуба'],['poplar','Poplar','тополя']
+['oak','Oak','дуба'],['spruce','Spruce','ели'],['birch','Birch','берёзы'],['jungle','Jungle','тропического дерева'],
+['acacia','Acacia','акации'],['dark_oak','Dark oak','тёмного дуба'],['crimson','Crimson','багрового дерева'],['warped','Warped','искажённого дерева'],
+['mangrove','Mangrove','мангрового дерева'],['cherry','Cherry','вишни'],['bamboo','Bamboo','бамбука'],['pale_oak','Pale oak','бледного дуба'],['poplar','Poplar','тополя']
 ];
 const SIGN_PLACEMENTS=[['standing',' sign','Табличка из '],['wall',' wall sign','Настенная табличка из '],['hanging',' hanging sign','Подвесная табличка из ']];
 const SIGN_REVIEW_BLOCKS=Object.freeze(SIGN_WOODS.flatMap(([wood,en,ru])=>SIGN_PLACEMENTS.map(([placement,suffix,prefix])=>{
- const source=placement==='hanging'?wood:wood==='oak'?'':wood==='dark_oak'?'darkoak':wood;
- return Object.freeze([(source?source+'_':'')+placement+'_sign',en+suffix,prefix+ru]);
+const source=placement==='hanging'?wood:wood==='oak'?'':wood==='dark_oak'?'darkoak':wood;
+return Object.freeze([(source?source+'_':'')+placement+'_sign',en+suffix,prefix+ru]);
 })));
 const JOINERY_REVIEW_BLOCKS=Object.freeze([
- ...SIGN_WOODS.flatMap(([wood,en,ru])=>[[wood==='oak'?'wooden_door':wood+'_door',en+' door','Дверь из '+ru],[wood+'_shelf',en+' shelf','Полка из '+ru]]),
- ['iron_door','Iron door','Железная дверь'],
- ...COPPER_STAGES.flatMap(([prefix,enStage,ruStage])=>{
-  const id=prefix+'copper_door',name=prefix?enStage+'copper door':'Copper door',suffix=ruStage?' ('+ruStage+')':'';
-  return [[id,name,'Медная дверь'+suffix],['waxed_'+id,'Waxed '+name.toLowerCase(),'Вощёная медная дверь'+suffix]];
- })
+...SIGN_WOODS.flatMap(([wood,en,ru])=>[[wood==='oak'?'wooden_door':wood+'_door',en+' door','Дверь из '+ru],[wood+'_shelf',en+' shelf','Полка из '+ru]]),
+['iron_door','Iron door','Железная дверь'],
+...COPPER_STAGES.flatMap(([prefix,enStage,ruStage])=>{
+const id=prefix+'copper_door',name=prefix?enStage+'copper door':'Copper door',suffix=ruStage?' ('+ruStage+')':'';
+return [[id,name,'Медная дверь'+suffix],['waxed_'+id,'Waxed '+name.toLowerCase(),'Вощёная медная дверь'+suffix]];
+})
 ].map(row=>Object.freeze(row)));
 const EXTRA_SOURCE_REVIEW_BLOCKS=Object.freeze([
- ...[['tube','Tube','трубчатый'],['brain','Brain','мозговой'],['bubble','Bubble','пузырчатый'],['fire','Fire','огненный'],['horn','Horn','роговый']].flatMap(([type,en,ru])=>[
-  [type+'_coral_wall_fan',en+' coral wall fan','Настенный веерный коралл: '+ru],
-  ['dead_'+type+'_coral_wall_fan','Dead '+en.toLowerCase()+' coral wall fan','Мёртвый настенный веерный коралл: '+ru]
- ]),
- ...COPPER_STAGES.map(([prefix,enStage,ruStage])=>['waxed_'+prefix+'copper_golem_statue','Waxed '+enStage.toLowerCase()+'copper golem statue','Вощёная статуя медного голема'+(ruStage?' (медь: '+ruStage+')':'')]),
- ['allow','Allow block','Разрешающий блок'],['deny','Deny block','Запрещающий блок'],['border_block','Border block','Пограничный блок'],['barrier','Barrier','Барьер'],['structure_void','Structure void','Структурная пустота']
+...[['tube','Tube','трубчатый'],['brain','Brain','мозговой'],['bubble','Bubble','пузырчатый'],['fire','Fire','огненный'],['horn','Horn','роговый']].flatMap(([type,en,ru])=>[
+[type+'_coral_wall_fan',en+' coral wall fan','Настенный веерный коралл: '+ru],
+['dead_'+type+'_coral_wall_fan','Dead '+en.toLowerCase()+' coral wall fan','Мёртвый настенный веерный коралл: '+ru]
+]),
+...COPPER_STAGES.map(([prefix,enStage,ruStage])=>['waxed_'+prefix+'copper_golem_statue','Waxed '+enStage.toLowerCase()+'copper golem statue','Вощёная статуя медного голема'+(ruStage?' (медь: '+ruStage+')':'')]),
+['allow','Allow block','Разрешающий блок'],['deny','Deny block','Запрещающий блок'],['border_block','Border block','Пограничный блок'],['barrier','Barrier','Барьер'],['structure_void','Structure void','Структурная пустота']
 ].map(row=>Object.freeze(row)));
 const MECHANISM_REVIEW_BLOCKS=Object.freeze([
- ['rail','Rail','Рельсы'],['golden_rail','Powered rail','Электрические рельсы'],['detector_rail','Detector rail','Нажимные рельсы'],['activator_rail','Activator rail','Активирующие рельсы'],
- ...[false,true].flatMap(waxed=>COPPER_STAGES.map(([prefix,enStage,ruStage])=>[(waxed?'waxed_':'')+prefix+'lightning_rod',(waxed?'Waxed ':'')+enStage+((waxed||prefix)?'lightning rod':'Lightning rod'),'Громоотвод'+(ruStage||waxed?' ('+[ruStage,waxed?'вощёный':''].filter(Boolean).join(', ')+')':'')])),
- ['piston','Piston','Поршень'],['sticky_piston','Sticky piston','Липкий поршень'],
- ['redstone_torch','Redstone torch','Редстоун-факел'],['unlit_redstone_torch','Unlit redstone torch','Выключенный редстоун-факел'],
- ['unpowered_repeater','Repeater','Повторитель'],['powered_repeater','Powered repeater','Включённый повторитель'],
- ['unpowered_comparator','Comparator','Компаратор'],['powered_comparator','Powered comparator','Включённый компаратор']
+['rail','Rail','Рельсы'],['golden_rail','Powered rail','Электрические рельсы'],['detector_rail','Detector rail','Нажимные рельсы'],['activator_rail','Activator rail','Активирующие рельсы'],
+...[false,true].flatMap(waxed=>COPPER_STAGES.map(([prefix,enStage,ruStage])=>[(waxed?'waxed_':'')+prefix+'lightning_rod',(waxed?'Waxed ':'')+enStage+((waxed||prefix)?'lightning rod':'Lightning rod'),'Громоотвод'+(ruStage||waxed?' ('+[ruStage,waxed?'вощёный':''].filter(Boolean).join(', ')+')':'')])),
+['piston','Piston','Поршень'],['sticky_piston','Sticky piston','Липкий поршень'],
+['redstone_torch','Redstone torch','Редстоун-факел'],['unlit_redstone_torch','Unlit redstone torch','Выключенный редстоун-факел'],
+['unpowered_repeater','Repeater','Повторитель'],['powered_repeater','Powered repeater','Включённый повторитель'],
+['unpowered_comparator','Comparator','Компаратор'],['powered_comparator','Powered comparator','Включённый компаратор']
 ].map(row=>Object.freeze(row)));
-const REMAINING_CUBE_REVIEW_BLOCKS=Object.freeze([
- ['command_block','Command block','Командный блок'],
- ['chain_command_block','Chain command block','Цепной командный блок'],
- ['repeating_command_block','Repeating command block','Повторяющийся командный блок'],
- ['jigsaw','Jigsaw block','Блок-конструктор'],
- ['dispenser','Dispenser','Раздатчик'],
- ['dropper','Dropper','Выбрасыватель'],
- ['observer','Observer','Наблюдатель'],
- ['chiseled_quartz_block','Chiseled quartz block','Резной кварцевый блок'],
- ['chiseled_red_sandstone','Chiseled red sandstone','Резной красный песчаник'],
- ['chiseled_sandstone','Chiseled sandstone','Резной песчаник'],
- ['chiseled_tuff','Chiseled tuff','Резной туф'],
- ['chiseled_tuff_bricks','Chiseled tuff bricks','Резные туфовые кирпичи']
-].map(row=>Object.freeze(row)));
+const REMAINING_CUBE_REVIEW_BLOCKS=reviewRows([["command_block","Командный блок"],["chain_command_block","Цепной командный блок"],["repeating_command_block","Повторяющийся командный блок"],["jigsaw","Блок-конструктор","Jigsaw block"],["dispenser","Раздатчик"],["dropper","Выбрасыватель"],["observer","Наблюдатель"],["chiseled_quartz_block","Резной кварцевый блок"],["chiseled_red_sandstone","Резной красный песчаник"],["chiseled_sandstone","Резной песчаник"],["chiseled_tuff","Резной туф"],["chiseled_tuff_bricks","Резные туфовые кирпичи"]]);
 const POWER_REVIEW_BLOCKS=Object.freeze([
- ['furnace','Furnace','Печь'],['blast_furnace','Blast furnace','Плавильная печь'],['smoker','Smoker','Коптильня'],['redstone_lamp','Redstone lamp','Редстоун-лампа']
+['furnace','Furnace','Печь'],['blast_furnace','Blast furnace','Плавильная печь'],['smoker','Smoker','Коптильня'],['redstone_lamp','Redstone lamp','Редстоун-лампа']
 ].flatMap(([id,en,ru])=>[[id,en,ru],['lit_'+id,'Lit '+en.toLowerCase(),ru+' (включена)']]).map(row=>Object.freeze(row)));
-const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS,...FIXTURE_REVIEW_BLOCKS,...SIGN_REVIEW_BLOCKS,...JOINERY_REVIEW_BLOCKS,...EXTRA_SOURCE_REVIEW_BLOCKS,...MECHANISM_REVIEW_BLOCKS,...REMAINING_CUBE_REVIEW_BLOCKS,...POWER_REVIEW_BLOCKS]);
+const REMAINING_REVIEW_BLOCKS=reviewRows([["lit_redstone_ore","Активная редстоуновая руда"],["lit_deepslate_redstone_ore","Активная глубинная редстоуновая руда"],["crafter","Сборщик"],["chiseled_bookshelf","Резная книжная полка"],["creaking_heart","Сердце скрипуна"],["suspicious_sand","Подозрительный песок"],["suspicious_gravel","Подозрительный гравий"],["grass_block","Дёрн"],["structure_block","Структурный блок"],["cauldron","Котёл"],["daylight_detector","Датчик дневного света"],["daylight_detector_inverted","Инвертированный датчик дневного света","Inverted daylight detector"],["mob_spawner","Спаунер","Monster spawner"],["trial_spawner","Спаунер испытаний"],["vault","Хранилище"],["turtle_egg","Черепашье яйцо"],["sniffer_egg","Яйцо нюхача"],["pointed_dripstone","Капельник"],["sulfur_spike","Серный шип"],["redstone_wire","Редстоун-провод"],["standing_banner","Стоящее знамя"],["wall_banner","Настенное знамя"]]);
+const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS,...FIXTURE_REVIEW_BLOCKS,...SIGN_REVIEW_BLOCKS,...JOINERY_REVIEW_BLOCKS,...EXTRA_SOURCE_REVIEW_BLOCKS,...MECHANISM_REVIEW_BLOCKS,...REMAINING_CUBE_REVIEW_BLOCKS,...POWER_REVIEW_BLOCKS,...REMAINING_REVIEW_BLOCKS]);
 const REVIEW_IDS=Object.freeze([...BASE_REVIEW_IDS,...ADDITIONAL_REVIEW_BLOCKS.map(([id])=>id)]);
 const TEXT=Object.fromEntries(Object.entries(BASE_TEXT).map(([lang,labels])=>[lang,{
- ...labels,powered:lang==='ru'?'Сигнал':'Power',powered_off:lang==='ru'?'Нет':'Off',powered_on:lang==='ru'?'Есть':'On',...Object.fromEntries(ADDITIONAL_REVIEW_BLOCKS.map(([id,en,ru])=>['card_'+id,lang==='ru'?ru:en]))
+...labels,powered:lang==='ru'?'Сигнал':'Power',powered_off:lang==='ru'?'Нет':'Off',powered_on:lang==='ru'?'Есть':'On',...Object.fromEntries(ADDITIONAL_REVIEW_BLOCKS.map(([id,en,ru])=>['card_'+id,lang==='ru'?ru:en]))
 }]));
 export {activePack,imageFrames,frameCanvas,createImageSource};
 export {REVIEW_IDS};
