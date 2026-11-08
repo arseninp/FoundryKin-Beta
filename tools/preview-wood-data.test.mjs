@@ -17,6 +17,19 @@ copper_lantern copper_chain exposed_copper_lantern exposed_copper_chain weathere
 waxed_copper_lantern waxed_copper_chain waxed_exposed_copper_lantern waxed_exposed_copper_chain waxed_weathered_copper_lantern waxed_weathered_copper_chain waxed_oxidized_copper_lantern waxed_oxidized_copper_chain
 bamboo_fence bamboo_fence_gate anvil chipped_anvil damaged_anvil beacon brewing_stand end_portal petrified_oak_slab petrified_oak_double_slab
 infested_stone infested_cobblestone infested_stone_bricks infested_mossy_stone_bricks infested_cracked_stone_bricks infested_chiseled_stone_bricks infested_deepslate`.split(/\s+/);
+const SIGN_IDS=`standing_sign wall_sign oak_hanging_sign
+spruce_standing_sign spruce_wall_sign spruce_hanging_sign
+birch_standing_sign birch_wall_sign birch_hanging_sign
+jungle_standing_sign jungle_wall_sign jungle_hanging_sign
+acacia_standing_sign acacia_wall_sign acacia_hanging_sign
+darkoak_standing_sign darkoak_wall_sign dark_oak_hanging_sign
+crimson_standing_sign crimson_wall_sign crimson_hanging_sign
+warped_standing_sign warped_wall_sign warped_hanging_sign
+mangrove_standing_sign mangrove_wall_sign mangrove_hanging_sign
+cherry_standing_sign cherry_wall_sign cherry_hanging_sign
+bamboo_standing_sign bamboo_wall_sign bamboo_hanging_sign
+pale_oak_standing_sign pale_oak_wall_sign pale_oak_hanging_sign
+poplar_standing_sign poplar_wall_sign poplar_hanging_sign`.split(/\s+/);
 test('wood review data exports exactly 50 immutable distinct source records',()=>{
  assert.deepEqual(Object.keys(data),['WOOD_REVIEW_BLOCKS']);assert.equal(rows.length,50);assert.ok(Object.isFrozen(rows));
  assert.equal(new Set(rows.map(([id])=>id)).size,50);
@@ -39,15 +52,16 @@ test('wood review records cannot be mutated through exported arrays',()=>{
  assert.throws(()=>{rows[0][0]='other';},TypeError);
  assert.equal(JSON.stringify(rows),before);
 });
-test('review entry point preserves prior ordered IDs and appends 39 fixture sources exactly once',async()=>{
+test('review entry point preserves prior ordered IDs and appends 39 sign sources exactly once',async()=>{
  const [{REVIEW_IDS},base,{STONE_REVIEW_BLOCKS},{LEAF_REVIEW_BLOCKS}]=await Promise.all([import('../preview.mjs'),import('../preview-config.mjs'),import('../preview-stone-data.mjs'),import('../preview-leaf-data.mjs')]);
  const previous=[...base.REVIEW_IDS,...STONE_REVIEW_BLOCKS.map(([id])=>id),...rows.map(([id])=>id),...LEAF_REVIEW_BLOCKS.map(([id])=>id)];
  assert.equal(previous.length,939);assert.equal(COPPER_IDS.length,55);assert.equal(new Set(COPPER_IDS).size,55);
  assert.deepEqual(REVIEW_IDS.slice(0,939),previous);assert.deepEqual(REVIEW_IDS.slice(939,994),COPPER_IDS);
  assert.equal(CUBE_IDS.length,41);assert.deepEqual(REVIEW_IDS.slice(994,1035),CUBE_IDS);
  assert.equal(INDEXED_IDS.length,10);assert.deepEqual(REVIEW_IDS.slice(1035,1045),INDEXED_IDS);
- assert.equal(FIXTURE_IDS.length,39);assert.deepEqual(REVIEW_IDS.slice(1045),FIXTURE_IDS);
- assert.equal(REVIEW_IDS.length,1084);assert.equal(new Set(REVIEW_IDS).size,1084);assert.ok(Object.isFrozen(REVIEW_IDS));
+ assert.equal(FIXTURE_IDS.length,39);assert.deepEqual(REVIEW_IDS.slice(1045,1084),FIXTURE_IDS);
+ assert.equal(SIGN_IDS.length,39);assert.deepEqual(REVIEW_IDS.slice(1084),SIGN_IDS);
+ assert.equal(REVIEW_IDS.length,1123);assert.equal(new Set(REVIEW_IDS).size,1123);assert.ok(Object.isFrozen(REVIEW_IDS));
  assert.equal(REVIEW_IDS.filter(id=>id==='copper_block').length,1);assert.ok(!COPPER_IDS.some(id=>id.endsWith('copper_bulb')));
 });
 test('copper extension has pinned single-path resources, explicit assignments and ordinary waxed counterparts',async()=>{
@@ -128,4 +142,23 @@ test('39 fixture sources use registered builders and equivalent alias resources 
   }
  }
  assert.equal(JSON.stringify(input),before);
+});
+test('39 sign sources preserve terrain resources and attach the exact owned entity sheet',async()=>{
+ const {fileURLToPath}=await import('node:url'),{readCandidate}=await import('./model-coverage.mjs');
+ const {planModelAssignments}=await import('../catalog/model-policy.mjs'),{normalizeBlock}=await import('../catalog/resources.mjs'),{attachSignSource}=await import('../catalog/rules/sign-sources.mjs');
+ const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url))),before=JSON.stringify(input);
+ const blocks=Object.fromEntries(SIGN_IDS.map(id=>{assert.ok(Object.hasOwn(input.blocks,id),id);return [id,input.blocks[id]];})),plan=planModelAssignments(blocks);
+ assert.deepEqual(plan.unresolved,[]);
+ const sheets={oak:'sign',spruce:'sign_spruce',birch:'sign_birch',jungle:'sign_jungle',acacia:'sign_acacia',dark_oak:'sign_darkoak',crimson:'sign_crimson',warped:'sign_warped',mangrove:'mangrove_sign',cherry:'cherry_sign',bamboo:'bamboo_sign',pale_oak:'pale_oak_sign',poplar:'poplar_sign'},used=new Set();
+ for(const id of SIGN_IDS){
+  assert.equal(plan.assignments[id].model,'sign',id);
+  const record=normalizeBlock(id,blocks[id],input.terrain.texture_data,{model:'sign',existing:input.existing}),saved=JSON.stringify(record),attached=attachSignSource(record,blocks[id],input.existing);
+  const match=/^(?:(.+)_)?(standing|wall|hanging)_sign$/.exec(id),wood=(match[1]??'oak').replace(/^darkoak$/,'dark_oak'),placement=match[2],sheet='textures/entity/'+(placement==='hanging'?wood+'_hanging_sign':sheets[wood]);
+  assert.equal(attached.id,id);assert.deepEqual(attached.bindings,{sheet:[sheet]});assert.equal(attached.source.wood,wood);assert.equal(attached.source.placement,placement);
+  assert.deepEqual(attached.source.definition,blocks[id]);assert.notEqual(attached.source.definition,blocks[id]);assert.deepEqual(attached.faces,record.faces);assert.deepEqual(attached.variants,record.variants);
+  for(const path of record.paths)assert.ok(attached.paths.includes(path),path);
+  assert.ok(attached.paths.includes(sheet));assert.ok(Object.hasOwn(input.existing,sheet),sheet);used.add(sheet);
+  assert.equal(JSON.stringify(record),saved);assert.throws(()=>attachSignSource(record,blocks[id],{}),/Missing sign source sheet/);
+ }
+ assert.equal(used.size,26);assert.equal(JSON.stringify(input),before);
 });

@@ -90,7 +90,17 @@ const FIXTURE_REVIEW_BLOCKS=Object.freeze([
  ['infested_cracked_stone_bricks','Infested cracked stone bricks','Заражённые потрескавшиеся каменные кирпичи'],['infested_chiseled_stone_bricks','Infested chiseled stone bricks','Заражённые резные каменные кирпичи'],
  ['infested_deepslate','Infested deepslate','Заражённый глубинный сланец']
 ].map(row=>Object.freeze(row)));
-const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS,...FIXTURE_REVIEW_BLOCKS]);
+const SIGN_WOODS=[
+ ['oak','Oak','дуба'],['spruce','Spruce','ели'],['birch','Birch','берёзы'],['jungle','Jungle','тропического дерева'],
+ ['acacia','Acacia','акации'],['dark_oak','Dark oak','тёмного дуба'],['crimson','Crimson','багрового дерева'],['warped','Warped','искажённого дерева'],
+ ['mangrove','Mangrove','мангрового дерева'],['cherry','Cherry','вишни'],['bamboo','Bamboo','бамбука'],['pale_oak','Pale oak','бледного дуба'],['poplar','Poplar','тополя']
+];
+const SIGN_PLACEMENTS=[['standing',' sign','Табличка из '],['wall',' wall sign','Настенная табличка из '],['hanging',' hanging sign','Подвесная табличка из ']];
+const SIGN_REVIEW_BLOCKS=Object.freeze(SIGN_WOODS.flatMap(([wood,en,ru])=>SIGN_PLACEMENTS.map(([placement,suffix,prefix])=>{
+ const source=placement==='hanging'?wood:wood==='oak'?'':wood==='dark_oak'?'darkoak':wood;
+ return Object.freeze([(source?source+'_':'')+placement+'_sign',en+suffix,prefix+ru]);
+})));
+const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS,...FIXTURE_REVIEW_BLOCKS,...SIGN_REVIEW_BLOCKS]);
 const REVIEW_IDS=Object.freeze([...BASE_REVIEW_IDS,...ADDITIONAL_REVIEW_BLOCKS.map(([id])=>id)]);
 const TEXT=Object.fromEntries(Object.entries(BASE_TEXT).map(([lang,labels])=>[lang,{
  ...labels,...Object.fromEntries(ADDITIONAL_REVIEW_BLOCKS.map(([id,en,ru])=>['card_'+id,lang==='ru'?ru:en]))
