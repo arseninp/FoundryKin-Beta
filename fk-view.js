@@ -21,9 +21,10 @@ function createStage(){
   scene.add(new THREE.AmbientLight(0xffffff,.75));
   var light=new THREE.DirectionalLight(0xffffff,.55);light.position.set(2,4,3);scene.add(light);
   var group=new THREE.Group();group.rotation.set(ANGLE_X,ANGLE_Y,0);scene.add(group);
-  return {scene:scene,camera:camera,group:group,flat:false};
+  return {scene:scene,camera:camera,group:group,flat:false,instance:null};
 }
 function clear(stage){
+  if(stage.instance){var instance=stage.instance;stage.instance=null;instance.dispose()}
   var seen=[];
   stage.group.traverse(function(o){if(o.geometry&&seen.indexOf(o.geometry)<0)seen.push(o.geometry)});
   seen.forEach(function(g){g.dispose()});
@@ -59,13 +60,39 @@ function doorTexture(lower,upper){
 }
 function build(stage,entry,reset){
   clear(stage);
+  if(entry.plan!==undefined){
+    var plan=entry.plan;
+    if(!plan||typeof plan.instantiateCanvases!=='function')throw new Error('Invalid prepared editor model');
+    try{
+      var instance=plan.instantiateCanvases({group:new THREE.Group()},entry.canvases);stage.instance=instance;
+      var bounds=new THREE.Box3().setFromObject(instance.group);
+      if(bounds.isEmpty())throw new Error('Empty prepared editor geometry');
+      instance.group.position.sub(bounds.getCenter(new THREE.Vector3()));
+      var extent=Math.max(.1,bounds.getSize(new THREE.Vector3()).length()/2*1.15),flat=plan.mode==='sprite';
+      stage.group.add(instance.group);
+      if(flat)stage.group.rotation.set(0,0,0);
+      else if(reset||stage.flat)stage.group.rotation.set(ANGLE_X,ANGLE_Y,0);
+      stage.flat=flat;stage.camera.position.set(0,0,10);stage.camera.near=.1;stage.camera.far=100;
+      stage.camera.left=stage.camera.bottom=-extent;stage.camera.right=stage.camera.top=extent;stage.camera.zoom=1;stage.camera.updateProjectionMatrix();
+    }catch(error){
+      try{clear(stage)}catch(cleanupError){throw new AggregateError([error,cleanupError],'Prepared editor model cleanup failed')}
+      throw error;
+    }
+    return;
+  }
   var flat=!!(FKShapes.flat&&FKShapes.flat(entry.cur,entry.slot));
   if(flat)stage.group.rotation.set(0,0,0);
   else if(reset||stage.flat)stage.group.rotation.set(ANGLE_X,ANGLE_Y,0);
   stage.flat=flat;
+  stage.camera.position.set(0,0,3.9);stage.camera.near=.1;stage.camera.far=50;
+  stage.camera.left=stage.camera.bottom=-EXTENT;stage.camera.right=stage.camera.top=EXTENT;
   stage.camera.zoom=1/FKShapes.view(entry.cur);stage.camera.updateProjectionMatrix();
   var env={shape:entry.shape,cur:entry.cur,slot:entry.slot,faceMap:entry.faceMap,mats:entry.mats,group:stage.group,hiddenMat:hidden,SHAPES:FKShapes.SHAPES,refreshDoor:entry.refreshDoor||function(){},state:entry.state||{}};
   try{FKShapes.build(env)}catch(err){clear(stage);throw err}
+}
+function update(stage,canvases){
+  if(!stage.instance)throw new Error('No prepared editor model to update');
+  stage.instance.update(canvases);
 }
 function render(stage,width,pixelRatio){
   var r=getRenderer(),ratio=pixelRatio||1,size=r.getSize(new THREE.Vector2());
@@ -90,5 +117,5 @@ function capture(entry,size){
     clear(preview);r.setRenderTarget(target);
   }
 }
-return {createStage:createStage,clear:clear,texture:texture,material:material,mapMaterial:mapMaterial,doorTexture:doorTexture,build:build,render:render,mount:mount,capture:capture};
+return {createStage:createStage,clear:clear,texture:texture,material:material,mapMaterial:mapMaterial,doorTexture:doorTexture,build:build,update:update,render:render,mount:mount,capture:capture};
 })();
