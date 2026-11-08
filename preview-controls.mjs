@@ -96,6 +96,17 @@ const FIELDS={pumpkin:fruit,melon_block:fruit,budding_amethyst:[['crystals',bool
 const liquid=[['level',numbers(8),0]];
 const MODEL_FIELDS={azalea:[['potted',bool,false]],potted_azalea:[['potted',bool,false]],end_portal_frame:[['eye',bool,false]],tripwire_hook:[['attached',bool,false]],composter:[['level',numbers(9),0]],scaffolding:[['bottom',bool,false]],sculk_sensor:[['active',bool,false]],sculk_shrieker:[['can_summon',bool,false]],sculk_catalyst:[['bloom',bool,false]],dried_ghast:[['stage',numbers(4),0]],barrel:[['open',[['closed',false],['open',true]],false]],campfire:[['lit',[['off',false],['on',true]],true]],fire:[['variant',[['A','primary'],['B','alternate']],'primary']],shulker_box:[['open',[['closed',false],['open',true]],false]],chest:[['open',[['closed',false],['open',true]],false],['double',[['single',false],['double',true]],false]],water:liquid,lava:liquid,copper_golem_statue:[['pose',['standing','sitting','running','star'].map(key=>[key,key]),'standing']],conduit:[['active',[['inactive',false],['active',true]],false],['eye_open',[['closed',false],['open',true]],false],['wind',[['horizontal','horizontal'],['vertical','vertical']],'horizontal']]};
 for(const [model,keys] of Object.entries(CHORUS_FIELDS))MODEL_FIELDS[model]=keys.map(key=>[key,bool,false]);
+MODEL_FIELDS.piston=[['extended',bool,false]];
+MODEL_FIELDS.repeater=[['delay',[1,2,3,4].map(value=>[String(value),value]),1]];
+MODEL_FIELDS.comparator=[['subtract',bool,false]];
+const powerOptions=[['off','off'],['on','on']];
+MODEL_FIELDS.lightning_rod=[['powered',powerOptions,'off']];
+const MECHANISM_LABELS={piston_extended:['Extension','Выдвижение'],piston_extended_off:['Retracted','Втянут'],piston_extended_on:['Extended','Выдвинут'],repeater_delay:['Delay','Задержка'],comparator_subtract:['Mode','Режим'],comparator_subtract_off:['Compare','Сравнение'],comparator_subtract_on:['Subtract','Вычитание'],track_curved:['Track shape','Форма рельсов'],track_curved_off:['Straight','Прямые'],track_curved_on:['Curved','Изогнутые'],track_powered:['Power','Сигнал'],track_powered_off:['Off','Нет'],track_powered_on:['On','Есть'],lightning_rod_powered:['Power','Сигнал'],lightning_rod_powered_off:['Off','Нет'],lightning_rod_powered_on:['On','Есть']};
+function trackFields(plan) {
+ if(plan.model!=='track')return [];
+ if(!['rail','golden_rail','detector_rail','activator_rail'].includes(plan.object.id))throw new Error('Unknown rail control object');
+ return [plan.object.id==='rail'?['curved',bool,false]:['powered',powerOptions,'off']];
+}
 MODEL_FIELDS.candle=[['lit',bool,false]];
 MODEL_FIELDS.snow_layer=[['layers',Array.from({length:8},(_,index)=>[String(index+1),index+1]),1]];
 MODEL_FIELDS.farmland=[['wet',bool,true]];
@@ -125,7 +136,7 @@ function previewFields(catalog,plan) {
  if(plan.model==='pale_moss_carpet')mossControlState(plan.state);
  if(plan.model==='cave_vines'||plan.model==='cave_vines_part')caveVineControlState(plan,plan.state);
  const route=catalog.stateRoutes?.[plan.object.id],group=route?catalog.stateGroups?.[route.card]:null;
- const fields=[...(FIELDS[plan.object.card]??[]),...(MODEL_FIELDS[plan.model]??[])].filter(([key])=>!(plan.model==='chest'&&plan.object.id==='ender_chest'&&key==='double'));
+ const fields=[...(FIELDS[plan.object.card]??[]),...(MODEL_FIELDS[plan.model]??[]),...trackFields(plan)].filter(([key])=>!(plan.model==='chest'&&plan.object.id==='ender_chest'&&key==='double'));
  if(indexedCube)fields.push(INDEXED_CUBE_FIELDS[plan.object.id]);
  const leafField=leafPreviewField(plan);if(leafField)fields.push(leafField);
  if(isMushroomPlan(plan))fields.push(['variant',numbers(16),MUSHROOM_DEFAULTS[plan.object.id]]);
@@ -151,7 +162,7 @@ function previewControlSpec(catalog,plan) {
  const azaleaLabels={potted:['Pot','Горшок'],potted_off:['Without pot','Без горшка'],potted_on:['Potted','В горшке']};
  const vineLabels={berries:['Glow berries','Светящиеся ягоды'],berries_off:['Without berries','Без ягод'],berries_on:['With berries','С ягодами']};
  const pitcherLabels={stage:['Growth stage','Стадия роста'],pod_only:['View','Отображение'],pod_only_off:['Whole plant','Всё растение'],pod_only_on:['Pod only','Только стручок']};
- const fields=previewFields(catalog,plan),label=(key,fallback=key)=>['en','ru'].map((lang,index)=>TEXT[lang][plan.model+'_'+key]??(plan.model==='candle'?CANDLE_LABELS[key]?.[index]:undefined)??indexedCubeLabel(plan,key)?.[index]??leafPreviewLabel(plan,key)?.[index]??(plan.model==='snow_layer'&&key==='layers'?['Layers','Слои'][index]:plan.model==='farmland'&&own(farmlandLabels,key)?farmlandLabels[key][index]:own(CHORUS_FIELDS,plan.model)&&own(CHORUS_LABELS,key)?CHORUS_LABELS[key][index]:(plan.model==='cave_vines'||plan.model==='cave_vines_part')&&own(vineLabels,key)?vineLabels[key][index]:plan.model==='pitcher'&&own(pitcherLabels,key)?pitcherLabels[key][index]:(plan.model==='azalea'||plan.model==='potted_azalea')&&own(azaleaLabels,key)?azaleaLabels[key][index]:(plan.model==='stage_cross'||plan.model==='crop'||plan.model==='cocoa')&&key==='stage'?['Growth stage','Стадия роста'][index]:TEXT[lang][key]??TEXT[lang][fallback]??fallback));
+ const fields=previewFields(catalog,plan),label=(key,fallback=key)=>['en','ru'].map((lang,index)=>TEXT[lang][plan.model+'_'+key]??MECHANISM_LABELS[plan.model+'_'+key]?.[index]??(plan.model==='candle'?CANDLE_LABELS[key]?.[index]:undefined)??indexedCubeLabel(plan,key)?.[index]??leafPreviewLabel(plan,key)?.[index]??(plan.model==='snow_layer'&&key==='layers'?['Layers','Слои'][index]:plan.model==='farmland'&&own(farmlandLabels,key)?farmlandLabels[key][index]:own(CHORUS_FIELDS,plan.model)&&own(CHORUS_LABELS,key)?CHORUS_LABELS[key][index]:(plan.model==='cave_vines'||plan.model==='cave_vines_part')&&own(vineLabels,key)?vineLabels[key][index]:plan.model==='pitcher'&&own(pitcherLabels,key)?pitcherLabels[key][index]:(plan.model==='azalea'||plan.model==='potted_azalea')&&own(azaleaLabels,key)?azaleaLabels[key][index]:(plan.model==='stage_cross'||plan.model==='crop'||plan.model==='cocoa')&&key==='stage'?['Growth stage','Стадия роста'][index]:TEXT[lang][key]??TEXT[lang][fallback]??fallback));
  const schema=fields.map(([key,options])=>({key,label:label(key),values:options.map(([name,value])=>({value,label:label(key+'_'+name,name)}))}));
  const state=Object.fromEntries(fields.map(([key,,fallback])=>[key,plan.state[key]??fallback]));
  if(isMushroomPlan(plan))schema.find(field=>field.key==='variant').label=['en','ru'].map((lang,index)=>TEXT[lang][plan.object.id+'_variant']??['Variant','Вариант'][index]);
