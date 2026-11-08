@@ -1,4 +1,4 @@
-/* Editor selection queries. Pure; no DOM, storage, renderer or owned catalog state. */
+/* Stateless editor selection and image preparation. No storage, renderer or owned catalog state. */
 const FACES=['up','down','north','south','east','west'];
 const ALL_SHAPES=['cube','slab','stairs','wall','fence','gate','button','plate','pane','carpet'];
 function shapeOfId(id){var m=/_(slab|stairs|wall|fence_gate|fence|button|pressure_plate|pane|carpet)$/.exec(id),map={fence_gate:'gate',pressure_plate:'plate'};return /_trapdoor$/.test(id)?'trapdoor':m?(map[m[1]]||m[1]):'cube'}
@@ -63,4 +63,19 @@ export function compiledInfo(runtime,id){
  const files=[...new Set([...(catalog.records[id]?.paths??[]),...record.paths])],shared=new Set();
  for(const path of files)for(const owner of catalog.resources[path]??[])if(owner.kind==='block'&&owner.id!==id&&owner.id!==object.id)shared.add(owner.id);
  return {id,files,shared:[...shared].sort(),forms:Object.keys(catalog.families[object.card]??{}).filter(form=>form!=='native'),note:'',kind:record.model==='door'?'door':'shape'};
+}
+function rnd(x,y,s){var h=Math.sin(x*127.1+y*311.7+s*74.7)*43758.5453;return h-Math.floor(h)}
+function placeholder(g,r){for(var y=0;y<r;y++)for(var x=0;x<r;x++){var v=118+Math.round(rnd(Math.floor(x*16/r),Math.floor(y*16/r),5)*50);g.fillStyle='rgb('+v+','+v+','+v+')';g.fillRect(x,y,1,1)}}
+function fcount(w,h){return h>w&&h%w===0?h/w:1}
+export function imageMeta(path,w,h){if(!Number.isSafeInteger(w)||!Number.isSafeInteger(h)||w<1||h<1||w>16384||h>16384||w*h>16777216)throw new Error('Image exceeds editor limits: '+path);var n=String(path).indexOf('textures/entity/')===0?1:fcount(w,h);return {res:w,frames:n,aspect:h/n/w}}
+export function drawFrame(canvas,img,k,path){var m=img?imageMeta(path,img.naturalWidth||img.width,img.naturalHeight||img.height):{res:16,frames:1,aspect:1};canvas.width=m.res;canvas.height=Math.max(1,Math.round(m.res*m.aspect));var g=canvas.getContext('2d');g.imageSmoothingEnabled=false;if(img)g.drawImage(img,0,k*canvas.height,canvas.width,canvas.height,0,0,canvas.width,canvas.height);else placeholder(g,16)}
+export function mkFile(d,path){var w=16,h=16;try{var b=atob(d.split(',')[1].slice(0,40));w=(b.charCodeAt(16)*16777216)+(b.charCodeAt(17)<<16)+(b.charCodeAt(18)<<8)+b.charCodeAt(19);h=(b.charCodeAt(20)*16777216)+(b.charCodeAt(21)<<16)+(b.charCodeAt(22)<<8)+b.charCodeAt(23)}catch(e){}var meta=imageMeta(path,w,h);return {res:meta.res,data:d,frames:meta.frames,aspect:meta.aspect}}
+export async function prepareEditorImages(selection,read,makeCanvas,firstOnly=false){
+ const editable=new Set(selection.editable);
+ return Object.fromEntries(await Promise.all(selection.required.map(async path=>{
+  const image=await read(path),meta=imageMeta(path,image.naturalWidth||image.width,image.naturalHeight||image.height);
+  const length=firstOnly||!editable.has(path)?1:meta.frames;
+  const frames=Array.from({length},(_,index)=>{const canvas=makeCanvas();drawFrame(canvas,image,index,path);return canvas});
+  return [path,{frames,count:meta.frames}];
+ })));
 }
