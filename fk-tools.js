@@ -260,10 +260,10 @@ function build(root){
   document.addEventListener('pointerdown',function(e){if(menu.style.display!=='none'&&!menu.contains(e.target))hideMenu()},true);
 
   /* canvas pointer input */
-  var ed=C.el.ed,down=false,last=null;
+  var ed=C.el.ed,down=false,last=null,strokeId=null,strokeG=null,strokeN=0,strokeEdits=0;
   function cell(e){var r=ed.getBoundingClientRect(),n=C.res();return {x:Math.floor((e.clientX-r.left)/r.width*n),y:Math.floor((e.clientY-r.top)/r.height*n)}}
   ed.addEventListener('pointerdown',function(e){
-    if(!C.ready())return;
+    if(down||!C.ready()||window.FKAPI.state.mode!=='edit')return;
     var n=C.res(),p=cell(e);if(p.x<0||p.y<0||p.x>=n||p.y>=n)return;
     e.preventDefault();ed.setPointerCapture(e.pointerId);
     var g=C.g();
@@ -271,18 +271,21 @@ function build(root){
     if(tool==='swap'){swapColor(g,n,p);return}
     C.pushUndo();
     if(tool==='fill'){floodFill(g,n,p);C.touched();return}
-    down=true;last=p;dot(g,p.x,p.y);C.touched();
+    down=true;last=p;strokeId=e.pointerId;strokeG=g;strokeN=n;dot(g,p.x,p.y);C.touched();strokeEdits=window.FKAPI.edits;
   });
   ed.addEventListener('pointermove',function(e){
-    if(!down||!C.ready())return;
-    var p=cell(e);line(C.g(),last,p);last=p;C.touched();
+    if(!down||e.pointerId!==strokeId)return;
+    if(!C.ready()||window.FKAPI.state.mode!=='edit'||C.g()!==strokeG||C.res()!==strokeN||window.FKAPI.edits!==strokeEdits){up();return}
+    var p=cell(e);line(strokeG,last,p);last=p;C.touched();strokeEdits=window.FKAPI.edits;
   });
-  function up(){down=false;last=null}
-  ed.addEventListener('pointerup',up);ed.addEventListener('pointercancel',up);
+  function up(e){if(e&&e.pointerId!==strokeId)return;down=false;last=null;strokeId=null;strokeG=null}
+  ed.addEventListener('pointerup',up);ed.addEventListener('pointercancel',up);ed.addEventListener('lostpointercapture',up);
+  window.addEventListener('blur',function(){up()});
+  document.addEventListener('visibilitychange',function(){if(document.hidden)up()});
 
   /* replace from PNG, clear, download */
   var importGen=0;
-  window.FKAPI.subscribe(function(s){if(s.mode!=='edit'||window.FKAPI.busy)importGen++});
+  window.FKAPI.subscribe(function(s){if(s.mode!=='edit'||window.FKAPI.busy){importGen++;up()}});
   file.addEventListener('change',function(e){
     var inp=e.target,f=inp.files[0],gen=++importGen;inp.value='';
     if(!f||!C.ready()||window.FKAPI.state.mode!=='edit')return;
