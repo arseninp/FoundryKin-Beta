@@ -80,7 +80,10 @@ jobs:
           const inputBefore = JSON.stringify(input);
           const {catalog, registry, coverage} = compileReview(input, Three);
           assert.equal(coverage.ready, true);
-          assert.deepEqual(Object.keys(catalog.records).sort(), [...REVIEW_IDS].sort());
+          const bedIds='white orange magenta light_blue yellow lime pink gray light_gray cyan purple blue brown green red black'.split(' ').map(color=>color+'_bed');
+          assert.equal(new Set(REVIEW_IDS).size,REVIEW_IDS.length);
+          assert.deepEqual(Object.keys(catalog.records).sort(),[...new Set([...REVIEW_IDS,...(REVIEW_IDS.includes('bed')?bedIds:[])])].sort());
+          if(REVIEW_IDS.includes('bed'))assert.equal(catalog.aliases.bed,'red_bed');
           assert.ok(catalog.cards.includes('closed_eyeblossom'));
           assert.ok(!catalog.cards.includes('open_eyeblossom'));
           const bloomGroup = catalog.stateGroups.closed_eyeblossom;
