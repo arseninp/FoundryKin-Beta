@@ -290,7 +290,7 @@ $('#ok').onclick=function(){
   var fs=hasFke()?FKE.files():null;
   if(!fs){say('msg.editor_not_ready');return}
   if(!fs.length){say('msg.edit_texture_first');return}
-  var oi=FKE.objInfo();
+  var oi=FKE.objInfo(),before=p.textures;
   fs.forEach(function(x){
     var path=x.path.replace(/^textures\//,'').replace(/\.png$/,'');
     p.textures=p.textures.filter(function(t){return t.path!==path});
@@ -298,7 +298,7 @@ $('#ok').onclick=function(){
     if(oi&&oi.id){rec.obj=oi.id;rec.all=oi.paths}
     p.textures.push(rec);
   });
-  if(save(KEY,data)){FKE.markSaved();say('msg.added',{name:p.name,n:fs.length})}
+  if(save(KEY,data)){FKE.markSaved();say('msg.added',{name:p.name,n:fs.length})}else p.textures=before;
 };
 function migrate(c){
   if(!c||!c.catalog)return;
