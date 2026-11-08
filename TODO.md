@@ -1,39 +1,43 @@
-# TODO — завершение переноса каталога
+# TODO — завершение переноса и приёмка
 
-Обновлено 2026-11-08 по OLDCHAT26 и main 6289e137144a70929084e9d1c2a7e5722c170bae. [x] — сохранённый код/явно оговорённый исторический результат, не визуальная приёмка. Начать с CONTEXT.
+Обновлено 2026-11-08 по OLDCHAT26/27, сохранённому 8f9a1c9c115a1def557d986d11c3bfaf841521ab и присланным CI-логам. [x] означает сохранённый код или прямо указанный результат на конкретном SHA, не визуальную приёмку. CONTEXT/handoff читать первыми. Этот документальный пакет закрывает упомянутое там обновление остальных пяти документов.
 
 ## Сохранено — не повторять
 
-- [x] Прежние 939 source ID: 602 base + 273 stone/mineral + 50 wood + 14 leaf. Bubble_column existing sprite/18 owned roles/одна выбранная texture без симуляции; leaf cutout/opaque/shared picker.
-- [x] 55 copper (90be95e), 41 cube (625f3c5), terrain.texture_data test fix (17da1cf).
-- [x] Indexed cube controls (1b4d8c9): bulb 4 modes, frosted ice 4 stages, anchor 5 charge values; 10 ID подключены 7a347c0.
-- [x] 39 fixtures (68b797e), 39 signs (7026a8b), 22 doors + 13 shelves (a05134a). Статичный scope, готовую геометрию не переносить заново.
-- [x] В preview есть 19 extra source ID: wall fans/waxed statues/technical. dba560c/6289e13 не считать двумя пакетами.
-- [x] Stale 67 исправлено b41c99b, 79 старых fixtures сохранены 0dd77aa. Explicit indexed button/plate/stair bindings и existing regressions сохранены. Config/text разделение edfc234 сохранено.
-- [x] По истории 87ecba5 обновил extensible membership test; не означает успешный запуск.
+- [x] Прежние подключения stone/wood/leaf/copper/cube/indexed/fixtures/signs/joinery/extra; 79 старых fixtures сохранены 0dd77aa, stale 67 исправлено b41c99b. Config/text разделение edfc234 не отменять.
+- [x] Bed: один исходный ID → 16 цветных records, bed → red_bed, light_gray → silver, прежняя геометрия/9 частей. Base preview-config 638 = 602 + bed + 17 candles + 18 cake/candle-cake sources.
+- [x] Candle lit/shared picker, whole-cake face bindings; candle cakes aliases cake с сохранением ресурсов, не реализованная свеча на торте.
+- [x] OLDCHAT27: механизмы/4 rails/8 lightning rods, power groups печей/коптильни/лампы, дополнительные кубические/технические источники, шесть texture modes structure_block.
+- [x] 73ca673: последние 22 ID записаны и включены в REVIEW_IDS/TEXT. Уплотнение таблиц/reviewRows не потеря подключений.
+- [x] fa9800b VM test import/count error; fd6b777 mock normal.count; 650da80 актуальные metal/crafter ожидания с negative checks; 95c9777 порядок и границы групп; d3a21c3 bed expansion в CI.
+- [x] d3a21c3 validate 694/694; e07f971 validate 697/697, fail 0/skipped 0 — результаты присланных логов.
+- [x] e07f971 grass_path down=dirt по имени; coarse_dirt/variants/paths сохранены, три регрессии в существующем файле.
+- [x] 8f9a1c9 mycelium named defaults: up mycelium_top/down dirt/side mycelium_side, count 2; snow-side сохраняется. После правки тестов не запускали.
+- [x] Bubble_column existing sprite/18 owned roles/одна выбранная texture, без симуляции. Leaf 14 ID/cutout-opaque/shared picker; biome tint не принят. Existing indexed button/plate/stair bindings и regressions сохранены.
 
-## Следующий согласованный объём
+## Ближайшая техническая точка при возобновлении
 
-- [ ] Получить фактические REVIEW_IDS length/unique/membership и full compile на конкретном SHA. Статический ожидаемый состав 1177, не доказанный runtime результат. Арифметические 98 до 1275 не готовый список остатка; auxiliary отдельно.
-- [ ] Закончить по-ID таблицу исходных 1275: assignment → builder → resources/bindings → states → preview, статус/следующее действие. Непроверенное не называть отсутствующим.
-- [ ] Подключать готовые реальные семейства крупными самосогласованными пакетами; конкретные ресурсные/state пробелы отдельно. Не писать готовые модели повторно.
-- [ ] Разрешить оборванную точку bed по коду/реальным ресурсам: последняя реплика OLDCHAT26 не доказывает запись, в прочитанном preview.mjs явного bed нет. Не повторять неподтверждённый пакет вслепую.
-- [ ] Проверить фактическое содержание/разницу dba560c и 6289e13, если потребуется разбор последних записей: get_commit последнего вернул только metadata без files/patch; не объявлять полный diff проверенным.
-- [ ] Fresh full coverage/inputValidation/PIN compile/tests/Actions на конкретном SHA, включая новые resource/sign/controls tests. Исторические 13 Node mock checks и 39+39 synthetic sign adapter checks не заменяют полный прогон.
-- [ ] Leaf с реальными images/alpha/material lifecycle/PNG/cutout-opaque; biome tint не заявлен готовым.
+Владелец выбрал сначала закончить документы, без дополнительных тестов и ручных прогонов. Ниже технические долги, не требование немедленно попросить новые логи. Existing automatic CI не отключать, тесты не удалять.
 
-## Общая приёмка и основной editor
+- [ ] Полный успешный preview-slice: на e07f971 обход остановился с Explicit face variant required: north; на d3a21c3 было down. Конкретная mycelium неоднозначность найдена статически и исправлена, но лог сам не содержит ID. Результат после 8f9a1c9 не проверен; другие блокеры не исключены.
+- [ ] При дальнейшей отладке диагностировать source ID/model/face, не вводить общий fallback на первую PNG.
+- [ ] Сверить точные REVIEW_IDS length/unique/source membership с исходным множеством. Заявленные OLDCHAT27 1275 не число принятых моделей/карточек. Coverage 1277 включает auxiliary end_gateway/lava_cauldron.
+- [ ] Закончить по-ID resource/state classification: assignment → builder → resources/bindings → states → preview. Отсутствие проверки не называть отсутствием модели, готовую геометрию не писать повторно.
+- [ ] При согласованном возвращении к приёмке получить свежий compile/coverage/inputValidation/tests/Actions на конкретном SHA. Исторические mocks и coverage report не заменяют полный geometry sweep.
+- [ ] Leaf с реальными images/alpha/material lifecycle/PNG/cutout-opaque; biome tint отдельно.
 
-- [ ] PNG/TGA/real Three-WebGL/UV/scale/alpha/Android, включая dragon/potted azalea/gels/stem tint/kelp, pot/conduit/liquids/chests/shulkers/bell/fire/campfires/bubble sprite и новые группы. Не переделывать geometry без дефекта.
+## Совместная приёмка и основной editor
+
+- [ ] PNG/TGA/real Three-WebGL/UV/scale/alpha/Android: dragon/potted azalea/gels/stem tint/kelp, pot/conduit/liquids/chests/shulkers/bell/fire/campfires/bubble sprite и новые группы. Geometry без дефекта не переделывать.
 - [ ] Source-ID reopen/owned/carried/icons/indexed repeats/dependencies/aliases/forms/states/independent PNG/GPU update-cleanup.
-- [ ] По коду определить оставшиеся legacy editor пути Find/resources/states/draw/history/Add/reopen/PNG-mcpack export; перенести на единственную новую основу. Read-only preview не editor switch.
+- [ ] По коду определить и закрыть конкретные оставшиеся legacy editor Find/resources/states/draw/history/Add/reopen/PNG-mcpack export пути на единственной новой основе. Read-only preview не editor switch.
 - [ ] Совместно принять loaders/EN-RU/Shared textures/badges/draw/undo/redo/Add/reopen/export/async/storage/import/dimensions/alpha/cache/URL lifecycle/language-theme-pack-slot-frame/Android.
-- [ ] Только после готовности — индивидуальная чистка заменённого кода/тестов, runtime switch/FK_V/cache/removal legacy.
+- [ ] Только после готовности — индивидуальная чистка заменённых путей/тестов, runtime switch/FK_V/cache/removal legacy. Packs/localStorage заранее не очищать.
 
 ## Будущий scope
 
-- [ ] Animation timing/order/playback/pause/export strip/clock-compass/smoke/точная particle simulation. Не блокеры статичного bubble/campfire.
+- [ ] Animation timing/order/playback/pause/export strip/clock-compass/smoke/точная particle simulation; не блокеры статичного bubble/campfire.
 - [ ] Full skin editor/player body/поздняя примерка брони/full mobs/entities/items/cushion. Head/hat/full Steve sheet/routes сохранить.
-- [ ] Tablet/desktop layout отдельно, mobile/paper tokens сохранить.
+- [ ] Tablet/desktop layout отдельно, mobile/paper tokens сохранить; IndexedDB/большие паки/user backup/PWA-offline/права на ресурсы отдельно.
 
-После «да»: точная запись → saved content/diff → следующая подготовка без ожидания «продолжай». Каждая новая запись требует подтверждения. Только main/<25000 UTF-8 bytes/file; новые permanent tests отдельно согласовать. Документы по запросу владельца; backup/refactor-0.9/fk070_packs/localStorage не трогать. Chest/shulker facing не возвращать. Ненадёжные концовки не основание отката проверенного кода; подробные контракты — CONTEXT/ARCHITECTURE и прежняя передача 3e503a8.
+Только main/<25000 UTF-8 bytes/file; новые permanent tests отдельно согласовать. Каждая запись с точным подтверждением и проверкой saved diff/content. Владелец не всегда видит отдельный prompt: просьбу о записи явно выносить в конец ответа. После подтверждения продолжать подготовку без искусственных остановок. Backup/refactor-0.9/fk070_packs/localStorage не трогать. Chest/shulker facing не возвращать. Подробные контракты — ARCHITECTURE/CONTEXT и прежняя передача 3e503a8.

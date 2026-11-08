@@ -1,23 +1,27 @@
-# ROADMAP — завершить перенос, принять, очистить
+# ROADMAP — закончить, принять, очистить
 
-Обновлено 2026-11-08 по OLDCHAT26 и сохранённому main 6289e137144a70929084e9d1c2a7e5722c170bae. Не выпуск. CONTEXT/handoff — текущая точка, ARCHITECTURE/TODO — контракты/задачи.
+Обновлено 2026-11-08 по OLDCHAT26/27 и сохранённому main 8f9a1c9c115a1def557d986d11c3bfaf841521ab. Не выпуск. CONTEXT/handoff — передача, ARCHITECTURE/TODO — контракты и задачи. Обновление остальных пяти документов, упомянутое в передаче 8f9a1c9, закрывается этим документальным пакетом.
 
-## 1. Закончить каталог и техническую основу
+## 1. Зафиксировать текущее состояние
 
-По статическому составу preview ожидается 1177 записей: прежние 939 + 55 copper + 41 cube + 10 indexed + 39 fixtures + 39 signs + 35 joinery + 19 extra. Не число геометрий/карточек и не свежий успешный compile. Проверить unique/membership; 98 до 1275 лишь арифметика, auxiliary отдельно. Полная по-ID classification ещё нужна.
+Bed, candles/cake sources, механизмы/rails/lightning rods, power groups, technical cubes/structure modes и последние 22 ID из 73ca673 сохранены. Base preview-config — 638 source IDs; не путать с итоговым REVIEW_IDS и expanded records адаптера bed. Прежние 1177 — исторический срез; заявленные 1275 ещё не доказательство полной приёмки. Coverage 1277 включает auxiliary.
 
-Продолжать крупные реальные готовые семейства, адресно закрывать доказанные resource/state пробелы, не переносить geometry повторно. Bulb/ice/anchor controls уже есть, signs/doors/shelves/extra сохранены. Bed из оборванного конца OLDCHAT26 не считать подключённым: в прочитанном preview.mjs явного bed нет. Повторные commit messages не два пакета. Bubble sprite и leaf cutout/opaque не начинать заново.
+На e07f971 validate прошёл 697/697, но preview-slice остановился на north ambiguity. Grass_path исправлен e07f971, mycelium именованные defaults сохранены 8f9a1c9. После последней правки результат CI не проверен. Полный geometry sweep не объявлять успешным.
 
-## 2. Совместная проверка и editor integration
+Владелец выбрал перейти к документации без дополнительных тестов/ручных прогонов. На этом шаге не просить новые логи и не продолжать менять код ради незавершённой приёмки. Automatic CI не отключать и не подменять отсутствие результатов успехом.
 
-Fresh full coverage/inputValidation/PIN compile/tests/Actions на конкретном SHA. Исторические Node mock/fixture/metadata/registry-spy проверки не заменяют real PNG-TGA/WebGL/Bedrock UV-scale-alpha/Android. По коду определить и перенести оставшиеся editor Find/resources/states/draw/history/Add/reopen/export пути. Preview read-only не editor switch. Принять async/storage/import/lifecycle/language-theme-pack-slot-frame.
+## 2. Завершить техническую и совместную приёмку
+
+При возобновлении: точные REVIEW_IDS/source/expanded membership, существующие coverage/inputValidation/compile/tests/Actions на конкретном SHA и полный preview sweep с диагностикой ID/model/face. Не заменять неоднозначность первым элементом PNG и не писать готовую геометрию повторно. Адресно закрывать доказанные resource/state пробелы.
+
+Затем real PNG-TGA/WebGL/Bedrock UV-scale-alpha/Android; Node mocks/synthetic textures не визуальная приёмка. По коду определить и закрыть конкретные editor Find/resources/states/draw/history/Add/reopen/export пути. Принять async/storage/import/lifecycle/language-theme-pack-slot-frame. Read-only preview не замена основному editor.
 
 ## 3. Чистка после готовности
 
-После совместной приёмки удалить конкретные заменённые пути/дубли, индивидуально проверить тесты, выполнить runtime switch/FK_V/cache. Legacy заранее не удалять, user packs/localStorage не очищать.
+После совместной приёмки удалять только конкретные заменённые пути/дубли, индивидуально проверять тесты, выполнить runtime switch/FK_V/cache. Legacy заранее не удалять, user packs/localStorage не очищать. Не начинать очередную перестройку архитектуры вместо завершения работающих связей.
 
 ## 4. Будущие этапы
 
 Skin editor в карточке Игрок, позже body/armor fitting с переиспользованием head/hat/full sheet/routes; full mobs/entities/items/cushion; animation playback/smoke/particles; tablet/desktop layout; IndexedDB/большие паки/user backup/PWA-offline/права на ресурсы отдельно. Фиктивные готовые формы не показывать.
 
-Одна большая задача без искусственных остановок: после подтверждения записать/проверить/готовить следующий пакет. Каждая новая запись требует точного подтверждения. Только main/<25000 UTF-8 bytes/file, новые permanent tests отдельно согласовать, документы по просьбе владельца. Backup/refactor-0.9/fk070_packs/localStorage не трогать.
+Одна большая согласованная задача без искусственных остановок, но каждую запись подтверждать точно и проверять сохранение. Просьбу о подтверждении явно выносить в конец обычного сообщения. Только main/<25000 UTF-8 bytes/file, новые permanent tests отдельно согласовать. Backup/refactor-0.9/fk070_packs/localStorage не трогать.

@@ -6,18 +6,26 @@
 
 ## Статус на 2026-11-08
 
-Проверенный main HEAD перед документацией: 6289e137144a70929084e9d1c2a7e5722c170bae. Последний прочитанный архив — OLDCHAT26. Рефакторинг продолжается, это не выпуск. Основной editor по прежней передаче legacy; HTML/runtime в этом документальном проходе заново не проверены. Read-only preview не доказывает editor draw/undo/reopen/export.
+Точка кода перед этим документальным пакетом: 8f9a1c9c115a1def557d986d11c3bfaf841521ab. Учтены OLDCHAT26, OLDCHAT27 и присланные результаты GitHub Actions. Рефакторинг не объявлен завершённым, это не выпуск. Основной editor по прежней передаче legacy; HTML/runtime в этом проходе заново не проверены. Read-only preview не доказывает editor draw/undo/reopen/export.
 
-Статический состав preview ожидается 1177 записей: прежние 939 (602 base + 273 stone/mineral + 50 wood + 14 leaf) и новые 55 copper + 41 cube + 10 indexed + 39 fixtures + 39 signs + 35 doors/shelves + 19 alias/technical. Это не свежий compile/unique audit и не число моделей/карточек. Base — preview-config.mjs, text — preview-text.mjs, stone/wood/leaf — отдельные data modules, новые группы и итоговая сборка — preview.mjs. Просмотр в паки не пишет.
+Подключены настоящий source ID bed с 16 цветными записями и owned sheets, свечи и cake/candle-cake sources, механизмы/рельсы/громоотводы, power groups печей/коптильни/лампы и дополнительные технические объекты. Последние 22 ID из OLDCHAT27 действительно записаны 73ca673 и включены в сборку preview. Candle cakes — aliases целого cake, не готовая свеча на торте.
 
-Copper bulb 4 modes, frosted ice 4 stages и respawn anchor 5 charge values выведены в общий picker независимо от PNG. Двери/полки подключены в статичном scope. Финальная реплика архива про bed не подтверждена текущим preview.mjs; готовность всех моделей/ресурсов ещё не установлена.
+Базовый список preview-config.mjs содержит 638 исходных ID: прежние 602 + bed + 17 свечей + 18 cake sources. Итоговые REVIEW_IDS собираются в preview.mjs со stone/wood/leaf data и дополнительными группами. Source IDs, expanded records и видимые карточки — разные количества. Старые 1177 не текущая полнота, заявленные 1275 не число принятых моделей. Coverage 1277 включает два auxiliary источника.
 
-Bubble_column использует existing sprite с одной texture и 18 owned roles без симуляции. Leaf cutout/opaque независим от edited PNG, biome tint не заявлен готовым. Fire A/B/campfire lit-unlit статичны, без smoke/playback.
+## Что проверено
 
-Full coverage/inputValidation/PIN compile/tests/Actions, реальные PNG-TGA/WebGL/Android и визуальная приёмка этим проходом не подтверждены. Старые частичные Node mock/fixture результаты не заменяют полный прогон.
+По логам GitHub Actions на e07f971: validate 697 тестов прошли, ошибок и пропусков нет. Отдельный preview-slice не завершился: Explicit face variant required: north. Полного успешного построения всех геометрий пока не подтверждено.
+
+Grass_path теперь именованно выбирает dirt для нижней грани, сохраняя coarse_dirt. Следующая статически подтверждённая неоднозначность mycelium исправлена в 8f9a1c9 через именованные defaults, snow-side ресурс сохранён. Результат CI после этой правки не проверен. По просьбе владельца выполнен переход к документации без новых тестов и ручных прогонов; automatic CI не отключён.
+
+Реальные PNG/TGA, визуальная правильность UV/масштаба/alpha, WebGL/Android и editor integration требуют приёмки. Зелёные unit tests и coverage этого не заменяют.
 
 ## Продолжение и сохранность
 
-Читать CONTEXT → docs/handoff-unified-cards.md → ARCHITECTURE → TODO → ROADMAP → docs/review-principles.md. Продолжение — сверка реальных оставшихся ID/подключение готового, затем editor integration/совместная приёмка/чистка. Ненадёжный конец чата не основание отката проверенного прогресса или повтора неподтверждённой записи.
+Читать CONTEXT → docs/handoff-unified-cards.md → ARCHITECTURE → TODO → ROADMAP → docs/review-principles.md. Этот пакет обновляет оставшиеся пять документов: указание в передаче 8f9a1c9 «сначала закончить документы» относится к уже закрываемому документальному шагу, не к новому кругу рефакторинга.
 
-Только main/точное подтверждение каждой записи/saved content-diff/<25000 UTF-8 bytes/file. Внутри одной большой задачи после подтверждения продолжать без ожидания «продолжай». Документы по запросу владельца, новые permanent tests отдельно согласовать. Backup/refactor-0.9/fk070_packs/localStorage не трогать. Full mobs/skin editor/body/armor/tablet-desktop layout — будущие этапы. PIN Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d; Three.js r128/JSZip 3.10.1.
+При дальнейшем техническом продолжении: полный preview/ресурсная приёмка, затем конкретная editor integration, совместная проверка и индивидуальная чистка. Готовую геометрию повторно не переносить. Preview просмотр в пользовательские паки не пишет.
+
+Только main/точное подтверждение каждой записи/saved content-diff/<25000 UTF-8 bytes/file. Понятную просьбу о подтверждении выносить в конец ответа: отдельный prompt у владельца может не отображаться. Backup/refactor-0.9/fk070_packs/localStorage не трогать. Документы по запросу владельца, новые permanent tests отдельно согласовать. Chest/shulker whole-block facing не возвращать. Full mobs/skin editor/body/armor/tablet-desktop layout — будущие этапы.
+
+PIN Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d; Three.js r128/JSZip 3.10.1. Полные модельные контракты — ARCHITECTURE и прежняя передача 3e503a8.
