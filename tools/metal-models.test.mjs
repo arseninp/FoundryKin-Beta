@@ -14,7 +14,11 @@ test('nine bars, eight lightning rods, end rod and heavy core get explicit dedic
  for(const prefix of ['','exposed_','weathered_','oxidized_'])for(const wax of ['','waxed_']){expected[wax+prefix+'copper_bars']='bars';expected[wax+prefix+'lightning_rod']='lightning_rod';}
  const plan=planModelAssignments(Object.fromEntries(Object.keys(expected).map(id=>[id,{}])));assert.deepEqual(plan.unresolved,[]);assert.equal(Object.keys(expected).length,19);
  for(const [id,model]of Object.entries(expected))assert.equal(plan.assignments[id].model,model,id);
- assert.deepEqual(planModelAssignments({copper_chest:{},copper_golem_statue:{}}).unresolved,['copper_chest','copper_golem_statue']);
+ const special=planModelAssignments({copper_chest:{},copper_golem_statue:{},unknown_copper_fixture:{},unknown_lightning_device:{}});
+ assert.equal(special.assignments.copper_chest.model,'chest');
+ assert.equal(special.assignments.copper_golem_statue.model,'copper_golem_statue');
+ assert.deepEqual(special.unresolved,['unknown_copper_fixture','unknown_lightning_device']);
+ for(const id of special.unresolved)assert.ok(!Object.hasOwn(special.assignments,id));
 });
 test('accepted bars retain one sheet and four narrow edge planes rather than a glass pane box',()=>{
  const s=setup('bars',{north:'sheet',east:'edge'});s.build();const m=meshesOf(s.E.group);

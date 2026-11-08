@@ -25,7 +25,12 @@ test('invalid variants fail at both entry points',()=>{
  assert.throws(()=>c.previewControlSpec({},plan('red_mushroom_block',null)),/Invalid mushroom control state/);
 });
 test('variant controls are scoped to mushroom cubes and schemas are isolated',()=>{
- for(const id of ['stone','crafter'])assert.equal(c.previewControlSpec({},plan(id)).schema,null);
+ assert.equal(c.previewControlSpec({},plan('stone')).schema,null);
+ const crafter=c.previewControlSpec({},plan('crafter'));
+ assert.deepEqual(crafter.schema.map(field=>field.key),['mode']);
+ assert.deepEqual(crafter.schema[0].values.map(option=>option.value),['idle','triggered','crafting']);
+ assert.deepEqual(crafter.state,{mode:'idle'});
+ assert.ok(!Object.hasOwn(crafter.state,'variant'));
  assert.equal(c.previewControlSpec({},plan('red_mushroom_block',{},'cross')).schema,null);
  const p=plan('mushroom_stem'),fields=c.previewFields({},p);fields[0][1][0][1]=99;assert.equal(c.previewFields({},p)[0][1][0][1],0);
  for(const id of ['bee_nest','beehive'])assert.deepEqual(c.previewControlSpec({},plan(id)).state,{honey:false});
