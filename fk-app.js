@@ -159,13 +159,19 @@ $('#texList').addEventListener('click',function(e){
     FKE.editTexture(t.path,t.data,{obj:t.obj,onFail:function(code){say(code==='no_block'?'msg.no_block_for_file':'msg.catalog_not_loaded',{path:t.path})}});
   }
 });
+var textureReplacements=new WeakMap();
 $('#texList').addEventListener('change',function(e){
   var inp=e.target;if(inp.dataset.a!=='rep'||!inp.files[0])return;
-  var p=active(),i=+inp.dataset.i;if(!p||!p.textures[i])return;
-  if(!confirm(T('confirm.replace_texture',{path:p.textures[i].path}))){inp.value='';return}
-  var r=new FileReader();
-  r.onload=function(){p.textures[i].data=r.result;save(KEY,data);renderTex();say('msg.texture_replaced')};
-  r.readAsDataURL(inp.files[0]);
+  var f=inp.files[0],p=active(),i=+inp.dataset.i;inp.value='';if(!p||!p.textures[i])return;
+  var t=p.textures[i];
+  if(!confirm(T('confirm.replace_texture',{path:t.path})))return;
+  var before=t.data,path=t.path,request={},r=new FileReader();textureReplacements.set(t,request);
+  r.onload=function(){
+    if(byId(p.id)!==p||active()!==p||p.textures.indexOf(t)<0||t.path!==path||t.data!==before||textureReplacements.get(t)!==request)return;
+    t.data=r.result;
+    if(save(KEY,data)){if(top()==='pack')renderTex();say('msg.texture_replaced')}else t.data=before;
+  };
+  r.readAsDataURL(f);
 });
 
 /* import / export */
@@ -179,11 +185,11 @@ function manifest(p,u1,u2){
 }
 function exportPack(p){
   if(typeof JSZip==='undefined'){say('msg.no_jszip');return}
-  var z=new JSZip(),m=p.keep?manifest(p,p.id,p.mod):manifest(p,uuid(),uuid());
+  var name=p.name,z=new JSZip(),m=p.keep?manifest(p,p.id,p.mod):manifest(p,uuid(),uuid());
   z.file('manifest.json',JSON.stringify(m,null,2));
   if(p.icon)z.file('pack_icon.png',p.icon.split(',')[1],{base64:true});
   p.textures.forEach(function(t){z.file('textures/'+t.path+'.png',t.data.split(',')[1],{base64:true})});
-  z.generateAsync({type:'blob'}).then(function(b){download(b,p.name+'.mcpack');say('msg.exported',{name:p.name})},function(e){say('msg.zip_error',{detail:e.message})});
+  z.generateAsync({type:'blob'}).then(function(b){download(b,name+'.mcpack');say('msg.exported',{name:name})},function(e){say('msg.zip_error',{detail:e.message})});
 }
 $('#impF').onchange=function(){
   var f=this.files[0];this.value='';if(!f)return;
