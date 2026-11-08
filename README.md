@@ -4,20 +4,18 @@
 
 Приложение: https://arseninp.github.io/FoundryKin-Beta/app.html
 
-## Статус на 2026-11-05
+## Статус на 2026-11-08
 
-Проверенный кодовый HEAD перед документацией: 05f7a62f42a021b2c67d0cfbd3c87515db428aa6. Основной редактор остаётся на legacy 0.9.1; index.html заново проверен. Новый каталог/renderer ещё не интегрирован с рисованием/undo/reopen/export основного пути. Это не выпуск и не завершение всего рефакторинга.
+Проверенный HEAD main перед документацией: 836ad36a953f49dd2f08cc7996b0f6172b87385b. Рефакторинг продолжается, это не выпуск. Основной editor по прежней передаче остаётся legacy; его runtime/HTML в этой документальной сессии заново не проверяли. Новый preview не доказывает готовность editor draw/undo/reopen/export.
 
-Отдельный read-only preview содержит 67 исходных ID, не число карточек/весь каталог: прежние 29 + liquids 4 + chests 11 + shulkers 17 + bell + player_head + fire/soul_fire + campfire/soul_campfire. REVIEW_IDS/TEXT — preview-config.mjs, image helpers — preview-images.mjs. В паки этот просмотр не пишет.
+Отдельный read-only preview собирает 939 исходных ID: 602 базовых + 273 каменных/минеральных + 50 древесных + 14 лиственных. Это состав кода и интеграционное ожидание, не результат свежего полного compile и не число уникальных моделей/карточек. Базовый список — preview-config.mjs; переводы — preview-text.mjs; дополнительные группы — preview-stone-data.mjs, preview-wood-data.mjs, preview-leaf-data.mjs; итоговая сборка — preview.mjs. В паки просмотр не пишет.
 
-Статичное подключение костров закончено: два source IDs/EN-RU, общий lit picker/default true и независимая PNG, unlit-пламя и Lambert-брёвна. Огонь имеет A/B вариант независимо от PNG. Дым/animation playback не реализованы. Этот кодовый пакет не нужно начинать заново в следующем чате; вид в Bedrock ещё подлежит общей приёмке.
+Bubble_column использует существующий sprite с одной выбранной текстурой, сохранены 18 owned roles; симуляции потока нет. Листва имеет общий cutout/opaque picker независимо от edited PNG; биомный tint не реализован по передаче. Огонь A/B и костры lit/unlit статичны, smoke/playback не входят в реализованный scope.
 
-Локальные файлы тестов: resource-variants 9/9, fire-models 8/8, light-models 7/7. Связанный campfire стенд на production modules проверил 12 state/PNG сочетаний, defaults/invalid inputs/material updates; Three/источники синтетические. Полный PIN compile/успешный CI/реальные PNG-TGA/WebGL/Android/export не подтверждены. Записанные pinned tests и workflow не доказывают успешный запуск.
+Полные coverage/inputValidation/PIN compile/tests/Actions, реальные PNG-TGA/WebGL/Android и визуальная приёмка не подтверждены этой сессией. Исторические локальные результаты и новые normalized-fixture/registry-spy tests не заменяют эти проверки.
 
 ## Продолжение и сохранность
 
-Следующий чат — следующие согласованные модели, не повторная реализация костров. Bubble_column имеет только роли ресурсов, без builder/assignment/preview; точный вид и движение отложены по скриншотам владельца. Будущий skin editor/примерка брони и полные mobs — отдельные этапы.
+Читать CONTEXT → docs/handoff-unified-cards.md → ARCHITECTURE → TODO → ROADMAP → docs/review-principles.md. Последний прочитанный архив — OLDCHAT25; его ненадёжный конец не основание повторного leaf подключения. Продолжение — массовая сверка/подключение оставшихся реальных ID, затем editor integration/совместная приёмка/чистка.
 
-Читать CONTEXT → docs/handoff-unified-cards.md → ARCHITECTURE → TODO → ROADMAP → docs/review-principles.md. Полностью прочитанный архив — OLDCHAT22; текущий разговор не объявлять новым архивом до его реального появления.
-
-Только main/точное подтверждение/saved diff, файлы <25000 UTF-8 bytes, новые test files отдельно согласовать. Документы по указанию владельца. Backup/refactor-0.9 не обновлять автоматически, fk070_packs/localStorage не очищать: backup кода не сохраняет пользовательские паки. Перенос → приёмка → чистка/runtime switch/удаление заменённого legacy. PIN Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d; Three.js r128/JSZip 3.10.1.
+Только main, точное подтверждение каждой записи и saved diff; <25000 UTF-8 bytes/file. После подтверждения продолжать одну большую задачу без лишнего ожидания «продолжай». Документы по запросу владельца; новые permanent tests отдельно согласовать. Backup/refactor-0.9/fk070_packs/localStorage не трогать. Полные mobs/skin editor/примерка брони/tablet-desktop layout — будущие этапы. PIN Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d; Three.js r128/JSZip 3.10.1.

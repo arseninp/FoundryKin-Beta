@@ -1,23 +1,21 @@
-# ROADMAP — модели, приёмка, подключение редактора
+# ROADMAP — завершить перенос, принять, очистить
 
-Обновлено 2026-11-05. Кодовый HEAD перед документацией: 05f7a62f42a021b2c67d0cfbd3c87515db428aa6. Контекст — CONTEXT/handoff, задачи — TODO, контракты — ARCHITECTURE и история 5b083a7. Не выпуск.
+Обновлено 2026-11-08. Проверенный HEAD main до документации: 836ad36a953f49dd2f08cc7996b0f6172b87385b. Не выпуск. Контекст — CONTEXT/handoff, детали — ARCHITECTURE/TODO.
 
-## 1. Продолжить следующие модели
+## 1. Закончить каталог и техническую основу
 
-Кодовый объём статичных campfire/soul_campfire в отдельном preview закрыт. Огонь и костры не переносить/подключать повторно без установленного дефекта. Срез — 67 source IDs, не полный каталог; основной editor не переключён. Следующий чат начинает следующую согласованную группу с проверки уже существующих builder/assignment/resources. Не дробить файлы и не строить второй аудит вместо работы.
+Текущий состав отдельного preview — 939 source IDs (602 base + 273 stone/mineral + 50 wood + 14 leaf), не число геометрий и не полный каталог. Полная таблица статусов для 1275 исходных ID ещё нужна; auxiliary отдельно. Массово сверять и подключать готовые семейства, исправлять только доказанные пробелы, не создавать модели повторно. Bubble_column уже sprite/18 owned roles/preview без симуляции; foliage cutout/opaque и leaf ID уже подключены. Старые числа 67/228 и финальный повторный leaf draft OLDCHAT25 не использовать как актуальный статус.
 
-Bubble_column: только 18 ресурсных ролей, без builder/assignment/preview; geometry/UV/движение по скриншотам отложены. Не подставлять cube. Полный existing coverage/inputValidation/compile результат ещё нужен; ручное чтение не подтверждает весь остаток.
+## 2. Совместная проверка и editor integration
 
-## 2. Общая приёмка
+Получить full coverage/inputValidation/PIN compile/tests/Actions на конкретном SHA. Локальные metadata/fixtures/registry spy не заменяют реальных PNG-TGA/WebGL/Bedrock UV-scale-alpha/Android. Перенести оставшиеся editor Find/resources/states/draw/history/reopen/export пути на новую основу; определить фактический остаток по коду. Preview read-only не означает editor switch. Принять draw/undo/redo/Add/reopen/PNG/mcpack/async/storage/import/lifecycle/language-theme-pack-slot-frame.
 
-Локальные unit/fixture результаты не равны полному PIN compile/CI/WebGL. Pinned shulker/bell/player/fire/campfire tests записаны, успешный запуск не подтверждён. Нужны real PNG-TGA/Bedrock UV-scale-alpha/Three-WebGL/Android/export/source routes/reopen/PNG-form-state/poses/frames/materials/lifecycle. Это приёмка готового кода, не автоматическая задача повторной реализации костров. Animation player/дым/игровой timing отдельно от static state.
+## 3. Чистка после готовности
 
-## 3. Довести основной редактор
-
-Новый путь Find/editor/loaders/EN-RU/Shared textures/badges подключить и принять draw/undo/redo/Add/reopen/PNG/mcpack/async/storage/import/dimensions/alpha/cache/URL lifecycle/pack-slot-frame-language-theme/Android. Legacy пока работает. Только после совместной готовности — точечная чистка дублей/тестов, runtime switch/FK_V/cache/удаление заменённого кода.
+После совместной приёмки удалить конкретные заменённые пути/дубли, проверить тесты индивидуально, выполнить runtime switch/FK_V/cache. Не удалять работающий legacy заранее, не очищать паки/localStorage.
 
 ## 4. Будущие отдельные этапы
 
-Полноценный skin editor в карточке Игрок, позднее тело для примерки брони: переиспользовать head/hat UV/полный sheet/routes, не показывать фиктивное тело сейчас и не обещать лёгкость. Полные mobs/items/entities/cushion, IndexedDB/большие паки/user backup/PWA-offline/права на ресурсы — отдельный scope. Макет tablet/desktop прямо отложен, mobile/paper tokens сохранить.
+Skin editor в карточке Игрок, позже body/примерка брони с переиспользованием head/hat/full sheet/routes; full mobs/entities/items/cushion; animation playback/smoke/particle simulation; tablet/desktop layout; IndexedDB/большие паки/user backup/PWA-offline/права на ресурсы — отдельный scope. Фиктивные готовые формы не показывать.
 
-Только main/exact confirmation/saved diff/<25000 bytes/file; документы по указанию владельца, новые permanent test files отдельно согласовать. Backup/fk070_packs не трогать.
+Одна большая задача — без остановок ради отчётности: после подтверждения записать/проверить/готовить следующий пакет. Новая запись требует точного подтверждения; изменение направления/материалы/реальный блокер обсуждать отдельно. Только main/<25000 UTF-8 bytes/file, новые permanent tests отдельно согласовать, документы по просьбе владельца. Backup/refactor-0.9/fk070_packs не трогать.

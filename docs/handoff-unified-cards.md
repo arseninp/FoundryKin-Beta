@@ -1,31 +1,25 @@
-# Передача: костры закрыты, продолжить следующие модели
+# Передача — массовое подключение каталога после OLDCHAT25
 
-Обновлено 2026-11-05 по текущему разговору, OLDCHAT22 и GitHub. Проверенный кодовый HEAD до документации: 05f7a62f42a021b2c67d0cfbd3c87515db428aa6, main. Начать с CONTEXT. Подробные прежние контракты — 5b083a7/1043175/3fe2d82, не отменяются этой передачей.
+Обновлено 2026-11-08. Проверенный HEAD main до документации: 836ad36a953f49dd2f08cc7996b0f6172b87385b. Начать с CONTEXT; прежние модельные контракты сохраняются.
 
-## Что закрыто
+## Сохранённая точка
 
-Владелец заканчивает чат и просит в новом сразу брать следующие модели. Статичные campfire/soul_campfire в отдельном preview реализованы и подключены. Не начинать их заново и не превращать оставшуюся общую визуальную приёмку в задачу повторного переноса. Пламя — Basic-unlit, брёвна — Lambert; lit false/true независимо от выбранной PNG, default true; EN/RU, оба source IDs. Дым и animation playback не добавлялись.
+В preview.mjs итоговый список собирается как 602 base + 273 stone/mineral + 50 wood + 14 leaf = 939 source IDs. Базовый экспорт preview-config.mjs — не весь срез. TEXT создаётся в preview-text.mjs и дополняется переводами таблиц в preview.mjs. Источники групп: preview-stone-data.mjs, preview-wood-data.mjs, preview-leaf-data.mjs. Helpers — preview-images.mjs. Разделение edfc234 уже записано ради лимита валидатора; не восстанавливать старый монолит автоматически.
 
-Ключевые записи: 2b7d82c — emissiveRoles:['up'] и регрессия; d578dc8 — общий lit picker; 05f7a62 — ID/подписи/pinned checks. Fire/soul_fire: e076117 — переписанная сборка/cleanup/unlit; c5134e5 — A/B; 8116bb5 — вывод в preview; 3fea102 — ранняя variant validation/default primary. Геометрия кандидатов/UV и PNG не переделывались произвольно. StageCount не менялся.
+Bubble_column уже назначен существующему sprite и подключён (4dbdcd2/4f1ef0b); сохранены 18 owned roles и исходные variants/paths. Показывать одну выбранную текстуру, не все одновременно; не создавать particle engine/новый builder/склеенную PNG ради этой карточки. Точная игровая симуляция не входит в статичный scope.
 
-## Где подключено
+79 fixture IDs сохранены в 0dd77aa; отрицание из чата не является состоянием репозитория. Старое ожидание 67 уже исправлено в b41c99b. Явные bindings четырёх кнопок/плит и пяти индексированных лестниц и регрессии записаны. 14 ID листвы подключены в 4b37171; общий foliage cutout/opaque проходит через catalog/leaf-preview.mjs, resolver и picker независимо от edited PNG. 836ad36 добавляет только три integration tests в existing tools/leaf-preview.test.mjs. Повторное подключение листьев из конца OLDCHAT25 не выполнять. Биомная окраска не реализована по передаче.
 
-REVIEW_IDS/TEXT в preview-config.mjs: 67 исходных ID = 29 прежних + 4 liquids + 11 chests + 17 shulkers + bell + player_head + 2 fires + 2 campfires. Не число cards/весь каталог. Library test ожидает 113 builders, не 113 принятых объектов. Helpers — preview-images.mjs, прежние экспорты preview.mjs сохранены. Общие FKModelState/FKM/CSS/preview-controls, второго меню нет.
+## Следующая работа
 
-Это отдельный read-only preview. Основной editor всё ещё legacy, HTML заново проверен; новый путь рисования/undo/reopen/export не подключён. Не обещать, что изменения уже работают в основном редакторе, и не удалять старые файлы.
+Продолжить оставшиеся исходные ID крупными проверенными группами, отделяя реальные пробелы ресурсов/состояний от отсутствия в preview. Полная по-ID таблица пяти категорий ещё не закончена. 1275 исходных и 2 auxiliary — разные множества; 336 вне списка 939 не означают 336 новых геометрий. Существующие builders/модели не переносить заново, использовать existing coverage/inputValidation.
 
-## Какие доказательства есть
+После подключения моделей и технической основы — совместные проверки, интеграция рабочих операций editor, затем удаление заменённого legacy. Отдельный read-only preview не доказывает готовность основного редактора; HTML/runtime в этой документальной сессии заново не проверялись.
 
-Локальные полные файлы: resource-variants 9/9, fire-models 8/8, light-models 7/7. Pure-controls/state checks отдельно. Завершающий стенд с настоящими registry/controls/materials/campfire builder, сверенными по blob SHA: 12 сочетаний state/PNG, 2 defaults, 6 invalid-state случаев; обновление материалов не меняет геометрию, borrowed textures не освобождаются материалами. Fixtures/Three recording classes синтетические. Это НЕ полный pinned compile/CI/реальные PNG-TGA/WebGL/Android. Counts не суммировать.
+## Доказательства и рабочий ритм
 
-Pinned tests шести групп shulker/bell/player/fire/campfire записаны в existing files, успешный запуск не подтверждён. Existing validate запускает все tools/*.test.mjs; workflow содержит real Three r128/no-WebGL путь, но его наличие не равно успешному Actions.
+OLDCHAT25 сообщает resource-variants 16/16 на 11b7b83 и частные mock/metadata/control проверки. Не выдавать их за запуск на последнем HEAD. Новые resolver tests используют normalized fixtures/registry spy, не реальную геометрию/PNG/WebGL. Полный compile/coverage/tests/Actions/PNG-TGA/Android и визуальная приёмка здесь не выполнены.
 
-## Продолжение
+Одна большая задача — без лишних остановок: после подтверждения записать, проверить и сразу готовить следующий пакет без ожидания «продолжай». Результат предыдущей записи объединять со следующим подтверждением. Каждая новая запись всё равно требует точного подтверждения; изменения направления, нужные материалы и реальные блокеры обсуждать отдельно. Малую самостоятельную задачу завершать итогом; фон не обещать. ZIP в реплике владельца — ошибка диктовки, не обязательный workflow.
 
-Взять следующий согласованный объект/группу каталога, проверив уже существующие назначения/геометрию/источники; не добавлять ещё один аудит и не дробить файлы ради процесса. В manifest 1275 block IDs, но свежего полного coverage/inputValidation/compile результата нет. Ручная сверка исходных частей не доказывает закрытие всего каталога.
-
-Bubble_column: подготовлены только 18 texture roles, builder/assignment/preview нет. Владелец отложил точную геометрию/UV/движение по двум своим скриншотам: отдельные пузырьки, над магмой со слов владельца спирально вниз, над soul sand прямо вверх. Не куб-заглушка, не единственный доказанный остаток.
-
-Player_head уже сохранён в 1df7ce9/60ec0ad, последняя реплика OLDCHAT22 об обратном исключена. Будущий skin editor и примерка брони — отложенный план с переиспользованием head/hat/полного sheet. Полные mobs и макет отдельно.
-
-Не возвращать chest/shulker whole-block facing: жест вращает модель, крышки/open/double сохранить, ender без double. Unknown не cube; source IDs/resources/PNG-form-state/owned/shared contracts сохранить. Только main/exact confirmation/saved diff/<25000 bytes/file, backup/fk070_packs не трогать. Остальные обязательные контракты — CONTEXT/ARCHITECTURE/review-principles и указанные прежние документы.
+Только main/exact confirmation/saved diff; <25000 UTF-8 bytes/file, без ослабления валидатора. Новые permanent tests отдельно согласовать; существующие не удалять массово. Документы по запросу владельца. Backup/refactor-0.9/fk070_packs/localStorage не трогать. Все контракты source IDs/resources/PNG-state/forms/shared sheets/material lifecycle сохранять. Полные mobs/skin editor/примерка брони и макет tablet/desktop отложены.
