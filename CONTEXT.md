@@ -1,46 +1,50 @@
-# CONTEXT — вход новому чату
+# CONTEXT — текущая передача
 
-Обновлено 2026-11-08 по прочитанному OLDCHAT26 на Диске, предупреждению владельца о ненадёжном конце и сохранённому GitHub. Проверенный HEAD main перед документацией: 6289e137144a70929084e9d1c2a7e5722c170bae. Только arseninp/FoundryKin-Beta/main. Это не выпуск, не завершение рефакторинга и не визуальная приёмка.
+Обновлено 2026-11-08 после OLDCHAT26, OLDCHAT27 и разбора CI с владельцем. Только arseninp/FoundryKin-Beta/main. Последний проверенный SHA до этого пакета: e07f9718fcd66c843d7e32d0a0c46906a9399584. Не выпуск и не завершение рефакторинга.
 
-Читать: CONTEXT → docs/handoff-unified-cards.md → ARCHITECTURE → TODO → ROADMAP → README → docs/review-principles.md. Прежние контракты 5b083a7/1043175/3fe2d82 и полная передача 3e503a8 сохраняются, кроме явно обновлённого статуса.
+Читать CONTEXT → docs/handoff-unified-cards.md → ARCHITECTURE → TODO → ROADMAP → README → docs/review-principles.md. Текущий статус здесь заменяет устаревшие 1177/неподключённый bed в старых документах. Подробные модельные контракты ARCHITECTURE и прежней передачи 3e503a8 сохраняются. Прежний полный CONTEXT доступен на e07f971; сокращение входной сводки не отменяет его правила и сохранность.
 
-## Точка продолжения
+## Последнее решение владельца
 
-Продолжать сверку и подключение оставшихся реальных ID крупными самосогласованными группами: assignment → registered builder → resources/bindings/states → preview. Не писать готовую геометрию повторно и не строить новую инфраструктуру вместо переноса. Полной по-ID таблицы пяти статусов для исходных 1275 ещё нет.
+После адресного исправления перейти к обновлению документации без дополнительных ручных прогонов и без новых тестов. Это не разрешение выключать existing CI, удалять тесты или объявлять неподтверждённый успех. Автоматический CI после push может выполняться; его новый результат не проверен. Следующий документальный пакет должен обновить оставшиеся ARCHITECTURE/TODO/ROADMAP/README/review-principles, не ждать новых логов и не продолжать бесконечный рефакторинг.
 
-По составу текущего preview.mjs ожидается 1177 записей REVIEW_IDS: прежние 939 + 55 copper + 41 cube + 10 indexed cube + 39 fixtures + 39 signs + 35 doors/shelves + 19 alias/technical. Это статический состав, не результат свежего compile или проверки уникальности. Прежние 939 = 602 base + 273 stone/mineral + 50 wood + 14 leaf. Базовый экспорт preview-config.mjs не весь срез. Разницу 1275−1177=98 не выдавать за проверенный список остатка или число отсутствующих моделей: нужны сверка множеств, уникальности и auxiliary end_gateway/lava_cauldron отдельно.
+## Что сохранено после OLDCHAT26
 
-Конец OLDCHAT26 не надёжный журнал записей. В текущем файле есть EXTRA_SOURCE_REVIEW_BLOCKS: 10 coral wall fans, 4 waxed copper golem statues, allow/deny/border_block/barrier/structure_void. История содержит dba560c и 6289e13 с одинаковым сообщением про 19 ID; пакет не считать дважды. get_commit для 6289e13 вернул metadata без files/patch, поэтому полный diff последнего коммита этим не проверен. Финальное «обновляю ... bed» не подтверждено: явного bed в прочитанном preview.mjs нет. Не объявлять кровать подключённой и не повторять оборванную запись вслепую; сначала проверить реальный исходный ID, ресурсы и существующую модель.
+- e11f113: прежнее обновление семи документов по OLDCHAT26. На том этапе bed действительно ещё не был подтверждён.
+- 74e5107 и последующая сохранённая конфигурация: настоящий source ID bed подключён; адаптер создаёт 16 цветных записей, bed → red_bed, light_gray → silver sheet. Новую геометрию кроватей не писать.
+- В base preview-config сейчас 638 source ID: прежние 602 плюс bed, 17 свечей и 18 cake/candle-cake ID. Геометрия торта целая, свечные торты — aliases cake, не обещание свечи на торте.
+- В OLDCHAT27 сохранены состояния свечей, механизмы/рельсы/громоотводы, power groups печей/коптильни/лампы, новые кубические и технические объекты, шесть texture modes structure_block.
+- 73ca673: последняя группа 22 source ID действительно записана в REMAINING_REVIEW_BLOCKS и включена в REVIEW_IDS/TEXT. Полный diff: только preview.mjs. Добавлен reviewRows и уплотнены прежние таблицы; большой deletion count не означает утрату подключений.
+- Заявленные в OLDCHAT27 1275 исходных ID не называть 1275 принятыми геометриями/карточками. Полного свежего сравнения множества REVIEW_IDS с исходными 1275 этим проходом не выполнено. В coverage 1277 учитываются auxiliary end_gateway/lava_cauldron; множества различать.
 
-## Что уже записано — не повторять
+## Подтверждённые проверки и исправления
 
-- 90be95e: 55 copper primitive ID; 625f3c5: 41 cube ID. 17da1cf: исправление двух обращений тестового входа к terrain.texture_data; не новая модель.
-- 1b4d8c9: общий picker для copper bulb mode off/lit/powered/lit_powered, frosted_ice stage 0..3, respawn_anchor charges 0..4. Наличие этого кода подтверждено чтением preview-controls.mjs. 7a347c0 добавляет 10 соответствующих source ID в preview. Не ставить controls повторной задачей.
-- 68b797e: 39 fixtures/aliases; 7026a8b: 39 sign source ID (13 пород × standing/wall/hanging). Имена standing_sign/wall_sign и darkoak_standing_sign/darkoak_wall_sign не заменять выдуманными oak/dark_oak именами.
-- 87ecba5: по истории обновлён тест extensible membership/preserved prefix; наличие теста не результат запуска. a05134a: 22 двери и 13 полок, статичный scope.
-- 4dbdcd2/4f1ef0b: bubble_column → existing sprite/preview, 18 owned roles и исходные variants/paths сохранены. Одна выбранная текстура на плоскости; не particle simulation. pumpkin_side остаётся исходным ресурсом, не ролью пузырей.
-- b62b86b/86da89c/a88ba7a/caa865d/0dd77aa: 80 wool/112 materials/46 finishing/56 wood-mosaic/79 fixtures. Отрицание сохранения 79 в старом чате неверно.
-- b41c99b: stale 67 исправлено на непустоту/уникальность/source и compiled membership.
-- 1e9fa87/d500fd4: explicit bindings четырёх indexed buttons/plates и пяти stone stairs; fcdd2f5/11b7b83 — existing resource-variants regressions. Alternatives/repeats сохранять.
-- 390f4d3/7d2ff51/c1dce9c/e0291e6: 273 stone/mineral; 4cc1347: 50 wood; 95928be/74f90ab/1ea0dfd/4b37171: foliage cutout/opaque/resolver/picker/14 leaf. 836ad36 добавляет только три integration cases.
-- edfc234: preview-config/preview-text уже разделены из-за реального лимита валидатора. Не восстанавливать старый монолит и не дробить дальше ради процесса.
+На 73ca673: validate 694 tests, 686 pass, 8 fail; preview-slice остановился на неверном равенстве source IDs и expanded records кроватей.
 
-## Где искать
+Сохранены:
+- fa9800b: tools/catalog-data.test.mjs использует VM main-context loader с правильным filename; исправлено ожидание ошибки counts. Производственный fk-catalog-data.js не переписан.
+- fd6b777: normal.count=24 в тестовом BoxGeometry; рабочая модель кровати и её строгая проверка атрибутов сохранены.
+- 650da80: старые отрицания существующих copper_chest/copper_golem_statue и crafter modes заменены точными положительными проверками; unknown IDs и грибная изоляция сохранены.
+- 95c9777: тест групп сохраняет порядок, source membership и уникальность с учётом base 638/previous 975.
+- d3a21c3: CI сравнивает compiled records с source IDs плюс 16 bed records; проверяет уникальность и alias bed → red_bed. Остальной workflow сохранён.
+- e07f971: grass_path явно выбирает dirt для down по имени, сохраняет coarse_dirt/variants/paths; три регрессии в существующем lowered-catalog-integration.test.mjs. Геометрия не менялась.
 
-preview-config.mjs: base IDs/TEXT через preview-text.mjs. preview-stone-data.mjs/preview-wood-data.mjs/preview-leaf-data.mjs: дополнительные таблицы. Новые copper/cube/indexed/fixture/sign/joinery/extra таблицы сейчас в preview.mjs; там итоговые REVIEW_IDS/TEXT и compileReview. Helpers — preview-images.mjs; общий UI — FKModelState/FKM/preview-controls.mjs; leaf contract — catalog/leaf-preview.mjs. Второй каталог/manager/menu/runtime не создавать.
+По присланным логам на d3a21c3: validate 694/694, preview-slice остановился на Explicit face variant required: down. По логам на e07f971: validate 697/697, fail 0, skipped 0; preview-slice остановился на Explicit face variant required: north в общем обходе. Это не успешная полная геометрическая проверка.
 
-## Доказательства и ограничения
+Текущий пакет добавляет mycelium в существующие FIXED_PRIMITIVES: cube, два indexed entries на грань, up mycelium_top/down dirt/side mycelium_side. Нормальные и snow-side исходные варианты не удаляются. Дефект неоднозначности подтверждён исходниками; лог сам не содержит ID, поэтому не выдавать статическую локализацию за трассировку всех пройденных объектов. После этой правки дополнительных тестов не запускали и новых регрессий не добавляли по решению владельца. Следующие потенциальные блокеры полного обхода ещё не исключены.
 
-OLDCHAT26 сообщает 7/7 light-models и первые 6 primitive-models в Node на production-модулях с mock Three, а также 39 положительных + 39 отрицательных проверок sign adapter на синтетических normalized records и проверку 26 sheet entries. Это исторические сообщения, не повторный запуск на 6289e13 и не WebGL. OLDCHAT25 сообщает resource-variants 16/16 на 11b7b83. Нельзя суммировать перекрывающиеся проверки или выдавать fixture/registry-spy за реальную геометрию и изображения.
+## Дальнейшая работа
 
-В этом документальном проходе прочитаны OLDCHAT26, все семь прежних документов, история main, preview.mjs, preview-controls.mjs и tools/model-library.test.mjs. Тесты не запускались. Full coverage/inputValidation/PIN compile/tests/Actions/PNG-TGA/WebGL/Android и визуальная приёмка не подтверждены. Основной editor legacy по прежней передаче; HTML/runtime заново не проверены. Preview не доказывает draw/undo/reopen/export и не разрешает удалять legacy. Биомный tint листвы не заявлен готовым.
+Сначала закончить обновление остальных пяти документов, не теряя эту точку. Затем при возобновлении технической приёмки проверить полный preview/ресурсные состояния; зелёные unit tests не доказательство визуальной готовности. При новых ошибках нужны source ID/model/face в диагностике, не fallback на первый PNG. Не объявлять все ресурсы/состояния всех ID готовыми без проверки.
+
+После подтверждённого каталога — конкретные legacy editor Find/resources/states/draw/history/Add/reopen/export пути, совместная приёмка и только затем индивидуальная чистка/runtime switch/FK_V/cache/removal. Preview read-only не заменяет основной редактор. Full PNG-TGA/WebGL/UV/scale/alpha/Android и пользовательская приёмка не выполнены.
 
 ## Правила и сохранность
 
-Одна большая согласованная задача без искусственных остановок: после «да» выполнить ровно подтверждённую запись, проверить saved content/diff и сразу продолжить подготовку следующего пакета без ожидания «продолжай». Новая запись требует отдельного точного подтверждения. Остановка — обязательное подтверждение, изменение направления, существенная неоднозначность, материалы владельца или реальный блокер. Малую самостоятельную задачу завершать итогом, фон не обещать. ZIP в старой реплике — ошибка диктовки.
+Кратко по-русски, технические решения не перекладывать на владельца. В конце ответа понятная сводка: что сделано, что дальше, что требуется. В интерфейсе владельца отдельный запрос подтверждения может не показываться: просьбу о записи явно писать в конце обычного ответа, с точными файлами/объёмом. «Продолжай» без конкретного ожидающего запроса не разрешение произвольных записей. Каждая новая запись требует точного подтверждения; после записи проверить saved diff/content и продолжать подготовку без лишнего «продолжай». Не обещать фон.
 
-Только main; <25000 UTF-8 bytes/file, валидатор не ослаблять. Новые permanent test files отдельно согласовать; существующие не удалять массово. Документы по запросу владельца. Backup/refactor-0.9/fk070_packs/localStorage не трогать. Кратко по-русски, техническую отладку не перекладывать на владельца. После неоднозначного сбоя смотреть GitHub, не повторять запись слепо и не делать HEAD отдельным ритуалом каждого ответа.
+Только main, <25000 UTF-8 bytes/file, валидатор не ослаблять. Новые permanent test files отдельно согласовать; existing tests массово не удалять. Документы по запросу владельца. Backup/refactor-0.9/fk070_packs/localStorage не трогать. После сбоя смотреть фактический GitHub перед повторной записью, не делать HEAD ритуалом каждого ответа.
 
-Unknown не cube. Сохранять source-ID reopen/owned/carried/icons/indexed repeats/dependencies/aliases, независимые PNG/form/slot/state/pose и общие sheets без copies/crops. Waxed aliases только при эквивалентности, окисления раздельно. Chest/shulker whole-block facing не возвращать; open/lid/double сохранить, ender без double. Полные mobs, skin editor/body/поздняя примерка брони, tablet/desktop layout отложены; head/hat/full Steve sheet/routes сохранить, фиктивные формы не показывать.
+Один каталог/menu/state picker/runtime, без дублирующих managers/wrappers. Unknown не cube. Source-ID reopen/owned/carried/icons/indexed alternatives и repeats/shared dependencies/aliases сохранять. PNG/form/slot/state/pose независимы, sheets без copies/crops. Waxed aliases только при эквивалентности, окисления раздельно. Chest/shulker whole-block facing не возвращать; open/lid/double сохранять, ender без double. Head/hat/full Steve sheet/routes сохранять; full mobs/skin editor/body/armor/tablet-desktop layout отложены. Biome tint листвы не принят; static bubble/fire/campfire не playback/particle simulation.
 
-Предупреждение владельца о конце OLDCHAT26 не доказывает дефект кода и не разрешает откат подтверждённого прогресса. Также исключены ненадёжные OLDCHAT25 ending и OLDCHAT19 final; OLDCHAT22 unwritten-player_head опровергнут 1df7ce9/60ec0ad. OLDCHAT17 гипотезы не доказанные баги, ceiling-sign suspicion снято. PIN Mojang/bedrock-samples 46ba6ea985fb5a92d79a9419198f10dda14c199d. Перенос → совместная приёмка/editor integration → чистка/runtime switch/FK_V/cache/removal только после готовности.
+OLDCHAT26/25/19 ненадёжные концовки не основание отката проверенного прогресса. OLDCHAT22 unwritten-player_head опровергнут 1df7ce9/60ec0ad. OLDCHAT17 гипотезы не доказанные баги; ceiling-sign suspicion снято. PIN Mojang/bedrock-samples 46ba6ea985fb5a92d79a9419198f10dda14c199d, версии не смешивать.

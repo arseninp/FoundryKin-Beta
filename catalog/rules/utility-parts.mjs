@@ -1,6 +1,7 @@
 /* Named resources for utility models, independent of edited slots. */
 import {chorusPlantResources} from './shared.mjs';
 const FIXED_PRIMITIVES=Object.freeze({
+ mycelium:['cube',{up:'mycelium_top',down:'dirt',side:'mycelium_side'},2],
  wooden_button:['button','planks_oak',6],wooden_pressure_plate:['plate','planks_oak',6],
  stone_button:['button','stone',7],stone_pressure_plate:['plate','stone',7],
  normal_stone_stairs:['stairs','stone',7],stone_brick_stairs:['stairs','stonebrick',4],
