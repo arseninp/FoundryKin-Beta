@@ -9,7 +9,7 @@ var unifiedMode=new URL(location.href).searchParams.get('catalog')==='unified';
 try{unifiedMode=unifiedMode||new URL(parent.location.href).searchParams.get('catalog')==='unified'}catch(e){}
 var $=function(s){return document.querySelector(s)};
 try{var PD=parent.document.documentElement;var syncTheme=function(){document.documentElement.setAttribute('data-theme',PD.getAttribute('data-theme')||'light')};syncTheme();new MutationObserver(syncTheme).observe(PD,{attributes:true,attributeFilter:['data-theme']})}catch(e){}
-var ed=$('#ed'),ectx=ed.getContext('2d'),listeners=[],stateUi=window.FKModelState.create($('#shapesRow'),function(){if(!unified){build();return}if(choice&&!API.busy)selectCompiled({id:cur,...controlTools.previewControlSelection(choice.plan,stateUi.value())})});
+var ed=$('#ed'),ectx=ed.getContext('2d'),listeners=[],stateUi=window.FKModelState.create($('#shapesRow'),function(){if(!unified){build();return}if(choice&&!API.busy)selectCompiled({id:cur,...controlTools.previewControlSelection(choice.plan,{...stateUi.value(),texture:slot})})});
 var S={mode:'search',status:'loading',source:'',count:0,filtered:true,refreshing:false,refreshFailed:'',error:null,errors:[],info:null,message:null},ctx={onHistory:null,onRes:null};
 function emit(){listeners.forEach(function(f){try{f(S)}catch(e){}})}
 function showErr(code,detail){var last=S.errors[S.errors.length-1];detail=detail||'';if(last&&last.code===code&&last.detail===detail)return;S.errors.push({code:code,detail:detail});if(S.errors.length>3)S.errors.shift();emit()}
