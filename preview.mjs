@@ -23,7 +23,50 @@ const COPPER_REVIEW_BLOCKS=Object.freeze([false,true].flatMap(waxed=>COPPER_STAG
  const name=(waxed?'Waxed ':'')+enStage+((waxed||prefix)?en.toLowerCase():en);
  return Object.freeze([id,name,ru+(details.length?' (медь: '+details.join(', ')+')':'')]);
 }))).filter(([id])=>id!=='copper_block'));
-const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS]);
+const CUBE_REVIEW_BLOCKS=Object.freeze([
+ ['ancient_debris','Ancient debris','Древние обломки'],
+ ['basalt','Basalt','Базальт'],
+ ['blue_ice','Blue ice','Синий лёд'],
+ ['bone_block','Bone block','Костный блок'],
+ ['bookshelf','Bookshelf','Книжная полка'],
+ ['cartography_table','Cartography table','Стол картографа'],
+ ['crafting_table','Crafting table','Верстак'],
+ ['crying_obsidian','Crying obsidian','Плачущий обсидиан'],
+ ['deepslate','Deepslate','Глубинный сланец'],
+ ['dried_kelp_block','Dried kelp block','Блок сушёной ламинарии'],
+ ['fletching_table','Fletching table','Стол лучника'],
+ ['glowstone','Glowstone','Светокамень'],
+ ['hay_block','Hay bale','Сноп сена'],
+ ['honeycomb_block','Honeycomb block','Блок пчелиных сот'],
+ ['ice','Ice','Лёд'],
+ ['jukebox','Jukebox','Проигрыватель'],
+ ['lodestone','Lodestone','Магнетит'],
+ ['loom','Loom','Ткацкий станок'],
+ ['magma','Magma block','Магмовый блок'],
+ ['mud','Mud','Грязь'],
+ ['noteblock','Note block','Нотный блок'],
+ ['ochre_froglight','Ochre froglight','Охристый квампосвет'],
+ ['packed_ice','Packed ice','Плотный лёд'],
+ ['pearlescent_froglight','Pearlescent froglight','Перламутровый квампосвет'],
+ ['polished_basalt','Polished basalt','Полированный базальт'],
+ ['potent_sulfur','Potent sulfur','Активная сера'],
+ ['powder_snow','Powder snow','Рыхлый снег'],
+ ['purpur_pillar','Purpur pillar','Пурпуровый пилон'],
+ ['quartz_pillar','Quartz pillar','Кварцевая колонна'],
+ ['reinforced_deepslate','Reinforced deepslate','Укреплённый глубинный сланец'],
+ ['sculk','Sculk','Скалк'],
+ ['sea_lantern','Sea lantern','Морской фонарь'],
+ ['smithing_table','Smithing table','Кузнечный стол'],
+ ['snow','Snow block','Блок снега'],
+ ['soul_sand','Soul sand','Песок душ'],
+ ['soul_soil','Soul soil','Почва душ'],
+ ['sponge','Sponge','Губка'],
+ ['target','Target','Мишень'],
+ ['tnt','TNT','Динамит'],
+ ['verdant_froglight','Verdant froglight','Зелёный квампосвет'],
+ ['wet_sponge','Wet sponge','Мокрая губка']
+].map(row=>Object.freeze(row)));
+const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS]);
 const REVIEW_IDS=Object.freeze([...BASE_REVIEW_IDS,...ADDITIONAL_REVIEW_BLOCKS.map(([id])=>id)]);
 const TEXT=Object.fromEntries(Object.entries(BASE_TEXT).map(([lang,labels])=>[lang,{
  ...labels,...Object.fromEntries(ADDITIONAL_REVIEW_BLOCKS.map(([id,en,ru])=>['card_'+id,lang==='ru'?ru:en]))
