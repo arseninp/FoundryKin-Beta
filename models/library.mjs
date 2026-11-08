@@ -44,6 +44,7 @@ import {createLiquidModels} from './liquids.mjs';
 import {compileCatalog} from '../catalog/compile.mjs';
 import {planModelAssignments} from '../catalog/model-policy.mjs';
 import {declaredDependencies} from '../catalog/rules/dependencies.mjs';
+import {materialFamilyRules} from '../catalog/rules/material-families.mjs';
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 export function createModelLibrary(Three) {
  const registry = createModelRegistry();
@@ -92,6 +93,7 @@ export function compileModelCatalog(input, Three) {
   return atlas.texture_data;
  };
  const prepared = {...input, models: plan.assignments, dependencies: input.dependencies ?? declaredDependencies(plan.assignments), terrain: unwrap(input.terrain, 'terrain')};
+ prepared.families = materialFamilyRules(input.blocks, {texture_data: prepared.terrain}, input.families ?? {});
  if (input.items !== undefined) prepared.items = unwrap(input.items, 'item');
  const catalog = compileCatalog(prepared);
  registry.validate(catalog.records);
