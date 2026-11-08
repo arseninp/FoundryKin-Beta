@@ -64,6 +64,11 @@ export function utilityBindings(record) {
   if(!Array.isArray(top)||top.length!==3)throw new Error('Incomplete composter resources');
   return {rim:single([top[0]],'composter rim'),compost:single([top[1]],'composter compost'),ready:single([top[2]],'composter ready'),bottom:single(f.down,'composter bottom'),side:single(f.north,'composter side')};
  }
+ if(record.model==='grass_path') {
+  if(record.id!=='grass_path')throw new Error('Unknown grass path object');
+  const f=record.faces??{};
+  return Object.fromEntries(['up','down','north','south','east','west'].map(face=>[face,face==='down'?named(f[face],'dirt'):single(f[face],'grass path '+face)]));
+ }
  if(record.model==='farmland') {
   if(record.id!=='farmland')throw new Error('Unknown farmland object');
   const top=record.variants?.up,f=record.faces??{};
