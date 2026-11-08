@@ -7,25 +7,28 @@ import {STONE_REVIEW_BLOCKS} from '../preview-stone-data.mjs';
 const digest=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const BED_LABELS=[['white','White','Белая'],['orange','Orange','Оранжевая'],['magenta','Magenta','Пурпурная'],['light_blue','Light blue','Голубая'],['yellow','Yellow','Жёлтая'],['lime','Lime','Лаймовая'],['pink','Pink','Розовая'],['gray','Gray','Серая'],['light_gray','Light gray','Светло-серая'],['cyan','Cyan','Бирюзовая'],['purple','Purple','Фиолетовая'],['blue','Blue','Синяя'],['brown','Brown','Коричневая'],['green','Green','Зелёная'],['red','Red','Красная'],['black','Black','Чёрная']];
 const bedKeys=new Set(['card_bed',...BED_LABELS.map(([color])=>'card_'+color+'_bed')]);
-// Preserve the original snapshots; bed is an explicit appended extension.
-test('split config retains public exports and original 602 ordered IDs before bed',()=>{
+const CANDLES=[['candle','Candle','Свеча'],...BED_LABELS.map(([color,en,ru])=>[color+'_candle',en+' candle',ru+' свеча'])];
+const extensionKeys=new Set([...bedKeys,...CANDLES.map(([id])=>'card_'+id)]);
+// Preserve the original snapshots; beds and candles are explicit appended extensions.
+test('split config preserves original 602 ordered IDs before bed and seventeen candles',()=>{
  assert.deepEqual(Object.keys(config).sort(),['REVIEW_IDS','TEXT']);
- assert.equal(config.REVIEW_IDS.length,603);assert.equal(new Set(config.REVIEW_IDS).size,603);
+ assert.equal(config.REVIEW_IDS.length,620);assert.equal(new Set(config.REVIEW_IDS).size,620);
  assert.ok(Object.isFrozen(config.REVIEW_IDS));
  assert.equal(digest(config.REVIEW_IDS.slice(0,602)),'383f57f30d695202881230ee6769ee0bec1a4729b89ba4b27d09b471ed958fba');
- assert.deepEqual(config.REVIEW_IDS.slice(602),['bed']);
+ assert.deepEqual(config.REVIEW_IDS.slice(602),['bed',...CANDLES.map(([id])=>id)]);
  for(const [color] of BED_LABELS)assert.ok(!config.REVIEW_IDS.includes(color+'_bed'));
 });
 test('split config retains all original translations and their key order',()=>{
  assert.deepEqual(Object.keys(config.TEXT),['en','ru']);
- assert.equal(Object.keys(config.TEXT.en).length,701);
+ assert.equal(Object.keys(config.TEXT.en).length,718);
  assert.deepEqual(Object.keys(config.TEXT.en),Object.keys(config.TEXT.ru));
  for(const labels of Object.values(config.TEXT))for(const value of Object.values(labels))assert.ok(typeof value==='string'&&value.length>0);
- const baseline=Object.fromEntries(Object.entries(config.TEXT).map(([lang,labels])=>[lang,Object.fromEntries(Object.entries(labels).filter(([key])=>!bedKeys.has(key)))]));
+ const baseline=Object.fromEntries(Object.entries(config.TEXT).map(([lang,labels])=>[lang,Object.fromEntries(Object.entries(labels).filter(([key])=>!extensionKeys.has(key)))]));
  assert.equal(digest(baseline),'a406284765d3fae91d89ff6ca1a87bff01cd5fa53f97eff098bd83491bb069db');
- assert.deepEqual(Object.keys(config.TEXT.en).slice(684),[...bedKeys]);
+ assert.deepEqual(Object.keys(config.TEXT.en).slice(684),[...extensionKeys]);
  assert.equal(config.TEXT.en.card_bed,'Bed');assert.equal(config.TEXT.ru.card_bed,'Кровать');
  for(const [color,en,ru] of BED_LABELS){assert.equal(config.TEXT.en['card_'+color+'_bed'],en+' bed');assert.equal(config.TEXT.ru['card_'+color+'_bed'],ru+' кровать');}
+ for(const [id,en,ru] of CANDLES){assert.equal(config.TEXT.en['card_'+id],en);assert.equal(config.TEXT.ru['card_'+id],ru);}
 });
 test('stone review data has 273 immutable distinct IDs with EN/RU labels',()=>{
  assert.equal(STONE_REVIEW_BLOCKS.length,273);assert.ok(Object.isFrozen(STONE_REVIEW_BLOCKS));
@@ -34,10 +37,10 @@ test('stone review data has 273 immutable distinct IDs with EN/RU labels',()=>{
  for(const id of ['stone_stairs','end_brick_stairs','prismarine_bricks_stairs','normal_stone_stairs','stone_brick_stairs','sandstone_stairs','red_sandstone_stairs'])assert.ok(ids.has(id),id);
  for(const id of ['cobblestone_stairs','end_stone_brick_stairs','prismarine_brick_stairs'])assert.ok(!ids.has(id),id);
 });
-test('base and stone source datasets compose to 876 IDs without collisions or mutation',()=>{
+test('base and stone source datasets compose to 893 IDs without collisions or mutation',()=>{
  const before=JSON.stringify({config,STONE_REVIEW_BLOCKS});
  const combined=[...config.REVIEW_IDS,...STONE_REVIEW_BLOCKS.map(([id])=>id)];
- assert.equal(combined.length,876);assert.equal(new Set(combined).size,876);
+ assert.equal(combined.length,893);assert.equal(new Set(combined).size,893);
  assert.deepEqual(combined.slice(0,config.REVIEW_IDS.length),config.REVIEW_IDS);
  assert.equal(JSON.stringify({config,STONE_REVIEW_BLOCKS}),before);
 });
@@ -83,5 +86,28 @@ test('pinned preview expands the real bed source into sixteen owned color sheets
  assert.equal(sheets.size,16);assert.ok(!Object.hasOwn(catalog.records,'silver_bed'));
  const existing={...input.existing};delete existing['textures/entity/bed/silver'];
  assert.throws(()=>compileReview({...input,existing},Three),/Missing bed source sheet/);
+ assert.equal(JSON.stringify(input),before);
+});
+test('pinned candles use shared lit controls without coupling state to edited PNG',async()=>{
+ const {fileURLToPath}=await import('node:url'),{readCandidate}=await import('./model-coverage.mjs');
+ const {createThreeMock,meshesOf}=await import('./three-mock.mjs');
+ const {compileReview,REVIEW_IDS,previewControlSpec,previewControlSelection,previewTextureField}=await import('../preview.mjs');
+ const {createPreviewResolver}=await import('../catalog/preview.mjs');
+ const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url))),before=JSON.stringify(input),Three=createThreeMock();
+ const {catalog,registry,coverage}=compileReview(input,Three),resolve=createPreviewResolver(catalog,registry,Three);assert.equal(coverage.ready,true);
+ for(const [id] of CANDLES){
+  assert.ok(Object.hasOwn(input.blocks,id));assert.equal(REVIEW_IDS.filter(source=>source===id).length,1);
+  const record=catalog.records[id],plain=resolve({id});assert.equal(record.model,'candle');assert.deepEqual(plain.state,{lit:false});
+  assert.deepEqual(previewTextureField(plain).values.map(option=>option.value),plain.paths);
+  const off='textures/blocks/candles/'+id,on=off+'_lit';
+  for(const path of [off,on]){assert.ok(record.paths.includes(path));assert.ok(Object.hasOwn(input.existing,path));}
+  assert.deepEqual(previewControlSpec(catalog,plain).schema,[{key:'lit',label:['Burning','Горение'],values:[{value:false,label:['Unlit','Не горит']},{value:true,label:['Lit','Горит']}]}]);
+  for(const lit of [false,true])for(const slot of record.paths){
+   const selection=previewControlSelection(plain,{lit,texture:slot}),plan=resolve({id,...selection}),path=lit?on:off,group=new Three.Group(),material={};
+   assert.equal(plan.slot,slot);assert.deepEqual(plan.state,{lit});assert.ok(Object.values(plan.bindings).every(value=>value===path));
+   plan.build({group,mats:{[path]:material}});const meshes=meshesOf(group);assert.equal(meshes.length,3);assert.ok(meshes.every(mesh=>mesh.material===material));
+  }
+  for(const lit of [null,0,1,'true',{},[]]){assert.throws(()=>previewControlSelection(plain,{lit}),/Invalid candle/);assert.throws(()=>resolve({id,state:{lit}}),/Invalid candle/);}
+ }
  assert.equal(JSON.stringify(input),before);
 });
