@@ -74,7 +74,23 @@ const INDEXED_REVIEW_BLOCKS=Object.freeze([
  ['frosted_ice','Frosted ice','Подмороженный лёд'],
  ['respawn_anchor','Respawn anchor','Якорь возрождения']
 ].map(row=>Object.freeze(row)));
-const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS]);
+const FIXTURE_REVIEW_BLOCKS=Object.freeze([
+ ['torch','Torch','Факел'],['soul_torch','Soul torch','Факел душ'],['copper_torch','Copper torch','Медный факел'],
+ ['lantern','Lantern','Фонарь'],['soul_lantern','Soul lantern','Фонарь душ'],['iron_chain','Iron chain','Железная цепь'],
+ ...[false,true].flatMap(waxed=>COPPER_STAGES.flatMap(([prefix,enStage,ruStage])=>{
+  const enPrefix=(waxed?'Waxed ':'')+(waxed?enStage.toLowerCase():enStage),details=[ruStage,waxed?'вощёная':''].filter(Boolean),suffix=details.length?' (медь: '+details.join(', ')+')':'';
+  return [['copper_lantern','Copper lantern','Медный фонарь'],['copper_chain','Copper chain','Медная цепь']].map(([form,en,ru])=>[(waxed?'waxed_':'')+prefix+form,enPrefix+((waxed||prefix)?en.toLowerCase():en),ru+suffix]);
+ })),
+ ['bamboo_fence','Bamboo fence','Бамбуковый забор'],['bamboo_fence_gate','Bamboo fence gate','Бамбуковая калитка'],
+ ['anvil','Anvil','Наковальня'],['chipped_anvil','Chipped anvil','Повреждённая наковальня'],['damaged_anvil','Damaged anvil','Разбитая наковальня'],
+ ['beacon','Beacon','Маяк'],['brewing_stand','Brewing stand','Варочная стойка'],['end_portal','End portal','Портал Края'],
+ ['petrified_oak_slab','Petrified oak slab','Окаменевшая дубовая плита'],['petrified_oak_double_slab','Double petrified oak slab','Двойная окаменевшая дубовая плита'],
+ ['infested_stone','Infested stone','Заражённый камень'],['infested_cobblestone','Infested cobblestone','Заражённый булыжник'],
+ ['infested_stone_bricks','Infested stone bricks','Заражённые каменные кирпичи'],['infested_mossy_stone_bricks','Infested mossy stone bricks','Заражённые замшелые каменные кирпичи'],
+ ['infested_cracked_stone_bricks','Infested cracked stone bricks','Заражённые потрескавшиеся каменные кирпичи'],['infested_chiseled_stone_bricks','Infested chiseled stone bricks','Заражённые резные каменные кирпичи'],
+ ['infested_deepslate','Infested deepslate','Заражённый глубинный сланец']
+].map(row=>Object.freeze(row)));
+const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS,...FIXTURE_REVIEW_BLOCKS]);
 const REVIEW_IDS=Object.freeze([...BASE_REVIEW_IDS,...ADDITIONAL_REVIEW_BLOCKS.map(([id])=>id)]);
 const TEXT=Object.fromEntries(Object.entries(BASE_TEXT).map(([lang,labels])=>[lang,{
  ...labels,...Object.fromEntries(ADDITIONAL_REVIEW_BLOCKS.map(([id,en,ru])=>['card_'+id,lang==='ru'?ru:en]))

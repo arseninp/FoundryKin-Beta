@@ -12,6 +12,11 @@ waxed_weathered_copper waxed_weathered_chiseled_copper waxed_weathered_copper_gr
 waxed_oxidized_copper waxed_oxidized_chiseled_copper waxed_oxidized_copper_grate waxed_oxidized_cut_copper waxed_oxidized_cut_copper_slab waxed_oxidized_double_cut_copper_slab waxed_oxidized_cut_copper_stairs`.split(/\s+/);
 const CUBE_IDS='ancient_debris basalt blue_ice bone_block bookshelf cartography_table crafting_table crying_obsidian deepslate dried_kelp_block fletching_table glowstone hay_block honeycomb_block ice jukebox lodestone loom magma mud noteblock ochre_froglight packed_ice pearlescent_froglight polished_basalt potent_sulfur powder_snow purpur_pillar quartz_pillar reinforced_deepslate sculk sea_lantern smithing_table snow soul_sand soul_soil sponge target tnt verdant_froglight wet_sponge'.split(' ');
 const INDEXED_IDS='copper_bulb waxed_copper_bulb exposed_copper_bulb waxed_exposed_copper_bulb weathered_copper_bulb waxed_weathered_copper_bulb oxidized_copper_bulb waxed_oxidized_copper_bulb frosted_ice respawn_anchor'.split(' ');
+const FIXTURE_IDS=`torch soul_torch copper_torch lantern soul_lantern iron_chain
+copper_lantern copper_chain exposed_copper_lantern exposed_copper_chain weathered_copper_lantern weathered_copper_chain oxidized_copper_lantern oxidized_copper_chain
+waxed_copper_lantern waxed_copper_chain waxed_exposed_copper_lantern waxed_exposed_copper_chain waxed_weathered_copper_lantern waxed_weathered_copper_chain waxed_oxidized_copper_lantern waxed_oxidized_copper_chain
+bamboo_fence bamboo_fence_gate anvil chipped_anvil damaged_anvil beacon brewing_stand end_portal petrified_oak_slab petrified_oak_double_slab
+infested_stone infested_cobblestone infested_stone_bricks infested_mossy_stone_bricks infested_cracked_stone_bricks infested_chiseled_stone_bricks infested_deepslate`.split(/\s+/);
 test('wood review data exports exactly 50 immutable distinct source records',()=>{
  assert.deepEqual(Object.keys(data),['WOOD_REVIEW_BLOCKS']);assert.equal(rows.length,50);assert.ok(Object.isFrozen(rows));
  assert.equal(new Set(rows.map(([id])=>id)).size,50);
@@ -34,14 +39,15 @@ test('wood review records cannot be mutated through exported arrays',()=>{
  assert.throws(()=>{rows[0][0]='other';},TypeError);
  assert.equal(JSON.stringify(rows),before);
 });
-test('review entry point preserves prior ordered IDs and appends ten indexed cubes exactly once',async()=>{
+test('review entry point preserves prior ordered IDs and appends 39 fixture sources exactly once',async()=>{
  const [{REVIEW_IDS},base,{STONE_REVIEW_BLOCKS},{LEAF_REVIEW_BLOCKS}]=await Promise.all([import('../preview.mjs'),import('../preview-config.mjs'),import('../preview-stone-data.mjs'),import('../preview-leaf-data.mjs')]);
  const previous=[...base.REVIEW_IDS,...STONE_REVIEW_BLOCKS.map(([id])=>id),...rows.map(([id])=>id),...LEAF_REVIEW_BLOCKS.map(([id])=>id)];
  assert.equal(previous.length,939);assert.equal(COPPER_IDS.length,55);assert.equal(new Set(COPPER_IDS).size,55);
  assert.deepEqual(REVIEW_IDS.slice(0,939),previous);assert.deepEqual(REVIEW_IDS.slice(939,994),COPPER_IDS);
  assert.equal(CUBE_IDS.length,41);assert.deepEqual(REVIEW_IDS.slice(994,1035),CUBE_IDS);
- assert.equal(INDEXED_IDS.length,10);assert.deepEqual(REVIEW_IDS.slice(1035),INDEXED_IDS);
- assert.equal(REVIEW_IDS.length,1045);assert.equal(new Set(REVIEW_IDS).size,1045);assert.ok(Object.isFrozen(REVIEW_IDS));
+ assert.equal(INDEXED_IDS.length,10);assert.deepEqual(REVIEW_IDS.slice(1035,1045),INDEXED_IDS);
+ assert.equal(FIXTURE_IDS.length,39);assert.deepEqual(REVIEW_IDS.slice(1045),FIXTURE_IDS);
+ assert.equal(REVIEW_IDS.length,1084);assert.equal(new Set(REVIEW_IDS).size,1084);assert.ok(Object.isFrozen(REVIEW_IDS));
  assert.equal(REVIEW_IDS.filter(id=>id==='copper_block').length,1);assert.ok(!COPPER_IDS.some(id=>id.endsWith('copper_bulb')));
 });
 test('copper extension has pinned single-path resources, explicit assignments and ordinary waxed counterparts',async()=>{
@@ -99,6 +105,27 @@ test('ten indexed review sources retain all pinned state indices and existing re
   for(const path of record.paths)assert.ok(Object.hasOwn(input.existing,path),path);
   if(id==='respawn_anchor'){assert.equal(new Set(record.variants.down).size,1);assert.equal(new Set(record.variants.up).size,2);}
   if(id.startsWith('waxed_'))assert.deepEqual(blocks[id].textures,blocks[id.slice(6)].textures,id);
+ }
+ assert.equal(JSON.stringify(input),before);
+});
+test('39 fixture sources use registered builders and equivalent alias resources without losing records',async()=>{
+ const {fileURLToPath}=await import('node:url'),{readCandidate}=await import('./model-coverage.mjs');
+ const {planModelAssignments}=await import('../catalog/model-policy.mjs'),{normalizeBlock,resourceSignature}=await import('../catalog/resources.mjs');
+ const {createModelLibrary,inspectModelCoverage}=await import('../models/library.mjs'),{createThreeMock}=await import('./three-mock.mjs'),{REVIEW_IDS}=await import('../preview.mjs');
+ const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url))),before=JSON.stringify(input);
+ const blocks=Object.fromEntries(FIXTURE_IDS.map(id=>{assert.ok(Object.hasOwn(input.blocks,id),id);return [id,input.blocks[id]];})),plan=planModelAssignments(blocks);
+ assert.deepEqual(plan.unresolved,[]);assert.equal(inspectModelCoverage(plan.assignments,createModelLibrary(createThreeMock())).ready,true);
+ for(const id of FIXTURE_IDS){
+  const expected=id.endsWith('lantern')?'lantern':id.endsWith('chain')?'chain':id.endsWith('torch')?'torch':id==='bamboo_fence'?'bamboo_fence':id==='bamboo_fence_gate'?'bamboo_gate':id.includes('anvil')?'anvil':id==='beacon'?'beacon':id==='brewing_stand'?'brewing':id==='end_portal'?'sprite':id==='petrified_oak_slab'?'slab':'cube';
+  assert.equal(plan.assignments[id].model,expected,id);
+  const record=normalizeBlock(id,blocks[id],input.terrain.texture_data,{model:expected,existing:input.existing});assert.equal(record.id,id);
+  for(const face of ['up','down','north','south','east','west'])assert.equal(record.faces[face].length,1,id+': '+face);
+  for(const path of record.paths)assert.ok(Object.hasOwn(input.existing,path),path);
+  if(id.startsWith('waxed_')||id.startsWith('infested_')){
+   const target=id.replace(/^(waxed_|infested_)/,'');assert.ok(REVIEW_IDS.includes(target),target);assert.ok(Object.hasOwn(input.blocks,target),target);
+   const ordinary=normalizeBlock(target,input.blocks[target],input.terrain.texture_data,{model:expected,existing:input.existing});
+   assert.equal(resourceSignature(record),resourceSignature(ordinary),id);
+  }
  }
  assert.equal(JSON.stringify(input),before);
 });
