@@ -51,7 +51,8 @@ export function createModelMaterials(Three,descriptor,bindings,textures) {
    if(disposed)throw new Error('Model materials are disposed');
    const next=selected(lookup);
    for(let i=0;i<requests.length;i++) {
-    const material=mats[requests[i].path];Object.assign(material,policy(next[i]));material.needsUpdate=true;
+    const material=mats[requests[i].path],values=policy(next[i]);
+    if(Object.entries(values).some(([key,value])=>material[key]!==value)){Object.assign(material,values);material.needsUpdate=true;}
    }
   },
   dispose

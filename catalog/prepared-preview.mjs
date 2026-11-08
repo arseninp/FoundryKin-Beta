@@ -71,7 +71,9 @@ export function withPreparedPreview(catalog,registry,Three,resolve) {
     return Object.freeze({group:instance.group,
      update(lookup) {
       if(disposed)throw new Error('Canvas preview is disposed');
-      const next=createModelTextures(Three,paths,upload(lookup));
+      const uploaded=upload(lookup);
+      if(batch.update(uploaded)){instance.update(batch.textures);return;}
+      const next=createModelTextures(Three,paths,uploaded);
       try{instance.update(next.textures);}catch(error){
        try{next.dispose();}catch(cleanupError){throw new AggregateError([error,cleanupError],'Canvas preview update and cleanup failed');}
        throw error;
