@@ -138,10 +138,13 @@ const REMAINING_CUBE_REVIEW_BLOCKS=Object.freeze([
  ['chiseled_tuff','Chiseled tuff','Резной туф'],
  ['chiseled_tuff_bricks','Chiseled tuff bricks','Резные туфовые кирпичи']
 ].map(row=>Object.freeze(row)));
-const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS,...FIXTURE_REVIEW_BLOCKS,...SIGN_REVIEW_BLOCKS,...JOINERY_REVIEW_BLOCKS,...EXTRA_SOURCE_REVIEW_BLOCKS,...MECHANISM_REVIEW_BLOCKS,...REMAINING_CUBE_REVIEW_BLOCKS]);
+const POWER_REVIEW_BLOCKS=Object.freeze([
+ ['furnace','Furnace','Печь'],['blast_furnace','Blast furnace','Плавильная печь'],['smoker','Smoker','Коптильня'],['redstone_lamp','Redstone lamp','Редстоун-лампа']
+].flatMap(([id,en,ru])=>[[id,en,ru],['lit_'+id,'Lit '+en.toLowerCase(),ru+' (включена)']]).map(row=>Object.freeze(row)));
+const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS,...FIXTURE_REVIEW_BLOCKS,...SIGN_REVIEW_BLOCKS,...JOINERY_REVIEW_BLOCKS,...EXTRA_SOURCE_REVIEW_BLOCKS,...MECHANISM_REVIEW_BLOCKS,...REMAINING_CUBE_REVIEW_BLOCKS,...POWER_REVIEW_BLOCKS]);
 const REVIEW_IDS=Object.freeze([...BASE_REVIEW_IDS,...ADDITIONAL_REVIEW_BLOCKS.map(([id])=>id)]);
 const TEXT=Object.fromEntries(Object.entries(BASE_TEXT).map(([lang,labels])=>[lang,{
- ...labels,...Object.fromEntries(ADDITIONAL_REVIEW_BLOCKS.map(([id,en,ru])=>['card_'+id,lang==='ru'?ru:en]))
+ ...labels,powered:lang==='ru'?'Сигнал':'Power',powered_off:lang==='ru'?'Нет':'Off',powered_on:lang==='ru'?'Есть':'On',...Object.fromEntries(ADDITIONAL_REVIEW_BLOCKS.map(([id,en,ru])=>['card_'+id,lang==='ru'?ru:en]))
 }]));
 export {activePack,imageFrames,frameCanvas,createImageSource};
 export {REVIEW_IDS};
