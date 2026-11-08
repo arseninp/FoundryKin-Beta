@@ -124,7 +124,21 @@ const MECHANISM_REVIEW_BLOCKS=Object.freeze([
  ['unpowered_repeater','Repeater','Повторитель'],['powered_repeater','Powered repeater','Включённый повторитель'],
  ['unpowered_comparator','Comparator','Компаратор'],['powered_comparator','Powered comparator','Включённый компаратор']
 ].map(row=>Object.freeze(row)));
-const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS,...FIXTURE_REVIEW_BLOCKS,...SIGN_REVIEW_BLOCKS,...JOINERY_REVIEW_BLOCKS,...EXTRA_SOURCE_REVIEW_BLOCKS,...MECHANISM_REVIEW_BLOCKS]);
+const REMAINING_CUBE_REVIEW_BLOCKS=Object.freeze([
+ ['command_block','Command block','Командный блок'],
+ ['chain_command_block','Chain command block','Цепной командный блок'],
+ ['repeating_command_block','Repeating command block','Повторяющийся командный блок'],
+ ['jigsaw','Jigsaw block','Блок-конструктор'],
+ ['dispenser','Dispenser','Раздатчик'],
+ ['dropper','Dropper','Выбрасыватель'],
+ ['observer','Observer','Наблюдатель'],
+ ['chiseled_quartz_block','Chiseled quartz block','Резной кварцевый блок'],
+ ['chiseled_red_sandstone','Chiseled red sandstone','Резной красный песчаник'],
+ ['chiseled_sandstone','Chiseled sandstone','Резной песчаник'],
+ ['chiseled_tuff','Chiseled tuff','Резной туф'],
+ ['chiseled_tuff_bricks','Chiseled tuff bricks','Резные туфовые кирпичи']
+].map(row=>Object.freeze(row)));
+const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS,...FIXTURE_REVIEW_BLOCKS,...SIGN_REVIEW_BLOCKS,...JOINERY_REVIEW_BLOCKS,...EXTRA_SOURCE_REVIEW_BLOCKS,...MECHANISM_REVIEW_BLOCKS,...REMAINING_CUBE_REVIEW_BLOCKS]);
 const REVIEW_IDS=Object.freeze([...BASE_REVIEW_IDS,...ADDITIONAL_REVIEW_BLOCKS.map(([id])=>id)]);
 const TEXT=Object.fromEntries(Object.entries(BASE_TEXT).map(([lang,labels])=>[lang,{
  ...labels,...Object.fromEntries(ADDITIONAL_REVIEW_BLOCKS.map(([id,en,ru])=>['card_'+id,lang==='ru'?ru:en]))
