@@ -286,7 +286,7 @@ export function createPreviewResolver(catalog, registry, Three) {
     const declared=own(shared,face)&&Array.isArray(shared[face])?shared[face]:[];
     if(paths.some(path=>typeof path!=='string'||!(record.paths.includes(path)||declared.includes(path))))throw new Error('Binding resource is outside the selected record: '+face);
     const path=own(choices,face)?choices[face]:paths.length===1?paths[0]:null;
-    if (typeof path!=='string'||!paths.includes(path)) throw new Error('Explicit face variant required: '+face);
+    if (typeof path!=='string'||!paths.includes(path)) throw new Error('Explicit face variant required: '+face+' [source='+request.id+', record='+selected.id+', model='+model+']');
     faceMap[face]=path;
    }
   }
