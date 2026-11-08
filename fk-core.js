@@ -2,7 +2,7 @@
 (function(){
 var FK=window.FK,V=window.FKView;
 function tt(k,p){return FK.t(k,p)}
-var res=16,slots=[],slot=null,cv={},undoS={},redoS={},ph={},fr={},fi={},hs={};
+var res=16,slots=[],slot=null,cv={},undoS={},redoS={},ph={},fr={},fi={},hs={},encoded={};
 var files={},cur='',dirty={},catalog=null,queuedPack=null;
 var selection=null,unified=null,choice=null,controlTools=null,reader=null,selTok=0;
 var $=function(s){return document.querySelector(s)};
@@ -33,7 +33,7 @@ stage.addEventListener('pointermove',function(e){if(!drag||drag.id!==e.pointerId
 function endDrag(e){if(!e||drag&&drag.id===e.pointerId)drag=null}
 stage.addEventListener('pointerup',endDrag);stage.addEventListener('pointercancel',endDrag);stage.addEventListener('lostpointercapture',endDrag);
 document.addEventListener('visibilitychange',function(){if(document.hidden){endDrag();cancelRender()}else resizeStage()});addEventListener('resize',resizeStage);
-function resetImages(){clearModel();cv={};undoS={};redoS={};ph={};fr={};fi={};hs={};slots=[];slot=null;resetView=true}
+function resetImages(){clearModel();cv={};undoS={};redoS={};ph={};fr={};fi={};hs={};encoded={};slots=[];slot=null;resetView=true}
 function buildSlotUi(){var boxEl=$('#slots'),list=choice?choice.plan.paths.map(id=>({id})):[];boxEl.innerHTML='';list.forEach(function(s){var b=document.createElement('button');b.type='button';b.textContent=String(s.id).split('/').pop();b.title=s.id;b.dataset.id=s.id;if(s.id===slot)b.className='on';b.onclick=function(){setSlot(s.id)};boxEl.appendChild(b)});boxEl.style.display=list.length?'flex':'none';frameUi()}
 function setSlot(id){if(choice&&!API.busy)selectCompiled({id:cur,slot:id,form:choice.plan.forms?choice.plan.object.form:undefined,state:choice.plan.state})}
 function frameUi(){var f=fr[slot],n=f?f.length:0;$('#frames').style.display=n>1?'flex':'none';if(n>1)$('#fNum').textContent=(fi[slot]+1)+' / '+n}
@@ -46,12 +46,12 @@ function doRedo(){if(API.busy)return;var s=redoS[slot];if(!s||!s.length)return;u
 function updHist(){if(ctx.onHistory)ctx.onHistory(!!(undoS[slot]&&undoS[slot].length),!!(redoS[slot]&&redoS[slot].length))}
 function resetHist(){slots.forEach(function(s){undoS[s.id]=[];redoS[s.id]=[];hs[s.id]=[]});updHist()}
 function drawEd(){var c=cv[slot],w=c?c.width:16,h=c?c.height:16;res=w;ed.width=w;ed.height=h;ed.style.aspectRatio=w+' / '+h;ed.style.backgroundSize=(200/w)+'% '+(200/h)+'%';ectx.clearRect(0,0,w,h);if(c)ectx.drawImage(c,0,0);if(ctx.onRes)ctx.onRes(res);updHist()}
-function touched(){dirty[slot]=true;delete ph[slot];API.edits++;refreshTex(slot);drawEd()}
-function setRes(n){if(API.busy||n===res||[16,32,64].indexOf(n)<0)return;var old={};slots.forEach(function(s){old[s.id]=fr[s.id].map(function(f){var c=document.createElement('canvas');c.width=f.width;c.height=f.height;c.getContext('2d').drawImage(f,0,0);return c})});res=n;slots.forEach(function(s){fr[s.id].forEach(function(f,k){var src=old[s.id][k];f.width=n;f.height=Math.max(1,Math.round(src.height*n/src.width));var g=f.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(src,0,0,f.width,f.height)})});resetHist();rebuildTextures();drawEd();slots.forEach(function(s){dirty[s.id]=true});API.edits++}
-function packCur(){slots.forEach(function(s){if(ph[s.id]||!cv[s.id])return;var fs=fr[s.id],n=fs.length,w=fs[0].width,h=fs[0].height,d;if(n>1){var c=document.createElement('canvas');c.width=w;c.height=h*n;var g=c.getContext('2d');fs.forEach(function(f,k){g.drawImage(f,0,k*h)});d=c.toDataURL('image/png')}else d=fs[0].toDataURL('image/png');files[s.id]={res:w,data:d,frames:n,aspect:h/w}})}
+function touched(){dirty[slot]=true;delete ph[slot];delete encoded[slot];API.edits++;refreshTex(slot);drawEd()}
+function setRes(n){if(API.busy||n===res||[16,32,64].indexOf(n)<0)return;var old={};slots.forEach(function(s){old[s.id]=fr[s.id].map(function(f){var c=document.createElement('canvas');c.width=f.width;c.height=f.height;c.getContext('2d').drawImage(f,0,0);return c})});res=n;slots.forEach(function(s){fr[s.id].forEach(function(f,k){var src=old[s.id][k];f.width=n;f.height=Math.max(1,Math.round(src.height*n/src.width));var g=f.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(src,0,0,f.width,f.height)})});resetHist();rebuildTextures();drawEd();slots.forEach(function(s){dirty[s.id]=true;delete ph[s.id];delete encoded[s.id]});API.edits++}
+function packCur(onlyDirty){slots.forEach(function(s){if(ph[s.id]||!cv[s.id]||(onlyDirty&&!dirty[s.id])||(encoded[s.id]&&files[s.id]))return;var fs=fr[s.id],n=fs.length,w=fs[0].width,h=fs[0].height,d;if(n>1){var c=document.createElement('canvas');c.width=w;c.height=h*n;var g=c.getContext('2d');fs.forEach(function(f,k){g.drawImage(f,0,k*h)});d=c.toDataURL('image/png')}else d=fs[0].toDataURL('image/png');files[s.id]={res:w,data:d,frames:n,aspect:h/w};encoded[s.id]=true})}
 function familyPaths(id){return selection.compiledFamilyPaths(unified,id)}
 function isEdited(id){return familyPaths(id).some(function(p){return dirty[p]})}
-function familyFiles(){packCur();return familyPaths(cur).filter(function(p){return dirty[p]&&files[p]}).map(function(p){return {path:p+'.png',data:files[p].data}})}
+function familyFiles(){packCur(true);return familyPaths(cur).filter(function(p){return dirty[p]&&files[p]}).map(function(p){return {path:p+'.png',data:files[p].data}})}
 function curFiles(){packCur();var out=[],seen={};slots.forEach(function(s){var f=files[s.id];if(!f)return;var p=s.id;if(!seen[p]){seen[p]=1;out.push({path:p+'.png',data:f.data})}});return out}
 function readCompiled(path){return reader(path,files[path]?{[path]:files[path].data}:{})}
 function makeCanvas(){return document.createElement('canvas')}
@@ -65,16 +65,17 @@ function cancelCompiled(){selTok++;choice=null;API.busy=false;API.pending='';loa
 async function selectCompiled(request,reopened){
  const token=++selTok;
  try{
-  if(!API.busy)packCur();
-  const next=selection.compiledSelection(unified,request),same=choice&&choice.plan.object.card===next.plan.object.card;
+  const next=selection.compiledSelection(unified,request),same=!reopened&&choice&&choice.plan.object.card===next.plan.object.card;
+  if(!API.busy&&!same)packCur(true);
   if(reopened){files[reopened.key]=selection.mkFile(reopened.data,reopened.key);dirty[reopened.key]=true}
-  API.pending=request.id;API.loading();endDrag();clearModel();
-  const images=await selection.prepareEditorImages(next,readCompiled,makeCanvas);
+  API.pending=request.id;API.loading();endDrag();
+  const required=same?next.required.filter(path=>!next.editable.includes(path)||!fr[path]):next.required;
+  const images=await selection.prepareEditorImages({...next,required},readCompiled,makeCanvas);
   if(token!==selTok)return;
   if(!same)resetImages();
   for(const [path,value] of Object.entries(images)){
    if(next.editable.includes(path)){
-    if(!fr[path]){fr[path]=value.frames;fi[path]=0;hs[path]=[];undoS[path]=[];redoS[path]=[];slots.push({id:path})}
+    if(!fr[path]){fr[path]=value.frames;fi[path]=0;hs[path]=[];undoS[path]=[];redoS[path]=[];encoded[path]=!!files[path];slots.push({id:path})}
     cv[path]=fr[path][fi[path]];
    }else cv[path]=value.frames[0];
   }
@@ -89,7 +90,7 @@ async function selectCompiled(request,reopened){
   showErr('block_load',request.id+': '+error.message);
  }
 }
-function setPack(map){if(!selection){queuedPack=map;return}cancelCompiled();Object.keys(dirty).forEach(function(k){if(!(k in map)){delete dirty[k];delete files[k]}});Object.keys(map).forEach(function(k){if(!files[k]||files[k].data!==map[k])files[k]=selection.mkFile(map[k],k);dirty[k]=true})}
+function setPack(map){if(!selection){queuedPack=map;return}cancelCompiled();resetImages();Object.keys(dirty).forEach(function(k){if(!(k in map)){delete dirty[k];delete files[k]}});Object.keys(map).forEach(function(k){if(!files[k]||files[k].data!==map[k])files[k]=selection.mkFile(map[k],k);dirty[k]=true})}
 async function loadCatalog(){
  try{
   const [selected,runtime,controls,labels,images]=await Promise.all([import('./catalog/editor-selection.mjs'),FKCatalogData.loadCompiled(THREE),import('./preview-controls.mjs'),import('./preview-config.mjs'),import('./preview-images.mjs')]);
