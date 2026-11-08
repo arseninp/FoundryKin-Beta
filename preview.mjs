@@ -108,7 +108,15 @@ const JOINERY_REVIEW_BLOCKS=Object.freeze([
   return [[id,name,'Медная дверь'+suffix],['waxed_'+id,'Waxed '+name.toLowerCase(),'Вощёная медная дверь'+suffix]];
  })
 ].map(row=>Object.freeze(row)));
-const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS,...FIXTURE_REVIEW_BLOCKS,...SIGN_REVIEW_BLOCKS,...JOINERY_REVIEW_BLOCKS]);
+const EXTRA_SOURCE_REVIEW_BLOCKS=Object.freeze([
+ ...[['tube','Tube','трубчатый'],['brain','Brain','мозговой'],['bubble','Bubble','пузырчатый'],['fire','Fire','огненный'],['horn','Horn','роговый']].flatMap(([type,en,ru])=>[
+  [type+'_coral_wall_fan',en+' coral wall fan','Настенный веерный коралл: '+ru],
+  ['dead_'+type+'_coral_wall_fan','Dead '+en.toLowerCase()+' coral wall fan','Мёртвый настенный веерный коралл: '+ru]
+ ]),
+ ...COPPER_STAGES.map(([prefix,enStage,ruStage])=>['waxed_'+prefix+'copper_golem_statue','Waxed '+enStage.toLowerCase()+'copper golem statue','Вощёная статуя медного голема'+(ruStage?' (медь: '+ruStage+')':'')]),
+ ['allow','Allow block','Разрешающий блок'],['deny','Deny block','Запрещающий блок'],['border_block','Border block','Пограничный блок'],['barrier','Barrier','Барьер'],['structure_void','Structure void','Структурная пустота']
+].map(row=>Object.freeze(row)));
+const ADDITIONAL_REVIEW_BLOCKS=Object.freeze([...STONE_REVIEW_BLOCKS,...WOOD_REVIEW_BLOCKS,...LEAF_REVIEW_BLOCKS,...COPPER_REVIEW_BLOCKS,...CUBE_REVIEW_BLOCKS,...INDEXED_REVIEW_BLOCKS,...FIXTURE_REVIEW_BLOCKS,...SIGN_REVIEW_BLOCKS,...JOINERY_REVIEW_BLOCKS,...EXTRA_SOURCE_REVIEW_BLOCKS]);
 const REVIEW_IDS=Object.freeze([...BASE_REVIEW_IDS,...ADDITIONAL_REVIEW_BLOCKS.map(([id])=>id)]);
 const TEXT=Object.fromEntries(Object.entries(BASE_TEXT).map(([lang,labels])=>[lang,{
  ...labels,...Object.fromEntries(ADDITIONAL_REVIEW_BLOCKS.map(([id,en,ru])=>['card_'+id,lang==='ru'?ru:en]))
