@@ -30,6 +30,16 @@ export function familyRules(records,explicit={}) {
  for(const [base,forms] of Object.entries(APPROVED)) {
   if(own(records,base)&&Object.values(forms).every(id=>own(records,id)))result[base]={...forms};
  }
+ const signs=new Map();
+ for(const [id,record] of Object.entries(records)) {
+  const source=record?.source;
+  if(record?.model!=='sign'||!dictionary(source)||source.kind!=='block-entity'||source.template!=='sign'||!['standing','wall'].includes(source.placement))continue;
+  if(typeof source.wood!=='string'||!/^[a-z][a-z0-9_]*$/.test(source.wood))throw new Error('Invalid sign family source: '+id);
+  const placements=signs.get(source.wood)??Object.create(null);
+  if(own(placements,source.placement))throw new Error('Ambiguous sign family source: '+source.wood+':'+source.placement);
+  placements[source.placement]=id;signs.set(source.wood,placements);
+ }
+ for(const placements of signs.values())if(placements.standing&&placements.wall)result[placements.standing]={wall:placements.wall};
  for(const [base,spec] of Object.entries(PRESENTATIONS)) {
   if(!own(records,spec.id))continue;
   if(records[spec.id]?.model!==spec.model)throw new Error('Presentation model mismatch: '+spec.id);

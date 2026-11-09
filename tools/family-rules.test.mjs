@@ -43,3 +43,25 @@ test('shared PNGs and lookalike names never authorize a guessed family',()=>{
  input.torchflower.paths=['textures/blocks/shared'];input.future_torchflower_crop.paths=['textures/blocks/shared'];
  assert.deepEqual(Object.keys(familyRules(input)),[]);
 });
+function sign(wood,placement){return {model:'sign',paths:['textures/entity/shared_sign'],source:{kind:'block-entity',template:'sign',wood,placement}}}
+test('standing and wall signs share a family by declared wood and placement, never with hanging signs',()=>{
+ const input={},pairs=[];
+ for(const wood of ['oak','spruce','birch','jungle','acacia','dark_oak','crimson','warped','mangrove','cherry','bamboo','pale_oak','poplar']){
+  const prefix=wood==='oak'?'':wood==='dark_oak'?'darkoak_':wood+'_';
+  const standing=prefix+'standing_sign',wall=prefix+'wall_sign',hanging=wood+'_hanging_sign';
+  input[standing]=sign(wood,'standing');input[wall]=sign(wood,'wall');input[hanging]=sign(wood,'hanging');pairs.push([standing,wall,hanging]);
+ }
+ const before=JSON.stringify(input),result=familyRules(input);assert.equal(Object.keys(result).length,13);
+ for(const [standing,wall,hanging] of pairs){assert.deepEqual(result[standing],{wall});assert.equal(Object.hasOwn(result,wall),false);assert.equal(Object.hasOwn(result,hanging),false);assert.ok(!Object.values(result[standing]).includes(hanging))}
+ assert.equal(JSON.stringify(input),before);
+});
+test('sign family declarations require both placements and explicit source metadata',()=>{
+ for(const input of [{standing_sign:sign('oak','standing')},{wall_sign:sign('oak','wall')},{standing_sign:sign('oak','standing'),spruce_wall_sign:sign('spruce','wall')},{acacia_standing_sign:{model:'sign'},acacia_wall_sign:{model:'sign'}}])assert.deepEqual(Object.keys(familyRules(input)),[]);
+});
+test('ambiguous sign sources and conflicting explicit placement rules fail without mutating metadata',()=>{
+ const input={standing_sign:sign('oak','standing'),wall_sign:sign('oak','wall')},before=JSON.stringify(input);
+ assert.throws(()=>familyRules({...input,other_standing_sign:sign('oak','standing')}),/Ambiguous sign family source/);
+ assert.throws(()=>familyRules(input,{standing_sign:{wall:'other_wall_sign'}}),/Conflicting family form: standing_sign:wall/);
+ assert.equal(familyRules(input,{standing_sign:{wall:'wall_sign'}}).standing_sign.wall,'wall_sign');
+ const invalid=sign('','wall');assert.throws(()=>familyRules({bad:invalid}),/Invalid sign family source/);assert.equal(JSON.stringify(input),before);
+});
