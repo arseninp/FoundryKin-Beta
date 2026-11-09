@@ -25,17 +25,22 @@ function compiledObject(runtime,id){
  if(!object)throw new Error('Unknown editor object: '+id);
  return object;
 }
-export function compiledFamilyPaths(runtime,id){
+function familySources(runtime,id){
  const {catalog}=runtime,object=compiledObject(runtime,id),forms=catalog.families[object.card],sources=new Set([id,object.id]);
  for(const member of forms?Object.values(forms):[object.card]){
   const selected=compiledObject(runtime,member),route=catalog.stateRoutes[selected.id],group=route?catalog.stateGroups[route.card]:null;
   sources.add(selected.id);
   if(group)for(const source of Object.values(group.variants))sources.add(source);
  }
- return [...new Set([...sources].flatMap(source=>catalog.records[source]?.paths??[]))].sort();
+ return [...sources];
+}
+export function compiledFamilyPaths(runtime,id){
+ return [...new Set(familySources(runtime,id).flatMap(source=>runtime.catalog.records[source]?.paths??[]))].sort();
 }
 export function compiledSelection(runtime,request){
- const {catalog}=runtime,initial=compiledObject(runtime,request.id),plan=runtime.resolve(request);
+ const {catalog}=runtime,initial=compiledObject(runtime,request.id);
+ const icon=request.view===undefined&&typeof request.slot==='string'&&familySources(runtime,request.id).some(source=>catalog.records[source]?.icons?.includes(request.slot));
+ const plan=runtime.resolve(icon?{...request,view:'sprite'}:request);
  if(!Array.isArray(plan.modelResourcePaths))throw new Error('Missing explicit editor model resources');
  const sourceId=Object.hasOwn(catalog.records,request.id)&&initial.id===plan.object.id?request.id:plan.object.id;
  const owned=compiledFamilyPaths(runtime,sourceId),owners=new Set(owned);
