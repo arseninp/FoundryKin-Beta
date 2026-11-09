@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createPreviewResolver} from '../catalog/preview.mjs';
 const P='textures/blocks/',FACES=['up','down','north','south','east','west'],MODES=['off','lit','powered','lit_powered'];
 const PREFIXES=['','exposed_','weathered_','oxidized_'];
-// Normalized fixtures retain selected terrain-000/001/003/004 sequences at PIN 46ba6ea.
+// Normalized fixtures retain selected terrain-000/001/002/003/004 sequences at PIN 46ba6ea.
 // Waxed records deliberately reuse ordinary textures; compilation/alias equivalence is not performed here.
 const CASES=PREFIXES.flatMap(prefix=>{
  const base=prefix+'copper_bulb',paths=[base,base+'_lit',base+'_powered',base+'_lit_powered'].map(name=>P+name);
@@ -14,13 +14,16 @@ CASES.push(['respawn_anchor','charges',[0,1,2,3,4],{
  up:[P+'respawn_anchor_top_off',...Array(4).fill(P+'respawn_anchor_top')],down:Array(5).fill(P+'respawn_anchor_bottom'),
  ...Object.fromEntries(['north','south','east','west'].map(face=>[face,[0,1,2,3,4].map(n=>P+'respawn_anchor_side'+n)]))
 }]);
+CASES.push(['observer','powered',['off','on'],{
+ up:Array(2).fill(P+'observer_top'),down:Array(2).fill(P+'observer_top'),north:Array(2).fill(P+'observer_front'),south:[P+'observer_back',P+'observer_back_lit'],east:Array(2).fill(P+'observer_side'),west:Array(2).fill(P+'observer_side')
+}]);
 function fixture() {
  const records=Object.fromEntries(CASES.map(([id,,,variants])=>[id,{id,model:'cube',variants:structuredClone(variants),faces:Object.fromEntries(Object.entries(variants).map(([face,paths])=>[face,[...new Set(paths)]])),paths:[...new Set(Object.values(variants).flat())].sort(),icons:[]}]));
  return {schema:1,records,items:{},aliases:{},families:{},resources:{}};
 }
 function registry(){return {get(id){assert.ok(['cube','sprite'].includes(id));return {scale:1,mode:id==='cube'?'volume':'sprite'};},build(id,E){return {id,E};}};}
-test('all ten declared records select synchronized indices for every state and edited PNG',()=>{
- const cat=fixture(),before=JSON.stringify(cat),resolve=createPreviewResolver(cat,registry());assert.equal(CASES.length,10);
+test('all eleven declared records select synchronized indices for every state and edited PNG',()=>{
+ const cat=fixture(),before=JSON.stringify(cat),resolve=createPreviewResolver(cat,registry());assert.equal(CASES.length,11);
  for(const [id,parameter,values] of CASES)for(const [index,value] of values.entries())for(const slot of cat.records[id].paths) {
   const state={[parameter]:value},p=resolve({id,slot,state});assert.equal(p.model,'cube');assert.equal(p.slot,slot);assert.equal(p.state[parameter],value);
   for(const face of FACES)assert.equal(p.bindings[face],cat.records[id].variants[face][index]);
@@ -99,4 +102,13 @@ test('existing hive, crafter and mushroom defaults retain their previous indexed
  make('crafter',Object.fromEntries(FACES.map(face=>[face,Array(3).fill(P+'crafter_'+face)])));
  make('red_mushroom_block',Object.fromEntries(FACES.map(face=>[face,Array(16).fill(P+'cap')])));
  const resolve=createPreviewResolver(cat,registry());assert.equal(resolve({id:'beehive'}).state.honey,false);assert.equal(resolve({id:'beehive',state:{honey:true}}).bindings.south,P+'honey');assert.equal(resolve({id:'crafter'}).state.mode,'idle');assert.equal(resolve({id:'crafter',state:{mode:'crafting'}}).state.mode,'crafting');assert.equal(resolve({id:'red_mushroom_block'}).state.variant,14);
+});
+test('observer defaults off for every edited image and power changes only its back face',()=>{
+ const cat=fixture(),before=JSON.stringify(cat),resolve=createPreviewResolver(cat,registry()),record=cat.records.observer;
+ for(const slot of record.paths){
+  const off=resolve({id:'observer',slot}),on=resolve({id:'observer',slot,state:{powered:'on'}});
+  assert.equal(off.state.powered,'off');assert.equal(off.bindings.south,P+'observer_back');assert.equal(on.bindings.south,P+'observer_back_lit');
+  assert.deepEqual(FACES.filter(face=>off.bindings[face]!==on.bindings[face]),['south']);assert.deepEqual(off.paths,record.paths);assert.deepEqual(on.paths,record.paths);
+ }
+ assert.equal(record.variants.up.length,2);assert.equal(record.variants.down.length,2);assert.equal(JSON.stringify(cat),before);
 });
