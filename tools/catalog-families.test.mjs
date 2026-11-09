@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
 import {compileFamilies} from './catalog-families.mjs';
 import {materialFamilyRules} from '../catalog/rules/material-families.mjs';
+import {compileCatalog} from '../catalog/compile.mjs';
 import {compileModelCatalog} from '../models/library.mjs';
 import {createCatalogAccess} from '../catalog/access.mjs';
 import {compiledSearchIds,compiledFamilyPaths,compiledReopen} from '../catalog/editor-selection.mjs';
@@ -48,7 +49,7 @@ test('production catalog exposes family cards, source search and exact reopen wi
  const {fileURLToPath}=await import('node:url'),{readCandidate}=await import('./model-coverage.mjs');
  const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url))),before=JSON.stringify(input);
  const {catalog}=compileModelCatalog(input,createThreeMock()),runtime={catalog,access:createCatalogAccess(catalog)};
- for(const [source,base,form] of [['acacia_button','acacia_planks','button'],['acacia_stairs','acacia_planks','stairs'],['moss_carpet','moss_block','carpet'],['pale_moss_carpet','pale_moss_block','carpet']]) {
+ for(const [source,base,form] of [['acacia_button','acacia_planks','button'],['acacia_stairs','acacia_planks','stairs'],['moss_carpet','moss_block','carpet'],['pale_moss_carpet','pale_moss_block','carpet'],['smooth_stone_double_slab','smooth_stone','double_slab'],['petrified_oak_double_slab','petrified_oak_slab','double_slab']]) {
   assert.ok(catalog.cards.includes(base));assert.ok(!catalog.cards.includes(source));assert.ok(catalog.records[source]);
   assert.deepEqual(runtime.access.describe(source),{kind:'block',id:source,card:base,form});
   assert.deepEqual(compiledSearchIds(runtime,source),[base]);
@@ -58,7 +59,58 @@ test('production catalog exposes family cards, source search and exact reopen wi
    assert.ok(catalog.resources[path].some(owner=>owner.kind==='block'&&owner.id===source));
   }
  }
- assert.ok(catalog.cards.includes('acacia_double_slab'));
+ for(const [source,base] of [['acacia_double_slab','acacia_planks'],['andesite_double_slab','andesite'],['red_wool_double_slab','red_wool'],['double_cut_copper_slab','cut_copper'],['exposed_double_cut_copper_slab','exposed_cut_copper'],['waxed_double_cut_copper_slab','cut_copper']]) {
+  assert.equal(catalog.aliases[source],base);assert.ok(!catalog.cards.includes(source));assert.ok(catalog.records[source]);
+  assert.deepEqual(runtime.access.describe(source),{kind:'block',id:base,card:base,form:'native'});
+  assert.ok(compiledSearchIds(runtime,source).includes(base));assert.ok(!compiledSearchIds(runtime,source).includes(source));assert.ok(!Object.hasOwn(catalog.families[base]??{},'double_slab'));
+  for(const path of catalog.records[source].paths) {
+   assert.ok(compiledFamilyPaths(runtime,base).includes(path));
+   const reopened=compiledReopen(runtime,path,source);assert.equal(reopened.status,'found');assert.equal(reopened.object.id,base);
+   assert.ok(catalog.resources[path].some(owner=>owner.kind==='block'&&owner.id===source));
+  }
+ }
+ assert.equal(catalog.records.smooth_stone_double_slab.faces.north[0],'textures/blocks/stone_slab_side');
  assert.equal(catalog.records.acacia_button.model,'button');assert.equal(catalog.records.acacia_stairs.model,'stairs');
  assert.equal(JSON.stringify(input),before);
+});
+test('double slab names reuse ordinary material families without choosing ambiguous parents',()=>{
+ for(const [base,single,double] of [['oak_planks','oak_slab','oak_double_slab'],['cut_copper','cut_copper_slab','double_cut_copper_slab'],['exposed_cut_copper','exposed_cut_copper_slab','exposed_double_cut_copper_slab']]) {
+  const blocks=Object.fromEntries([base,single,double].map(id=>[id,{textures:'same'}])),r=compileFamilies(blocks);
+  assert.equal(r.owner[double],base);assert.equal(r.families[base].variants.find(v=>v.id===double).form,'double_slab');
+ }
+ const ambiguous=compileFamilies({oak:{textures:'oak'},oak_planks:{textures:'oak'},oak_slab:{textures:'oak'},oak_double_slab:{textures:'oak'}});
+ assert.equal(ambiguous.owner.oak_double_slab,'oak_double_slab');
+ const orphan=compileFamilies({petrified_oak_slab:{textures:'oak'},petrified_oak_double_slab:{textures:'oak'}});
+ assert.equal(orphan.owner.petrified_oak_double_slab,'petrified_oak_slab');
+});
+function doubleSlabInput(){
+ const P='textures/blocks/',blocks={acacia_planks:{textures:'wood'},acacia_double_slab:{textures:'double'},stone:{textures:'stone'},infested_stone:{textures:'stone'},unrelated:{textures:'wood'}};
+ const terrain={wood:{textures:P+'planks_acacia'},double:{textures:{path:P+'planks_acacia'}},stone:{textures:P+'stone'},other:{textures:P+'other'}};
+ return {blocks,terrain,existing:{[P+'planks_acacia']:1,[P+'stone']:1,[P+'other']:1},models:Object.fromEntries(Object.keys(blocks).map(id=>[id,{model:'cube'}]))};
+}
+function compileDoubleSlabs(input){return compileCatalog({...input,families:materialFamilyRules(input.blocks,{texture_data:input.terrain})})}
+test('equivalent doubles and infested aliases share the existing identity path without global PNG merging',()=>{
+ const input=doubleSlabInput(),before=JSON.stringify(input),catalog=compileDoubleSlabs(input),access=createCatalogAccess(catalog);
+ assert.equal(catalog.aliases.acacia_double_slab,'acacia_planks');assert.equal(catalog.aliases.infested_stone,'stone');
+ assert.ok(catalog.cards.includes('unrelated'));assert.ok(catalog.records.acacia_double_slab);assert.ok(catalog.records.infested_stone);
+ assert.ok(!Object.hasOwn(catalog.families,'acacia_planks'));
+ assert.equal(access.describe('acacia_double_slab').id,'acacia_planks');assert.equal(JSON.stringify(input),before);
+});
+test('double slabs retain model, state, carried, icon, indexed and face differences as forms',()=>{
+ const source='acacia_double_slab',P='textures/blocks/';
+ const changes=[
+  input=>{input.models[source].model='slab'},
+  input=>{input.models[source].states={variant:'distinct'}},
+  input=>{input.blocks[source].carried_textures='other'},
+  input=>{input.items={icon:{textures:'textures/items/acacia'}};input.icons={[source]:['icon']};input.existing['textures/items/acacia']=1},
+  input=>{input.terrain.double.textures=[P+'planks_acacia',P+'planks_acacia']},
+  input=>{input.blocks.acacia_planks.textures={up:'wood',down:'other',side:'wood'};input.blocks[source].textures={up:'other',down:'wood',side:'wood'}}
+ ];
+ for(const change of changes){
+  const input=doubleSlabInput();change(input);const before=JSON.stringify(input),catalog=compileDoubleSlabs(input),runtime={catalog,access:createCatalogAccess(catalog)};
+  assert.ok(!Object.hasOwn(catalog.aliases,source));assert.ok(!catalog.cards.includes(source));assert.equal(catalog.families.acacia_planks.double_slab,source);
+  assert.equal(runtime.access.describe(source).form,'double_slab');
+  for(const path of catalog.records[source].paths){assert.ok(compiledFamilyPaths(runtime,'acacia_planks').includes(path));assert.equal(compiledReopen(runtime,path,source).object.id,source)}
+  assert.equal(JSON.stringify(input),before);
+ }
 });

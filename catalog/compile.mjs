@@ -1,5 +1,5 @@
 /* Pure catalog assembly. No DOM, network, storage, or model registration side effects. */
-import {normalizeBlock} from './resources.mjs';
+import {normalizeBlock, resourceSignature} from './resources.mjs';
 import {bedSourcePlan, normalizeBedSource} from './rules/bed-sources.mjs';
 import {attachSignSource} from './rules/sign-sources.mjs';
 import {attachChestSource} from './rules/chest-sources.mjs';
@@ -44,6 +44,14 @@ export function compileCatalog(input) {
     return [id, assignment.model === 'sign' ? attachSignSource(record, blocks[id], inventory) : assignment.model === 'chest' ? attachChestSource(record, blocks[id], inventory) : assignment.model === 'shulker_box' ? attachShulkerSource(record, blocks[id], inventory) : assignment.model === 'banner' ? attachBannerSource(record, blocks[id], inventory) : assignment.model === 'copper_golem_statue' ? attachCopperGolemSource(record, blocks[id], inventory) : assignment.model === 'skull' ? attachSkullSource(record, blocks[id], inventory) : assignment.model === 'decorated_pot' ? attachDecoratedPotSource(record, blocks[id], inventory) : assignment.model === 'conduit' ? attachConduitSource(record, blocks[id], inventory) : assignment.model === 'bell' ? attachBellSource(record, blocks[id], inventory) : record];
   }));
   const records = attachDependencies(built, object(input.dependencies ?? {}, 'model dependencies'), inventory);
+  const plannedFamilies = familyRules(records, object(input.families ?? {}, 'family rules'));
+  for (const [base, forms] of Object.entries(plannedFamilies)) {
+    const source = forms.double_slab;
+    if (typeof source !== 'string' || !own(records, base) || !own(records, source) || own(rules, source)) continue;
+    if (records[base].model === 'cube' && records[source].model === 'cube' && resourceSignature(records[base]) === resourceSignature(records[source])) {
+      rules[source] = {target: base, reason: 'double slab is editor-equivalent to the material block'};
+    }
+  }
   const identity = compileAliases(records, rules);
   const stateRecords = Object.fromEntries(identity.visible.map(id => [id, records[id]]));
   const states = compileStateGroups(stateRecords, powerRules(stateRecords));
@@ -52,7 +60,7 @@ export function compileCatalog(input) {
     const target = own(identity.aliases, id) ? identity.aliases[id] : id;
     return own(states.routes, target) ? states.routes[target].card : target;
   };
-  for (const [sourceBase, forms] of Object.entries(familyRules(records, object(input.families ?? {}, 'family rules')))) {
+  for (const [sourceBase, forms] of Object.entries(plannedFamilies)) {
     object(forms, 'family forms');
     const initial = familyDefault(records, sourceBase, forms), native = own(records, sourceBase);
     const base = native ? canonical(sourceBase) : sourceBase;
@@ -61,7 +69,10 @@ export function compileCatalog(input) {
     for (const [form, sourceId] of Object.entries(forms)) {
       if (!/^[a-z][a-z0-9_]*$/.test(form) || !own(records, sourceId)) throw new Error('Invalid family variant: ' + sourceId);
       const id = canonical(sourceId);
-      if (id === base) throw new Error('Family variant equals base: ' + id);
+      if (id === base) {
+        if (own(identity.aliases, sourceId)) continue;
+        throw new Error('Family variant equals base: ' + id);
+      }
       if (own(entries, form)) {
         if (entries[form] !== id) throw new Error('Conflicting family form: ' + base + ':' + form);
         continue;
@@ -71,6 +82,7 @@ export function compileCatalog(input) {
     }
     if (!own(entries, initial)) throw new Error('Missing family default: ' + base);
     if (own(familyDefaults, base) && familyDefaults[base] !== initial) throw new Error('Conflicting family default: ' + base);
+    if (native && Object.keys(entries).length === 1) continue;
     families[base] = entries;familyDefaults[base] = initial;
   }
   for (const base of Object.keys(families)) if (owners.has(base)) throw new Error('Nested family base: ' + base);
