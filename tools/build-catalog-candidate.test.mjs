@@ -91,3 +91,35 @@ test('item counts, duplicates and invalid sections fail closed',()=>{
  assert.throws(()=>assembleChunks(legacy,[part]),/Item atlas count is missing/);
  assert.deepEqual(assembleChunks({...manifest,counts:{...manifest.counts,items:0}},[]).items,{texture_data:{}});
 });
+function iconFixture(){
+ const extra={acacia_door:{textures:'white'},standing_sign:{textures:'white'},wall_sign:{textures:'white'},bed:{textures:'white'}};
+ const colors='white orange magenta light_blue yellow lime pink gray silver cyan purple blue brown green red black'.split(' ');
+ const items={texture_data:{chain:{textures:'textures/items/chain'},string:{textures:'textures/items/string'},acacia_door:{textures:'textures/items/door_acacia'},sign:{textures:{path:'textures/items/sign'}},bed:{textures:colors.map(color=>'textures/items/bed_'+color)},unused:{textures:'textures/items/not_in_scope'}}};
+ const defs={...definitions(),...extra},reg=registry([...ACTIVE,...Object.keys(extra)]);
+ return {defs,reg,items,build:()=>snapshot(defs,reg,{texture_data:TERRAIN},PATHS,commit,items)};
+}
+test('snapshot selects linked icons and the bed source without mutating the official atlas',()=>{
+ const f=iconFixture(),before=JSON.stringify(f.items),data=f.build();
+ assert.deepEqual(Object.keys(data.items),['acacia_door','bed','chain','sign','string']);
+ assert.equal(data.items.acacia_door.textures,'textures/items/door_acacia');
+ assert.deepEqual(data.items.bed,f.items.texture_data.bed);
+ assert.equal(data.items.bed.textures.length,16);assert.equal(data.items.bed.textures[8],'textures/items/bed_silver');
+ assert.equal(data.items.sign.textures.path,'textures/items/sign');
+ data.items.bed.textures[0]='changed';assert.equal(JSON.stringify(f.items),before);
+ assert.equal(Object.hasOwn(fixture(),'items'),false);
+});
+test('item source schema and missing required icon links are rejected',()=>{
+ for(const items of [null,{}, {texture_data:[]}])assert.throws(()=>snapshot(definitions(),registry(),{texture_data:TERRAIN},PATHS,commit,items),/Missing item texture data/);
+ const f=iconFixture();delete f.items.texture_data.acacia_door;assert.throws(()=>f.build(),/Missing item-atlas link/);
+ const bed=iconFixture();delete bed.items.texture_data.bed;assert.throws(()=>bed.build(),/Missing item-atlas entry: bed/);
+});
+test('generated item chunks round-trip through the production loader with verifiable hashes',async()=>{
+ const directory=await mkdtemp(join(tmpdir(),'fk-icons-'));
+ try{
+  const data=iconFixture().build(),before=JSON.stringify(data);await writeCandidate(directory,data);
+  const manifest=JSON.parse(await readFile(join(directory,'manifest.json'),'utf8')),parts=[];
+  assert.equal(manifest.counts.items,5);assert.ok(manifest.files.some(file=>/^items-\d{3}\.json$/.test(file.name)));
+  for(const file of manifest.files){const text=await readFile(join(directory,file.name),'utf8');assert.ok(Buffer.byteLength(text)<=25000);assert.equal(createHash('sha256').update(text).digest('hex'),file.sha256);parts.push({name:file.name,value:JSON.parse(text)})}
+  const loaded=assembleChunks(manifest,parts);assert.deepEqual(loaded.items.texture_data,data.items);assert.deepEqual(loaded.terrain.texture_data,data.terrain);assert.equal(JSON.stringify(data),before);
+ }finally{await rm(directory,{recursive:true,force:true})}
+});

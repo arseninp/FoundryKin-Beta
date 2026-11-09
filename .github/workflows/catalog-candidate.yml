@@ -7,6 +7,7 @@ on:
       - '.github/workflows/catalog-candidate.yml'
       - 'tools/build-catalog-candidate.mjs'
       - 'tools/build-catalog-candidate.test.mjs'
+      - 'catalog/rules/icons.mjs'
 permissions:
   contents: write
 concurrency:
@@ -34,9 +35,24 @@ jobs:
           sparse-checkout: |
             resource_pack/blocks.json
             resource_pack/textures/terrain_texture.json
+            resource_pack/textures/item_texture.json
             metadata/vanilladata_modules/mojang-blocks.json
       - name: Build review-only catalog candidate
         run: node tools/build-catalog-candidate.mjs .catalog-source data/catalog-candidate
+      - name: Validate generated catalog and icon links before saving
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {readCandidate} from './tools/model-coverage.mjs';
+          import {compileModelCatalog} from './models/library.mjs';
+          import {createThreeMock} from './tools/three-mock.mjs';
+          const input = readCandidate('data/catalog-candidate');
+          const {catalog} = compileModelCatalog(input, createThreeMock());
+          assert.ok(Object.keys(catalog.items).length > 0);
+          for (const id of ['acacia_door','standing_sign','red_bed','light_gray_bed']) assert.ok(catalog.records[id].icons.length > 0, 'Missing item icon: ' + id);
+          assert.deepEqual(catalog.records.light_gray_bed.icons, ['textures/items/bed_silver']);
+          console.log(JSON.stringify({source:input.source,records:Object.keys(catalog.records).length,cards:catalog.cards.length,items:Object.keys(catalog.items).length}));
+          NODE
       - name: Save only generated candidate data
         run: |
           git add -A -- data/catalog-candidate

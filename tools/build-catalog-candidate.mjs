@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { admitBlocks, parseJsonc } from './prepare-catalog-inputs.mjs';
+import {blockIconLinks} from '../catalog/rules/icons.mjs';
 const COMMIT = '46ba6ea985fb5a92d79a9419198f10dda14c199d';
 const LIMIT = 22000;
 const POLICY = { exclude: { camera: 'outside-current-editor-scope' } };
@@ -33,7 +34,7 @@ function normalizeLegacyAliases(definitions, registry) {
   }
   return { definitions: normalized, applied };
 }
-export function snapshot(definitions, registry, terrain, paths, commit) {
+export function snapshot(definitions, registry, terrain, paths, commit, items) {
   if (commit !== COMMIT) throw new Error('Unexpected Mojang source commit');
   if (!terrain || !terrain.texture_data) throw new Error('Missing terrain texture data');
   const aliases = normalizeLegacyAliases(definitions, registry);
@@ -47,10 +48,23 @@ export function snapshot(definitions, registry, terrain, paths, commit) {
   const selectedTerrain = Object.fromEntries([...keys].sort().filter(key => Object.hasOwn(terrain.texture_data, key)).map(key => [key, terrain.texture_data[key]]));
   const existing = [...new Set(paths.filter(path => /^resource_pack\/textures\/.+\.(png|tga)$/.test(path)).map(path => path.slice(14, -4)))].sort();
   if (!existing.length) throw new Error('Empty resource file inventory');
+  let selectedItems;
+  if (items !== undefined) {
+    if (!items || !items.texture_data || typeof items.texture_data !== 'object' || Array.isArray(items.texture_data)) throw new Error('Missing item texture data');
+    const links = blockIconLinks({...admitted.blocks, ...auxiliary}, items.texture_data);
+    const itemKeys = new Set(Object.values(links).flat().map(reference => typeof reference === 'string' ? reference : reference.item));
+    /* The single bed source expands into color records at compilation, not admission. */
+    if (Object.hasOwn(admitted.blocks, 'bed')) itemKeys.add('bed');
+    selectedItems = Object.fromEntries([...itemKeys].sort().map(key => {
+      if (!Object.hasOwn(items.texture_data, key)) throw new Error('Missing item-atlas entry: ' + key);
+      return [key, structuredClone(items.texture_data[key])];
+    }));
+  }
   return {
     source: admitted.source,
     blocks: admitted.blocks,
     terrain: selectedTerrain,
+    ...(selectedItems === undefined ? {} : {items: selectedItems}),
     existing,
     auxiliary,
     report: { ...admitted.report, legacyAliases: aliases.applied, missingTerrainKeys, auxiliaryResources: Object.keys(auxiliary), excludedByPolicy: POLICY.exclude }
@@ -74,12 +88,16 @@ export async function writeCandidate(directory, data) {
     if (Buffer.byteLength(text) > 25000) throw new Error('Generated file exceeds 25000 bytes: ' + name);
     documents.push({ name, text, sha256: createHash('sha256').update(text).digest('hex') });
   }
-  for (const section of ['blocks', 'terrain', 'auxiliary', 'existing']) {
+  const sections = ['blocks', 'terrain', 'auxiliary', 'existing'];
+  if (data.items !== undefined) sections.push('items');
+  for (const section of sections) {
     const object = section === 'existing' ? Object.fromEntries(data.existing.map(path => [path, 1])) : data[section];
     chunks(object).forEach((chunk, i) => add(section + '-' + String(i).padStart(3, '0') + '.json', chunk));
   }
   add('report.json', data.report);
-  add('manifest.json', { schema: 1, candidate: true, source: data.source, counts: { blocks: Object.keys(data.blocks).length, terrain: Object.keys(data.terrain).length, existing: data.existing.length }, files: documents.map(({ name, sha256 }) => ({ name, sha256 })) });
+  const counts = { blocks: Object.keys(data.blocks).length, terrain: Object.keys(data.terrain).length, existing: data.existing.length };
+  if (data.items !== undefined) counts.items = Object.keys(data.items).length;
+  add('manifest.json', { schema: 1, candidate: true, source: data.source, counts, files: documents.map(({ name, sha256 }) => ({ name, sha256 })) });
   await rm(directory, { recursive: true, force: true });await mkdir(directory, { recursive: true });
   for (const document of documents) await writeFile(resolve(directory, document.name), document.text);
 }
@@ -88,8 +106,8 @@ export async function main(args) {
   const [directory, output] = args;
   const commit = execFileSync('git', ['-C', directory, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
   const read = async path => parseJsonc(await readFile(resolve(directory, path), 'utf8'));
-  const [definitions, registry, terrain] = await Promise.all([read('resource_pack/blocks.json'), read('metadata/vanilladata_modules/mojang-blocks.json'), read('resource_pack/textures/terrain_texture.json')]);
+  const [definitions, registry, terrain, items] = await Promise.all([read('resource_pack/blocks.json'), read('metadata/vanilladata_modules/mojang-blocks.json'), read('resource_pack/textures/terrain_texture.json'), read('resource_pack/textures/item_texture.json')]);
   const paths = execFileSync('git', ['-C', directory, 'ls-tree', '-r', '--name-only', 'HEAD'], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 }).trim().split('\n');
-  await writeCandidate(resolve(output), snapshot(definitions, registry, terrain, paths, commit));
+  await writeCandidate(resolve(output), snapshot(definitions, registry, terrain, paths, commit, items));
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main(process.argv.slice(2)).catch(error => { console.error(error.message);process.exitCode = 1; });
