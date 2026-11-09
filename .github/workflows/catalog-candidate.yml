@@ -5,9 +5,10 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/catalog-candidate.yml'
-      - 'tools/build-catalog-candidate.mjs'
-      - 'tools/build-catalog-candidate.test.mjs'
-      - 'catalog/rules/icons.mjs'
+      - 'tools/**'
+      - 'catalog/**'
+      - 'models/**'
+      - 'preview-controls.mjs'
 permissions:
   contents: write
 concurrency:
