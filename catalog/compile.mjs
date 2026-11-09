@@ -44,15 +44,19 @@ export function compileCatalog(input) {
     return [id, assignment.model === 'sign' ? attachSignSource(record, blocks[id], inventory) : assignment.model === 'chest' ? attachChestSource(record, blocks[id], inventory) : assignment.model === 'shulker_box' ? attachShulkerSource(record, blocks[id], inventory) : assignment.model === 'banner' ? attachBannerSource(record, blocks[id], inventory) : assignment.model === 'copper_golem_statue' ? attachCopperGolemSource(record, blocks[id], inventory) : assignment.model === 'skull' ? attachSkullSource(record, blocks[id], inventory) : assignment.model === 'decorated_pot' ? attachDecoratedPotSource(record, blocks[id], inventory) : assignment.model === 'conduit' ? attachConduitSource(record, blocks[id], inventory) : assignment.model === 'bell' ? attachBellSource(record, blocks[id], inventory) : record];
   }));
   const records = attachDependencies(built, object(input.dependencies ?? {}, 'model dependencies'), inventory);
-  const plannedFamilies = familyRules(records, object(input.families ?? {}, 'family rules'));
+  const plannedFamilies = familyRules(records, object(input.families ?? {}, 'family rules')), equivalentDoubles = [];
   for (const [base, forms] of Object.entries(plannedFamilies)) {
     const source = forms.double_slab;
-    if (typeof source !== 'string' || !own(records, base) || !own(records, source) || own(rules, source)) continue;
+    if (typeof source !== 'string' || !own(records, base) || !own(records, source)) continue;
     if (records[base].model === 'cube' && records[source].model === 'cube' && resourceSignature(records[base]) === resourceSignature(records[source])) {
-      rules[source] = {target: base, reason: 'double slab is editor-equivalent to the material block'};
+      equivalentDoubles.push({base, source});
+      if (!own(rules, source)) rules[source] = {target: base, reason: 'double slab is editor-equivalent to the material block'};
     }
   }
   const identity = compileAliases(records, rules);
+  for (const {base, source} of equivalentDoubles) {
+    if ((identity.aliases[source] ?? source) === (identity.aliases[base] ?? base)) delete plannedFamilies[base].double_slab;
+  }
   const stateRecords = Object.fromEntries(identity.visible.map(id => [id, records[id]]));
   const states = compileStateGroups(stateRecords, powerRules(stateRecords));
   const families = Object.create(null), familyDefaults = Object.create(null), owners = new Map();
@@ -69,10 +73,7 @@ export function compileCatalog(input) {
     for (const [form, sourceId] of Object.entries(forms)) {
       if (!/^[a-z][a-z0-9_]*$/.test(form) || !own(records, sourceId)) throw new Error('Invalid family variant: ' + sourceId);
       const id = canonical(sourceId);
-      if (id === base) {
-        if (own(identity.aliases, sourceId)) continue;
-        throw new Error('Family variant equals base: ' + id);
-      }
+      if (id === base) throw new Error('Family variant equals base: ' + id);
       if (own(entries, form)) {
         if (entries[form] !== id) throw new Error('Conflicting family form: ' + base + ':' + form);
         continue;
@@ -82,10 +83,13 @@ export function compileCatalog(input) {
     }
     if (!own(entries, initial)) throw new Error('Missing family default: ' + base);
     if (own(familyDefaults, base) && familyDefaults[base] !== initial) throw new Error('Conflicting family default: ' + base);
-    if (native && Object.keys(entries).length === 1) continue;
     families[base] = entries;familyDefaults[base] = initial;
   }
   for (const base of Object.keys(families)) if (owners.has(base)) throw new Error('Nested family base: ' + base);
+  for (const {base: sourceBase} of equivalentDoubles) {
+    const base = canonical(sourceBase), entries = families[base];
+    if (entries && Object.keys(entries).length === 1 && entries.native === base) {delete families[base];delete familyDefaults[base];}
+  }
   const cards = [...states.cards.filter(id => !owners.has(id)), ...Object.keys(families).filter(base => !own(records, base))].sort();
   const resources = new Map();
   function add(path, owner) {

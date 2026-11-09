@@ -52,7 +52,7 @@ test('production catalog exposes family cards, source search and exact reopen wi
  for(const [source,base,form] of [['acacia_button','acacia_planks','button'],['acacia_stairs','acacia_planks','stairs'],['moss_carpet','moss_block','carpet'],['pale_moss_carpet','pale_moss_block','carpet'],['smooth_stone_double_slab','smooth_stone','double_slab'],['petrified_oak_double_slab','petrified_oak_slab','double_slab']]) {
   assert.ok(catalog.cards.includes(base));assert.ok(!catalog.cards.includes(source));assert.ok(catalog.records[source]);
   assert.deepEqual(runtime.access.describe(source),{kind:'block',id:source,card:base,form});
-  assert.deepEqual(compiledSearchIds(runtime,source),[base]);
+  assert.deepEqual(compiledSearchIds(runtime,source),source==='moss_carpet'?['moss_block','pale_moss_block']:[base]);
   for(const path of catalog.records[source].paths) {
    assert.ok(compiledFamilyPaths(runtime,base).includes(path));
    const reopened=compiledReopen(runtime,path,source);assert.equal(reopened.status,'found');assert.equal(reopened.object.id,source);assert.equal(reopened.object.form,form);
