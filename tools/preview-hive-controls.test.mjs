@@ -35,3 +35,24 @@ test('earlier controls retain their defaults and stages',()=>{
  assert.equal(c.previewControlSpec({},plan('chorus_plant',{},'chorus_plant')).schema.length,6);
  for(const model of ['crop','stage_cross'])assert.deepEqual(c.previewControlSpec({},{...plan(model,{},model),stages:4}).schema[0].values.map(v=>v.value),[0,1,2,3]);
 });
+test('observer exposes one typed power field with EN/RU labels and an off default',()=>{
+ const p=plan('observer'),spec=c.previewControlSpec({},p);
+ assert.deepEqual(spec.state,{powered:'off'});
+ assert.deepEqual(spec.schema,[{key:'powered',label:['Power','Сигнал'],values:[{value:'off',label:['Unpowered','Без сигнала']},{value:'on',label:['Powered','С сигналом']}]}]);
+ assert.deepEqual(c.previewControlSelection(p,{texture:'observer_back_lit.png'}).state,{powered:'off'});
+});
+test('observer power and PNG selection stay independent and do not mutate the plan',()=>{
+ for(const powered of ['off','on'])for(const texture of ['observer_back.png','observer_back_lit.png']){
+  const p=plan('observer',{powered:powered==='off'?'on':'off'}),before=JSON.stringify(p);
+  assert.deepEqual(c.previewControlSelection(p,{powered,texture,form:'native'}),{form:'native',slot:texture,state:{powered}});
+  assert.deepEqual(c.previewControlSpec({},plan('observer',{powered})).state,{powered});assert.equal(JSON.stringify(p),before);
+ }
+});
+test('observer rejects invalid power values and does not add power controls to sprites or lookalikes',()=>{
+ for(const powered of [null,true,false,0,1,'lit',[],{}]){
+  assert.throws(()=>c.previewControlSpec({},plan('observer',{powered})),/Invalid indexed cube control: powered/);
+  assert.throws(()=>c.previewControlSelection(plan('observer'),{powered}),/Invalid indexed cube control: powered/);
+ }
+ for(const p of [plan('observer_extra'),plan('observer',{},'sprite'),plan('observer',{},'cross')])assert.equal(c.previewControlSpec({},p).schema,null);
+ const fields=c.previewFields({},plan('observer'));fields[0][1][0][1]='wrong';assert.equal(c.previewFields({},plan('observer'))[0][1][0][1],'off');
+});
