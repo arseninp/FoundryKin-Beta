@@ -12,7 +12,7 @@ function manifest(m){
  if(!m||m.schema!==1||!m.source||m.source.commit!==COMMIT||!Array.isArray(m.files)||!m.counts)throw new Error('Unsupported catalog manifest');
  var seen={};
  m.files.forEach(function(f){
-  if(!f||! /^(?:(?:blocks|terrain|existing|auxiliary)-[0-9]{3}|report)\.json$/.test(f.name)||! /^[0-9a-f]{64}$/.test(f.sha256)||seen[f.name])throw new Error('Invalid catalog file descriptor');
+  if(!f||! /^(?:(?:blocks|terrain|items|existing|auxiliary)-[0-9]{3}|report)\.json$/.test(f.name)||! /^[0-9a-f]{64}$/.test(f.sha256)||seen[f.name])throw new Error('Invalid catalog file descriptor');
   seen[f.name]=true;
  });
  return m;

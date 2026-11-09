@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { snapshot, chunks, writeCandidate } from './build-catalog-candidate.mjs';
+import {assembleChunks} from '../catalog/load.mjs';
 const commit = '46ba6ea985fb5a92d79a9419198f10dda14c199d';
 const ACTIVE = ['white_wool', 'camera', 'pale_moss_carpet', 'grass_block', 'iron_chain', 'sea_lantern', 'trip_wire'];
 const TERRAIN = Object.fromEntries(['white', 'portal', 'moss', 'moss_side', 'grass_top', 'grass_side', 'chain1', 'chain2', 'sea_lantern', 'trip_wire'].map(x => [x, { textures: 'textures/blocks/' + x }]));
@@ -65,4 +66,28 @@ test('writes review-only manifest with verifiable hashes', async () => {
 });
 test('rejects unrelated source revisions', () => {
   assert.throws(() => snapshot({}, {}, {}, [], '0'.repeat(40)));
+});
+
+test('old manifests do not invent an empty item atlas',()=>{
+ const data=assembleChunks({schema:1,counts:{blocks:0,terrain:0,existing:0}},[]);
+ assert.equal(Object.hasOwn(data,'items'),false);
+});
+test('item chunks preserve indexed alternatives and separate terrain keys',()=>{
+ const manifest={schema:1,counts:{blocks:0,terrain:1,existing:0,items:2}},bed={textures:['textures/items/bed_white','textures/items/bed_silver','textures/items/bed_white']};
+ const parts=[{name:'terrain-000.json',value:{sign:{textures:'textures/blocks/planks_oak'}}},{name:'items-000.json',value:{bed}},{name:'items-001.json',value:{sign:{textures:{path:'textures/items/sign'}}}}],before=JSON.stringify({manifest,parts});
+ const data=assembleChunks(manifest,parts);
+ assert.deepEqual(data.items.texture_data.bed,bed);
+ assert.equal(data.items.texture_data.sign.textures.path,'textures/items/sign');
+ assert.equal(data.terrain.texture_data.sign.textures,'textures/blocks/planks_oak');
+ assert.equal(JSON.stringify({manifest,parts}),before);
+});
+test('item counts, duplicates and invalid sections fail closed',()=>{
+ const manifest={schema:1,counts:{blocks:0,terrain:0,existing:0,items:1}},part={name:'items-000.json',value:{sign:{textures:'textures/items/sign'}}};
+ assert.throws(()=>assembleChunks(manifest,[]),/count mismatch: items/);
+ assert.throws(()=>assembleChunks(manifest,[part,{...part,name:'items-001.json'}]),/Duplicate catalog key/);
+ assert.throws(()=>assembleChunks(manifest,[{...part,value:[]}]),/Invalid catalog section/);
+ for(const items of [-1,1.5,'1',null])assert.throws(()=>assembleChunks({...manifest,counts:{...manifest.counts,items}},[part]),/Invalid item atlas count/);
+ const legacy={...manifest,counts:{blocks:0,terrain:0,existing:0}};
+ assert.throws(()=>assembleChunks(legacy,[part]),/Item atlas count is missing/);
+ assert.deepEqual(assembleChunks({...manifest,counts:{...manifest.counts,items:0}},[]).items,{texture_data:{}});
 });

@@ -19,13 +19,19 @@ export function admitAuxiliaryBlocks(blocks, auxiliary = {}) {
   }
   return admitted;
 }
-/* Mirrors the pinned chunk layout: blocks, terrain (texture_data), existing and auxiliary sections of manifest files. */
+/* Pinned chunks contain blocks, terrain/items texture_data, existing and auxiliary sections. */
 export function assembleChunks(manifest, parts) {
   if (!dictionary(manifest) || manifest.schema !== 1 || !dictionary(manifest.counts) || !Array.isArray(parts)) throw new Error('Unsupported catalog manifest');
   const data = {blocks: {}, terrain: {texture_data: {}}, existing: {}, auxiliary: {}, source: manifest.source};
+  const hasItems = own(manifest.counts, 'items');
+  if (hasItems) {
+    if (!Number.isSafeInteger(manifest.counts.items) || manifest.counts.items < 0) throw new Error('Invalid item atlas count');
+    data.items = {texture_data: {}};
+  }
   for (const part of parts) {
     const section = String(part.name).split('-')[0];
-    const target = section === 'terrain' ? data.terrain.texture_data : own(data, section) && section !== 'source' ? data[section] : null;
+    if (section === 'items' && !hasItems) throw new Error('Item atlas count is missing');
+    const target = section === 'terrain' || section === 'items' ? data[section].texture_data : own(data, section) && section !== 'source' ? data[section] : null;
     if (!target) continue;
     if (!dictionary(part.value)) throw new Error('Invalid catalog section: ' + part.name);
     for (const [key, value] of Object.entries(part.value)) {
@@ -34,6 +40,7 @@ export function assembleChunks(manifest, parts) {
     }
   }
   const counts = {blocks: Object.keys(data.blocks).length, terrain: Object.keys(data.terrain.texture_data).length, existing: Object.keys(data.existing).length};
+  if (hasItems) counts.items = Object.keys(data.items.texture_data).length;
   for (const name of Object.keys(counts)) if (counts[name] !== manifest.counts[name]) throw new Error('Catalog count mismatch: ' + name);
   data.blocks = admitAuxiliaryBlocks(data.blocks, data.auxiliary);
   return data;

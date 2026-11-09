@@ -20,7 +20,7 @@ export function readCandidate(directory) {
  if (manifest.schema !== 1 || manifest.source?.commit !== PIN || !Array.isArray(manifest.files)) throw new Error('Unexpected candidate manifest');
  const seen = new Set();
  const parts = manifest.files.filter(file => file.name !== 'report.json').map(file => {
-  if (typeof file.name !== 'string' || !/^(blocks|terrain|existing|auxiliary)-[0-9]+\.json$/.test(file.name) || seen.has(file.name)) throw new Error('Invalid candidate filename');
+  if (typeof file.name !== 'string' || !/^(blocks|terrain|items|existing|auxiliary)-[0-9]+\.json$/.test(file.name) || seen.has(file.name)) throw new Error('Invalid candidate filename');
   seen.add(file.name);
   const text = readFileSync(join(directory, file.name), 'utf8');
   if (createHash('sha256').update(text).digest('hex') !== file.sha256) throw new Error('Candidate checksum mismatch: ' + file.name);
