@@ -4,6 +4,7 @@ const dictionary=value=>value!==null&&typeof value==='object'&&!Array.isArray(va
 const APPROVED=Object.freeze({
  bamboo:Object.freeze({shoot:'bamboo_sapling'}),
  torchflower:Object.freeze({crop:'torchflower_crop'}),
+ cave_vines:Object.freeze({body:'cave_vines_body_with_berries',head:'cave_vines_head_with_berries'}),
  pumpkin:Object.freeze({stem:'pumpkin_stem'}),
  melon_block:Object.freeze({stem:'melon_stem'})
 });

@@ -49,7 +49,7 @@ test('production catalog exposes family cards, source search and exact reopen wi
  const {fileURLToPath}=await import('node:url'),{readCandidate}=await import('./model-coverage.mjs');
  const input=readCandidate(fileURLToPath(new URL('../data/catalog-candidate/',import.meta.url))),before=JSON.stringify(input);
  const {catalog}=compileModelCatalog(input,createThreeMock()),runtime={catalog,access:createCatalogAccess(catalog)};
- for(const [source,base,form] of [['acacia_button','acacia_planks','button'],['acacia_stairs','acacia_planks','stairs'],['moss_carpet','moss_block','carpet'],['pale_moss_carpet','pale_moss_block','carpet'],['smooth_stone_double_slab','smooth_stone','double_slab'],['petrified_oak_double_slab','petrified_oak_slab','double_slab']]) {
+ for(const [source,base,form] of [['acacia_button','acacia_planks','button'],['acacia_stairs','acacia_planks','stairs'],['moss_carpet','moss_block','carpet'],['pale_moss_carpet','pale_moss_block','carpet'],['smooth_stone_double_slab','smooth_stone','double_slab'],['petrified_oak_double_slab','petrified_oak_slab','double_slab'],['cave_vines_body_with_berries','cave_vines','body'],['cave_vines_head_with_berries','cave_vines','head']]) {
   assert.ok(catalog.cards.includes(base));assert.ok(!catalog.cards.includes(source));assert.ok(catalog.records[source]);
   assert.deepEqual(runtime.access.describe(source),{kind:'block',id:source,card:base,form});
   assert.deepEqual(compiledSearchIds(runtime,source),source==='moss_carpet'?['moss_block','pale_moss_block']:[base]);
@@ -59,6 +59,9 @@ test('production catalog exposes family cards, source search and exact reopen wi
    assert.ok(catalog.resources[path].some(owner=>owner.kind==='block'&&owner.id===source));
   }
  }
+ assert.deepEqual(catalog.cards.filter(id=>id.startsWith('cave_vines')),['cave_vines']);
+ assert.deepEqual(compiledSearchIds(runtime,'cave_vines'),['cave_vines']);
+ assert.deepEqual(compiledFamilyPaths(runtime,'cave_vines'),catalog.records.cave_vines.paths);
  for(const [source,base] of [['acacia_double_slab','acacia_planks'],['andesite_double_slab','andesite'],['red_wool_double_slab','red_wool'],['double_cut_copper_slab','cut_copper'],['exposed_double_cut_copper_slab','exposed_cut_copper'],['waxed_double_cut_copper_slab','cut_copper']]) {
   assert.equal(catalog.aliases[source],base);assert.ok(!catalog.cards.includes(source));assert.ok(catalog.records[source]);
   assert.deepEqual(runtime.access.describe(source),{kind:'block',id:base,card:base,form:'native'});

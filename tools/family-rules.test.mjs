@@ -65,3 +65,21 @@ test('ambiguous sign sources and conflicting explicit placement rules fail witho
  assert.equal(familyRules(input,{standing_sign:{wall:'wall_sign'}}).standing_sign.wall,'wall_sign');
  const invalid=sign('','wall');assert.throws(()=>familyRules({bad:invalid}),/Invalid sign family source/);assert.equal(JSON.stringify(input),before);
 });
+function caveRecords(){
+ const P='textures/blocks/',paths=['body','body_berries','head','head_berries'].map(part=>P+'cave_vines_'+part);
+ return {cave_vines:{model:'cave_vines',paths},cave_vines_body_with_berries:{model:'cave_vines_part',paths:paths.slice(0,2)},cave_vines_head_with_berries:{model:'cave_vines_part',paths:paths.slice(2)}};
+}
+test('cave vine body and head belong to their existing parent without replacing models or resources',()=>{
+ const input=caveRecords(),before=JSON.stringify(input),result=familyRules(input);
+ assert.deepEqual(Object.keys(result),['cave_vines']);assert.deepEqual(result.cave_vines,{body:'cave_vines_body_with_berries',head:'cave_vines_head_with_berries'});
+ assert.equal(input.cave_vines.paths.length,4);assert.equal(input.cave_vines_body_with_berries.model,'cave_vines_part');assert.equal(input.cave_vines_head_with_berries.paths.length,2);assert.equal(JSON.stringify(input),before);
+});
+test('incomplete and lookalike cave vine source sets are not silently grouped',()=>{
+ for(const missing of Object.keys(caveRecords())){const input=caveRecords();delete input[missing];assert.deepEqual(Object.keys(familyRules(input)),[])}
+ const input=caveRecords();input.future_cave_vines_head_with_berries=input.cave_vines_head_with_berries;delete input.cave_vines_head_with_berries;assert.deepEqual(Object.keys(familyRules(input)),[]);
+});
+test('cave vine family declarations are copied and conflicting part mappings fail',()=>{
+ const input=caveRecords(),before=JSON.stringify(input),first=familyRules(input);first.cave_vines.body='wrong';
+ assert.equal(familyRules(input).cave_vines.body,'cave_vines_body_with_berries');
+ assert.throws(()=>familyRules(input,{cave_vines:{body:'cave_vines_head_with_berries'}}),/Conflicting family form: cave_vines:body/);assert.equal(JSON.stringify(input),before);
+});
