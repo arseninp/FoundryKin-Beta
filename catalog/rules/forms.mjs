@@ -2,6 +2,7 @@
 const own=(object,key)=>Object.hasOwn(object,key);
 const dictionary=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const APPROVED=Object.freeze({
+ cauldron:Object.freeze({lava:'lava_cauldron'}),
  bamboo:Object.freeze({shoot:'bamboo_sapling'}),
  torchflower:Object.freeze({crop:'torchflower_crop'}),
  cave_vines:Object.freeze({body:'cave_vines_body_with_berries',head:'cave_vines_head_with_berries'}),

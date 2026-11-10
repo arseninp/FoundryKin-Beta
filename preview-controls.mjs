@@ -1,6 +1,7 @@
 /* Pure schemas and labels for the existing shared state picker. No DOM, storage or model building. */
 import {leafControlState,leafPreviewField,leafPreviewLabel} from './catalog/leaf-preview.mjs';
 import {signControlState,signPreviewField,signPreviewLabel} from './catalog/sign-preview.mjs';
+import {cauldronField,cauldronFormLabels,cauldronFormState} from './catalog/cauldron-controls.mjs';
 const own=(object,key)=>Object.hasOwn(object,key);
 const dictionary=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 export function createPreviewControls(TEXT) {
@@ -149,7 +150,7 @@ function previewFields(catalog,plan) {
  if(plan.model==='cave_vines'||plan.model==='cave_vines_part')caveVineControlState(plan,plan.state);
  const route=catalog.stateRoutes?.[plan.object.id],group=route?catalog.stateGroups?.[route.card]:null;
  const fields=[...(FIELDS[plan.object.card]??[]),...(MODEL_FIELDS[plan.model]??[]),...trackFields(plan)].filter(([key])=>!(plan.model==='chest'&&plan.object.id==='ender_chest'&&key==='double'));
- if(plan.model==='cauldron'){const lava=plan.object.id==='lava_cauldron';fields.push(['content',(lava?['empty','lava']:['empty','water','colored_water']).map(value=>[value,value]),lava?'lava':'empty']);}
+ if(plan.model==='cauldron')fields.push(cauldronField(plan));
  if(plan.model==='cage'){const count={mob_spawner:1,trial_spawner:12,vault:8}[plan.object.id];if(!count)throw new Error('Unknown cage control object');fields.push(['variant',numbers(count),0]);}
  if(indexedCube)fields.push(INDEXED_CUBE_FIELDS[plan.object.id]);
  const leafField=leafPreviewField(plan);if(leafField)fields.push(leafField);
@@ -204,6 +205,7 @@ function previewControlSpec(catalog,plan) {
   schema.unshift({key:'form',label:label('form'),values:Object.keys(plan.forms).map(value=>({value,label:label('form_'+value,value)}))});
   state.form=plan.object.form;
  }
+ cauldronFormLabels(plan,schema);
  if(plan.model==='decorated_pot') {
   const record=catalog.records?.[plan.object.id],patterns=record?.potteryPatterns,selected=plan.state.patterns??{};
   if(!dictionary(patterns)||!own(patterns,'brick')||!dictionary(selected)||!Array.isArray(record.paths)||Object.values(patterns).some(path=>typeof path!=='string'||!record.paths.includes(path)))throw new Error('Invalid decorated pot controls');
@@ -220,6 +222,7 @@ function previewControlSpec(catalog,plan) {
 function previewControlSelection(plan,values) {
  if(!dictionary(values))throw new Error('Invalid preview control values');
  const {form,texture,...chosen}=values,state={...plan.state,...chosen};
+ cauldronFormState(plan,form,state);
  if(plan.model==='candle')state.lit=candleControlLit(state);
  const indexedCube=indexedCubeControlState(plan,state);if(indexedCube)Object.assign(state,indexedCube);
  const leafState=leafControlState(plan,state);if(leafState)Object.assign(state,leafState);

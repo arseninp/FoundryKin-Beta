@@ -55,6 +55,7 @@ test('ordinary models keep ungrouped behavior',()=>{assert.equal(compiledResourc
 class Element{
  constructor(tag){this.tag=tag;this.children=[];this.dataset={};this.style={};this.attributes={};this.listeners={};this.open=false;}
  set innerHTML(value){this.children=[];}
+ hasChildNodes(){return this.children.length>0;}
  appendChild(child){this.children.push(child);return child;}
  setAttribute(key,value){this.attributes[key]=value;}
  addEventListener(key,callback){this.listeners[key]=callback;}
@@ -62,8 +63,8 @@ class Element{
 async function slotUi(choice,slot){
  const source=await readFile(new URL('../fk-core.js',import.meta.url),'utf8'),start=source.indexOf('function buildSlotUi(){'),end=source.indexOf('\nfunction setSlot(',start);
  assert.ok(start>=0&&end>start,'Editor slot renderer boundary changed');
- const host=new Element('div'),calls=[];let frames=0;
- const context={choice,slot,document:{createElement:tag=>new Element(tag)},FK:{lang:()=> 'ru'},$:()=>host,setSlot:id=>calls.push(id),frameUi:()=>{frames++;}};
+ const host=new Element('div'),resourceInfo=new Element('div'),calls=[];let frames=0;
+ const context={choice,slot,resourceInfo,unified:{},resourceTools:{appendResourceUsage(){}},clearResourceInfo(){resourceInfo.innerHTML='';resourceInfo.hidden=true;},showErr(code,detail){throw new Error(code+': '+detail);},document:{createElement:tag=>new Element(tag)},FK:{lang:()=> 'ru'},$:()=>host,setSlot:id=>calls.push(id),frameUi:()=>{frames++;}};
  vm.runInNewContext(source.slice(start,end)+'\nbuildSlotUi();',context,{timeout:1000});
  return {host,calls,frames};
 }
