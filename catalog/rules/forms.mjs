@@ -5,6 +5,7 @@ const APPROVED=Object.freeze({
  bamboo:Object.freeze({shoot:'bamboo_sapling'}),
  torchflower:Object.freeze({crop:'torchflower_crop'}),
  cave_vines:Object.freeze({body:'cave_vines_body_with_berries',head:'cave_vines_head_with_berries'}),
+ standing_banner:Object.freeze({wall:'wall_banner'}),
  pumpkin:Object.freeze({stem:'pumpkin_stem'}),
  melon_block:Object.freeze({stem:'melon_stem'})
 });
