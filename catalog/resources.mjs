@@ -19,6 +19,15 @@ function attachMaterialMaps(record) {
   }
   return Object.keys(textureSets).length ? {...record, textureSets, paths: [...paths].sort()} : record;
 }
+/* Engine-effect roles are not cube faces. Keep raw fallback definitions as provenance only. */
+function withDeclaredBindings(record,definition,bindings) {
+ if(!bindings)return record;
+ const bound={...record,bindings};
+ if(record.id!=='bubble_column'||record.model!=='sprite')return bound;
+ const parts=['up','down','north','south'];
+ const paths=[...new Set([...Object.values(bindings).flat(),...record.icons,...Object.values(record.carried??{}).flat()])].sort();
+ return {...bound,faces:Object.fromEntries(parts.map(face=>[face,[...record.faces[face]]])),variants:Object.fromEntries(parts.map(face=>[face,[...record.variants[face]]])),paths,source:{kind:'engine-effect',template:'bubble_column',definition:structuredClone(definition)}};
+}
 const DOORS = Object.freeze({wooden_door: 'wood', spruce_door: 'spruce', birch_door: 'birch', jungle_door: 'jungle', acacia_door: 'acacia', dark_oak_door: 'dark_oak', iron_door: 'iron'});
 /* Pinned lit furnace records place their front on east; editor state pairs share a south-facing front. */
 const LIT_FRONTS = Object.freeze({
@@ -77,7 +86,7 @@ export function normalizeBlock(id, definition, atlas, options = {}) {
   const record = attachMaterialMaps({id, model: options.model ?? null, states: options.states ?? null, faces: modelFaces, carried: carriedFaces, variants, carriedVariants, icons, paths});
   if (options.existing) for (const path of record.paths) if (!own(options.existing, path)) throw new Error('Missing resource file: ' + path);
   const bindings = modelPartBindings(record);
-  return bindings ? {...record, bindings} : record;
+  return withDeclaredBindings(record,definition,bindings);
 }
 function ordered(value) {
   if (Array.isArray(value)) return value.map(ordered);
