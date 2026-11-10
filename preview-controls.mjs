@@ -2,6 +2,7 @@
 import {leafControlState,leafPreviewField,leafPreviewLabel} from './catalog/leaf-preview.mjs';
 import {signControlState,signPreviewField,signPreviewLabel} from './catalog/sign-preview.mjs';
 import {cauldronField,cauldronFormLabels,cauldronFormState} from './catalog/cauldron-controls.mjs';
+import {bannerControlSpec,bannerControlState} from './catalog/banner-controls.mjs';
 const own=(object,key)=>Object.hasOwn(object,key);
 const dictionary=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 export function createPreviewControls(TEXT) {
@@ -206,6 +207,7 @@ function previewControlSpec(catalog,plan) {
   state.form=plan.object.form;
  }
  cauldronFormLabels(plan,schema);
+ bannerControlSpec(catalog,plan,schema,state);
  if(plan.model==='decorated_pot') {
   const record=catalog.records?.[plan.object.id],patterns=record?.potteryPatterns,selected=plan.state.patterns??{};
   if(!dictionary(patterns)||!own(patterns,'brick')||!dictionary(selected)||!Array.isArray(record.paths)||Object.values(patterns).some(path=>typeof path!=='string'||!record.paths.includes(path)))throw new Error('Invalid decorated pot controls');
@@ -223,6 +225,7 @@ function previewControlSelection(plan,values) {
  if(!dictionary(values))throw new Error('Invalid preview control values');
  const {form,texture,...chosen}=values,state={...plan.state,...chosen};
  cauldronFormState(plan,form,state);
+ bannerControlState(plan,state);
  if(plan.model==='candle')state.lit=candleControlLit(state);
  const indexedCube=indexedCubeControlState(plan,state);if(indexedCube)Object.assign(state,indexedCube);
  const leafState=leafControlState(plan,state);if(leafState)Object.assign(state,leafState);
