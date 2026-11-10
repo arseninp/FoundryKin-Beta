@@ -39,6 +39,31 @@ test('conduit preserves the centered six-pixel cube and its six distinct atlas r
  assert.equal(new Set(meshes.map(m=>JSON.stringify(m.geometry.rows))).size,6);
  assert.deepEqual(meshes.map(m=>[m.position.x,m.position.y,m.position.z]),[[0,0,-3/16],[0,0,3/16],[3/16,0,0],[-3/16,0,0],[0,3/16,0],[0,-3/16,0]]);
 });
+// Bedrock-reference logical sheet 24x12, shell 6x6x6; not a square 24x24 atlas.
+// cinnabar-mc/cinnabar@eae9decb51db656d325e9dfd2a8ede6bfb32a2ec block_entity_geometry.rs.
+const CONDUIT_BASE_TEXELS={north:[6,6,12,12],south:[18,6,24,12],east:[0,6,6,12],west:[12,6,18,12],up:[6,0,12,6],down:[12,0,18,6]};
+test('inactive conduit normalizes U against sheet width and V against sheet height',()=>{
+ const s=setup('conduit');s.E.state={active:false};const before=JSON.stringify(s.E.mats);s.build();
+ const meshes=meshesOf(s.E.group),faces=['north','south','east','west','up','down'];
+ faces.forEach((face,index)=>{
+  const [u0,v0,u1,v1]=CONDUIT_BASE_TEXELS[face],rows=meshes[index].geometry.rows;
+  assert.deepEqual(rows,[[u0/24,1-v0/12],[u1/24,1-v0/12],[u0/24,1-v1/12],[u1/24,1-v1/12]],face);
+  assert.equal(Math.abs(rows[1][0]-rows[0][0]),.25,face);
+  assert.equal(Math.abs(rows[2][1]-rows[0][1]),.5,face);
+ });
+ assert.equal(JSON.stringify(s.E.mats),before);assert.equal(s.descriptor.mode,'volume');
+});
+test('conduit shell UV normalization is resolution independent and keeps side faces off the cap row',()=>{
+ for(const scale of [1,2,4]){
+  const s=setup('conduit');s.build();const meshes=meshesOf(s.E.group);
+  Object.values(CONDUIT_BASE_TEXELS).forEach((rect,index)=>{
+   const width=24*scale,height=12*scale,[u0,v0,u1,v1]=rect.map(value=>value*scale);
+   assert.deepEqual(meshes[index].geometry.rows,[[u0/width,1-v0/height],[u1/width,1-v0/height],[u0/width,1-v1/height],[u1/width,1-v1/height]]);
+  });
+  for(const mesh of meshes.slice(0,4))assert.ok(mesh.geometry.rows.every(([,v])=>v>=0&&v<=.5));
+  for(const mesh of meshes.slice(4))assert.ok(mesh.geometry.rows.every(([,v])=>v>=.5&&v<=1));
+ }
+});
 test('decorated pot bindings use owned block materials, not a selected icon or atlas order',()=>{
  const side=P+'decorated_pot_side',base=P+'decorated_pot_base',icon='textures/items/decorated_pot_side';
  const r={id:'decorated_pot',model:'decorated_pot',paths:[side,base,icon],faces:{up:[base,side],north:[side,base]}};

@@ -71,7 +71,11 @@ export function createSpecialModels(Three) {
   if(typeof active!=='boolean'||!['horizontal','vertical'].includes(wind))throw new Error('Invalid conduit preview state');
   if(!active) {
    const id=requireRoles(E,['up'],'conduit').up;
-   composeShape(Three,E,p=>p.box([5,5,5],[11,11,11],{north:id,south:id,east:id,west:id,up:id,down:id},{east:[0,4,4,8],north:[4,4,8,8],west:[8,4,12,8],south:[12,4,16,8],up:[4,0,8,4],down:[8,0,12,4]}));
+   /* Bedrock shell: six-pixel faces on a 24x12 logical sheet. box() uses
+      normalized 0..16 coordinates independently on each axis, not a square pixel atlas.
+      Reference: cinnabar-mc/cinnabar@eae9decb51db656d325e9dfd2a8ede6bfb32a2ec,
+      crates/assets/src/block_entity_geometry.rs CONDUIT_TEXTURE/CONDUIT_SHELL. */
+   composeShape(Three,E,p=>p.box([5,5,5],[11,11,11],{north:id,south:id,east:id,west:id,up:id,down:id},{east:[0,8,4,16],north:[4,8,8,16],west:[8,8,12,16],south:[12,8,16,16],up:[4,0,8,8],down:[8,0,12,8]}));
    return;
   }
   const f=requireRoles(E,['cage','eye','wind'],'active conduit');
