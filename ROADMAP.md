@@ -1,27 +1,31 @@
-# ROADMAP — закончить, принять, очистить
+# ROADMAP — продолжение после OLDCHAT30
 
-Обновлено 2026-11-08 по OLDCHAT26/27 и сохранённому main 8f9a1c9c115a1def557d986d11c3bfaf841521ab. Не выпуск. CONTEXT/handoff — передача, ARCHITECTURE/TODO — контракты и задачи. Обновление остальных пяти документов, упомянутое в передаче 8f9a1c9, закрывается этим документальным пакетом.
+Обновлено 2026-11-10, кодовая точка 8c3805b4f58c485308e2cd1bc6142a7565c0e186. Не релиз. CONTEXT/handoff — текущая передача, TODO — подробные незавершённые задачи.
 
-## 1. Зафиксировать текущее состояние
+## 1. Зафиксированный прогресс
 
-Bed, candles/cake sources, механизмы/rails/lightning rods, power groups, technical cubes/structure modes и последние 22 ID из 73ca673 сохранены. Base preview-config — 638 source IDs; не путать с итоговым REVIEW_IDS и expanded records адаптера bed. Прежние 1177 — исторический срез; заявленные 1275 ещё не доказательство полной приёмки. Coverage 1277 включает auxiliary.
+Compiled editor уже основной. Материальные семейства подключены, double slabs проходят aliases/family forms по эквивалентности, standing/wall sign и cave vines объединены, hanging sign имеет существующие mounting. Frames/history/PNG и GPU updates оптимизированы. Observer power реализован. Items atlas действительно сгенерирован: manifest содержит 75 записей и items-000.json. Не начинать эти подключения заново.
 
-На e07f971 validate прошёл 697/697, но preview-slice остановился на north ambiguity. Grass_path исправлен e07f971, mycelium именованные defaults сохранены 8f9a1c9. После последней правки результат CI не проверен. Полный geometry sweep не объявлять успешным.
+## 2. Ближайшая рабочая порция
 
-Владелец выбрал перейти к документации без дополнительных тестов/ручных прогонов. На этом шаге не просить новые логи и не продолжать менять код ради незавершённой приёмки. Automatic CI не отключать и не подменять отсутствие результатов успехом.
+Сначала polished_cinnabar_mers.tga как дополнительная редактируемая карта внутри объекта. До подключения доказать сохранность каналов/alpha в редакторе и экспорте. Не PBR/мерцание/новая карточка. Затем conduit и остальные подтверждённые дефекты geometry/UV/materials. Маскировать сломанную модель ракурсом нельзя.
 
-## 2. Завершить техническую и совместную приёмку
+Сохранить исходный приоритет качества: карточки/ресурсы → дефекты построения/отображения → начальный ракурс → остаточные задержки/чистка. Уже сохранённые объединения проверять, не писать повторно. Каталог пользователь разобрал до D, продолжение после этой буквы ещё впереди. Масштаб маленьких объектов пока без изменений.
 
-При возобновлении: точные REVIEW_IDS/source/expanded membership, существующие coverage/inputValidation/compile/tests/Actions на конкретном SHA и полный preview sweep с диагностикой ID/model/face. Не заменять неоднозначность первым элементом PNG и не писать готовую геометрию повторно. Адресно закрывать доказанные resource/state пробелы.
+## 3. Понятность редактора и анимации
 
-Затем real PNG-TGA/WebGL/Bedrock UV-scale-alpha/Android; Node mocks/synthetic textures не визуальная приёмка. По коду определить и закрыть конкретные editor Find/resources/states/draw/history/Add/reopen/export пути. Принять async/storage/import/lifecycle/language-theme-pack-slot-frame. Read-only preview не замена основному editor.
+Уточнить содержание двух независимых плашек: последствия изменения конкретной общей текстуры и ограничение игрового preview. Shared связи из существующего индекса, не вторая таблица. Bubble/end остаются на sprite/WebGL в квадратной сетке; no-preview режим отклонён.
 
-## 3. Чистка после готовности
+Отдельный этап — animation play/pause/timing/order/model sync/export. Существующий ручной выбор кадров не считать завершением. Будущий icons filter должен открывать адресный icon resource существующей карточки, без второго каталога.
 
-После совместной приёмки удалять только конкретные заменённые пути/дубли, индивидуально проверять тесты, выполнить runtime switch/FK_V/cache. Legacy заранее не удалять, user packs/localStorage не очищать. Не начинать очередную перестройку архитектуры вместо завершения работающих связей.
+## 4. Приёмка и завершение перехода
 
-## 4. Будущие этапы
+Свежий полный tests/preview/coverage/inputValidation на точном SHA; реальные PNG/TGA/WebGL/Android/UV/alpha и весь editor draw/history/Add/reopen/export. Пользовательские «стало лучше»/«всё ок» и локальные проверки OLDCHAT30 не полная приёмка. Бот-коммит generated data не зелёный статус всех последующих коммитов.
 
-Skin editor в карточке Игрок, позже body/armor fitting с переиспользованием head/hat/full sheet/routes; full mobs/entities/items/cushion; animation playback/smoke/particles; tablet/desktop layout; IndexedDB/большие паки/user backup/PWA-offline/права на ресурсы отдельно. Фиктивные готовые формы не показывать.
+Профилировать остаточные задержки и удалить конкретно заменённые legacy dependencies/scripts/exports, сохраняя нужный PNG/TGA loader. Основной compiled switch уже состоялся — это не будущая задача. Runtime/cache versioning обновлять согласованно. Следующая согласованная версия 1.0.0, но данная запись только документальная. Бэкап старой рабочей точки не обновлять и не переносить.
 
-Одна большая согласованная задача без искусственных остановок, но каждую запись подтверждать точно и проверять сохранение. Просьбу о подтверждении явно выносить в конец обычного сообщения. Только main/<25000 UTF-8 bytes/file, новые permanent tests отдельно согласовать. Backup/refactor-0.9/fk070_packs/localStorage не трогать.
+## 5. Дальнейшее развитие
+
+Skin editor в карточке Игрок → позже body/armor; full mobs и прочий entity scope; tablet/desktop layout; большие паки/IndexedDB/user backup/PWA/offline/права отдельно. Не обещать точную симуляцию Minecraft и не показывать фиктивные готовые формы.
+
+Только main; каждый write с точным подтверждением и проверкой saved diff. Новые permanent tests отдельно согласовать, validators не ослаблять. Паки/localStorage/refactor-0.9 не трогать.
