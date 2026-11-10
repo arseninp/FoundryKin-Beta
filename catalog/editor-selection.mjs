@@ -51,9 +51,9 @@ export function compiledResourceGroups(runtime,id,paths){
   if(selected.length)groups.push(Object.freeze({key,label:Object.freeze([...label]),paths:Object.freeze(selected)}));
  }
  for(const source of sources)if(!source.patterns||typeof source.patterns!=='object'||Array.isArray(source.patterns)||!source.special||typeof source.special!=='object'||Array.isArray(source.special))throw new Error('Invalid banner resource groups');
- add('base',['Base','Основа'],sources.map(source=>source.base));
+ add('base',['Base','Основа'],sources.flatMap(source=>[source.base,...(Object.hasOwn(source.special,'illager')?[source.special.illager]:[])]));
  add('patterns',['Patterns','Рисунки'],sources.flatMap(source=>Object.values(source.patterns)));
- add('special',['Additional sources','Дополнительные исходники'],sources.flatMap(source=>Object.values(source.special)));
+ add('special',['Additional sources','Дополнительные исходники'],sources.flatMap(source=>Object.entries(source.special).filter(([role])=>role!=='illager').map(([,path])=>path)));
  add('icons',['Item icons','Предметные иконки'],records.flatMap(record=>record.icons??[]));
  add('other',['Other resources','Другие ресурсы'],available.filter(path=>!used.has(path)));
  return Object.freeze(groups);

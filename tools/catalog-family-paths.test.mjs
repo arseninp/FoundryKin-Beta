@@ -23,9 +23,9 @@ test('resolved actual atlas restores oak stairs and all wool forms without losin
  assert.equal(r.owner.pale_moss_carpet,'pale_moss_block');
 });
 
-const base='textures/entity/banner/banner_base',a='textures/entity/banner/banner_creeper',b='textures/entity/banner/banner_flower',special='textures/entity/banner/banner_illager',icon='textures/items/banner',extra='textures/entity/banner/extra';
+const base='textures/entity/banner/banner_base',a='textures/entity/banner/banner_creeper',b='textures/entity/banner/banner_flower',special='textures/entity/banner/banner_illager',legacy='textures/entity/banner/banner',patternIllager='textures/entity/banner/banner_pattern_illager',icon='textures/items/banner',extra='textures/entity/banner/extra';
 function runtime(){
- const paths=[base,a,b,special,icon,extra],source={template:'banner',base,patterns:{creeper:a,flower:b},special:{illager:special}};
+ const paths=[base,a,b,special,legacy,patternIllager,icon,extra],source={template:'banner',base,patterns:{creeper:a,flower:b},special:{legacy,illager:special,pattern_illager:patternIllager}};
  const catalog={records:{standing_banner:{paths:[...paths],icons:[icon],source:structuredClone(source)},wall_banner:{paths:[...paths],icons:[icon],source:structuredClone(source)},stone:{paths:['textures/blocks/stone'],icons:[]}},families:{standing_banner:{native:'standing_banner',wall:'wall_banner'}},stateRoutes:{},stateGroups:{}};
  return {catalog,access:{describe(id){if(!catalog.records[id])return null;return {id,card:id==='stone'?'stone':'standing_banner',form:id==='wall_banner'?'wall':'native'};}}};
 }
@@ -33,8 +33,9 @@ test('groups cover every owned resource once for both forms without changing inp
  for(const id of ['standing_banner','wall_banner']){
   const r=runtime(),before=JSON.stringify(r.catalog),groups=compiledResourceGroups(r,id);
   assert.deepEqual(groups.map(group=>group.key),['base','patterns','special','icons','other']);
-  assert.deepEqual(groups.find(group=>group.key==='base').paths,[base]);assert.deepEqual(groups.find(group=>group.key==='patterns').paths,[a,b]);
-  const all=groups.flatMap(group=>group.paths);assert.equal(all.length,6);assert.equal(new Set(all).size,6);assert.deepEqual([...all].sort(),compiledFamilyPaths(r,id));
+  assert.deepEqual(groups.find(group=>group.key==='base').paths,[base,special]);
+  assert.deepEqual(groups.find(group=>group.key==='patterns').paths,[a,b]);assert.deepEqual(groups.find(group=>group.key==='special').paths,[legacy,patternIllager]);
+  const all=groups.flatMap(group=>group.paths);assert.equal(all.length,8);assert.equal(new Set(all).size,8);assert.deepEqual([...all].sort(),compiledFamilyPaths(r,id));
   assert.equal(JSON.stringify(r.catalog),before);assert.ok(Object.isFrozen(groups));
   for(const group of groups){assert.ok(Object.isFrozen(group));assert.ok(Object.isFrozen(group.paths));assert.ok(Object.isFrozen(group.label));}
  }
@@ -42,6 +43,7 @@ test('groups cover every owned resource once for both forms without changing inp
 test('available selection filters groups and keeps selected source paths discoverable',()=>{
  const r=runtime(),groups=compiledResourceGroups(r,'standing_banner',[base,b]);
  assert.deepEqual(groups.map(group=>[group.key,group.paths]),[['base',[base]],['patterns',[b]]]);
+ assert.deepEqual(compiledResourceGroups(r,'wall_banner',[special]).map(group=>[group.key,group.paths]),[['base',[special]]]);
 });
 test('foreign resources, conflicting roles and invalid source metadata fail',()=>{
  const r=runtime();for(const paths of [[],[base,base],['textures/foreign']])assert.throws(()=>compiledResourceGroups(r,'standing_banner',paths),/Invalid grouped/);
@@ -68,8 +70,10 @@ async function slotUi(choice,slot){
 test('grouped resource UI opens the selected group and toggles without selecting or loading files',async()=>{
  const r=runtime(),result=await slotUi({plan:{paths:compiledFamilyPaths(r,'standing_banner')},resourceGroups:compiledResourceGroups(r,'standing_banner')},b),root=result.host;
  assert.equal(root.children.length,5);assert.deepEqual(root.children.filter(node=>node.open).map(node=>node.dataset.group),['patterns']);
- const group=root.children.find(node=>node.dataset.group==='patterns');assert.match(group.children[0].textContent,/Рисунки/);
- group.open=false;group.listeners.toggle();assert.deepEqual(result.calls,[]);
+ const group=root.children.find(node=>node.dataset.group==='patterns'),summary=group.children[0];
+ assert.equal(summary.className,'fkResourceRow');assert.equal(summary.children.length,2);assert.equal(summary.children[0].textContent,'Рисунки');
+ assert.equal(summary.children[1].className,'fkStateValue');assert.equal(summary.children[1].textContent,'2 ▾');
+ group.open=false;group.listeners.toggle();assert.equal(summary.children[1].textContent,'2 ▸');assert.deepEqual(result.calls,[]);
  const buttons=group.children[1].children;assert.equal(buttons.find(button=>button.dataset.id===b).attributes['aria-pressed'],'true');
  buttons.find(button=>button.dataset.id===a).onclick();assert.deepEqual(result.calls,[a]);assert.equal(result.frames,1);
 });
@@ -77,4 +81,10 @@ test('ordinary resource UI remains flat and preserves selection',async()=>{
  const result=await slotUi({plan:{paths:[base,a]},resourceGroups:null},base),root=result.host;
  assert.deepEqual(root.children.map(node=>node.tag),['button','button']);assert.equal(root.children[0].className,'on');
  root.children[1].onclick();assert.deepEqual(result.calls,[a]);assert.equal(result.frames,1);
+});
+test('opening the illager sheet opens base rather than additional sources',async()=>{
+ const r=runtime(),result=await slotUi({plan:{paths:compiledFamilyPaths(r,'standing_banner')},resourceGroups:compiledResourceGroups(r,'standing_banner')},special),root=result.host;
+ assert.deepEqual(root.children.filter(node=>node.open).map(node=>node.dataset.group),['base']);
+ const group=root.children.find(node=>node.dataset.group==='base');assert.equal(group.children[0].children[1].textContent,'2 ▾');
+ assert.equal(group.children[1].children.find(button=>button.dataset.id===special).attributes['aria-pressed'],'true');
 });
