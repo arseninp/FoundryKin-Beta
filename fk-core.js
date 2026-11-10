@@ -7,7 +7,7 @@ var files={},cur='',dirty={},catalog=null,queuedPack=null;
 var selection=null,unified=null,choice=null,controlTools=null,reader=null,resourceTools=null,selTok=0;
 var $=function(s){return document.querySelector(s)};
 try{var PD=parent.document.documentElement;var syncTheme=function(){document.documentElement.setAttribute('data-theme',PD.getAttribute('data-theme')||'light')};syncTheme();new MutationObserver(syncTheme).observe(PD,{attributes:true,attributeFilter:['data-theme']})}catch(e){}
-var ed=$('#ed'),ectx=ed.getContext('2d'),listeners=[],stateUi=window.FKModelState.create($('#shapesRow'),function(){if(choice&&!API.busy)selectCompiled({id:cur,...controlTools.previewControlSelection(choice.plan,{...stateUi.value(),texture:slot})})});
+var ed=$('#ed'),ectx=ed.getContext('2d'),listeners=[],stateUi=window.FKModelState.create($('#shapesRow'),function(){if(choice&&!API.busy)selectCompiled({id:cur,...controlTools.previewControlSelection(choice.plan,{...stateUi.value(),texture:slot})})},{preview:previewStateOption});
 var S={mode:'search',status:'loading',source:'',count:0,filtered:true,refreshing:false,refreshFailed:'',error:null,errors:[],info:null,message:null},ctx={onHistory:null,onRes:null};
 function emit(){listeners.forEach(function(f){try{f(S)}catch(e){}})}
 function showErr(code,detail){var last=S.errors[S.errors.length-1];detail=detail||'';if(last&&last.code===code&&last.detail===detail)return;S.errors.push({code:code,detail:detail});if(S.errors.length>3)S.errors.shift();emit()}
@@ -106,6 +106,29 @@ function familyFiles(){packCur(true);return familyPaths(cur).filter(function(p){
 function curFiles(){packCur();var out=[],seen={};slots.forEach(function(s){var f=files[s.id];if(!f)return;var p=s.id;if(!seen[p]){seen[p]=1;out.push({path:p+'.png',data:f.data})}});return out}
 function readCompiled(path){return reader(path,files[path]?{[path]:files[path].data}:{})}
 function makeCanvas(){return document.createElement('canvas')}
+function previewStateOption(field,option){
+ if(!choice||choice.plan.model!=='banner'||choice.plan.state.ominous||!/^banner_pattern_\d+$/.test(field.key))return null;
+ var selected=choice,record=catalog.records[selected.plan.object.id],source=record&&record.source;
+ if(!source||source.template!=='banner'||!source.patterns||!Array.isArray(record.paths))return null;
+ var path=source.patterns[option.value];
+ if(!path||!record.paths.includes(path)||!record.paths.includes(source.base))return null;
+ return async function(){
+  var edits=API.edits;
+  function valid(){return choice===selected&&!API.busy&&API.edits===edits&&S.mode==='edit'&&!document.hidden}
+  if(!valid())return null;
+  function sourceCanvas(path){
+   if(cv[path])return Promise.resolve(cv[path]);
+   return readCompiled(path).then(function(image){var canvas=makeCanvas();selection.drawFrame(canvas,image,0,path);return canvas});
+  }
+  const [base,pattern,tools]=await Promise.all([sourceCanvas(source.base),sourceCanvas(path),import('./catalog/banner-preview.mjs')]);
+  if(!valid())return null;
+  const rendered=tools.composeBannerCanvases({base:source.base,color:'white',layers:[{path,color:'black'}]},{[source.base]:base,[path]:pattern},makeCanvas)[source.base];
+  const thumbnail=makeCanvas();thumbnail.width=20;thumbnail.height=40;
+  const context=thumbnail.getContext('2d');context.imageSmoothingEnabled=false;
+  context.drawImage(rendered,rendered.width/64,rendered.height/64,rendered.width*20/64,rendered.height*40/64,0,0,20,40);
+  return thumbnail;
+ };
+}
 async function previewCompiled(id,valid){
  if(!gl||!valid())return null;
  const next=selection.compiledSelection(unified,{id}),images=await selection.prepareEditorImages(next,readCompiled,makeCanvas,true);
