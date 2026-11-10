@@ -9,6 +9,7 @@ on:
       - 'catalog/**'
       - 'models/**'
       - 'preview-controls.mjs'
+      - 'fk-catalog.js'
 permissions:
   contents: write
 concurrency:
@@ -37,7 +38,85 @@ jobs:
             resource_pack/blocks.json
             resource_pack/textures/terrain_texture.json
             resource_pack/textures/item_texture.json
+            resource_pack/textures/blocks/polished_cinnabar.texture_set.json
+            resource_pack/textures/blocks/polished_cinnabar_mers.tga
             metadata/vanilladata_modules/mojang-blocks.json
+      - name: Inspect original cinnabar TGA and production decoding
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {readFileSync, mkdirSync, writeFileSync, appendFileSync} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          import vm from 'node:vm';
+          const pin='46ba6ea985fb5a92d79a9419198f10dda14c199d';
+          const path='resource_pack/textures/blocks/polished_cinnabar_mers.tga';
+          const bytes=readFileSync('.catalog-source/'+path);
+          const blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
+          assert.equal(blob,'709028822127f14ecf69de52bfdba960908438fa','Unexpected pinned TGA blob');
+          const set=JSON.parse(readFileSync('.catalog-source/resource_pack/textures/blocks/polished_cinnabar.texture_set.json','utf8'))['minecraft:texture_set'];
+          assert.equal(set.color,'polished_cinnabar');
+          assert.equal(set.metalness_emissive_roughness_subsurface,'polished_cinnabar_mers');
+          assert.ok(bytes.length>=18,'Truncated TGA header');
+          const type=bytes[2],width=bytes.readUInt16LE(12),height=bytes.readUInt16LE(14),bits=bytes[16],descriptor=bytes[17];
+          assert.equal(bytes[1],0,'Color-mapped TGA requires a separate reference reader');
+          assert.ok([2,10,3,11].includes(type),'Unsupported TGA image type');
+          const gray=type===3||type===11,rle=type===10||type===11;
+          assert.ok(gray?bits===8:[24,32].includes(bits),'Unsupported TGA pixel depth');
+          assert.equal(descriptor&192,0,'Interleaved TGA is not covered by this diagnostic');
+          assert.ok(width>0&&height>0&&width*height<=16777216,'Invalid TGA dimensions');
+          const stride=bits/8,count=width*height,reference=Buffer.alloc(count*4);
+          let offset=18+bytes[0],written=0;
+          function pixel(){
+            assert.ok(offset+stride<=bytes.length,'Truncated TGA pixel');
+            const value=gray?[bytes[offset],bytes[offset],bytes[offset],255]:[bytes[offset+2],bytes[offset+1],bytes[offset],bits===32?bytes[offset+3]:255];
+            offset+=stride;return value;
+          }
+          function emit(value){
+            assert.ok(written<count,'TGA packet exceeds image size');
+            const row=Math.floor(written/width),column=written%width;
+            const y=descriptor&32?row:height-1-row,x=descriptor&16?width-1-column:column;
+            reference.set(value,(y*width+x)*4);written++;
+          }
+          while(written<count){
+            if(!rle){emit(pixel());continue;}
+            assert.ok(offset<bytes.length,'Truncated TGA packet');
+            const header=bytes[offset++],length=(header&127)+1;
+            assert.ok(written+length<=count,'TGA packet exceeds image size');
+            if(header&128){const value=pixel();for(let i=0;i<length;i++)emit(value);}
+            else for(let i=0;i<length;i++)emit(pixel());
+          }
+          const source=readFileSync('fk-catalog.js','utf8'),start=source.indexOf('function fkTga(buf)'),end=source.indexOf('\nfunction loadTga(',start);
+          assert.ok(start>=0&&end>start,'Production TGA decoder boundary changed');
+          const decode=vm.runInNewContext('('+source.slice(start,end)+')',{}, {timeout:1000});
+          const decoded=decode(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
+          const actual=decoded?Buffer.from(decoded.data):null;
+          const matches=!!decoded&&decoded.w===width&&decoded.h===height&&actual.equals(reference);
+          const channels=Object.fromEntries(['r','g','b','a'].map((name,channel)=>{
+            let min=255,max=0;const values=new Set();
+            for(let i=channel;i<reference.length;i+=4){const value=reference[i];min=Math.min(min,value);max=Math.max(max,value);values.add(value);}
+            return [name,{min,max,distinct:values.size}];
+          }));
+          let zeroAlpha=0,fractionalAlpha=0,opaqueAlpha=0,nonzeroRgbAtZeroAlpha=0;
+          for(let i=0;i<reference.length;i+=4){
+            const alpha=reference[i+3];
+            if(alpha===0){zeroAlpha++;if(reference[i]||reference[i+1]||reference[i+2])nonzeroRgbAtZeroAlpha++;}
+            else if(alpha===255)opaqueAlpha++;else fractionalAlpha++;
+          }
+          const report={source:{commit:pin,path,gitBlob:blob,sha256:createHash('sha256').update(bytes).digest('hex'),bytes:bytes.length},header:{type,width,height,bits,descriptor,alphaBits:descriptor&15,topOrigin:!!(descriptor&32),rightOrigin:!!(descriptor&16)},channels,alpha:{zero:zeroAlpha,fractional:fractionalAlpha,opaque:opaqueAlpha,nonzeroRgbAtZeroAlpha},decodedRgbaSha256:createHash('sha256').update(reference).digest('hex'),productionDecoderMatches:matches,browserCanvasRoundTripTested:false,editorDrawingAndExportTested:false};
+          mkdirSync('.diagnostics',{recursive:true});
+          const text=JSON.stringify(report,null,2)+'\n';
+          writeFileSync('.diagnostics/cinnabar-tga.json',text);
+          console.log(text);
+          if(process.env.GITHUB_STEP_SUMMARY)appendFileSync(process.env.GITHUB_STEP_SUMMARY,'### Original cinnabar TGA diagnostic\n\n```json\n'+text+'```\n\nThis checks source decoding only, not the browser canvas or editor export.\n');
+          assert.ok(matches,'Production TGA decoding differs from reference RGBA; inspect cinnabar-tga.json');
+          NODE
+      - name: Upload cinnabar TGA diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cinnabar-tga-diagnostic
+          path: .diagnostics/cinnabar-tga.json
+          if-no-files-found: ignore
       - name: Build review-only catalog candidate
         run: node tools/build-catalog-candidate.mjs .catalog-source data/catalog-candidate
       - name: Validate generated catalog and icon links before saving
