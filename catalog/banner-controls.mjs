@@ -22,6 +22,16 @@ export function bannerControlSpec(catalog,plan,schema,state){
  if(!Array.isArray(colors)||colors.length!==Object.keys(BANNER_COLORS).length||colors.some(option=>!own(BANNER_COLORS,option.value)))throw new Error('Missing shared banner color options');
  schema.push({key:'banner_layers',label:['Pattern layers (bottom to top)','Слоёв рисунка (снизу вверх)'],values:Array.from({length:17},(_,value)=>({value,label:[String(value),String(value)]}))});
  state.banner_layers=selected.length;
+ if(selected.length>1){
+  const values=[{value:'none',label:['Choose a move','Выбрать перемещение']}];
+  selected.forEach((layer,index)=>{
+   const number=index+1;
+   if(index<selected.length-1)values.push({value:index+'_up',label:['Layer '+number+' one step up','Слой '+number+' на один выше']});
+   if(index>0)values.push({value:index+'_down',label:['Layer '+number+' one step down','Слой '+number+' на один ниже']});
+  });
+  schema.push({key:'banner_move',label:['Layer order (bottom to top)','Порядок слоёв (снизу вверх)'],values});
+  state.banner_move='none';
+ }
  selected.forEach((layer,index)=>{
   const pattern='banner_pattern_'+index,color='banner_color_'+index,number=index+1;
   schema.push({key:pattern,label:['Layer '+number+' pattern','Слой '+number+' — рисунок'],values:patterns.map(value=>({value,label:[...(LABELS[value]??[value,value])]}))});
@@ -35,6 +45,14 @@ export function bannerControlState(plan,state){
  if(!Number.isInteger(count)||count<0||count>16)throw new Error('Invalid banner layer count');
  if(typeof state.ominous!=='boolean')throw new Error('Invalid banner ominous control');
  const selected=state.ominous?previous:layers(Array.from({length:count},(_,index)=>({pattern:state['banner_pattern_'+index]===undefined?(previous[index]?.pattern??BANNER_PATTERNS[0]):state['banner_pattern_'+index],color:state['banner_color_'+index]===undefined?(previous[index]?.color??'black'):state['banner_color_'+index]})));
- for(const key of Object.keys(state))if(/^banner_(?:layers|pattern_\d+|color_\d+)$/.test(key))delete state[key];
+ const move=state.banner_move===undefined?'none':state.banner_move;
+ if(move!=='none'){
+  const match=typeof move==='string'?/^(0|[1-9]\d*)_(up|down)$/.exec(move):null;
+  if(!match||state.ominous)throw new Error('Invalid banner layer move');
+  const from=Number(match[1]),to=from+(match[2]==='up'?1:-1);
+  if(from<0||from>=selected.length||to<0||to>=selected.length)throw new Error('Invalid banner layer move');
+  [selected[from],selected[to]]=[selected[to],selected[from]];
+ }
+ for(const key of Object.keys(state))if(/^banner_(?:layers|move|pattern_\d+|color_\d+)$/.test(key))delete state[key];
  state.patterns=selected;
 }
