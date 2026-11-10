@@ -3,6 +3,8 @@ var FKView=(function(){
 'use strict';
 var renderer=null,hidden=null,preview=null,lost=false;
 var ANGLE_X=.6155,ANGLE_Y=-Math.PI/4,EXTENT=.95;
+/* Initial view only: model placement, UVs and user orbit remain independent. */
+var FRONT_VIEW_MODELS=['skull','copper_golem_statue','dried_ghast','chest','banner','big_dripleaf','tripwire_hook','sign'];
 function getRenderer(){
   if(!renderer){
     renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
@@ -70,7 +72,7 @@ function build(stage,entry,reset){
     var extent=Math.max(.1,bounds.getSize(new THREE.Vector3()).length()/2*1.15),flat=plan.mode==='sprite';
     stage.group.add(instance.group);
     if(flat)stage.group.rotation.set(0,0,0);
-    else if(reset||stage.flat)stage.group.rotation.set(ANGLE_X,ANGLE_Y,0);
+    else if(reset||stage.flat)stage.group.rotation.set(ANGLE_X,ANGLE_Y+(FRONT_VIEW_MODELS.indexOf(plan.model)>=0?Math.PI:0),0);
     stage.flat=flat;stage.camera.position.set(0,0,10);stage.camera.near=.1;stage.camera.far=100;
     stage.camera.left=stage.camera.bottom=-extent;stage.camera.right=stage.camera.top=extent;stage.camera.zoom=1;stage.camera.updateProjectionMatrix();
   }catch(error){
