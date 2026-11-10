@@ -40,7 +40,9 @@ export function compiledFamilyPaths(runtime,id){
 /* Resource grouping uses declared source roles, never filename or directory guesses. */
 export function compiledResourceGroups(runtime,id,paths){
  const records=familySources(runtime,id).map(source=>runtime.catalog.records[source]).filter(Boolean),sources=records.map(record=>record.source).filter(source=>source?.template==='banner');
- if(!sources.length)return null;
+ const bubbles=records.filter(record=>record.model==='sprite'&&record.source?.kind==='engine-effect'&&record.source.template==='bubble_column');
+ if(!sources.length&&!bubbles.length)return null;
+ if(sources.length&&bubbles.length)throw new Error('Conflicting editor resource group templates');
  const owned=new Set(compiledFamilyPaths(runtime,id)),available=paths??[...owned];
  if(!Array.isArray(available)||!available.length||new Set(available).size!==available.length||available.some(path=>typeof path!=='string'||!owned.has(path)))throw new Error('Invalid grouped editor resources');
  const visible=new Set(available),used=new Set(),groups=[];
@@ -50,10 +52,23 @@ export function compiledResourceGroups(runtime,id,paths){
   for(const path of selected){if(used.has(path))throw new Error('Resource belongs to multiple editor groups: '+path);used.add(path);}
   if(selected.length)groups.push(Object.freeze({key,label:Object.freeze([...label]),paths:Object.freeze(selected)}));
  }
- for(const source of sources)if(!source.patterns||typeof source.patterns!=='object'||Array.isArray(source.patterns)||!source.special||typeof source.special!=='object'||Array.isArray(source.special))throw new Error('Invalid banner resource groups');
- add('base',['Base','Основа'],sources.flatMap(source=>[source.base,...(Object.hasOwn(source.special,'illager')?[source.special.illager]:[])]));
- add('patterns',['Patterns','Рисунки'],sources.flatMap(source=>Object.values(source.patterns)));
- add('special',['Additional sources','Дополнительные исходники'],sources.flatMap(source=>Object.entries(source.special).filter(([role])=>role!=='illager').map(([,path])=>path)));
+ if(sources.length){
+  for(const source of sources)if(!source.patterns||typeof source.patterns!=='object'||Array.isArray(source.patterns)||!source.special||typeof source.special!=='object'||Array.isArray(source.special))throw new Error('Invalid banner resource groups');
+  add('base',['Base','Основа'],sources.flatMap(source=>[source.base,...(Object.hasOwn(source.special,'illager')?[source.special.illager]:[])]));
+  add('patterns',['Patterns','Рисунки'],sources.flatMap(source=>Object.values(source.patterns)));
+  add('special',['Additional sources','Дополнительные исходники'],sources.flatMap(source=>Object.entries(source.special).filter(([role])=>role!=='illager').map(([,path])=>path)));
+ }else{
+  const roles=[['up_top',['Upward flow top','Верх восходящего потока'],4],['down_top',['Downward flow top','Верх нисходящего потока'],4],['outer',['Outer part','Внешняя часть'],8],['inner',['Inner part','Внутренняя часть'],2]];
+  for(const record of bubbles){
+   const bindings=record.bindings;
+   if(!bindings||typeof bindings!=='object'||Array.isArray(bindings))throw new Error('Missing bubble resource bindings');
+   const expected=new Set();
+   for(const [part,,count] of roles)for(let index=0;index<count;index++)expected.add(part+'_'+String.fromCharCode(97+index));
+   if(Object.keys(bindings).length!==expected.size||Object.keys(bindings).some(role=>!expected.has(role)))throw new Error('Invalid bubble resource roles');
+   for(const role of expected)if(!Array.isArray(bindings[role])||bindings[role].length!==1)throw new Error('Invalid bubble resource binding: '+role);
+  }
+  for(const [part,label,count] of roles)add(part,label,bubbles.flatMap(record=>Array.from({length:count},(_,index)=>record.bindings[part+'_'+String.fromCharCode(97+index)]).flat()));
+ }
  add('icons',['Item icons','Предметные иконки'],records.flatMap(record=>record.icons??[]));
  add('other',['Other resources','Другие ресурсы'],available.filter(path=>!used.has(path)));
  return Object.freeze(groups);
