@@ -5,7 +5,13 @@ export function cauldronField(plan){
  return ['content',(lava?['empty','lava']:['empty','water','colored_water']).map(value=>[value,value]),lava?'lava':'empty'];
 }
 export function cauldronFormLabels(plan,schema){
- if(plan.model!=='cauldron'||plan.forms?.native!=='cauldron'||plan.forms?.lava!=='lava_cauldron')return;
+ if(plan.model!=='cauldron')return;
+ const content=schema.find(item=>item.key==='content');
+ if(content)for(const option of content.values){
+  if(option.value==='water')option.label=['Water — water_still_grey','Вода — water_still_grey'];
+  else if(option.value==='colored_water')option.label=['Cauldron water — cauldron_water','Вода котла — cauldron_water'];
+ }
+ if(plan.forms?.native!=='cauldron'||plan.forms?.lava!=='lava_cauldron')return;
  const field=schema.find(item=>item.key==='form');
  if(!field)throw new Error('Missing cauldron family control');
  field.label=['Cauldron variant','Вариант котла'];
