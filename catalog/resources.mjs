@@ -3,6 +3,22 @@ import {modelPartBindings} from './rules/parts.mjs';
 const own = (value, key) => Object.hasOwn(value, key);
 const dictionary = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const faces = ['up', 'down', 'north', 'south', 'east', 'west'];
+/* Explicit texture-set declarations from Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d.
+   resource_pack/textures/blocks/polished_cinnabar.texture_set.json; no suffix inference or PBR rendering. */
+const TEXTURE_SETS = Object.freeze({
+  'textures/blocks/polished_cinnabar': Object.freeze({metalness_emissive_roughness_subsurface: 'textures/blocks/polished_cinnabar_mers'})
+});
+function attachMaterialMaps(record) {
+  const colors = [...new Set([...Object.values(record.faces).flat(), ...Object.values(record.carried ?? {}).flat()])];
+  const textureSets = {}, paths = new Set(record.paths);
+  for (const color of colors) {
+    if (!own(TEXTURE_SETS, color)) continue;
+    const maps = {...TEXTURE_SETS[color]};
+    textureSets[color] = maps;
+    for (const path of Object.values(maps)) for (const resource of resourcePaths(path)) paths.add(resource);
+  }
+  return Object.keys(textureSets).length ? {...record, textureSets, paths: [...paths].sort()} : record;
+}
 const DOORS = Object.freeze({wooden_door: 'wood', spruce_door: 'spruce', birch_door: 'birch', jungle_door: 'jungle', acacia_door: 'acacia', dark_oak_door: 'dark_oak', iron_door: 'iron'});
 /* Pinned lit furnace records place their front on east; editor state pairs share a south-facing front. */
 const LIT_FRONTS = Object.freeze({
@@ -58,8 +74,8 @@ export function normalizeBlock(id, definition, atlas, options = {}) {
   const modelFaces = uniqueFaces(variants), carriedFaces = carriedVariants === null ? null : uniqueFaces(carriedVariants);
   const icons = [...new Set((options.icons ?? []).flatMap(resourcePaths))].sort();
   const paths = [...new Set([...Object.values(modelFaces).flat(), ...Object.values(carriedFaces ?? {}).flat(), ...icons])].sort();
-  if (options.existing) for (const path of paths) if (!own(options.existing, path)) throw new Error('Missing resource file: ' + path);
-  const record = {id, model: options.model ?? null, states: options.states ?? null, faces: modelFaces, carried: carriedFaces, variants, carriedVariants, icons, paths};
+  const record = attachMaterialMaps({id, model: options.model ?? null, states: options.states ?? null, faces: modelFaces, carried: carriedFaces, variants, carriedVariants, icons, paths});
+  if (options.existing) for (const path of record.paths) if (!own(options.existing, path)) throw new Error('Missing resource file: ' + path);
   const bindings = modelPartBindings(record);
   return bindings ? {...record, bindings} : record;
 }
@@ -70,5 +86,5 @@ function ordered(value) {
 }
 export function resourceSignature(record) {
   if (!record.model) throw new Error('Model identity is required for deduplication');
-  return JSON.stringify(ordered({model: record.model, states: record.states, faces: record.faces, carried: record.carried, variants: record.variants, carriedVariants: record.carriedVariants, icons: record.icons, bindings: record.bindings}));
+  return JSON.stringify(ordered({model: record.model, states: record.states, faces: record.faces, carried: record.carried, variants: record.variants, carriedVariants: record.carriedVariants, icons: record.icons, bindings: record.bindings, textureSets: record.textureSets}));
 }
