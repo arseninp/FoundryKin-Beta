@@ -36,10 +36,15 @@ export function resourceUsageInfo(runtime,selection){
  return {path,users,shared:identities.size>1,borrowed};
 }
 export function appendResourceUsage(host,runtime,selection,language){
- const info=resourceUsageInfo(runtime,selection);
- if(!info.shared&&!info.borrowed.length)return null;
  const ru=language==='ru',doc=host.ownerDocument;
  function node(tag,text){const el=doc.createElement(tag);if(text!==undefined)el.textContent=text;return el;}
+ const plan=selection.plan,record=runtime.catalog.records[plan.object.id];
+ if(['bubble_column','end_portal','end_gateway'].includes(plan.object.id)&&record?.model==='sprite'&&plan.mode==='sprite'&&!record.icons?.includes(plan.slot)){
+  const note=node('p',ru?'В игре этот эффект создаёт Minecraft. Здесь показана исходная текстура для редактирования, а не симуляция игрового эффекта.':'Minecraft generates this effect in-game. This editor shows the source texture for editing, not a simulation of the effect.');
+  note.className='lbl';note.dataset.engineEffectNote='';host.appendChild(note);
+ }
+ const info=resourceUsageInfo(runtime,selection);
+ if(!info.shared&&!info.borrowed.length)return null;
  const details=node('details'),summary=node('summary'),title=node('span',info.shared?(ru?'Общая текстура':'Shared texture'):(ru?'Заимствованные текстуры':'Borrowed textures')),value=node('span');
  details.dataset.resourceUsage='';details.style.overflowWrap='anywhere';summary.className='fkResourceRow';value.className='fkStateValue';
  function caption(){value.textContent=(info.shared?(ru?'Объектов: ':'Objects: ')+info.users.length:String(info.borrowed.length))+' '+(details.open?'▾':'▸');}
