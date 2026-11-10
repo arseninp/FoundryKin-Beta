@@ -34,3 +34,26 @@ export function blockIconLinks(blocks, atlas) {
   }
   return Object.fromEntries(result);
 }
+/* Read-only UI labels. These carried sprites are not promoted to record.icons or model bindings. */
+const CARRIED_ICON_LABELS=Object.freeze({
+ bamboo:Object.freeze({model:'bamboo',path:'textures/items/bamboo'}),
+ bamboo_sapling:Object.freeze({model:'cross',path:'textures/items/bamboo'})
+});
+function labelledIcon(record,path){
+ if(!record.paths.includes(path))return false;
+ if(Array.isArray(record.icons)&&record.icons.includes(path))return true;
+ const rule=own(CARRIED_ICON_LABELS,record.id)?CARRIED_ICON_LABELS[record.id]:null;
+ if(!rule||record.model!==rule.model||path!==rule.path)return false;
+ const carried=Object.values(record.carried??{});
+ return carried.length>0&&carried.every(paths=>Array.isArray(paths)&&paths.length===1&&paths[0]===path);
+}
+export function iconLabelsForSet(records,paths){
+ if(!Array.isArray(records)||!Array.isArray(paths)||paths.some(path=>typeof path!=='string'))throw new Error('Invalid icon label set');
+ const available=new Set(paths),icons=new Set();
+ for(const record of records){
+  if(!record||!Array.isArray(record.paths))throw new Error('Invalid icon label record');
+  for(const path of record.paths)if(available.has(path)&&labelledIcon(record,path))icons.add(path);
+ }
+ const mixed=icons.size>0&&records.some(record=>record.model!=='sprite'&&Object.values(record.bindings??record.faces??{}).some(paths=>Array.isArray(paths)&&paths.some(path=>available.has(path)&&!icons.has(path))));
+ return mixed?icons:new Set();
+}

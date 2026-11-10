@@ -4,7 +4,7 @@ var FK=window.FK,V=window.FKView;
 function tt(k,p){return FK.t(k,p)}
 var res=16,slots=[],slot=null,cv={},undoS={},redoS={},ph={},fr={},fi={},hs={},encoded={};
 var files={},cur='',dirty={},catalog=null,queuedPack=null;
-var selection=null,unified=null,choice=null,controlTools=null,reader=null,resourceTools=null,selTok=0;
+var selection=null,unified=null,choice=null,controlTools=null,reader=null,resourceTools=null,iconTools=null,selTok=0;
 var $=function(s){return document.querySelector(s)};
 try{var PD=parent.document.documentElement;var syncTheme=function(){document.documentElement.setAttribute('data-theme',PD.getAttribute('data-theme')||'light')};syncTheme();new MutationObserver(syncTheme).observe(PD,{attributes:true,attributeFilter:['data-theme']})}catch(e){}
 var ed=$('#ed'),ectx=ed.getContext('2d'),listeners=[],stateUi=window.FKModelState.create($('#shapesRow'),function(){if(choice&&!API.busy)selectCompiled({id:cur,...controlTools.previewControlSelection(choice.plan,{...stateUi.value(),texture:slot})})},{preview:previewStateOption});
@@ -59,12 +59,22 @@ stage.addEventListener('pointerup',endDrag);stage.addEventListener('pointercance
 document.addEventListener('visibilitychange',function(){if(document.hidden){releaseFramePointer();stopPlayback();endDrag();cancelRender()}else resizeStage()});addEventListener('resize',resizeStage);
 function clearResourceInfo(){resourceInfo.innerHTML='';resourceInfo.hidden=true}
 function resetImages(){stopPlayback();clearModel();cv={};undoS={};redoS={};ph={};fr={};fi={};hs={};encoded={};slots=[];slot=null;resetView=true;$('#slots').innerHTML='';$('#slots').style.display='none';clearResourceInfo()}
+function slotIconLabels(paths){
+ var records=new Map();
+ for(const path of paths)for(const owner of catalog.resources[path]??[]){
+  if(owner.kind!=='block')continue;
+  const object=unified.access.describe(owner.id);
+  if(object&&object.card===choice.plan.object.card)records.set(owner.id,catalog.records[owner.id]);
+ }
+ return iconTools.iconLabelsForSet([...records.values()],paths);
+}
 function buildSlotUi(){
- var boxEl=$('#slots'),paths=choice?choice.plan.paths:[],groups=choice&&choice.resourceGroups;
+ var boxEl=$('#slots'),paths=choice?choice.plan.paths:[],groups=choice&&choice.resourceGroups,iconLabels=choice?slotIconLabels(paths):new Set();
  boxEl.innerHTML='';clearResourceInfo();
  if(choice)try{resourceTools.appendResourceUsage(resourceInfo,unified,choice,FK.lang());resourceInfo.hidden=!resourceInfo.hasChildNodes()}catch(error){clearResourceInfo();showErr('resource_info',error.message)}
  function appendSlot(target,id){
-  var button=document.createElement('button');button.type='button';button.textContent=String(id).split('/').pop();button.title=id;button.dataset.id=id;
+  var button=document.createElement('button'),name=document.createElement('span');button.type='button';name.className='fkResourceName';name.textContent=String(id).split('/').pop();button.appendChild(name);button.title=id;button.dataset.id=id;
+  if(iconLabels.has(id)){var badge=document.createElement('span');badge.className='fkResourceIconBadge';badge.textContent='• icon';button.appendChild(badge);button.setAttribute('aria-label',name.textContent+' · icon')}
   button.setAttribute('aria-pressed',String(id===slot));if(id===slot)button.className='on';
   button.onclick=function(){setSlot(id)};target.appendChild(button);
  }
@@ -168,8 +178,8 @@ async function selectCompiled(request,reopened){
 function setPack(map){if(!selection){queuedPack=map;return}cancelCompiled();resetImages();Object.keys(dirty).forEach(function(k){if(!(k in map)){delete dirty[k];delete files[k]}});Object.keys(map).forEach(function(k){if(!files[k]||files[k].data!==map[k])files[k]=selection.mkFile(map[k],k);dirty[k]=true})}
 async function loadCatalog(){
  try{
-  const [selected,runtime,controls,labels,images,resources]=await Promise.all([import('./catalog/editor-selection.mjs'),FKCatalogData.loadCompiled(THREE),import('./preview-controls.mjs'),import('./preview-config.mjs'),import('./preview-images.mjs'),import('./catalog/editor-resource-usage.mjs')]);
-  selection=selected;unified=runtime;resourceTools=resources;
+  const [selected,runtime,controls,labels,images,resources,icons]=await Promise.all([import('./catalog/editor-selection.mjs'),FKCatalogData.loadCompiled(THREE),import('./preview-controls.mjs'),import('./preview-config.mjs'),import('./preview-images.mjs'),import('./catalog/editor-resource-usage.mjs'),import('./catalog/rules/icons.mjs')]);
+  selection=selected;unified=runtime;resourceTools=resources;iconTools=icons;
   controlTools=controls.createPreviewControls({en:{...labels.TEXT.en,powered:'Power',powered_off:'Off',powered_on:'On'},ru:{...labels.TEXT.ru,powered:'Сигнал',powered_off:'Нет',powered_on:'Есть'}});
   reader=images.createImageSource(FKCatalog.loadAny,data=>new Promise((ok,fail)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=()=>fail(new Error('Saved PNG decode failed'));im.src=data}));
   if(queuedPack){setPack(queuedPack);queuedPack=null}
