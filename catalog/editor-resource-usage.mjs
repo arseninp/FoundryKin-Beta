@@ -43,11 +43,11 @@ export function appendResourceUsage(host,runtime,selection,language){
   const note=node('p',ru?'В игре этот эффект создаёт Minecraft. Здесь показана исходная текстура для редактирования, а не симуляция игрового эффекта.':'Minecraft generates this effect in-game. This editor shows the source texture for editing, not a simulation of the effect.');
   note.className='lbl';note.dataset.engineEffectNote='';host.appendChild(note);
  }
- if(plan.mode==='sprite'&&resourceUsage(runtime,plan.slot).some(card=>card.card===plan.object.card&&card.uses.some(use=>use.roles.includes('icon')))){
+ const info=resourceUsageInfo(runtime,selection);
+ if(plan.mode==='sprite'&&info.users.some(card=>card.card===plan.object.card&&card.uses.some(use=>use.roles.includes('icon')))){
   const note=node('p',ru?'Это предметная иконка: плоский спрайт без вращения. Она относится к этой карточке и не является текстурой модели блока.':'This is an item icon: a flat sprite without rotation. It belongs to this card and is not a block model texture.');
   note.className='lbl';note.dataset.itemIconNote='';host.appendChild(note);
  }
- const info=resourceUsageInfo(runtime,selection);
  if(!info.shared&&!info.borrowed.length)return null;
  const details=node('details'),summary=node('summary'),title=node('span',info.shared?(ru?'Общая текстура':'Shared texture'):(ru?'Заимствованные текстуры':'Borrowed textures')),value=node('span');
  details.dataset.resourceUsage='';details.style.overflowWrap='anywhere';summary.className='fkResourceRow';value.className='fkStateValue';
