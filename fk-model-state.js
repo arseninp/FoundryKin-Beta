@@ -20,9 +20,9 @@ function validate(spec){
 function create(anchor,changed,options){
  options=options||{};
  if(typeof changed!=='function'||typeof options!=='object'||Array.isArray(options))throw new Error('Invalid preview picker configuration');
- ['language','doneLabel','manager'].forEach(function(key){if(own(options,key)&&typeof options[key]!=='function')throw new Error('Invalid preview picker dependency: '+key)});
+ ['language','doneLabel','manager','preview'].forEach(function(key){if(own(options,key)&&typeof options[key]!=='function')throw new Error('Invalid preview picker dependency: '+key)});
  var language=options.language||function(){return root.FK.lang()},doneLabel=options.doneLabel||function(){return root.FK.t('ui.done')},getManager=options.manager||function(){return root.FKM};
- var doc=anchor.ownerDocument,values=Object.create(null),current='',schema=null,blocked=false,opened=null,disposed=false;
+ var doc=anchor.ownerDocument,values=Object.create(null),current='',schema=null,blocked=false,opened=null,disposed=false,previewRunning=0,previewPump=null;
  function mk(tag,cls,text){var el=doc.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el}
  function text(pair){return pair[language()==='ru'?1:0]}
  var host=mk('div','fk-edit-part fkStatePanel');anchor.parentNode.insertBefore(host,anchor.nextSibling);
@@ -37,15 +37,42 @@ function create(anchor,changed,options){
   if(opened&&restore===false)opened.restore=false;
   var manager=getManager();if(manager&&manager.cur===menu)manager.close();else if(opened)menu.hide();
  }
+ function previewQueue(snapshot){
+  var waiting=[],pending=new Map(),observer=null,cancelled=false;
+  function valid(){return !cancelled&&!disposed&&!blocked&&opened===snapshot&&current===snapshot.id&&schema===snapshot.schema}
+  function pump(){
+   while(valid()&&previewRunning<2&&waiting.length){
+    var job=waiting.shift();previewRunning++;
+    (function(job){
+     Promise.resolve().then(function(){return valid()?job.load():null}).then(function(canvas){
+      if(!valid())return;
+      if(!canvas){job.target.hidden=true;return}
+      if(canvas.ownerDocument!==doc||canvas.tagName!=='CANVAS'||canvas.parentNode||!Number.isSafeInteger(canvas.width)||!Number.isSafeInteger(canvas.height)||canvas.width<1||canvas.height<1||canvas.width>256||canvas.height>256)throw new Error('Invalid preview thumbnail');
+      canvas.setAttribute('aria-hidden','true');job.target.appendChild(canvas);
+     }).catch(function(){if(valid())job.target.hidden=true}).finally(function(){previewRunning--;if(previewPump)previewPump()});
+    })(job);
+   }
+  }
+  previewPump=pump;
+  if(typeof root.IntersectionObserver==='function')observer=new root.IntersectionObserver(function(entries){
+   entries.forEach(function(entry){if(!valid()||!entry.isIntersecting)return;var job=pending.get(entry.target);if(!job)return;pending.delete(entry.target);observer.unobserve(entry.target);waiting.push(job)});pump();
+  },{root:sheet,rootMargin:'80px'});
+  return {add:function(button,target,load){var job={target:target,load:load};if(observer){pending.set(button,job);observer.observe(button)}else{waiting.push(job);pump()}},cancel:function(){cancelled=true;if(previewPump===pump)previewPump=null;waiting=[];pending.clear();if(observer)observer.disconnect()}};
+ }
  var menu={triggers:[],show:function(){
   var snapshot=opened;if(disposed||!snapshot)return;
   title.textContent=text(snapshot.item.label);choices.textContent='';done.setAttribute('aria-label',doneLabel());
   choices.setAttribute('aria-label',title.textContent);
-  var selected=null;
+  var selected=null,previews=options.preview?previewQueue(snapshot):null;snapshot.previews=previews;
   snapshot.item.values.forEach(function(option){
    var button=mk('button','ghost fkStateOption'),active=values[current][snapshot.item.key]===option.value;
    button.type='button';button.setAttribute('role','radio');button.setAttribute('aria-checked',String(active));button.classList.toggle('on',active);
-   button.appendChild(mk('span','',text(option.label)));var mark=mk('span','',active?'✓':'');mark.setAttribute('aria-hidden','true');button.appendChild(mark);
+   if(previews){
+    var load=options.preview(snapshot.item,option);
+    if(load!==null&&load!==undefined&&typeof load!=='function')throw new Error('Invalid preview thumbnail loader');
+    if(load){var thumbnail=mk('span','fkStateThumbnail');thumbnail.setAttribute('aria-hidden','true');button.appendChild(thumbnail);previews.add(button,thumbnail,load)}
+   }
+   button.appendChild(mk('span','fkStateOptionLabel',text(option.label)));var mark=mk('span','',active?'✓':'');mark.setAttribute('aria-hidden','true');button.appendChild(mark);
    button.addEventListener('click',function(){
     if(disposed||blocked||opened!==snapshot||current!==snapshot.id||schema!==snapshot.schema)return;
     var state=values[current],different=state[snapshot.item.key]!==option.value;
@@ -56,6 +83,7 @@ function create(anchor,changed,options){
   panel.classList.add('on');snapshot.trigger.setAttribute('aria-expanded','true');(selected||done).focus();
  },hide:function(){
   var previous=opened;opened=null;panel.classList.remove('on');
+  if(previous&&previous.previews)previous.previews.cancel();
   if(previous){previous.trigger.setAttribute('aria-expanded','false');if(previous.restore!==false&&!disposed&&!blocked&&!host.hidden&&previous.trigger.isConnected)previous.trigger.focus()}
  }};
  done.addEventListener('click',function(){close()});
@@ -93,6 +121,8 @@ function create(anchor,changed,options){
    button.addEventListener('click',function(){
     if(disposed||blocked||current!==selectedId||schema!==selectedSchema)return;
     var manager=getManager();if(!manager||typeof manager.toggle!=='function'||typeof manager.close!=='function')throw new Error('Preview picker requires the shared menu manager');
+    if(manager.cur===menu&&opened&&opened.trigger===button){close();return}
+    close(false);
     opened={id:current,schema:schema,item:item,trigger:button,valueNode:valueNode,restore:true};menu.triggers=[button];manager.toggle(menu);
    });host.appendChild(button);
   });
