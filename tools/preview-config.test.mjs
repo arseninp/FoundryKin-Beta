@@ -10,6 +10,8 @@ const bedKeys=new Set(['card_bed',...BED_LABELS.map(([color])=>'card_'+color+'_b
 const CANDLES=[['candle','Candle','Свеча'],...BED_LABELS.map(([color,en,ru])=>[color+'_candle',en+' candle',ru+' свеча'])];
 const CAKES=['cake','candle_cake',...BED_LABELS.map(([color])=>color+'_candle_cake')];
 const extensionKeys=new Set([...bedKeys,...CANDLES.map(([id])=>'card_'+id),'card_cake']);
+const SIGN_LABELS=[['sign_form','Mounting','Установка'],['sign_form_native','Standing','На стойке'],['sign_form_wall','Wall mounted','На стене']];
+const signKeys=new Set(SIGN_LABELS.map(([key])=>key));
 // Preserve the original snapshots; reviewed groups are explicit appended extensions.
 test('split config preserves original 602 ordered IDs before reviewed bed candle and cake groups',()=>{
  assert.deepEqual(Object.keys(config).sort(),['REVIEW_IDS','TEXT']);
@@ -21,12 +23,16 @@ test('split config preserves original 602 ordered IDs before reviewed bed candle
 });
 test('split config retains all original translations and their key order',()=>{
  assert.deepEqual(Object.keys(config.TEXT),['en','ru']);
- assert.equal(Object.keys(config.TEXT.en).length,719);
+ assert.equal(Object.keys(config.TEXT.en).length,719+SIGN_LABELS.length);
  assert.deepEqual(Object.keys(config.TEXT.en),Object.keys(config.TEXT.ru));
  for(const labels of Object.values(config.TEXT))for(const value of Object.values(labels))assert.ok(typeof value==='string'&&value.length>0);
- const baseline=Object.fromEntries(Object.entries(config.TEXT).map(([lang,labels])=>[lang,Object.fromEntries(Object.entries(labels).filter(([key])=>!extensionKeys.has(key)))]));
+ const baseline=Object.fromEntries(Object.entries(config.TEXT).map(([lang,labels])=>[lang,Object.fromEntries(Object.entries(labels).filter(([key])=>!extensionKeys.has(key)&&!signKeys.has(key)))]));
  assert.equal(digest(baseline),'a406284765d3fae91d89ff6ca1a87bff01cd5fa53f97eff098bd83491bb069db');
- assert.deepEqual(Object.keys(config.TEXT.en).slice(684),[...extensionKeys]);
+ const keys=Object.keys(config.TEXT.en);
+ assert.deepEqual(keys.filter(key=>!signKeys.has(key)).slice(684),[...extensionKeys]);
+ assert.deepEqual(keys.slice(keys.indexOf('sign_form'),keys.indexOf('sign_form')+SIGN_LABELS.length),[...signKeys]);
+ assert.equal(keys[keys.indexOf('sign_form')+SIGN_LABELS.length],'form');
+ for(const [key,en,ru] of SIGN_LABELS){assert.equal(config.TEXT.en[key],en);assert.equal(config.TEXT.ru[key],ru);}
  assert.equal(config.TEXT.en.card_bed,'Bed');assert.equal(config.TEXT.ru.card_bed,'Кровать');
  for(const [color,en,ru] of BED_LABELS){assert.equal(config.TEXT.en['card_'+color+'_bed'],en+' bed');assert.equal(config.TEXT.ru['card_'+color+'_bed'],ru+' кровать');}
  for(const [id,en,ru] of CANDLES){assert.equal(config.TEXT.en['card_'+id],en);assert.equal(config.TEXT.ru['card_'+id],ru);}

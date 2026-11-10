@@ -22,6 +22,8 @@ assert.equal(Object.keys(sections.blocks).length, manifest.counts.blocks);
 assert.equal(Object.keys(sections.terrain).length, manifest.counts.terrain);
 const records = Object.fromEntries(Object.entries(sections.blocks).map(([id, definition]) => [id, normalizeBlock(id, definition, sections.terrain)]));
 const doors = {wooden_door: 'wood', spruce_door: 'spruce', birch_door: 'birch', jungle_door: 'jungle', acacia_door: 'acacia', dark_oak_door: 'dark_oak', iron_door: 'iron'};
+// Independent expectation from the pinned polished_cinnabar.texture_set.json, not runtime metadata.
+const MATERIAL_COLOR='textures/blocks/polished_cinnabar',MATERIAL_MAP='textures/blocks/polished_cinnabar_mers';
 test('every pinned block normalizes without dropping its declared resource paths', () => {
  for (const [id, definition] of Object.entries(sections.blocks)) {
   const expected = new Set();
@@ -35,6 +37,10 @@ test('every pinned block normalizes without dropping its declared resource paths
     } else for (const path of resourcePaths(sections.terrain[key].textures)) expected.add(path);
    }
   }
+  if(expected.has(MATERIAL_COLOR)){
+   expected.add(MATERIAL_MAP);
+   assert.deepEqual(records[id].textureSets,{[MATERIAL_COLOR]:{metalness_emissive_roughness_subsurface:MATERIAL_MAP}},id);
+  }else assert.equal(Object.hasOwn(records[id],'textureSets'),false,id);
   assert.deepEqual(records[id].paths, [...expected].sort(), id);
  }
 });
