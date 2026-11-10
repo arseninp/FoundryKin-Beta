@@ -8,3 +8,15 @@
 .fkStateOptions{display:flex;flex-direction:column;gap:6px}
 .fkStateOptions .fkStateOption{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:var(--fk-header-height);padding:10px 12px;font:inherit;text-align:left}
 .fkStateOptions .fkStateOption.on{background:var(--acc);color:var(--accink)}
+/* Read-only information sits above the preview, separate from resource controls. */
+#resourceInfo{margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-left-width:3px;border-radius:8px;background:var(--panel);color:var(--mute);font-size:13px;line-height:1.45;overflow-wrap:anywhere}
+#resourceInfo[hidden]{display:none}
+#resourceInfo .fkResourceRow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0;padding:0;list-style:none;cursor:pointer;color:var(--ink);font-weight:400}
+#resourceInfo .fkResourceRow::-webkit-details-marker{display:none}
+#resourceInfo .fkResourceRow:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+#resourceInfo .fkStateValue{flex:none;font-size:12px;font-weight:400;white-space:nowrap}
+#resourceInfo p{margin:8px 0 0}
+#resourceInfo>p:first-child{margin-top:0}
+#resourceInfo>p+details{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
+#resourceInfo ul{margin:6px 0;padding-left:18px}
+#resourceInfo li{margin:4px 0}

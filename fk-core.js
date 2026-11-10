@@ -16,12 +16,13 @@ window.addEventListener('unhandledrejection',function(e){showErr('promise',(e.re
 function say(key,p){S.message=key?{key:key,params:p||{}}:null;$('#msg').textContent=key?tt(key,p):'';emit()}
 function ctxOf(k){return cv[k].getContext('2d')}
 var stage=$('#stage'),W=stage.clientWidth||360,gl=typeof THREE!=='undefined'&&!!V,view=null,group=null,frames=0,renderFrame=null,resetView=true;
+var resourceInfo=document.createElement('div');resourceInfo.id='resourceInfo';resourceInfo.className='fk-edit-part';resourceInfo.hidden=true;stage.parentNode.insertBefore(resourceInfo,stage);
 if(!gl)showErr('three_missing');
 if(gl){try{view=V.createStage();group=view.group;V.mount(stage)}catch(err){gl=false;showErr('webgl_unavailable',err.message)}}
 function requestRender(){if(!gl||S.mode!=='edit'||document.hidden||renderFrame!==null)return;renderFrame=requestAnimationFrame(function(){renderFrame=null;if(!gl||S.mode!=='edit'||document.hidden)return;if(!isFinite(group.rotation.x)||!isFinite(group.rotation.y))group.rotation.set(0,0,0);try{V.render(view,W,Math.min(devicePixelRatio,2));frames++}catch(err){showErr('render',err.message)}})}
 function cancelRender(){if(renderFrame!==null){cancelAnimationFrame(renderFrame);renderFrame=null}}
 function resizeStage(){if(!gl||S.mode!=='edit'||document.hidden)return;var w=stage.clientWidth;if(w)W=w;requestRender()}
-function loadingUi(on){stateUi.busy(on);stage.setAttribute('aria-busy',String(on));['#ed','#slots','#shapesRow','#frames','#toolsPanel'].forEach(function(sel){var el=$(sel);el.inert=on;el.style.visibility=on?'hidden':''})}
+function loadingUi(on){stateUi.busy(on);stage.setAttribute('aria-busy',String(on));['#resourceInfo','#ed','#slots','#shapesRow','#frames','#toolsPanel'].forEach(function(sel){var el=$(sel);el.inert=on;el.style.visibility=on?'hidden':''})}
 function refreshTex(){if(gl&&view.instance)V.update(view,cv);requestRender()}
 function rebuildTextures(){refreshTex()}
 function clearModel(){if(view)V.clear(view)}
@@ -33,11 +34,12 @@ stage.addEventListener('pointermove',function(e){if(!drag||drag.id!==e.pointerId
 function endDrag(e){if(!e||drag&&drag.id===e.pointerId)drag=null}
 stage.addEventListener('pointerup',endDrag);stage.addEventListener('pointercancel',endDrag);stage.addEventListener('lostpointercapture',endDrag);
 document.addEventListener('visibilitychange',function(){if(document.hidden){endDrag();cancelRender()}else resizeStage()});addEventListener('resize',resizeStage);
-function resetImages(){clearModel();cv={};undoS={};redoS={};ph={};fr={};fi={};hs={};encoded={};slots=[];slot=null;resetView=true;$('#slots').innerHTML='';$('#slots').style.display='none'}
+function clearResourceInfo(){resourceInfo.innerHTML='';resourceInfo.hidden=true}
+function resetImages(){clearModel();cv={};undoS={};redoS={};ph={};fr={};fi={};hs={};encoded={};slots=[];slot=null;resetView=true;$('#slots').innerHTML='';$('#slots').style.display='none';clearResourceInfo()}
 function buildSlotUi(){
  var boxEl=$('#slots'),paths=choice?choice.plan.paths:[],groups=choice&&choice.resourceGroups;
- boxEl.innerHTML='';
- if(choice)try{resourceTools.appendResourceUsage(boxEl,unified,choice,FK.lang())}catch(error){showErr('resource_info',error.message)}
+ boxEl.innerHTML='';clearResourceInfo();
+ if(choice)try{resourceTools.appendResourceUsage(resourceInfo,unified,choice,FK.lang());resourceInfo.hidden=!resourceInfo.hasChildNodes()}catch(error){clearResourceInfo();showErr('resource_info',error.message)}
  function appendSlot(target,id){
   var button=document.createElement('button');button.type='button';button.textContent=String(id).split('/').pop();button.title=id;button.dataset.id=id;
   button.setAttribute('aria-pressed',String(id===slot));if(id===slot)button.className='on';
@@ -79,7 +81,7 @@ async function previewCompiled(id,valid){
  if(!valid())return null;
  return V.capture({plan:next.plan,canvases:Object.fromEntries(Object.entries(images).map(([path,value])=>[path,value.frames[0]]))},256);
 }
-function cancelCompiled(){selTok++;choice=null;API.busy=false;API.pending='';loadingUi(false)}
+function cancelCompiled(){selTok++;choice=null;clearResourceInfo();API.busy=false;API.pending='';loadingUi(false)}
 async function selectCompiled(request,reopened){
  const token=++selTok;
  try{
