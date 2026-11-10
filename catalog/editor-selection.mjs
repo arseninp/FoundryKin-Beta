@@ -41,8 +41,11 @@ export function compiledFamilyPaths(runtime,id){
 export function compiledResourceGroups(runtime,id,paths){
  const records=familySources(runtime,id).map(source=>runtime.catalog.records[source]).filter(Boolean),sources=records.map(record=>record.source).filter(source=>source?.template==='banner');
  const bubbles=records.filter(record=>record.model==='sprite'&&record.source?.kind==='engine-effect'&&record.source.template==='bubble_column');
- if(!sources.length&&!bubbles.length)return null;
- if(sources.length&&bubbles.length)throw new Error('Conflicting editor resource group templates');
+ const pots=records.filter(record=>record.model==='decorated_pot'&&record.source?.template==='decorated_pot');
+ const ghasts=records.filter(record=>record.model==='dried_ghast');
+ const templates=[sources,bubbles,pots,ghasts].filter(rows=>rows.length);
+ if(!templates.length)return null;
+ if(templates.length!==1)throw new Error('Conflicting editor resource group templates');
  const owned=new Set(compiledFamilyPaths(runtime,id)),available=paths??[...owned];
  if(!Array.isArray(available)||!available.length||new Set(available).size!==available.length||available.some(path=>typeof path!=='string'||!owned.has(path)))throw new Error('Invalid grouped editor resources');
  const visible=new Set(available),used=new Set(),groups=[];
@@ -52,12 +55,17 @@ export function compiledResourceGroups(runtime,id,paths){
   for(const path of selected){if(used.has(path))throw new Error('Resource belongs to multiple editor groups: '+path);used.add(path);}
   if(selected.length)groups.push(Object.freeze({key,label:Object.freeze([...label]),paths:Object.freeze(selected)}));
  }
+ function binding(record,role){
+  const paths=record.bindings?.[role];
+  if(!Array.isArray(paths)||paths.length!==1||typeof paths[0]!=='string'||!owned.has(paths[0]))throw new Error('Invalid editor resource binding: '+role);
+  return paths[0];
+ }
  if(sources.length){
   for(const source of sources)if(!source.patterns||typeof source.patterns!=='object'||Array.isArray(source.patterns)||!source.special||typeof source.special!=='object'||Array.isArray(source.special))throw new Error('Invalid banner resource groups');
   add('base',['Base','Основа'],sources.flatMap(source=>[source.base,...(Object.hasOwn(source.special,'illager')?[source.special.illager]:[])]));
   add('patterns',['Patterns','Рисунки'],sources.flatMap(source=>Object.values(source.patterns)));
   add('special',['Additional sources','Дополнительные исходники'],sources.flatMap(source=>Object.entries(source.special).filter(([role])=>role!=='illager').map(([,path])=>path)));
- }else{
+ }else if(bubbles.length){
   const roles=[['up_top',['Upward flow top','Верх восходящего потока'],4],['down_top',['Downward flow top','Верх нисходящего потока'],4],['outer',['Outer part','Внешняя часть'],8],['inner',['Inner part','Внутренняя часть'],2]];
   for(const record of bubbles){
    const bindings=record.bindings;
@@ -68,6 +76,22 @@ export function compiledResourceGroups(runtime,id,paths){
    for(const role of expected)if(!Array.isArray(bindings[role])||bindings[role].length!==1)throw new Error('Invalid bubble resource binding: '+role);
   }
   for(const [part,label,count] of roles)add(part,label,bubbles.flatMap(record=>Array.from({length:count},(_,index)=>record.bindings[part+'_'+String.fromCharCode(97+index)]).flat()));
+ }else if(pots.length){
+  for(const record of pots){
+   const patterns=record.potteryPatterns;
+   if(!patterns||typeof patterns!=='object'||Array.isArray(patterns)||!Object.hasOwn(patterns,'brick')||patterns.brick!==binding(record,'side'))throw new Error('Invalid decorated pot resource groups');
+  }
+  add('base',['Base','Основа'],pots.flatMap(record=>[binding(record,'base'),binding(record,'side')]));
+  add('patterns',['Patterns','Рисунки'],pots.flatMap(record=>Object.entries(record.potteryPatterns).filter(([role])=>role!=='brick').map(([,path])=>path)));
+ }else{
+  const faces=['up','down','north','south','east','west','tent'],expected=Array.from({length:4},(_,stage)=>faces.map(face=>'stage_'+stage+'_'+face)).flat();
+  for(const record of ghasts)if(!record.bindings||typeof record.bindings!=='object'||Array.isArray(record.bindings)||Object.keys(record.bindings).length!==expected.length||Object.keys(record.bindings).some(role=>!expected.includes(role)))throw new Error('Invalid dried ghast resource roles');
+  const stages=Array.from({length:4},(_,stage)=>[...new Set(ghasts.flatMap(record=>faces.map(face=>binding(record,'stage_'+stage+'_'+face))))]);
+  const membership=new Map();
+  for(const stage of stages)for(const path of stage)membership.set(path,(membership.get(path)??0)+1);
+  const shared=new Set([...membership].filter(([,count])=>count>1).map(([path])=>path));
+  add('shared_stages',['Shared across stages','Общие для стадий'],[...shared]);
+  stages.forEach((stage,index)=>add('stage_'+index,['Stage '+index,'Стадия '+index],stage.filter(path=>!shared.has(path))));
  }
  add('icons',['Item icons','Предметные иконки'],records.flatMap(record=>record.icons??[]));
  add('other',['Other resources','Другие ресурсы'],available.filter(path=>!used.has(path)));
