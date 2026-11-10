@@ -16,8 +16,7 @@ function catText(s){
   return T('cat.loading');
 }
 function infoText(i){
-  var t=T('info.selected',{id:i.id})+' '+T('info.files',{n:i.files.length,list:i.files.join(', ')});
-  if(i.shared.length)t+=' '+T('info.shared',{n:i.shared.length,list:i.shared.slice(0,8).join(', ')+(i.shared.length>8?'…':'')});
+  var t=T('info.selected',{id:i.id});
   if(i.forms.length)t+=' '+T('info.forms',{list:i.forms.map(function(k){return T('shape.'+k).toLowerCase()}).join(', ')});
   if(i.note)t+=' '+T('info.note.'+i.note);
   return t+' '+T('info.kind.'+i.kind);

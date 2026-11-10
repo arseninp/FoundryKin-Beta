@@ -4,7 +4,7 @@ var FK=window.FK,V=window.FKView;
 function tt(k,p){return FK.t(k,p)}
 var res=16,slots=[],slot=null,cv={},undoS={},redoS={},ph={},fr={},fi={},hs={},encoded={};
 var files={},cur='',dirty={},catalog=null,queuedPack=null;
-var selection=null,unified=null,choice=null,controlTools=null,reader=null,selTok=0;
+var selection=null,unified=null,choice=null,controlTools=null,reader=null,resourceTools=null,selTok=0;
 var $=function(s){return document.querySelector(s)};
 try{var PD=parent.document.documentElement;var syncTheme=function(){document.documentElement.setAttribute('data-theme',PD.getAttribute('data-theme')||'light')};syncTheme();new MutationObserver(syncTheme).observe(PD,{attributes:true,attributeFilter:['data-theme']})}catch(e){}
 var ed=$('#ed'),ectx=ed.getContext('2d'),listeners=[],stateUi=window.FKModelState.create($('#shapesRow'),function(){if(choice&&!API.busy)selectCompiled({id:cur,...controlTools.previewControlSelection(choice.plan,{...stateUi.value(),texture:slot})})});
@@ -33,10 +33,11 @@ stage.addEventListener('pointermove',function(e){if(!drag||drag.id!==e.pointerId
 function endDrag(e){if(!e||drag&&drag.id===e.pointerId)drag=null}
 stage.addEventListener('pointerup',endDrag);stage.addEventListener('pointercancel',endDrag);stage.addEventListener('lostpointercapture',endDrag);
 document.addEventListener('visibilitychange',function(){if(document.hidden){endDrag();cancelRender()}else resizeStage()});addEventListener('resize',resizeStage);
-function resetImages(){clearModel();cv={};undoS={};redoS={};ph={};fr={};fi={};hs={};encoded={};slots=[];slot=null;resetView=true}
+function resetImages(){clearModel();cv={};undoS={};redoS={};ph={};fr={};fi={};hs={};encoded={};slots=[];slot=null;resetView=true;$('#slots').innerHTML='';$('#slots').style.display='none'}
 function buildSlotUi(){
  var boxEl=$('#slots'),paths=choice?choice.plan.paths:[],groups=choice&&choice.resourceGroups;
  boxEl.innerHTML='';
+ if(choice)try{resourceTools.appendResourceUsage(boxEl,unified,choice,FK.lang())}catch(error){showErr('resource_info',error.message)}
  function appendSlot(target,id){
   var button=document.createElement('button');button.type='button';button.textContent=String(id).split('/').pop();button.title=id;button.dataset.id=id;
   button.setAttribute('aria-pressed',String(id===slot));if(id===slot)button.className='on';
@@ -103,15 +104,15 @@ async function selectCompiled(request,reopened){
  }catch(error){
   if(token!==selTok)return;
   try{clearModel()}catch(cleanup){error=new AggregateError([error,cleanup],'Editor cleanup failed')}
-  choice=null;cur='';slot=null;slots=[];cv={};S.info=null;stateUi.select('',null);API.loaded('');
+  choice=null;cur='';slot=null;slots=[];cv={};S.info=null;buildSlotUi();stateUi.select('',null);API.loaded('');
   showErr('block_load',request.id+': '+error.message);
  }
 }
 function setPack(map){if(!selection){queuedPack=map;return}cancelCompiled();resetImages();Object.keys(dirty).forEach(function(k){if(!(k in map)){delete dirty[k];delete files[k]}});Object.keys(map).forEach(function(k){if(!files[k]||files[k].data!==map[k])files[k]=selection.mkFile(map[k],k);dirty[k]=true})}
 async function loadCatalog(){
  try{
-  const [selected,runtime,controls,labels,images]=await Promise.all([import('./catalog/editor-selection.mjs'),FKCatalogData.loadCompiled(THREE),import('./preview-controls.mjs'),import('./preview-config.mjs'),import('./preview-images.mjs')]);
-  selection=selected;unified=runtime;
+  const [selected,runtime,controls,labels,images,resources]=await Promise.all([import('./catalog/editor-selection.mjs'),FKCatalogData.loadCompiled(THREE),import('./preview-controls.mjs'),import('./preview-config.mjs'),import('./preview-images.mjs'),import('./catalog/editor-resource-usage.mjs')]);
+  selection=selected;unified=runtime;resourceTools=resources;
   controlTools=controls.createPreviewControls({en:{...labels.TEXT.en,powered:'Power',powered_off:'Off',powered_on:'On'},ru:{...labels.TEXT.ru,powered:'Сигнал',powered_off:'Нет',powered_on:'Есть'}});
   reader=images.createImageSource(FKCatalog.loadAny,data=>new Promise((ok,fail)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=()=>fail(new Error('Saved PNG decode failed'));im.src=data}));
   if(queuedPack){setPack(queuedPack);queuedPack=null}
