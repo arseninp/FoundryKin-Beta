@@ -37,6 +37,27 @@ function familySources(runtime,id){
 export function compiledFamilyPaths(runtime,id){
  return [...new Set(familySources(runtime,id).flatMap(source=>runtime.catalog.records[source]?.paths??[]))].sort();
 }
+/* Resource grouping uses declared source roles, never filename or directory guesses. */
+export function compiledResourceGroups(runtime,id,paths){
+ const records=familySources(runtime,id).map(source=>runtime.catalog.records[source]).filter(Boolean),sources=records.map(record=>record.source).filter(source=>source?.template==='banner');
+ if(!sources.length)return null;
+ const owned=new Set(compiledFamilyPaths(runtime,id)),available=paths??[...owned];
+ if(!Array.isArray(available)||!available.length||new Set(available).size!==available.length||available.some(path=>typeof path!=='string'||!owned.has(path)))throw new Error('Invalid grouped editor resources');
+ const visible=new Set(available),used=new Set(),groups=[];
+ function add(key,label,candidates){
+  if(!Array.isArray(candidates)||candidates.some(path=>typeof path!=='string'||!owned.has(path)))throw new Error('Invalid editor resource group: '+key);
+  const selected=[...new Set(candidates)].filter(path=>visible.has(path)).sort();
+  for(const path of selected){if(used.has(path))throw new Error('Resource belongs to multiple editor groups: '+path);used.add(path);}
+  if(selected.length)groups.push(Object.freeze({key,label:Object.freeze([...label]),paths:Object.freeze(selected)}));
+ }
+ for(const source of sources)if(!source.patterns||typeof source.patterns!=='object'||Array.isArray(source.patterns)||!source.special||typeof source.special!=='object'||Array.isArray(source.special))throw new Error('Invalid banner resource groups');
+ add('base',['Base','Основа'],sources.map(source=>source.base));
+ add('patterns',['Patterns','Рисунки'],sources.flatMap(source=>Object.values(source.patterns)));
+ add('special',['Additional sources','Дополнительные исходники'],sources.flatMap(source=>Object.values(source.special)));
+ add('icons',['Item icons','Предметные иконки'],records.flatMap(record=>record.icons??[]));
+ add('other',['Other resources','Другие ресурсы'],available.filter(path=>!used.has(path)));
+ return Object.freeze(groups);
+}
 export function compiledSelection(runtime,request){
  const {catalog}=runtime,initial=compiledObject(runtime,request.id);
  const icon=request.view===undefined&&typeof request.slot==='string'&&familySources(runtime,request.id).some(source=>catalog.records[source]?.icons?.includes(request.slot));
@@ -45,8 +66,8 @@ export function compiledSelection(runtime,request){
  const sourceId=Object.hasOwn(catalog.records,request.id)&&initial.id===plan.object.id?request.id:plan.object.id;
  const owned=compiledFamilyPaths(runtime,sourceId),owners=new Set(owned);
  if(!owners.has(plan.slot))throw new Error('Edited texture is outside the selected editor family');
- const required=[...new Set([...plan.modelResourcePaths,plan.slot])];
- return Object.freeze({plan,sourceId,owned:Object.freeze(owned),required:Object.freeze(required),editable:Object.freeze(required.filter(path=>owners.has(path))),borrowed:Object.freeze(required.filter(path=>!owners.has(path)))});
+ const required=[...new Set([...plan.modelResourcePaths,plan.slot])],resourceGroups=compiledResourceGroups(runtime,sourceId,plan.paths);
+ return Object.freeze({plan,sourceId,resourceGroups,owned:Object.freeze(owned),required:Object.freeze(required),editable:Object.freeze(required.filter(path=>owners.has(path))),borrowed:Object.freeze(required.filter(path=>!owners.has(path)))});
 }
 export function compiledReopen(runtime,path,preferredId){
  const supplied=preferredId!==undefined&&preferredId!==null&&preferredId!=='';
