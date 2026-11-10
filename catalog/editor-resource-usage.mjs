@@ -1,19 +1,21 @@
 /* Read-only resource relationships from the compiled catalog; no ownership or selection changes. */
-export function resourceUsage(runtime,path){
- const {catalog,access}=runtime;
- if(typeof path!=='string'||!path.startsWith('textures/'))throw new Error('Invalid usage resource path');
- const cards=new Map();
- function add(id,relation,roles){
+function resourceUsages(runtime,paths){
+ const {catalog,access}=runtime,results=new Map();
+ for(const path of paths){
+  if(typeof path!=='string'||!path.startsWith('textures/'))throw new Error('Invalid usage resource path');
+  if(!results.has(path))results.set(path,new Map());
+ }
+ function add(path,id,relation,roles){
   const object=access.describe(id);
   if(!object||!catalog.cards.includes(object.card))throw new Error('Inaccessible resource usage: '+id);
-  let card=cards.get(object.card);
+  const cards=results.get(path);let card=cards.get(object.card);
   if(!card){card={card:object.card,uses:new Map()};cards.set(object.card,card);}
   const key=JSON.stringify([object.id,object.form,object.state??{},relation]);
   let use=card.uses.get(key);
   if(!use){use={id:object.id,form:object.form,state:{...object.state},relation,sources:new Set(),roles:new Set()};card.uses.set(key,use);}
   use.sources.add(id);for(const role of roles)use.roles.add(role);
  }
- for(const owner of catalog.resources[path]??[]){
+ for(const path of results.keys())for(const owner of catalog.resources[path]??[]){
   if(owner.kind!=='block')continue;
   const record=catalog.records[owner.id];
   if(!record?.paths.includes(path))throw new Error('Usage index disagrees with owner: '+owner.id);
@@ -22,16 +24,25 @@ export function resourceUsage(runtime,path){
   if(record.icons?.includes(path))roles.push('icon');
   for(const [color,maps] of Object.entries(record.textureSets??{}))for(const [role,map] of Object.entries(maps))if(map===path)roles.push('material:'+role+' ('+color+')');
   for(const [role,resource] of Object.entries(record.potteryPatterns??{}))if(resource===path)roles.push('pattern:'+role);
-  add(owner.id,'owned',roles);
+  add(path,owner.id,'owned',roles);
  }
  for(const [id,record] of Object.entries(catalog.records)){
-  const roles=Object.entries(record.dependencies??{}).filter(([,paths])=>paths.includes(path)).map(([role])=>role);
-  if(roles.length)add(id,'dependency',roles);
+  const matches=new Map();
+  for(const [role,declared] of Object.entries(record.dependencies??{})){
+   if(!Array.isArray(declared))throw new Error('Invalid usage dependency: '+id+':'+role);
+   for(const path of new Set(declared))if(results.has(path)){
+    if(!matches.has(path))matches.set(path,[]);
+    matches.get(path).push(role);
+   }
+  }
+  for(const [path,roles] of matches)add(path,id,'dependency',roles);
  }
- return [...cards.values()].sort((a,b)=>a.card.localeCompare(b.card)).map(card=>({card:card.card,uses:[...card.uses.values()].map(use=>({...use,sources:[...use.sources].sort(),roles:[...use.roles].sort()})).sort((a,b)=>a.id.localeCompare(b.id)||a.relation.localeCompare(b.relation))}));
+ for(const [path,cards] of results)results.set(path,[...cards.values()].sort((a,b)=>a.card.localeCompare(b.card)).map(card=>({card:card.card,uses:[...card.uses.values()].map(use=>({...use,sources:[...use.sources].sort(),roles:[...use.roles].sort()})).sort((a,b)=>a.id.localeCompare(b.id)||a.relation.localeCompare(b.relation))})));
+ return results;
 }
+export function resourceUsage(runtime,path){return resourceUsages(runtime,[path]).get(path);}
 export function resourceUsageInfo(runtime,selection){
- const path=selection.plan.slot,users=resourceUsage(runtime,path),borrowed=[...new Set(selection.borrowed)].sort().map(path=>({path,users:resourceUsage(runtime,path)}));
+ const path=selection.plan.slot,borrowedPaths=[...new Set(selection.borrowed)].sort(),results=resourceUsages(runtime,[path,...borrowedPaths]),users=results.get(path),borrowed=borrowedPaths.map(path=>({path,users:results.get(path)}));
  const identities=new Set(users.flatMap(card=>card.uses.map(use=>use.id)));
  return {path,users,shared:identities.size>1,borrowed};
 }
