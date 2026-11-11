@@ -1,13 +1,16 @@
 /* State controls reuse the editor's sheet, backdrop, buttons and theme variables. */
-.fkStatePanel{margin:12px 0;padding:8px;border:1px solid var(--line);border-radius:var(--fk-header-radius)}
+.fkStatePanel,#slots{margin:12px 0;padding:8px;border:1px solid var(--line);border-radius:var(--fk-header-radius);background:var(--fk-tone-2)}
+#slots{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:6px;min-height:50px}
+.fkStatePanel .fkStateRow{background:var(--fk-tone-3);border:1px solid var(--line);border-radius:var(--fk-header-radius);color:var(--ink)}
+.fkStatePanel .fkStateValue{color:inherit}
 .fkStatePanel .fkStateRow,#slots .fkResourceRow{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin:6px 0;padding:8px 10px;min-height:var(--fk-header-height);font:inherit;text-align:left;box-sizing:border-box}
-#slots .fkResourceRow{list-style:none;cursor:pointer;background:var(--fk-tone-3);border:1px solid var(--line);border-radius:var(--fk-header-radius);color:var(--ink)}
+#slots .fkResourceRow{margin:0;list-style:none;cursor:pointer;background:var(--fk-tone-3);border:1px solid var(--line);border-radius:var(--fk-header-radius);color:var(--ink)}
 #slots .fkResourceRow::-webkit-details-marker{display:none}
 #slots .fkResourceRow>.fkStateValue{flex:none;white-space:nowrap;color:inherit}
 .fkStateValue{font-weight:500;color:var(--mute);text-align:right;overflow-wrap:anywhere}
 .fkStateOptions{display:flex;flex-direction:column;gap:6px}
-.fkStateOptions .fkStateOption{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:var(--fk-header-height);padding:10px 12px;font:inherit;text-align:left}
-.fkStateOptions .fkStateOption.on{background:var(--acc);color:var(--accink)}
+.fkStateOptions .fkStateOption{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:var(--fk-header-height);padding:10px 12px;font:inherit;text-align:left;background:var(--fk-tone-3);border:1px solid var(--line);border-radius:var(--fk-header-radius);color:var(--ink)}
+.fkStateOptions .fkStateOption.on{background:var(--acc);border-color:var(--acc);color:var(--accink)}
 /* Read-only information sits above the preview, separate from resource controls. */
 #resourceInfo{margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-left-width:3px;border-radius:8px;background:var(--panel);color:var(--mute);font-size:13px;line-height:1.45;overflow-wrap:anywhere}
 #resourceInfo[hidden]{display:none}
@@ -26,6 +29,8 @@
 .fkStateThumbnail[hidden]{display:none}
 .fkStateThumbnail canvas{display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
 /* Resource names and icon-only badges stay within the existing selection button. */
-#slots button{gap:8px}
+#slots button{display:flex;align-items:center;gap:8px;flex:1 1 auto;width:100%;min-width:0;max-width:100%;min-height:var(--fk-header-height);margin:0;padding:8px 10px;background:var(--fk-tone-3);border:1px solid var(--line);border-radius:var(--fk-header-radius);color:var(--ink);font-size:13px;font-weight:500;line-height:1.4;text-align:left;white-space:normal;overflow-wrap:anywhere}
+#slots button.on{background:var(--acc);border-color:var(--acc);color:var(--accink)}
+#slots .seg{margin-top:6px;padding:0;border:0;background:none;gap:6px;flex-direction:column;flex-wrap:nowrap}
 #slots .fkResourceName{flex:1;min-width:0;text-align:left;overflow-wrap:anywhere}
 #slots .fkResourceIconBadge{flex:none;white-space:nowrap;padding:2px 7px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--mute);font-size:11px;font-weight:500;line-height:1.3}
