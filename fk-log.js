@@ -1,55 +1,51 @@
-/* FKLog: bounded in-memory diagnostic log. No storage, network or DOM access. */
+/* FKLog: bounded in-memory diagnostics. No PNG parser, storage, network or DOM. */
 (function(){
-var MAX=400,PNG='data:image/png;base64,',SIG=[137,80,78,71,13,10,26,10],events=[],counts={info:0,warn:0,error:0},seq=0,start=Date.now();
-function clip(value,limit){var text;try{text=typeof value==='string'?value:JSON.stringify(value)}catch(e){text=String(value)}if(text===undefined)text='';return text.length>limit?text.slice(0,limit)+'…':text}
+'use strict';
+var MAX=400,events=[],counts={info:0,warn:0,error:0},seq=0,start=Date.now();
+var fields=['stage','source','path','id','model','form','slot','status','count','duration','width','height','cached','reason'];
+function text(value,limit){
+ var s='';try{s=value==null?'':String(value)}catch(e){s='[unreadable]'}
+ s=s.replace(/data:[^\s'"<>)]*/gi,'[data omitted]')
+  .replace(/\b(?:https?|file|blob):[^\s'"<>)]*/gi,function(url){return url.split(/[?#]/)[0].replace(/(\/\/)[^/]*@/,'$1[credentials omitted]@')})
+  .replace(/([?&#][^\s=&#?]+)=([^\s&#]*)/g,'$1=[omitted]')
+  .replace(/\b(authorization|bearer|token|password|secret|api[_-]?key)(?:\s*[:=]\s*|\s+)[^\s,;]+/gi,'$1 [omitted]')
+  .replace(/[A-Za-z0-9+/_=-]{120,}/g,'[long value omitted]')
+  .replace(/[\u0000-\u001f\u007f]/g,' ');
+ return s.length>limit?s.slice(0,limit)+'…':s;
+}
+function metadata(data){
+ if(!data||typeof data!=='object')return '';
+ var out={};
+ fields.forEach(function(key){
+  try{var value=data[key];if(typeof value==='string')out[key]=text(value,160);else if(typeof value==='number'&&Number.isFinite(value))out[key]=Math.round(value*100)/100;else if(typeof value==='boolean')out[key]=value}catch(e){}
+ });
+ return text(JSON.stringify(out),600);
+}
 function add(level,area,message,data){
- if(counts[level]===undefined)level='info';
- counts[level]++;
- var event={n:++seq,t:Date.now()-start,level:level,area:clip(area,24),message:clip(message,300)};
- if(data!==undefined)event.data=clip(data,600);
- events.push(event);if(events.length>MAX)events.shift();
- return event;
+ if(!Object.prototype.hasOwnProperty.call(counts,level))level='info';
+ counts[level]=Math.min(Number.MAX_SAFE_INTEGER,counts[level]+1);
+ events.push({n:++seq,t:Math.max(0,Date.now()-start),level:level,area:text(area,24),message:text(message,240),data:metadata(data)});
+ if(events.length>MAX)events.shift();
 }
 function fail(area,error,data){
- var message=error&&error.message!==undefined?error.message:String(error),stack=error&&error.stack?String(error.stack).split('\n').slice(0,4).join(' | '):'';
- return add('error',area,message,[data===undefined?'':clip(data,300),stack].filter(Boolean).join(' '));
+ var message='Unknown error',stack='';
+ try{message=error&&error.message!==undefined?error.message:error;stack=error&&error.stack?String(error.stack).split('\n').slice(1,4).join(' | '):''}catch(e){}
+ add('error',area,text(message,180)+(stack?' | '+text(stack,180):''),data);
 }
 function timer(area,message){
- var begin=performance.now();
- return function(data){return add('info',area,message+' '+Math.round(performance.now()-begin)+' ms',data)};
-}
-function u32(text,offset){return text.charCodeAt(offset)*16777216+(text.charCodeAt(offset+1)<<16)+(text.charCodeAt(offset+2)<<8)+text.charCodeAt(offset+3)}
-/* Reads only the PNG signature and IHDR from a data URL, with the same size limits as the editor. */
-function inspectPng(data){
- if(typeof data!=='string'||data.indexOf(PNG)!==0)return {ok:false,reason:'not a PNG data URL',bytes:typeof data==='string'?data.length:0};
- var body=data.slice(PNG.length),bytes=Math.floor(body.length*3/4),head;
- if(body.length<32)return {ok:false,reason:'truncated header',bytes:bytes};
- try{head=atob(body.slice(0,32))}catch(e){return {ok:false,reason:'invalid base64',bytes:bytes}}
- for(var i=0;i<8;i++)if(head.charCodeAt(i)!==SIG[i])return {ok:false,reason:'bad PNG signature',bytes:bytes};
- if(head.slice(12,16)!=='IHDR')return {ok:false,reason:'missing IHDR',bytes:bytes};
- var width=u32(head,16),height=u32(head,20),ok=width>=1&&height>=1&&width<=16384&&height<=16384&&width*height<=16777216;
- return {ok:ok,reason:ok?'':'size out of range',width:width,height:height,bytes:bytes};
-}
-function inspectAll(rows){
- var bad=[],bytes=0,total=0;
- (rows||[]).forEach(function(row){
-  if(!row||!row.data)return;
-  var info=inspectPng(row.data);total++;bytes+=info.bytes;
-  if(!info.ok)bad.push({path:String(row.path),reason:info.reason,width:info.width,height:info.height,bytes:info.bytes});
- });
- return {total:total,bytes:bytes,bad:bad};
+ var begin=Date.now();return function(data){
+  var details={};fields.forEach(function(key){try{if(data&&data[key]!==undefined)details[key]=data[key]}catch(e){}});
+  details.duration=Math.max(0,Date.now()-begin);add('info',area,message,details);
+ };
 }
 function dump(limit){
- var shown=events.slice(-(limit||80)),lines=['events: '+seq+' (errors '+counts.error+', warnings '+counts.warn+'), showing last '+shown.length];
- shown.forEach(function(event){
-  lines.push('#'+event.n+' +'+(event.t/1000).toFixed(1)+'s '+event.level.toUpperCase()+' '+event.area+': '+event.message+(event.data?' | '+event.data:''));
- });
+ limit=Number.isFinite(limit)?Math.max(0,Math.min(80,Math.floor(limit))):60;
+ var shown=limit?events.slice(-limit):[],lines=['events: '+seq+' (errors '+counts.error+', warnings '+counts.warn+'), retained '+events.length+', showing last '+shown.length];
+ shown.forEach(function(e){lines.push('#'+e.n+' +'+(e.t/1000).toFixed(1)+'s '+e.level.toUpperCase()+' '+e.area+': '+e.message+(e.data&&e.data!=='{}'?' | '+e.data:''))});
  return lines.join('\n');
 }
-window.FKLog={
- add:add,info:function(area,message,data){return add('info',area,message,data)},warn:function(area,message,data){return add('warn',area,message,data)},
- error:fail,timer:timer,inspectPng:inspectPng,inspectAll:inspectAll,dump:dump,
+window.FKLog={add:add,info:function(area,message,data){add('info',area,message,data)},warn:function(area,message,data){add('warn',area,message,data)},error:fail,timer:timer,dump:dump,text:text,
  counts:function(){return {info:counts.info,warn:counts.warn,error:counts.error}},
- clear:function(){events.length=0}
+ clear:function(){events.length=0;counts={info:0,warn:0,error:0};seq=0;start=Date.now()}
 };
 })();

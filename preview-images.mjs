@@ -32,6 +32,9 @@ export function createImageSource(loadVanilla,decodePNG,options={}) {
  if(typeof loadVanilla!=='function'||typeof decodePNG!=='function'||!dictionary(options))throw new Error('Invalid image source configuration');
  const timeoutMs=options.timeoutMs??20000,maxEntries=options.maxEntries??32,maxPixels=options.maxPixels??16777216;
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>2147483647||!Number.isSafeInteger(maxEntries)||maxEntries<1||!Number.isSafeInteger(maxPixels)||maxPixels<1)throw new Error('Invalid image source limits');
+ // Optional observer receives metadata only; diagnostic failures never affect image loading.
+ const diagnostic=options.onDiagnostic;
+ function notify(level,message,details,error){try{if(typeof diagnostic==='function')diagnostic(level,message,details,error)}catch(ignored){}}
  const cache=new Map();let pixels=0;
  function remove(path) {
   const item=cache.get(path);if(!item)return;
@@ -46,6 +49,9 @@ export function createImageSource(loadVanilla,decodePNG,options={}) {
   const data=own(overrides,path)?overrides[path]:null,hit=cache.get(path);
   if(hit&&hit.data===data){cache.delete(path);cache.set(path,hit);return hit.promise;}
   remove(path);
+  const started=Date.now(),source=data===null?'vanilla':'saved',stage=data===null?'fetch':'decode';
+  function details(extra={}){return {path,source,stage,duration:Math.max(0,Date.now()-started),...extra};}
+  notify('info','image load started',details());
   const item={data,promise:null,pixels:0};let timer;
   const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Image load timeout: '+path)),timeoutMs);});
   const operation=Promise.resolve().then(()=>data===null?loadVanilla(path):decodePNG(data));
@@ -53,8 +59,9 @@ export function createImageSource(loadVanilla,decodePNG,options={}) {
    if(!image)throw new Error('Missing texture: '+path);
    const dimensions=imageFrames(image);
    if(cache.get(path)===item){item.pixels=dimensions.width*dimensions.height;pixels+=item.pixels;trim();}
+   notify('info','image load completed',details({stage:'ready',width:dimensions.width,height:dimensions.height}));
    return image;
-  }).catch(error=>{if(cache.get(path)===item)remove(path);throw error;}).finally(()=>clearTimeout(timer));
+  }).catch(error=>{if(cache.get(path)===item)remove(path);notify('error','image load failed',details(),error);throw error;}).finally(()=>clearTimeout(timer));
   cache.set(path,item);trim();return item.promise;
  };
 }
