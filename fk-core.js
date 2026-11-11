@@ -1,6 +1,7 @@
 /* Compiled catalog editor state shared with Find. No legacy catalog fallback. */
 (function(){
 var FK=window.FK,V=window.FKView;
+function diagnostic(level,area,message,data,error){try{var log=window.FKLog;if(log){if(error)log.error(area,error,data);else log.add(level,area,message,data)}}catch(ignored){}}
 function tt(k,p){return FK.t(k,p)}
 var res=16,slots=[],slot=null,cv={},undoS={},redoS={},ph={},fr={},fi={},hs={},encoded={};
 var files={},cur='',dirty={},catalog=null,queuedPack=null,rejected=Object.create(null);
@@ -10,7 +11,7 @@ try{var PD=parent.document.documentElement;var syncTheme=function(){document.doc
 var ed=$('#ed'),ectx=ed.getContext('2d'),listeners=[],stateUi=window.FKModelState.create($('#shapesRow'),function(){if(choice&&!API.busy)selectCompiled({id:cur,...controlTools.previewControlSelection(choice.plan,{...stateUi.value(),texture:slot})})},{preview:previewStateOption});
 var S={mode:'search',status:'loading',source:'',count:0,filtered:true,refreshing:false,refreshFailed:'',error:null,errors:[],info:null,message:null},ctx={onHistory:null,onRes:null};
 function emit(){listeners.forEach(function(f){try{f(S)}catch(e){}})}
-function showErr(code,detail){var last=S.errors[S.errors.length-1];detail=detail||'';if(last&&last.code===code&&last.detail===detail)return;S.errors.push({code:code,detail:detail});if(S.errors.length>3)S.errors.shift();emit()}
+function showErr(code,detail){var last=S.errors[S.errors.length-1];detail=detail||'';if(last&&last.code===code&&last.detail===detail)return;diagnostic('error','editor',detail,{stage:code,id:cur,slot:slot});S.errors.push({code:code,detail:detail});if(S.errors.length>3)S.errors.shift();emit()}
 window.addEventListener('error',function(e){showErr('script',(e.message||'')+(e.lineno?' @'+e.lineno:''))});
 window.addEventListener('unhandledrejection',function(e){showErr('promise',(e.reason&&e.reason.message)||String(e.reason))});
 function say(key,p){S.message=key?{key:key,params:p||{}}:null;$('#msg').textContent=key?tt(key,p):'';emit()}
@@ -141,22 +142,30 @@ function previewStateOption(field,option){
 }
 async function previewCompiled(id,valid){
  if(!gl||!valid())return null;
- const next=selection.compiledSelection(unified,{id}),images=await selection.prepareEditorImages(next,readCompiled,makeCanvas,true);
- if(!valid())return null;
- return V.capture({plan:next.plan,canvases:Object.fromEntries(Object.entries(images).map(([path,value])=>[path,value.frames[0]]))},256);
+ const begin=Date.now();var phase='resolve',next;
+ try{
+  next=selection.compiledSelection(unified,{id});phase='images';
+  const images=await selection.prepareEditorImages(next,readCompiled,makeCanvas,true);
+  if(!valid())return null;
+  phase='capture';
+  return V.capture({plan:next.plan,canvases:Object.fromEntries(Object.entries(images).map(([path,value])=>[path,value.frames[0]]))},256);
+ }catch(error){diagnostic('error','preview','Preview failed',{id,model:next&&next.plan.model,slot:next&&next.plan.slot,stage:phase,duration:Date.now()-begin},error);throw error}
 }
 function cancelCompiled(){stopPlayback();selTok++;choice=null;clearResourceInfo();API.busy=false;API.pending='';loadingUi(false)}
 async function selectCompiled(request,reopened){
  stopPlayback();
- const token=++selTok;
+ const token=++selTok,begin=Date.now();var phase='resolve',context={id:request.id,slot:request.slot};
+ diagnostic('info','selection','Selection started',{...context,stage:phase,source:reopened?'saved':undefined});
  try{
   const next=selection.compiledSelection(unified,request),same=!reopened&&choice&&choice.plan.object.card===next.plan.object.card;
+  context={id:request.id,model:next.plan.model,form:next.plan.object.form,slot:next.plan.slot};phase='prepare';
   if(!API.busy&&!same)packCur(true);
   if(reopened){files[reopened.key]=selection.mkFile(reopened.data,reopened.key);delete rejected[reopened.key];dirty[reopened.key]=true}
   API.pending=request.id;API.loading();endDrag();
   const required=same?next.required.filter(path=>!next.editable.includes(path)||!fr[path]):next.required;
+  phase='images';
   const images=await selection.prepareEditorImages({...next,required},readCompiled,makeCanvas);
-  if(token!==selTok)return;
+  if(token!==selTok){diagnostic('info','selection','Selection superseded',{...context,stage:phase,duration:Date.now()-begin});return}
   if(!same)resetImages();
   for(const [path,value] of Object.entries(images)){
    if(next.editable.includes(path)){
@@ -167,9 +176,11 @@ async function selectCompiled(request,reopened){
   choice=next;cur=next.sourceId;slot=next.plan.slot;resetView=!same;
   $('#shapes').innerHTML='';$('#shapesRow').style.display='none';
   const spec=controlTools.previewControlSpec(catalog,next.plan);stateUi.select('compiled:'+next.plan.object.card,spec.schema,spec.state);
-  buildSlotUi();drawEd();build();S.info=selection.compiledInfo(unified,cur);API.loaded(cur);
+  phase='build';buildSlotUi();drawEd();build();S.info=selection.compiledInfo(unified,cur);API.loaded(cur);
+  diagnostic('info','selection','Selection completed',{...context,stage:'ready',duration:Date.now()-begin});
  }catch(error){
-  if(token!==selTok)return;
+  if(token!==selTok){diagnostic('info','selection','Selection superseded',{...context,stage:phase,duration:Date.now()-begin});return}
+  diagnostic('error','selection','Selection failed',{...context,stage:phase,duration:Date.now()-begin},error);
   try{clearModel()}catch(cleanup){error=new AggregateError([error,cleanup],'Editor cleanup failed')}
   choice=null;cur='';slot=null;slots=[];cv={};S.info=null;buildSlotUi();stateUi.select('',null);API.loaded('');
   showErr('block_load',request.id+': '+error.message);
@@ -177,24 +188,27 @@ async function selectCompiled(request,reopened){
 }
 function setPack(map){
  if(!selection){queuedPack=map;return}
+ var begin=Date.now();
  cancelCompiled();resetImages();rejected=Object.create(null);
  Object.keys(dirty).forEach(function(k){if(!(k in map)){delete dirty[k];delete files[k]}});
  Object.keys(map).forEach(function(k){
   try{if(!files[k]||files[k].data!==map[k])files[k]=selection.mkFile(map[k],k);dirty[k]=true}
-  catch(error){delete files[k];delete dirty[k];rejected[k]=error}
+  catch(error){delete files[k];delete dirty[k];rejected[k]=error;diagnostic('error','pack','Saved header rejected',{path:k,source:'saved',stage:'header'},error)}
  });
+ diagnostic('info','pack','Pack applied',{count:Object.keys(map).length,stage:'header',duration:Date.now()-begin});
  var bad=Object.keys(rejected);
  if(bad.length)showErr('block_load',bad.length+' saved texture(s) rejected; first: '+bad[0]+': '+rejected[bad[0]].message);
 }
 async function loadCatalog(){
+ const begin=Date.now();diagnostic('info','catalog','Catalog loading',{stage:'imports'});
  try{
   const [selected,runtime,controls,labels,images,resources,icons]=await Promise.all([import('./catalog/editor-selection.mjs'),FKCatalogData.loadCompiled(THREE),import('./preview-controls.mjs'),import('./preview-config.mjs'),import('./preview-images.mjs'),import('./catalog/editor-resource-usage.mjs'),import('./catalog/rules/icons.mjs')]);
   selection=selected;unified=runtime;resourceTools=resources;iconTools=icons;
   controlTools=controls.createPreviewControls({en:{...labels.TEXT.en,powered:'Power',powered_off:'Off',powered_on:'On'},ru:{...labels.TEXT.ru,powered:'Сигнал',powered_off:'Нет',powered_on:'Есть'}});
-  reader=images.createImageSource(FKCatalog.loadAny,data=>new Promise((ok,fail)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=()=>fail(new Error('Saved PNG decode failed'));im.src=data}));
+  reader=images.createImageSource(FKCatalog.loadAny,data=>new Promise((ok,fail)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=()=>fail(new Error('Saved PNG decode failed'));im.src=data}),{onDiagnostic:function(level,message,details,error){diagnostic(level,'image',message,details,error)}});
   if(queuedPack){setPack(queuedPack);queuedPack=null}
-  catalog=runtime.catalog;S.status='ready';S.source='compiled';S.count=catalog.cards.length;S.error=null;emit();
- }catch(error){S.status='failed';S.error={code:'catalog_fetch',detail:error.message};emit()}
+  catalog=runtime.catalog;S.status='ready';S.source='compiled';S.count=catalog.cards.length;S.error=null;diagnostic('info','catalog','Catalog ready',{stage:'ready',count:S.count,duration:Date.now()-begin});emit();
+ }catch(error){diagnostic('error','catalog','Catalog failed',{stage:'load',duration:Date.now()-begin},error);S.status='failed';S.error={code:'catalog_fetch',detail:error.message};emit()}
 }
 var API={
  edits:0,busy:false,want:null,block:'',pending:'',state:S,ctx:ctx,
