@@ -5,7 +5,7 @@
 #stage + #shapesRow + .fkStatePanel{margin-top:0;border-top:0;border-radius:0 0 14px 14px}
 #slots{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:6px;min-height:50px}
 .fkStatePanel .fkStateRow{background:var(--fk-tone-3);border:1px solid var(--line);border-radius:var(--fk-header-radius);color:var(--ink)}
-.fkStatePanel .fkStateValue{color:inherit}
+.fkStatePanel .fkStateValue{color:inherit;font-size:inherit;font-weight:inherit}
 .fkStatePanel .fkStateRow,#slots .fkResourceRow{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin:6px 0;padding:8px 10px;min-height:var(--fk-header-height);font:inherit;text-align:left;box-sizing:border-box}
 #slots .fkResourceRow{margin:0;list-style:none;cursor:pointer;background:var(--fk-tone-3);border:1px solid var(--line);border-radius:var(--fk-header-radius);color:var(--ink)}
 #slots .fkResourceRow::-webkit-details-marker{display:none}
@@ -14,6 +14,7 @@
 .fkStateOptions{display:flex;flex-direction:column;gap:6px}
 .fkStateOptions .fkStateOption{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:var(--fk-header-height);padding:10px 12px;font:inherit;text-align:left;background:var(--fk-tone-3);border:1px solid var(--line);border-radius:var(--fk-header-radius);color:var(--ink)}
 .fkStateOptions .fkStateOption.on{background:var(--acc);border-color:var(--acc);color:var(--accink)}
+.fkStatePanel .fkStateRow,.fkStateOptions .fkStateOption{font-size:17px;font-weight:800}
 /* Read-only information sits above the preview, separate from resource controls. */
 #resourceInfo{margin:0 0 12px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--mute);font-size:13px;line-height:1.45;overflow-wrap:anywhere}
 #resourceInfo[hidden]{display:none}
