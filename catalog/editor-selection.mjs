@@ -134,7 +134,20 @@ function placeholder(g,r){for(var y=0;y<r;y++)for(var x=0;x<r;x++){var v=118+Mat
 function fcount(w,h){return h>w&&h%w===0?h/w:1}
 export function imageMeta(path,w,h){if(!Number.isSafeInteger(w)||!Number.isSafeInteger(h)||w<1||h<1||w>16384||h>16384||w*h>16777216)throw new Error('Image exceeds editor limits: '+path);var n=String(path).indexOf('textures/entity/')===0?1:fcount(w,h);return {res:w,frames:n,aspect:h/n/w}}
 export function drawFrame(canvas,img,k,path){var m=img?imageMeta(path,img.naturalWidth||img.width,img.naturalHeight||img.height):{res:16,frames:1,aspect:1};canvas.width=m.res;canvas.height=Math.max(1,Math.round(m.res*m.aspect));var g=canvas.getContext('2d');g.imageSmoothingEnabled=false;if(img)g.drawImage(img,0,k*canvas.height,canvas.width,canvas.height,0,0,canvas.width,canvas.height);else placeholder(g,16)}
-export function mkFile(d,path){var w=16,h=16;try{var b=atob(d.split(',')[1].slice(0,40));w=(b.charCodeAt(16)*16777216)+(b.charCodeAt(17)<<16)+(b.charCodeAt(18)<<8)+b.charCodeAt(19);h=(b.charCodeAt(20)*16777216)+(b.charCodeAt(21)<<16)+(b.charCodeAt(22)<<8)+b.charCodeAt(23)}catch(e){}var meta=imageMeta(path,w,h);return {res:meta.res,data:d,frames:meta.frames,aspect:meta.aspect}}
+export function mkFile(d,path){
+ const prefix='data:image/png;base64,';
+ function invalid(reason){throw new Error('Invalid saved PNG header: '+path+' ('+reason+')')}
+ if(typeof d!=='string'||!d.startsWith(prefix))invalid('data URL');
+ if(d.length-prefix.length<44)invalid('truncated IHDR');
+ let b;
+ try{b=atob(d.slice(prefix.length,prefix.length+44))}catch(error){invalid('base64')}
+ const signature=[137,80,78,71,13,10,26,10];
+ if(signature.some((byte,index)=>b.charCodeAt(index)!==byte))invalid('signature');
+ function u32(offset){return b.charCodeAt(offset)*16777216+b.charCodeAt(offset+1)*65536+b.charCodeAt(offset+2)*256+b.charCodeAt(offset+3)}
+ if(u32(8)!==13||b.slice(12,16)!=='IHDR')invalid('IHDR');
+ const w=u32(16),h=u32(20),meta=imageMeta(path,w,h);
+ return {res:meta.res,data:d,frames:meta.frames,aspect:meta.aspect};
+}
 export async function prepareEditorImages(selection,read,makeCanvas,firstOnly=false){
  const editable=new Set(selection.editable);
  return Object.fromEntries(await Promise.all(selection.required.map(async path=>{
