@@ -35,7 +35,7 @@ const schema=[{key:'enabled',label:['Power','Питание'],values:[{value:fal
 test('themed picker uses the real menu manager and preserves boolean values',()=>{
  const s=setup();s.api.select('device',schema);assert.equal(s.api.value().enabled,false);assert.equal(s.host.querySelectorAll('select').length,0);
  const trigger=s.host.querySelectorAll('button')[0];trigger.fire('click');assert.ok(s.ctx.FKM.cur);assert.equal(s.pushed(),1);
- const options=s.panel.querySelectorAll('button');assert.equal(options[1].getAttribute('aria-checked'),'true');options[2].fire('click');
+ const options=s.panel.querySelectorAll('button');assert.equal(options.length,2);assert.ok(options.every(button=>button.getAttribute('role')==='radio'));assert.equal(options[0].getAttribute('aria-checked'),'true');assert.equal(s.doc.activeElement,options[0]);options[1].fire('click');
  assert.equal(s.api.value().enabled,true);assert.ok(trigger.textContent.includes('On ▾'));assert.equal(s.changes(),1);assert.equal(s.ctx.FKM.cur,null);assert.equal(s.doc.activeElement,trigger);
  s.api.select('other',schema);s.api.select('device',schema);assert.equal(s.api.value().enabled,true);
 });
@@ -47,7 +47,7 @@ test('Back, Escape and the backdrop close without changing the preview',()=>{
 });
 test('loading closes only this picker and stale option clicks are ignored',()=>{
  const s=setup();s.ctx.FKShapes.previewStates.device=schema;s.api.select('device',null);
- s.host.querySelectorAll('button')[0].fire('click');const stale=s.panel.querySelectorAll('button')[2];s.api.busy(true);stale.fire('click');
+ s.host.querySelectorAll('button')[0].fire('click');const stale=s.panel.querySelectorAll('button')[1];s.api.busy(true);stale.fire('click');
  assert.equal(s.api.value().enabled,false);assert.equal(s.changes(),0);assert.equal(s.host.hidden,true);
  s.api.busy(false);assert.equal(s.host.hidden,false);s.api.select('none',null);assert.equal(s.host.hidden,true);
 });
