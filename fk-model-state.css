@@ -12,7 +12,7 @@
 .fkStateOptions .fkStateOption{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:var(--fk-header-height);padding:10px 12px;font:inherit;text-align:left;background:var(--fk-tone-3);border:1px solid var(--line);border-radius:var(--fk-header-radius);color:var(--ink)}
 .fkStateOptions .fkStateOption.on{background:var(--acc);border-color:var(--acc);color:var(--accink)}
 /* Read-only information sits above the preview, separate from resource controls. */
-#resourceInfo{margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-left-width:3px;border-radius:8px;background:var(--panel);color:var(--mute);font-size:13px;line-height:1.45;overflow-wrap:anywhere}
+#resourceInfo{margin:0 0 12px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--mute);font-size:13px;line-height:1.45;overflow-wrap:anywhere}
 #resourceInfo[hidden]{display:none}
 #resourceInfo .fkResourceRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0;padding:0;list-style:none;cursor:pointer;color:var(--ink);font-weight:400}
 #resourceInfo .fkResourceRow>span:first-child{flex:1 1 auto;min-width:0;text-align:left;overflow-wrap:anywhere}
