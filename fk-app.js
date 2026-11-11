@@ -92,8 +92,8 @@ function renderPacks(){
   var box=$('#packList');
   if(!data.packs.length){box.innerHTML='<p class="lbl">'+esc(T('packs.empty'))+'</p>';return}
   box.innerHTML=data.packs.map(function(p){
-    return '<div class="card"><div class="pk" data-a="open" data-id="'+p.id+'"><img src="'+(p.icon||ICON)+'" alt=""><div class="n"><b>'+esc(p.name)+'</b><span class="lbl">'+esc(T('pack.card_sub',{version:p.version,n:p.textures.length}))+'</span></div></div>'+
-      '<div class="acts"><button data-a="exp" data-id="'+p.id+'">'+esc(T('act.export'))+'</button><button data-a="edit" data-id="'+p.id+'">'+esc(T('act.edit'))+'</button><button data-a="del" data-id="'+p.id+'">'+esc(T('act.delete'))+'</button></div></div>';
+    return '<div class="card"><div class="pk"><img src="'+(p.icon||ICON)+'" alt=""><div class="n"><b>'+esc(p.name)+'</b><span class="lbl">'+esc(T('pack.card_sub',{version:p.version,n:p.textures.length}))+'</span></div></div>'+
+      '<div class="acts"><button data-variant="accent" data-a="open" data-id="'+p.id+'">'+esc(T('act.textures'))+'</button><button data-a="exp" data-id="'+p.id+'">'+esc(T('act.export'))+'</button><button data-a="edit" data-id="'+p.id+'">'+esc(T('act.edit'))+'</button><button data-a="del" data-id="'+p.id+'">'+esc(T('act.delete'))+'</button></div></div>';
   }).join('');
 }
 $('#packList').addEventListener('click',function(e){

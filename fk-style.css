@@ -38,12 +38,13 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px}
 
 /* cards */
 .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:0;margin:8px 0;overflow:hidden}
-.pk{display:flex;gap:12px;align-items:center;padding:12px;cursor:pointer}
+.pk{display:flex;gap:12px;align-items:center;padding:12px}
 .pk img,.ico{width:56px;height:56px;image-rendering:pixelated;border:1px solid var(--line);border-radius:8px;background:#bbb;flex:none;object-fit:cover}
 .pk .n{flex:1;min-width:0}
 .pk .n b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.acts{display:flex;gap:8px;padding:0 12px 12px}
-.acts button{flex:1;min-height:var(--fk-header-height);padding:0 8px;border:1px solid var(--line);border-radius:var(--fk-header-radius);background:var(--fk-tone-3);color:var(--ink);font:inherit;cursor:pointer}
+.acts{display:flex;flex-wrap:wrap;gap:8px;padding:0 12px 12px}
+.acts button{flex:1 1 0;min-height:var(--fk-header-height);padding:0 8px;border:1px solid var(--line);border-radius:var(--fk-header-radius);background:var(--fk-tone-3);color:var(--ink);font:inherit;cursor:pointer}
+.acts button[data-variant=accent]{flex:1 1 100%;min-height:calc(var(--fk-header-height) + 8px);background:var(--acc);border-color:var(--acc);color:var(--accink);font-weight:800}
 .acts button:active{filter:brightness(.9)}
 .tcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin:8px 0}
 .tx{display:flex;gap:10px;align-items:center}
