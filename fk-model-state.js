@@ -21,17 +21,16 @@ function create(anchor,changed,options){
  options=options||{};
  if(typeof changed!=='function'||typeof options!=='object'||Array.isArray(options))throw new Error('Invalid preview picker configuration');
  ['language','doneLabel','manager','preview'].forEach(function(key){if(own(options,key)&&typeof options[key]!=='function')throw new Error('Invalid preview picker dependency: '+key)});
- var language=options.language||function(){return root.FK.lang()},doneLabel=options.doneLabel||function(){return root.FK.t('ui.done')},getManager=options.manager||function(){return root.FKM};
+ var language=options.language||function(){return root.FK.lang()},getManager=options.manager||function(){return root.FKM};
  var doc=anchor.ownerDocument,values=Object.create(null),current='',schema=null,blocked=false,opened=null,disposed=false,previewRunning=0,previewPump=null;
  function mk(tag,cls,text){var el=doc.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el}
  function text(pair){return pair[language()==='ru'?1:0]}
  var host=mk('div','fk-edit-part fkStatePanel');anchor.parentNode.insertBefore(host,anchor.nextSibling);
- var panel=mk('div','fkBack'),sheet=mk('section','fkSheet'),head=mk('div','fkHead'),title=mk('span','fkTitle'),done=mk('button','fkOk'),choices=mk('div','fkStateOptions');
+ var panel=mk('div','fkBack'),sheet=mk('section','fkSheet'),head=mk('div','fkHead'),title=mk('span','fkTitle'),choices=mk('div','fkStateOptions');
  panel.id='fkStateDialog'+(++serial);title.id=panel.id+'Title';
  sheet.setAttribute('role','dialog');sheet.setAttribute('aria-modal','true');sheet.setAttribute('aria-labelledby',title.id);
- done.type='button';done.textContent='✓';done.setAttribute('aria-label',doneLabel());
  choices.setAttribute('role','radiogroup');
- head.appendChild(title);head.appendChild(done);sheet.appendChild(head);sheet.appendChild(choices);panel.appendChild(sheet);doc.body.appendChild(panel);
+ head.appendChild(title);sheet.appendChild(head);sheet.appendChild(choices);panel.appendChild(sheet);doc.body.appendChild(panel);
  function visible(){host.hidden=blocked||!schema;host.inert=blocked}
  function close(restore){
   if(opened&&restore===false)opened.restore=false;
@@ -61,7 +60,7 @@ function create(anchor,changed,options){
  }
  var menu={triggers:[],show:function(){
   var snapshot=opened;if(disposed||!snapshot)return;
-  title.textContent=text(snapshot.item.label);choices.textContent='';done.setAttribute('aria-label',doneLabel());
+  title.textContent=text(snapshot.item.label);choices.textContent='';
   choices.setAttribute('aria-label',title.textContent);
   var selected=null,previews=options.preview?previewQueue(snapshot):null;snapshot.previews=previews;
   snapshot.item.values.forEach(function(option){
@@ -80,13 +79,12 @@ function create(anchor,changed,options){
    });
    choices.appendChild(button);if(active)selected=button;
   });
-  panel.classList.add('on');snapshot.trigger.setAttribute('aria-expanded','true');(selected||done).focus();
+  panel.classList.add('on');snapshot.trigger.setAttribute('aria-expanded','true');(selected||choices.querySelector('button')).focus();
  },hide:function(){
   var previous=opened;opened=null;panel.classList.remove('on');
   if(previous&&previous.previews)previous.previews.cancel();
   if(previous){previous.trigger.setAttribute('aria-expanded','false');if(previous.restore!==false&&!disposed&&!blocked&&!host.hidden&&previous.trigger.isConnected)previous.trigger.focus()}
  }};
- done.addEventListener('click',function(){close()});
  panel.addEventListener('click',function(e){if(e.target===panel)close()});
  panel.addEventListener('keydown',function(e){
   var manager=getManager();if(disposed||!manager||manager.cur!==menu)return;
@@ -110,7 +108,6 @@ function create(anchor,changed,options){
    if(!own(state,item.key)||!item.values.some(function(option){return option.value===state[item.key]}))state[item.key]=item.values[0].value;
   });
   close(false);current=id;schema=next;values[id]=state;host.textContent='';visible();if(!schema)return;
-  done.setAttribute('aria-label',doneLabel());
   host.appendChild(mk('p','lbl',text(['Model state — preview only','Состояние модели — только просмотр'])));
   schema.forEach(function(item){
    var button=mk('button','ghost fkStateRow'),valueNode=mk('span','fkStateValue');button.type='button';
