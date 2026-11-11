@@ -1,5 +1,8 @@
 /* State controls reuse the editor's sheet, backdrop, buttons and theme variables. */
 .fkStatePanel,#slots{margin:12px 0;padding:8px;border:1px solid var(--line);border-radius:var(--fk-header-radius);background:var(--fk-tone-2)}
+/* Join only the editor's adjacent preview/state pair; a stage without controls stays closed. */
+#stage:has(+ #shapesRow + .fkStatePanel:not([hidden])){border-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0}
+#stage + #shapesRow + .fkStatePanel{margin-top:0;border-top:0;border-radius:0 0 14px 14px}
 #slots{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:6px;min-height:50px}
 .fkStatePanel .fkStateRow{background:var(--fk-tone-3);border:1px solid var(--line);border-radius:var(--fk-header-radius);color:var(--ink)}
 .fkStatePanel .fkStateValue{color:inherit}
