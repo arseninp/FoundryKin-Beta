@@ -342,32 +342,48 @@ function fontsOf(d){
   }catch(e){return 'n/a'}
 }
 function report(){
-  var L=['FoundryKin diagnostics'];
+  var L=['FoundryKin diagnostics'],editorLog='not loaded';
+  function clean(value,limit){try{var log=window.FKLog;return log&&log.text?log.text(value,limit):'[redaction unavailable]'}catch(e){return '[redaction unavailable]'}}
+  function logText(value){return String(value||'not loaded').split('\n').slice(0,61).map(function(line){return clean(line,900)}).join('\n')}
   L.push('app.html: v'+V);
   L.push('fk-app.js: v'+APP_V);
   var cv='?';
   try{var lk=document.querySelector('link[rel=stylesheet]'),cm=/[?&]v=([\d.]+)/.exec(String(lk&&lk.href||''));if(cm)cv=cm[1]}catch(e){}
   L.push('fk-style.css: v'+cv);
   L.push('language: '+FK.lang()+' (setting: '+FK.setting()+')');
-  if(hasFke()){
+  L.push('logs: memory only; no automatic upload; header rejection is not full PNG validation');
+  if(hasFke())try{
     var i=FKE.info();
-    L.push('fk-editor.js: v'+i.version+', editor document: '+(i.ready?'v'+i.editor:'not loaded'));
-    L.push('editor mode: '+i.mode+', busy: '+(i.busy?'yes':'no')+', webgl: '+i.webgl+', frames: '+i.frames);
-    L.push('catalog: '+(i.status||'-')+(i.source?' ('+i.source+')':'')+', blocks: '+i.count);
-    L.push('fonts shell: '+fontsOf(document));
-    L.push('fonts editor: '+(FKE.doc()?fontsOf(FKE.doc()):'n/a'));
-    if(i.errors.length)L.push('editor errors: '+i.errors.map(function(e){return e.code+(e.detail?': '+e.detail:'')}).join(' | '));
-  }else L.push('fk-editor.js: NOT LOADED');
-  var ls='ok';
-  try{localStorage.setItem('fk_t','1');localStorage.removeItem('fk_t')}catch(e){ls='ERROR: '+e.message}
+    L.push('fk-editor.js: v'+clean(i.version,24)+', editor document: '+(i.ready?'v'+clean(i.editor,24):'not loaded'));
+    L.push('editor mode: '+clean(i.mode,24)+', busy: '+(i.busy?'yes':'no')+', webgl: '+i.webgl+', frames: '+i.frames);
+    L.push('catalog: '+clean(i.status||'-',40)+(i.source?' ('+clean(i.source,40)+')':'')+', blocks: '+i.count);
+    L.push('fonts shell: '+clean(fontsOf(document),300));
+    L.push('fonts editor: '+clean(FKE.doc()?fontsOf(FKE.doc()):'n/a',300));
+    if(i.catalogError)L.push('catalog error: '+clean(i.catalogError.code,40)+': '+clean(i.catalogError.detail,240));
+    if(i.errors.length)L.push('editor errors: '+i.errors.slice(-3).map(function(e){return clean(e.code,40)+(e.detail?': '+clean(e.detail,240):'')}).join(' | '));
+    var d=i.diagnostics;
+    L.push('saved header diagnostics: '+(d?clean(d.status,40):'unsupported'));
+    if(d){
+      if(d.status==='available'){
+        var rows=d.rejected.slice(0,40);
+        L.push('rejected saved textures: '+d.rejectedCount+'; showing '+rows.length);
+        rows.forEach(function(row){L.push('  '+clean(row.path,160)+': '+clean(row.error,240))});
+      }
+      editorLog=d.log;
+    }
+  }catch(e){L.push('editor diagnostics: unavailable')}else L.push('fk-editor.js: NOT LOADED');
+  var ls='readable (write not tested)';
+  try{localStorage.getItem(KEY)}catch(e){ls='ERROR: '+clean(e.message,240)}
   var tex=0;data.packs.forEach(function(p){tex+=p.textures.length});
   var sz=0;try{sz=JSON.stringify(data).length}catch(e){}
-  L.push('storage: '+ls+'; packs: '+data.packs.length+', textures: '+tex+', data ~ '+Math.round(sz/1024)+' KB');
-  L.push('editor address: '+settings.url);
-  L.push('page: '+location.href);
-  L.push('browser: '+String(navigator.userAgent).slice(0,140));
+  L.push('storage read: '+ls+'; packs: '+data.packs.length+', textures: '+tex+', data ~ '+Math.round(sz/1024)+' KB');
+  L.push('editor address: '+clean(settings.url,200));
+  L.push('page: '+clean(location.href,200));
+  L.push('browser: '+clean(navigator.userAgent,140));
   L.push('time: '+new Date().toISOString());
-  return L.join('\n');
+  L.push('','Editor log (last 60 events):',logText(editorLog));
+  try{L.push('','Shell log (last 60 events):',window.FKLog?logText(window.FKLog.dump(60)):'not loaded')}catch(e){L.push('shell log: unavailable')}
+  var out=L.join('\n');return out.length>100000?out.slice(0,100000)+'\n[report truncated]':out;
 }
 $('#sDiag').onclick=function(){go('diag')};
 $('#dRefresh').onclick=function(){$('#dReport').textContent=report()};
