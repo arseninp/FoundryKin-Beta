@@ -1,53 +1,51 @@
-# TODO — оставшаяся работа после OLDCHAT32
+# TODO — актуально после OLDCHAT33 и изоляции ошибок PNG
 
-Обновлено2026-11-10. Кодовая база перед docs-write3f2cf4fc785c171a58036bee06ddd8df4f93dab5. [x] означает сохранённый код, не полный CI/визуальную приёмку. CONTEXT/handoff первыми. Прежние модельные контракты сохраняются.
+Обновлено 2026-11-11. Кодовая точка: 94a1185f0743413c6283141bb2caa1c087982db9. CONTEXT.md — источник актуального статуса; прежние документы сохраняют технические контракты. [x] означает записанный код, не полную браузерную/CI-приёмку.
 
 ## Уже записано — не повторять
 
-- [x] Compiled editor0a502af, material families adb5d5d, frames/history/PNG291b5d9, GPU reuse0f27ede; физическая чистка не завершена.
-- [x] Double slabs a048519/b82838b со строгими validators/smooth stone side; items loader/generator/icons8cd50c9/de36127/449872f и generated atlas75 из3e698c4; observer b7bf780/6b649d4; signs c92aaa9/cave vines c3d8970/hanging8c3805b.
-- [x] MERS8485bb4 без PBR, TGA diagnostics44a5f84, conduit UVbf90910 и expectations b89b4b5. Пользователь подтвердил conduit/MERS, не весь RGBA/export.
-- [x] Banner family/resources50d12e1, groups3bcf213/da03234, snapshot dimensions d5a6145; bubble normalization337f753 без pumpkin_side.
-- [x] Bubble groups833e3f9, pot/ghast groups bc0f118:18 ресурсов пузырей,23 рисунка горшка,4 стадии гаста.
-- [x] Общий начальный ракурс восьми model keys41bf23b, не изменение геометрии/UV.
-- [x] Usage/notes43dcfd2/f245aa6/a804a64/6726278: информационный блок над stage, отдельно от PNG, лишние file/shared lists из справки убраны.
-- [x] Cauldron family7d37e29 и подписи воды0195317; исходные IDs/resources и независимость PNG/content сохранены.
-- [x] Banner layers57a7e30/f50a901/eec565b:0–16, рисунок/цвет/move/remove preview. Миниатюры отдельно открыты.
-- [x] Usage reuse8b8da8a/3f2cf4f, не постоянный cache и не измеренный benchmark.
+- [x] Compiled editor/families, кадры с отдельной историей и полным PNG, GPU reuse; legacy cleanup не завершена.
+- [x] Double slabs со строгими validators/smooth stone side; items loader/generator/icons и atlas75, observer, signs/cave vines/hanging. Подробные SHA в CONTEXT.
+- [x] MERS без PBR, TGA diagnostics, conduit UV. Пользовательское подтверждение не полный RGBA/export.
+- [x] Banner/bubble/pot/ghast resource groups; пузыри18 без pumpkin_side, горшок23 рисунка, гаст ровно4 стадии. Cauldron family и подписи воды.
+- [x] Resource info над stage, usage owners/dependencies без ownership transfer, пояснения эффектов, лишние file/shared lists из справки убраны.
+- [x] Слои знамени0–16, move/remove вместе с цветом,42 рисунка/16 цветов, ominous с сохранением настроек.
+- [x] Play/Pause702f28a и тесты7b10d0d: физические кадры раз в секунду, не JSON timing/order; не реализовывать повторно.
+- [x] Ленивые миниатюры рисунков32ef4d1/2b33040, общий picker, максимум2 загрузки.
+- [x] Пометка • icon840a451 в смешанных наборах; бамбук — пример, не доказанный дефект модели/carried.
+- [x] Три тона7edbcc2/8e10b33/9053a2b, панели и перенос названий без лимита строк; явная кнопка Textures0dd5307.
+- [x] fk-log.js5f3be69 создан, но ещё НЕ подключён; это не готовая диагностика.
+- [x] mkFile77bd1fb: явная проверка заголовка без fallback16x16; не полный PNG decode.
+- [x] fk-core94a1185: per-file isolation, rejected-реестр, запрет ванильной подмены, FKAPI.diagnostics().
 
-## Ближайший законченный пакет
+## Следующий пакет — расширенная диагностика
 
-- [ ] Play/Pause существующих кадров: один кадр в секунду сверху вниз, после последнего первый, без JSON timing/order. Не подключать подготовку flipbook metadata как обязательную зависимость.
-- [ ] Использовать fr/fi/setFrame, сохранить историю каждого кадра, обновление editor/model и полный вертикальный PNG в packCur.
-- [ ] Остановка при смене объекта/slot, начале рисования, выходе/скрытии, смене/сбросе пака; реальные hooks tools/async, отсутствие устаревших callbacks и нескольких таймеров.
-- [ ] Проверить цикл, Play/Pause, остановки, history, экспорт, отсутствие постоянного render loop. Код ещё не записан; последняя проверка OLDCHAT32 упала в обвязке, успешные тесты не заявлять.
+- [ ] Подключить существующий FKLog к shell/editor и существующему экрану отчёта, не второй журнал/меню. Изолировать сбой самой диагностики от работы каталога.
+- [ ] FKE.info/отчёт: получить diagnostics().rejected, пути и причины, не содержимое PNG. Учитывать отдельные документы оболочки и iframe.
+- [ ] События загрузки/выбора/ошибок с этапом, saved/vanilla, path, dimensions при наличии, duration и контекстом. Не писать каждый pixel/frame/pointermove.
+- [ ] Перестать молча терять причины отказа preview в fk-grid.js; буфер/объём отчёта ограничить. Не дублировать парсер рядом с mkFile; сверить существующий inspector FKLog.
+- [ ] Без PNG/base64, пользовательского содержимого паков, секретов URL и автоматической сетевой отправки в логах. Без постоянного цикла/бесконечного накопления/storage writes журнала.
+- [ ] Проверить связку и чистую/ошибочную/исправленную текстуру, смену пака, ошибки decode после корректного заголовка, ошибки renderer и отсутствие логгера. Только после подготовки — точное подтверждение и запись.
 
-## Ресурсы, дефекты и макет
+## Периодический сбой и приёмка
 
-- [ ] Миниатюры рисунков знамени; существующее управление слоями не повторять, новую палитру/цветные PNG не добавлять.
-- [ ] Carried бамбука сверить семантически; не объявлять icon по имени/директории. Icons filter — адресный вход в ту же карточку, не второй каталог.
-- [ ] MERS: получить результат существующей TGA диагностики и проверить decode/draw/history/Add/reopen/export с RGBA/subsurface alpha. Не требовать повторно оригинальный TGA через чат.
-- [ ] Швы/белые линии/исчезающие поверхности: alpha/inflate/UV пока гипотезы, не global opaque/DoubleSide.
-- [ ] Сквозная приёмка котла/families/aliases/source-ID/reopen/sign/hanging/cave-vines/borrowed, не повторное подключение.
-- [ ] Пользовательский каталог после D и позднее повторный обход на пропущенные families. Общая часть PNG не автоматическое объединение.
-- [ ] Масштаб маленьких объектов пока не менять.
+- [ ] Первопричина реального acacia_shelf НЕ установлена. Найдены дефект разбора заголовка и путь остановки каталога; не объявлять доказанной порчу данных пользователя/превышение лимита/ошибку модели.
+- [ ] Пользователь2026-11-11: сейчас загружается нормально, но сбой периодический. Не считать закрытой браузерной приёмкой; сейчас повторной проверки не просить.
+- [ ] При повторении собрать конкретный отчёт. Не требовать очистки кэша/паков или многократных случайных воспроизведений.
+- [ ] До записи были19 isolated mkFile checks, syntax check полного ядра и16 VM checks с mocked DOM/reader; это не полный CI/браузер/real PNG и не сумма исторических тестов. Permanent tests в этом разговоре не добавлялись.
 
-## Сквозная приёмка и завершение
+## Макет и оставшиеся технические задачи
 
-- [ ] Свежие compile/tests/coverage/inputValidation/полный preview-slice на конкретном SHA, не старые697/697 и не сумма локальных тестов из чата.
-- [ ] Real PNG/TGA/WebGL/UV/alpha/Android, async/storage/import/limits/GPU cleanup.
-- [ ] Find→form/state/resource→draw/undo/redo→Add→reopen→PNG/mcpack, owned/carried/icons/indexed repeats/dependencies.
-- [ ] Профилировать задержки, не обещать ускорение от сворачивания/одного прохода без замеров.
-- [ ] Удалять только подтверждённо заменённый legacy/HTML/exports, сохранить PNG/TGA loader/validators.
+- [ ] Подписи Preview/Textures редактора, выравнивание Shared texture, тёмная палитра из макета. Back red#866065 лишь предложение. Единый компонент всех кнопок не завершён.
+- [ ] MERS decode/draw/history/Add/reopen/export с RGBA/subsurface alpha; не запрашивать оригинальный TGA повторно.
+- [ ] Швы/белые линии/исчезающие поверхности: alpha/inflate/UV — гипотезы, не global opaque/DoubleSide.
+- [ ] Сквозные families/aliases/source-ID/reopen/sign/hanging/cave-vines/borrowed и Find→draw/undo/redo→Add→reopen→PNG/mcpack.
+- [ ] Свежие compile/tests/coverage/inputValidation/preview-slice на точном SHA; real PNG/TGA/WebGL/Android, async/storage/import/limits/GPU cleanup, профилирование задержек.
+- [ ] Каталог после D и повторный обход на пропущенные families; совпадение части PNG не auto-merge. Масштаб пока не менять.
+- [ ] Удалять только подтверждённо заменённый legacy, сохранить PNG/TGA loader/validators.
 
-## Отложено
+## Отложено и правила
 
-Версии/cache и перенос истории в архив не задерживают блоки/макет. Старые логи не удалять.1.0.0 — обсуждённая будущая версия, не установленная этим docs-only. Перед архивированием проверить ссылки/CI и сохранить действующие контракты. После блоков перед дальнейшей догрузкой items — планируемый глубокий аудит безопасности, не выполненный; docs/code-map.md пока не создана.
+Версии/cache (runtime0.9.1,1.0.0 ещё не установлен), архив старой истории, code-map и будущий аудит безопасности после блоков/перед догрузкой items. Старые логи не удалять. Mobs/skin/body/armor/tablet-desktop/IndexedDB/большие паки/PWA/offline — будущие этапы.
 
-Full mobs/skin/body/armor/entities/дальнейшие items/cushion/tablet-desktop layout/IndexedDB/большие паки/user backup/PWA/offline/права — будущие этапы. Точные particles/smoke/PBR не обещаны.
-
-## Доказательства и правила
-
-В текущем docs-проходе приложение/Node/CI/браузер/WebGL не запускались. История и целевые модули прочитаны, полные diff a804a64/41bf23b сверены, не все diff/код. Пользовательское «все ок вроде» — ограниченная проверка тогдашнего UI; дальнейшая проверка отложена из-за интернета. Сейчас ничего проверять/присылать не нужно.
-
-Только main, каждый внешний write с точным подтверждением полного пакета, затем saved diff/content и продолжение. Новые permanent tests отдельно согласовать, существующие не ослаблять. <25000 UTF-8 bytes/file. Бэкап/refactor-0.9/fk070_packs/localStorage не менять/не переносить/не очищать, не требовать чистки кэша. Ответы кратко по-русски с ясным действием владельца.
+Только main, один каталог/runtime/picker/menu/index, каждый файл <25000 UTF-8 bytes. Внешний write — точное системное подтверждение всего пакета, затем saved diff/content и продолжение без ожидания очередного «давай дальше». Новые permanent tests отдельно согласовать, существующие не ослаблять. Backup/refactor-0.9/fk070_packs/localStorage не менять/не переносить/не очищать. Кратко по-русски; пользователь сейчас переносит работу в чистый чат, ничего проверять/присылать не требуется.
