@@ -7,7 +7,7 @@ button,.btn,h2,#top .t,.big{font-weight:800}
 body.findSearch #top{display:none}
 .fkHead{display:flex;align-items:center;gap:8px;min-width:0;width:100%}
 .fkTn{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fkTf{flex:0 3 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 9px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--mute);font-size:11px;font-weight:400;line-height:1.5}
+.fkTf{flex:0 3 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 9px;border:1px solid var(--line);border-radius:999px;background:var(--fk-tone-3);color:var(--ink);font-size:11px;font-weight:500;line-height:1.5}
 .fkFind{display:inline-flex;align-items:center;gap:8px}
 .fkFind svg,#addBtn svg{display:block;width:1.2em;height:1.2em;flex:none}
 #addBtn svg{margin-left:8px}
@@ -42,10 +42,9 @@ input[type=file]{position:absolute;opacity:0;width:1px;height:1px}
 .pk img,.ico{width:56px;height:56px;image-rendering:pixelated;border:1px solid var(--line);border-radius:8px;background:#bbb;flex:none;object-fit:cover}
 .pk .n{flex:1;min-width:0}
 .pk .n b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.acts{display:flex;border-top:1px solid var(--line)}
-.acts button{flex:1;border:0;background:none;color:var(--ink);font:inherit;min-height:44px;cursor:pointer}
-.acts button+button{border-left:1px solid var(--line)}
-.acts button:active{background:rgba(0,0,0,.1)}
+.acts{display:flex;gap:8px;padding:0 12px 12px}
+.acts button{flex:1;min-height:var(--fk-header-height);padding:0 8px;border:1px solid var(--line);border-radius:var(--fk-header-radius);background:var(--fk-tone-3);color:var(--ink);font:inherit;cursor:pointer}
+.acts button:active{filter:brightness(.9)}
 .tcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin:8px 0}
 .tx{display:flex;gap:10px;align-items:center}
 .tx img{width:56px;height:56px;image-rendering:pixelated;border:1px solid var(--line);border-radius:6px;background:#bbb;flex:none}
