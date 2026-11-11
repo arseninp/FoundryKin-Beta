@@ -3,7 +3,7 @@
 var FK=window.FK,V=window.FKView;
 function tt(k,p){return FK.t(k,p)}
 var res=16,slots=[],slot=null,cv={},undoS={},redoS={},ph={},fr={},fi={},hs={},encoded={};
-var files={},cur='',dirty={},catalog=null,queuedPack=null;
+var files={},cur='',dirty={},catalog=null,queuedPack=null,rejected=Object.create(null);
 var selection=null,unified=null,choice=null,controlTools=null,reader=null,resourceTools=null,iconTools=null,selTok=0;
 var $=function(s){return document.querySelector(s)};
 try{var PD=parent.document.documentElement;var syncTheme=function(){document.documentElement.setAttribute('data-theme',PD.getAttribute('data-theme')||'light')};syncTheme();new MutationObserver(syncTheme).observe(PD,{attributes:true,attributeFilter:['data-theme']})}catch(e){}
@@ -114,7 +114,7 @@ function familyPaths(id){return selection.compiledFamilyPaths(unified,id)}
 function isEdited(id){return familyPaths(id).some(function(p){return dirty[p]})}
 function familyFiles(){packCur(true);return familyPaths(cur).filter(function(p){return dirty[p]&&files[p]}).map(function(p){return {path:p+'.png',data:files[p].data}})}
 function curFiles(){packCur();var out=[],seen={};slots.forEach(function(s){var f=files[s.id];if(!f)return;var p=s.id;if(!seen[p]){seen[p]=1;out.push({path:p+'.png',data:f.data})}});return out}
-function readCompiled(path){return reader(path,files[path]?{[path]:files[path].data}:{})}
+function readCompiled(path){if(Object.hasOwn(rejected,path))return Promise.reject(rejected[path]);return reader(path,files[path]?{[path]:files[path].data}:{})}
 function makeCanvas(){return document.createElement('canvas')}
 function previewStateOption(field,option){
  if(!choice||choice.plan.model!=='banner'||choice.plan.state.ominous||!/^banner_pattern_\d+$/.test(field.key))return null;
@@ -152,7 +152,7 @@ async function selectCompiled(request,reopened){
  try{
   const next=selection.compiledSelection(unified,request),same=!reopened&&choice&&choice.plan.object.card===next.plan.object.card;
   if(!API.busy&&!same)packCur(true);
-  if(reopened){files[reopened.key]=selection.mkFile(reopened.data,reopened.key);dirty[reopened.key]=true}
+  if(reopened){files[reopened.key]=selection.mkFile(reopened.data,reopened.key);delete rejected[reopened.key];dirty[reopened.key]=true}
   API.pending=request.id;API.loading();endDrag();
   const required=same?next.required.filter(path=>!next.editable.includes(path)||!fr[path]):next.required;
   const images=await selection.prepareEditorImages({...next,required},readCompiled,makeCanvas);
@@ -175,7 +175,17 @@ async function selectCompiled(request,reopened){
   showErr('block_load',request.id+': '+error.message);
  }
 }
-function setPack(map){if(!selection){queuedPack=map;return}cancelCompiled();resetImages();Object.keys(dirty).forEach(function(k){if(!(k in map)){delete dirty[k];delete files[k]}});Object.keys(map).forEach(function(k){if(!files[k]||files[k].data!==map[k])files[k]=selection.mkFile(map[k],k);dirty[k]=true})}
+function setPack(map){
+ if(!selection){queuedPack=map;return}
+ cancelCompiled();resetImages();rejected=Object.create(null);
+ Object.keys(dirty).forEach(function(k){if(!(k in map)){delete dirty[k];delete files[k]}});
+ Object.keys(map).forEach(function(k){
+  try{if(!files[k]||files[k].data!==map[k])files[k]=selection.mkFile(map[k],k);dirty[k]=true}
+  catch(error){delete files[k];delete dirty[k];rejected[k]=error}
+ });
+ var bad=Object.keys(rejected);
+ if(bad.length)showErr('block_load',bad.length+' saved texture(s) rejected; first: '+bad[0]+': '+rejected[bad[0]].message);
+}
 async function loadCatalog(){
  try{
   const [selected,runtime,controls,labels,images,resources,icons]=await Promise.all([import('./catalog/editor-selection.mjs'),FKCatalogData.loadCompiled(THREE),import('./preview-controls.mjs'),import('./preview-config.mjs'),import('./preview-images.mjs'),import('./catalog/editor-resource-usage.mjs'),import('./catalog/rules/icons.mjs')]);
@@ -200,6 +210,7 @@ var API={
   var preferred=preferredId?unified.access.describe(preferredId):null,id=preferred?.id===found.object.id?preferredId:found.object.id;
   selectCompiled({id,slot:key},{key,data});return id;
  },
+ diagnostics:function(){return {rejected:Object.keys(rejected).map(function(path){return {path:path,error:rejected[path].message}})}},
  stats:function(){return {frames:frames,webgl:gl,res:res,slots:slots.length}},
  grid:function(){return {catalog:catalog,files:files,dirty:dirty,load:FKCatalog.loadAny,select:function(id){return selectCompiled({id})},edited:isEdited,preview:previewCompiled,search:unified?q=>selection.compiledSearchIds(unified,q):null,
   discard:function(){cancelCompiled();slots.forEach(function(s){ph[s.id]=true})},
