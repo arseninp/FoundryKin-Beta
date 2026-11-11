@@ -14,7 +14,8 @@
 /* Read-only information sits above the preview, separate from resource controls. */
 #resourceInfo{margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-left-width:3px;border-radius:8px;background:var(--panel);color:var(--mute);font-size:13px;line-height:1.45;overflow-wrap:anywhere}
 #resourceInfo[hidden]{display:none}
-#resourceInfo .fkResourceRow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0;padding:0;list-style:none;cursor:pointer;color:var(--ink);font-weight:400}
+#resourceInfo .fkResourceRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0;padding:0;list-style:none;cursor:pointer;color:var(--ink);font-weight:400}
+#resourceInfo .fkResourceRow>span:first-child{flex:1 1 auto;min-width:0;text-align:left;overflow-wrap:anywhere}
 #resourceInfo .fkResourceRow::-webkit-details-marker{display:none}
 #resourceInfo .fkResourceRow:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
 #resourceInfo .fkStateValue{flex:none;font-size:12px;font-weight:400;white-space:nowrap}
