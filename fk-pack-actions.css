@@ -1,0 +1,4 @@
+/* Create screen: neutral creation/import group, using existing theme tones. */
+#s-create>h2[data-i18n="packs.new"]{display:none}
+#s-create>.col{padding:12px;background:var(--fk-tone-2);border:1px solid var(--line);border-radius:10px}
+#s-create>.col>.btn{background:var(--fk-tone-3);border-color:var(--line);color:var(--ink)}
