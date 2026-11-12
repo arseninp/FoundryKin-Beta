@@ -1,4 +1,4 @@
-/* Pale moss carpet: base plate plus full-height inset side planes. Java mossy_carpet_side is a geometry reference; Bedrock uses base/tip images. */
+/* Pale moss carpet: base plate plus full-height side planes on block boundaries. Java mossy_carpet_side is a geometry reference; Bedrock uses base/tip images. */
 import {composeShape, requireRoles} from './shapes.mjs';
 const Q = Math.PI / 2, DIRS = ['north', 'south', 'east', 'west'], LEVELS = ['none', 'short', 'tall'];
 const TURN = {north: 0, east: -Q, south: Math.PI, west: Q};
@@ -27,8 +27,8 @@ export function createMossModels(Three) {
    for (const d of shown) {
     const id = state.upper || state.sides[d] === 'short' ? f.side_tip : f.side_base;
     p.turned(TURN[d], q => {
-     q.face(id, 1, 1, 0, 0, -7.9 / 16, 0, Math.PI, [16, 0, 0, 16]);
-     q.face(id, 1, 1, 0, 0, -7.9 / 16, 0, 0, [0, 0, 16, 16]);
+     q.face(id, 1, 1, 0, 0, -.5, 0, Math.PI, [16, 0, 0, 16]);
+     q.face(id, 1, 1, 0, 0, -.5, 0, 0, [0, 0, 16, 16]);
     });
    }
   });
