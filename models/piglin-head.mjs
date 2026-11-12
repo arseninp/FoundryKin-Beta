@@ -1,8 +1,9 @@
 /* Detached adult head from Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d
    resource_pack/models/entity/piglin.geo.json. Coordinates below subtract the head's Y=24.
-   Cube inflate overrides bone inflate; head cubes use -0.02, ear bones use 0.
-   Static geometry candidate, no body, baby variant, ear animation or wall mounting. */
+   Source head inflate is -0.02; this preview trial uses full-size head cubes instead.
+   Ear bones retain zero inflate. No body, baby variant, ear animation or wall mounting. */
 import {composeShape} from './shapes.mjs';
+const HEAD_INFLATE=0;
 export function buildPiglinHead(Three,E,sheet,rotation) {
  if(typeof Three.Group!=='function'||!E.group||typeof E.group.add!=='function')throw new Error('Missing piglin head environment');
  const root=new Three.Group();
@@ -13,10 +14,10 @@ export function buildPiglinHead(Three,E,sheet,rotation) {
   composeShape(Three,{...E,group:target},p=>p.prism((w+2*inflate)/16,(h+2*inflate)/16,(d+2*inflate)/16,(origin[0]+w/2-pivot[0])/16,(origin[1]+h/2-pivot[1])/16,(origin[2]+d/2-pivot[2])/16,sheet,rects,64));
  }
  try {
-  cube(root,[-5,0,-4],[10,8,8],[0,0],-.02);
-  cube(root,[-2,0,-5],[4,4,1],[31,1],-.02);
-  cube(root,[2,0,-5],[1,2,1],[2,4],-.02);
-  cube(root,[-3,0,-5],[1,2,1],[2,0],-.02);
+  cube(root,[-5,0,-4],[10,8,8],[0,0],HEAD_INFLATE);
+  cube(root,[-2,0,-5],[4,4,1],[31,1],HEAD_INFLATE);
+  cube(root,[2,0,-5],[1,2,1],[2,4],HEAD_INFLATE);
+  cube(root,[-3,0,-5],[1,2,1],[2,0],HEAD_INFLATE);
   for(const [pivot,angle,origin,uv] of [
    [[5,6,0],30,[4,1,-2],[51,6]],
    [[-5,6,0],-30,[-5,1,-2],[39,6]]
