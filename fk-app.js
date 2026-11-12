@@ -221,9 +221,10 @@ $('#impF').onchange=function(){
           var nm=String(h.name||f.name.replace(/\.[^.]+$/,'')).replace(/[^A-Za-z0-9_\- ]/g,'').trim()||'imported_pack';
           var okId=typeof h.uuid==='string'&&/^[0-9a-f-]{36}$/i.test(h.uuid)&&!byId(h.uuid);
           var p={id:okId?h.uuid:uuid(),keep:okId,mod:(mods[0]&&typeof mods[0].uuid==='string')?mods[0].uuid:'',name:nm,desc:String(h.description||''),version:Array.isArray(h.version)?h.version.join('.'):'1.0.0',game:Array.isArray(h.min_engine_version)?h.min_engine_version.join('.'):'1.21.0',author:(m.metadata&&m.metadata.authors&&m.metadata.authors[0])||'',icon:ib?'data:image/png;base64,'+ib:'',textures:texs};
+          var previousActive=data.active;
           data.packs.push(p);data.active=p.id;
           if(save(KEY,data)){renderPacks();say('msg.imported',{name:p.name,n:texs.length})}
-          else{data.packs.pop()}
+          else{data.packs.pop();data.active=previousActive}
         });
       });
     });
@@ -253,12 +254,13 @@ $('#eSave').onclick=function(){
   if(!n)n='my_pack';
   var isNew=editNew,p=isNew?{id:uuid(),name:n,desc:'',version:'1.0.0',game:'1.21.0',author:'',icon:'',textures:[]}:active();
   if(!p)return;
+  var previousActive=data.active,before={name:p.name,author:p.author,desc:p.desc,version:p.version,game:p.game,icon:p.icon};
   p.name=n;p.author=$('#eAuthor').value.trim();p.desc=$('#eDesc').value.trim();
   p.version=$('#eVer').value.trim()||'1.0.0';p.game=$('#eGame').value.trim()||'1.21.0';p.icon=draftIcon;
   if(isNew)data.packs.push(p);
   data.active=p.id;
   if(save(KEY,data)){editNew=false;fillEdit();say('msg.saved')}
-  else if(isNew){data.packs.pop()}
+  else{data.active=previousActive;if(isNew)data.packs.pop();else Object.assign(p,before)}
 };
 
 /* editor screen */
