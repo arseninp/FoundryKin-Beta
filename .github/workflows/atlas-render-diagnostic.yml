@@ -1,0 +1,39 @@
+name: Atlas edge WebGL diagnostic
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/atlas-render-diagnostic.yml'
+      - 'tools/atlas-render-diagnostic.mjs'
+permissions:
+  contents: read
+concurrency:
+  group: atlas-render-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned diagnostic dependencies in temporary storage only
+        run: |
+          mkdir -p "$RUNNER_TEMP/fk-atlas-browser"
+          npm install --prefix "$RUNNER_TEMP/fk-atlas-browser" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund three@0.128.0 playwright@1.49.1
+          "$RUNNER_TEMP/fk-atlas-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Compare original rendering, AA-disabled and centroid controls
+        run: node tools/atlas-render-diagnostic.mjs
+      - name: Preserve reference hashes, renderer metadata and screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-render-${{ github.sha }}
+          path: ${{ runner.temp }}/fk-atlas-render
+          if-no-files-found: warn
+          retention-days: 7
