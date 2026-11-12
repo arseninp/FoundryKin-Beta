@@ -4,6 +4,7 @@ import {readFile,readdir} from 'node:fs/promises';
 import vm from 'node:vm';
 import {compileFamilies} from './catalog-families.mjs';
 import {compiledResourceGroups,compiledFamilyPaths} from '../catalog/editor-selection.mjs';
+import {iconLabelsForSet} from '../catalog/rules/icons.mjs';
 test('distinct atlas keys pointing to one PNG identify the same material',()=>{
  const b={oak_planks:{textures:'oak'},oak_stairs:{textures:'legacy_oak'}};
  const t={texture_data:{oak:{textures:'textures/blocks/planks_oak'},legacy_oak:{textures:{path:'textures/blocks/planks_oak'}}}};
@@ -61,10 +62,16 @@ class Element{
  addEventListener(key,callback){this.listeners[key]=callback;}
 }
 async function slotUi(choice,slot){
- const source=await readFile(new URL('../fk-core.js',import.meta.url),'utf8'),start=source.indexOf('function buildSlotUi(){'),end=source.indexOf('\nfunction setSlot(',start);
+ const source=await readFile(new URL('../fk-core.js',import.meta.url),'utf8'),start=source.indexOf('function slotIconLabels(paths){'),end=source.indexOf('\nfunction setSlot(',start);
  assert.ok(start>=0&&end>start,'Editor slot renderer boundary changed');
  const host=new Element('div'),resourceInfo=new Element('div'),calls=[];let frames=0;
- const context={choice,slot,resourceInfo,unified:{},resourceTools:{appendResourceUsage(){}},clearResourceInfo(){resourceInfo.innerHTML='';resourceInfo.hidden=true;},showErr(code,detail){throw new Error(code+': '+detail);},document:{createElement:tag=>new Element(tag)},FK:{lang:()=> 'ru'},$:()=>host,setSlot:id=>calls.push(id),frameUi:()=>{frames++;}};
+ const r=runtime();r.catalog.resources={};
+ for(const [id,record] of Object.entries(r.catalog.records)){
+  record.id=id;record.model=id==='stone'?'cube':'banner';record.faces={up:[id==='stone'?'textures/blocks/stone':base]};
+  for(const path of record.paths)(r.catalog.resources[path]??=[]).push({kind:'block',id});
+ }
+ const selected={...choice,plan:{...choice.plan,object:{card:'standing_banner'}}};
+ const context={choice:selected,slot,catalog:r.catalog,iconTools:{iconLabelsForSet},resourceInfo,unified:r,resourceTools:{appendResourceUsage(){}},clearResourceInfo(){resourceInfo.innerHTML='';resourceInfo.hidden=true;},showErr(code,detail){throw new Error(code+': '+detail);},document:{createElement:tag=>new Element(tag)},FK:{lang:()=> 'ru'},$:()=>host,setSlot:id=>calls.push(id),frameUi:()=>{frames++;}};
  vm.runInNewContext(source.slice(start,end)+'\nbuildSlotUi();',context,{timeout:1000});
  return {host,calls,frames};
 }
@@ -88,4 +95,11 @@ test('opening the illager sheet opens base rather than additional sources',async
  assert.deepEqual(root.children.filter(node=>node.open).map(node=>node.dataset.group),['base']);
  const group=root.children.find(node=>node.dataset.group==='base');assert.equal(group.children[0].children[1].textContent,'2 ▾');
  assert.equal(group.children[1].children.find(button=>button.dataset.id===special).attributes['aria-pressed'],'true');
+});
+test('slot UI renders icon badges through the real family label policy',async()=>{
+ const result=await slotUi({plan:{paths:[base,icon]},resourceGroups:null},icon),[texture,item]=result.host.children;
+ assert.equal(texture.children.length,1);assert.equal(item.children.length,2);
+ assert.equal(item.children[1].className,'fkResourceIconBadge');assert.equal(item.children[1].textContent,'• icon');
+ assert.equal(item.attributes['aria-label'],'banner · icon');assert.equal(item.attributes['aria-pressed'],'true');
+ item.onclick();assert.deepEqual(result.calls,[icon]);assert.equal(result.frames,1);
 });

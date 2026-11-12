@@ -73,7 +73,10 @@ test('bubble column resources do not implicitly assign a model or rewrite atlas 
 });
 test('bubble column sprite retains all owned roles and original variants',()=>{
  const f=bubbleFixture(),before=JSON.stringify(f),record=normalizeBlock('bubble_column',f.definition,f.atlas,{model:'sprite',existing:f.existing});
- assert.equal(record.model,'sprite');assert.deepEqual(record.bindings,f.expected);assert.equal(record.paths.length,19);
+ assert.equal(record.model,'sprite');assert.deepEqual(record.bindings,f.expected);
+ assert.deepEqual(record.paths,Object.values(f.expected).flat().sort());
+ assert.deepEqual(Object.keys(record.faces),['up','down','north','south']);assert.deepEqual(Object.keys(record.variants),['up','down','north','south']);
+ assert.equal(record.source.kind,'engine-effect');assert.equal(record.source.template,'bubble_column');assert.deepEqual(record.source.definition,f.definition);
  for(const [face,key] of [['up','bubble_column_up_top'],['down','bubble_column_down_top'],['north','bubble_column_outer'],['south','bubble_column_mid']])assert.deepEqual(record.variants[face],f.atlas[key].textures);
  assert.equal(JSON.stringify(f),before);
 });
