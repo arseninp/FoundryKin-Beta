@@ -3,6 +3,13 @@ const FORM= /_(slab|stairs|wall|fence_gate|fence|button|pressure_plate|pane|carp
 const DOUBLE= /(^|_)double_/;
 const SHAPE={slab:'slab',stairs:'stairs',wall:'wall',fence_gate:'gate',fence:'fence',button:'button',pressure_plate:'plate',pane:'pane',carpet:'carpet'};
 const own=(o,k)=>Object.hasOwn(o,k);
+const LEGACY_FORMS=Object.freeze({
+ fence_gate:Object.freeze({base:'oak_planks',form:'gate'}),
+ wooden_button:Object.freeze({base:'oak_planks',form:'button'}),
+ wooden_pressure_plate:Object.freeze({base:'oak_planks',form:'plate'}),
+ normal_stone_slab:Object.freeze({base:'stone',form:'slab'}),
+ normal_stone_stairs:Object.freeze({base:'stone',form:'stairs'})
+});
 function derived(id){return FORM.test(id)||/^double_/.test(id)||/_double_/.test(id)}
 function formOf(id){
  const double=/_slab$/.test(id)&&DOUBLE.test(id),source=double?id.replace(DOUBLE,'$1'):id,match=FORM.exec(source);
@@ -30,9 +37,10 @@ export function compileFamilies(blocks,terrain=null){
  const shared=(id,base)=>[...materials[id]].some(p=>materials[base].has(p));
  /* Resolve ordinary forms first so double slabs can reuse their material parent. */
  for(const doubles of [false,true])for(const id of ids){
-  const match=formOf(id);if(!match||Boolean(match.single)!==doubles)continue;
+  const legacy=own(LEGACY_FORMS,id)?LEGACY_FORMS[id]:null;
+  const match=legacy?{form:legacy.form,single:null}:formOf(id);if(!match||Boolean(match.single)!==doubles)continue;
   const {pre,form,single}=match;
-  const candidates=single&&links[single]?[links[single].base]:[...new Set([pre,pre+'_block',pre+'_planks',pre+'_wool',pre+'_concrete',pre+'s',pre+'_bricks',pre+'_brick'])].filter(x=>x!==id&&own(blocks,x)&&!derived(x));
+  const candidates=legacy?[legacy.base].filter(x=>own(blocks,x)&&!derived(x)):single&&links[single]?[links[single].base]:[...new Set([pre,pre+'_block',pre+'_planks',pre+'_wool',pre+'_concrete',pre+'s',pre+'_bricks',pre+'_brick'])].filter(x=>x!==id&&own(blocks,x)&&!derived(x));
   const eligible=candidates.filter(x=>shared(id,x));
   if(!eligible.length&&single&&own(blocks,single)&&!links[single]&&shared(id,single))eligible.push(single);
   if(eligible.length===1){links[id]={base:eligible[0],form};report.grouped.push({id,...links[id]})}
