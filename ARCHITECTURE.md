@@ -1,89 +1,50 @@
-# ARCHITECTURE
+# ARCHITECTURE — 2026-11-12
 
-Обновлено2026-11-10 по OLDCHAT32, семи документам и main до3f2cf4fc785c171a58036bee06ddd8df4f93dab5. Не выпуск/полная приёмка. CONTEXT/handoff задают продолжение. Прежние модельные контракты dc73611/8c3805b/3e503a8/5b083a7/3fe2d82 сохраняются, кроме прямо обновлённого статуса; сокращение истории не разрешает упрощать геометрию.
+База30b51e2be09edb90082687af99d98b7bca470cc8/main, runtime0.9.6. Текущие статусы — CONTEXT/TODO. Подробные прежние модельные контракты в ARCHITECTURE.md на этом Git SHA остаются обязательными, кроме явно обновлённых здесь пунктов; получать точечно, не читать все старые чаты.
 
-## Единственный рабочий путь
+## Путь и инварианты
 
-app.html → fk-editor/fk-app → iframe index.html → compiled editor. После0a502af active core/view без legacy dispatch/FKShapes.build. Физическая чистка scripts/exports не закончена; FKCatalog.loadAny нужен PNG/TGA.
+app.html → fk-editor/fk-app → iframe index.html → compiled editor. Legacy dispatch/FKShapes.build не рабочий путь; физическая чистка exports/scripts не завершена, FKCatalog.loadAny нужен PNG/TGA.
 
-PIN Mojang/bedrock-samples46ba6ea985fb5a92d79a9419198f10dda14c199d → load/assembleChunks → normalize/resources/icons/aliases/states/families → compile/access/resolver → registry/materials/textures → scene. Manifest/hash/count/conflict checks сохранять. parseLooseJson сохраняет ,}/,] внутри строк, комментарии разделяют токены. Unknown не cube, неоднозначность не первая PNG.
+PIN46ba6ea985fb5a92d79a9419198f10dda14c199d → load/assemble → normalize/resources/icons/aliases/states/families → compile/access/resolver → registry/materials/textures → scene. Hash/count/conflict/path validators не ослаблять. Unknown не cube, неоднозначность не первая PNG; loose JSON сохраняет quoted ,}/,].
 
-Manifest: blocks1275, terrain1241, existing8201, items75/items-000.json из3e698c4. Это не число cards/builders/принятых моделей. Auxiliary end_gateway/lava_cauldron и expanded bed различать. REVIEW_IDS в preview.mjs из base/additional tables; старые coverage/counts не свежий аудит.
+Records/source-ID/card/form/state/slot/reopen различать. Signature учитывает model/states/faces/indexed sequences+repeats/carried/icons/bindings/textureSets. Alias только при полной editor equivalence, family явно; частичная общая PNG не merge. Double slabs отличаются→form, equivalent→alias, smooth stone side сохранить. Owned/borrowed/indexed paths не смешивать, ownership не передавать. PNG/form/slot/state/pose независимы.
 
-## Идентичность и ресурсы
+## Модули и lifecycle
 
-Records/source IDs отдельно от visible cards; сохранять source-ID/card/form/state/slot/reopen routes. Editor signature включает model/states/faces/indexed alternatives+repeats/carried/icons/bindings/textureSets. Общая PNG не alias. Families задаются явно, частичное совпадение текстур не автоматическая группировка. Oxidation/normal/deepslate не сливать; waxed только при эквивалентности.
+catalog/editor-selection: family paths/groups/selection/reopen/search/imageMeta/mkFile/frame prep; editor-resource-usage: read-only active/borrowed owners/dependencies. fk-core: async tokens/pack/history/cv/fr/fi/resourceInfo. prepared-preview: resolved material request/instances/update/dispose; banner-preview: composition. models/materials/textures: owned materials/GPU textures, borrowed canvases; fk-view: один renderer/scenes/capture и общий начальный ракурс. Один picker/menu/runtime.
 
-material-families — production policy, tools/catalog-families — переэкспорт. Double slabs: equivalent full block→alias, отличающиеся→family form, включая slab/double без полного блока; smooth stone double сохраняет stone_slab_side. b82838b не ослаблять: без произвольных alias-форм/вложенности/пустых семейств.
+Frame/history/PNG encoding и GPU reuse по размеру сохранять, resize освобождает прежнее; не очищать модель до await. Async invalidation/discard/Add rollback/retry/limits/cleanup сохранять. Play/Pause уже записан: физические кадры PNG сверху вниз раз в секунду, не JSON timing/order; остановки drawing/manual/undo/loading/slot/hidden/exit/reset, export полный вертикальный PNG. Не постоянный render loop.
 
-Standing/wall sign по wood/placement вместе, hanging отдельно. Cave vines whole/body/head и berries независимо от PNG. Banner standing/wall family сохраняет records/IDs, не alias и не удаление из Find. Cauldron native/lava тоже family с исходными records, safe content normalization в cauldron-controls.
+## Материал и геометрия пиглина
 
-Owned unique paths не indexed alternatives. Named parts/door halves/furnace pairs и pot/soil/piston head_back/torch/pitcher/chorus/amethyst dependencies сохранять без ownership transfer.
+По умолчанию boolean semi: true→transparent=true/alphaTest0/depthWrite=false; false→false/.05/true. Basic sprite/emissive, Lambert прочие; lit/unlit conflict отклонять, FrontSide/depthTest, planar DoubleSide по контракту.
 
-## Актуальная карта модулей
+1ff3c7f: необязательный own boolean descriptor.depthWrite, тип проверяется, значение фиксируется и действует при update. prepared-preview задаёт true ТОЛЬКО volume/skull/object.id=piglin_head/parts===undefined. Текстура/UV/прозрачность/alphaTest прежние; glass/прочие головы/bed/sprite/multipart не переключены. Телефон пользователя подтвердил прекращение пропадания, не глобальную политику.
 
-- catalog/editor-selection.mjs: family paths, groups по declared roles, compiledSelection/reopen/search, image metadata и frame preparation.
-- catalog/editor-resource-usage.mjs: read-only resourceUsage/resourceUsageInfo/appendResourceUsage; owners из reverse index плюс явные dependencies, notes.
-- fk-core.js: resourceInfo перед stage, выбор slots/groups ниже; fr/fi/cv/history/setFrame/packCur, async selection/pack lifecycle.
-- fk-model-state.css: отдельный информационный блок, не кнопка выбора PNG.
-- catalog/banner-controls.mjs: schema/state.patterns существующего picker; catalog/cauldron-controls.mjs: content/подписи/переходы family.
-- preview-controls.mjs/FKModelState/FKM/fk-menu: один путь управления, не второй picker.
-- fk-view.js: общий cards/editor показ и начальный ракурс, не геометрия/UV.
+11b13e7: HEAD_INFLATE=0 вместо source -0.02 для головы/пятачка/клыков. Центры/UV/уши прежние. Контакты проверены с mock, пользователь: лучше, не идеально. Не обнулять намеренные другие слои, особенно player hat inflate0.5. Не менять global scale/все дробные размеры.
 
-## Группы ресурсов
+Начальный ракурс41bf23b — ANGLE_Y+PI внешней stage.group для восьми model keys при reset/выходе из flat, не геометрия до bounds/UV swap. Sprite flat, ручной ракурс сохранять; shelves/sunflower не компенсировать повторно.
 
-50d12e1 заменяет banner fallback planks на собственный sheet; source definition — provenance, не ownership досок. Основа включает готовый banner_illager;42 patterns и отдельные special sources не терять, pattern_illager не тот же ресурс. Заголовок name left/count+arrow right. d5a6145 восстановил snap(k) с cv[k], не cv[slot].
+## Ресурсные и модельные контракты
 
-833e3f9: bubble up_top4/down_top4/outer8/inner2. bc0f118: pot Основа(base+brick side)/23 patterns; dried ghast stages0–3 по7 bindings. Файл нескольких стадий в shared_stages ровно раз; это не пятая стадия. Declared icons отдельно, остаток other. Строгий запрет нескольких групп на файл сохранён. Не filenames/директории/ручной список кнопок.
+- Banner standing/wall family, hanging signs отдельно; signs по wood/placement. Cave vines whole/body/head/berries не зависят от PNG. Cauldron native/lava family: сброс только несовместимого content, исходные IDs/ресурсы сохраняются.
+- Groups только declared roles; active group раскрыта, toggle не PNG selection/rebuild. Banner base/42 patterns/special (illager и pattern_illager различать); bubble4/4/8/2; pot23+brick; ghast4 стадии0–3/shared_stages не пятая. Icons/other отдельно, duplicate membership запрещён.
+- Bubble sprite исключает pumpkin_side из рабочих faces/variants/paths, source.definition хранит provenance; raw/чужие IDs не переписывать. Не simulation/no-preview/empty builder.
+- Resource info над stage, пустой/reset/error скрывается, textContent; owned/dependencies не переносить. Usage reuse/общий обход не постоянный cache/benchmark, старые file/shared lists справки не возвращать.
+- Banner0–16 layers/42 patterns/16 цветов, move вместе с цветом/remove preview; ominous sheet сохраняет обычные настройки. Lazy thumbnails уже есть, общий picker/максимум2 загрузки. • icon только mixed declared roles, не любой carried.
+- Items optional отдельно от terrain, строгие hashes/counts/repeats; старый manifest не получает пустой atlas. Исторические counts3e698c4:blocks1275/terrain1241/existing8201/items75, не свежие cards/builders. light_gray→silver.
+- MERS explicit texture_set без PBR/суффиксных догадок; RGBA/subsurface alpha round trip не подтверждён. Conduit inactive UV исправлен,6 ресурсов/static active-eye-wind.
+- Full sheets/bindings.sheet без copies/crops; player Steve/head+hat/routes; dragon256×256/static jaw/mirror; statue oxidation/4 poses. Bed16 records/9 частей/bed→red_bed, нижний шов открыт. Chest11 IDs/sheet-double_sheet/open/double, ender без double; shulker17/base-lid/open; whole-block facing не возвращать.
+- Signs13 пород/реальные darkoak IDs/hanging mounting; eyeblossom closed-open/glow; pumpkin-melon composite stem; budding amethyst один нарост; kelp A–D не growth stages.
+- Liquids4 ID/level0..7/height(8-level)/9/lava emissive, flow/tint не заявлены; bell5 частей; fire4 inner+4 perimeter/full UV/unlit; campfire28 log faces+2 flames; leaf14/cutout-opaque. Indexed buttons/plates/stairs/path/snow/mycelium/repeats и named dependencies pot/soil/piston/torch/pitcher/chorus/amethyst сохранять.
 
-Активная группа раскрывается автоматически. Toggle не выбирает PNG и не rebuild model. Кнопки создаются сразу: это не lazy loading и не доказанное ускорение. Обычные объекты без групп сохраняют flat list.
+## Диагностика, версии и ограничения
 
-## Сведения над просмотром
+mkFile77bd1fb: data URL/signature/IHDR без fallback16×16, предел16384/16777216, не decode/CRC. rejected94a1185 изолирует сохранённые ресурсы и запрещает молчаливую vanilla substitution. acacia_shelf первопричина неизвестна.
 
-43dcfd2/f245aa6/a804a64/6726278: active file usage, borrowed resources и notes перед stage. Не compiledInfo.shared по всем файлам. Owners из catalog.resources, consumers из record.dependencies; объединять по visible card, сохранять source/form/state/relation/roles. Borrowed не отдельные editable files карточки, ownership не передаётся. Старые lists файлов/shared из справки удалены, остальные инструкции/forms/status/errors остаются.
+84b04ac/7520b15/6391cde/b72d421: FKLog bounded memory/очистка полей → существующий s-diag, до400 events; отчёт40 rejected/60 events каждого документа/100000 символов+отметка. Без PNG/pack content/auto-send/storage writes; не универсальный DLP. Детали прежних checks сохранены в Git CONTEXT на базе выше.
 
-resourceInfo обычный block перед stage, скрыт пустой, очищается reset/cancel/error; группы PNG ниже. DOM через textContent, toggle read-only. 8b8da8a использует рассчитанный active usage для icon note, 3f2cf4f одним проходом dependencies обрабатывает active+borrowed paths. Не постоянный cache, отсутствие измерений не benchmark.
+0.9.6 app/index/preview/local JS-CSS; import maps только prepared-preview/materials/piglin-head. Не весь граф/не доказательство деплоя. Дубль p#fkBuild убрать отдельно, исходная верхняя версия остаётся. #30312b только будущий фон, не применён.
 
-## Знамёна и controls
-
-BANNER_COLORS/ordered patterns/canvas composition — preview, не16 отдельных цветных PNG; новой палитры нет. 57a7e30/f50a901/eec565b:0–16 слоёв,42 declared patterns,16 существующих цветов; move переносит pattern+color, remove удаляет слой из preview. Поле действия сбрасывается для повторной команды. Ominous готовый sheet без обычных recolor/layers, настройки сохраняются для возврата. Edited PNG не выбирает form/color/layers. Миниатюры ещё не реализованы.
-
-Cauldron7d37e29/0195317: обычный empty/water/colored_water, лавовый empty/lava; сброс только несовместимого content при смене form. Подписи water_still_grey/cauldron_water, оба исходных ресурса сохраняются. PNG не content; игровая система красителей не заявлена.
-
-Observer indexed cube/off-on/default off. Hanging mounting ceiling/attached/wall через sign-preview, default ceiling; обычные family forms без duplicate mounting, sprite без model controls. Bulb/frosted_ice/anchor/crafter/structure/leaf/crop typed validation и EN/RU сохранять. PNG/form/slot/state/pose независимы.
-
-## Bubble, иконки и material maps
-
-337f753: bubble_column/model=sprite paths=18 declared bindings плюс declared icons/carried; pumpkin_side fallback исключён из рабочих faces/variants/paths. source.kind=engine-effect/template=bubble_column/definition сохраняет исходник. Raw normalize без model=sprite/чужие IDs не переписываются.
-
-Bubble_column/end_portal/end_gateway — общий sprite/WebGL, квадратные cards, не no-preview/empty builder/новый renderer/particles. Source-effect note уже есть для declared effect sprite, не всех плоских ресурсов.
-
-assembleChunks items optional отдельно от terrain, counts/hash/duplicate checks; старый manifest не получает пустой atlas. Генератор pinned item_texture через blockIconLinks, repeats сохраняются, bed light_gray→silver. Declared icons без explicit view→sprite; explicit view не переопределять, принадлежность slot family проверяется. Item note уже есть; carried бамбука сначала сверить по роли, не угадывать. Icons filter пока будущий адресный вход в тот же каталог.
-
-8485bb4: polished_cinnabar_mers по явному pinned texture_set в editable paths существующей карточки, не suffix inference/albedo/PBR. Diagnostics44a5f84 в существующем candidate workflow. Decode/draw/history/save/reopen/export через прежний canvas/PNG path не переписаны. Пользовательское «работает» не RGBA/subsurface alpha доказательство. Не объявлять ни порчу, ни полную безопасность без проверки.
-
-## Lifecycle, кадры и отображение
-
-291b5d9: family frame canvases/history reuse, PNG encoding по изменению, pack change сбрасывает frames; модель не очищать до await. Async invalidation/discard/setPack/rollback Add сохранять. 0f27ede: GPU reuse при том же размере, resize освобождает прежнюю, unchanged bindings/alpha без material.needsUpdate; CPU comparison осталось, не второй cache manager.
-
-В fk-core пока только ручные fPrev/fNext/setFrame, история каждого кадра отдельно, packCur собирает полный вертикальный PNG. Следующий Play/Pause: один кадр/секунда сверху вниз и цикл к первому, без JSON timing/order. НЕ записан; ошибку тестовой обвязки не считать успешной проверкой. Остановка при смене объекта/slot, рисовании, выходе/скрытии и pack reset; проверить реальные hooks/async. Не постоянный render loop.
-
-createModelMaterials: classified isTexture+boolean semi; Basic-unlit sprite/glow/emissive, Lambert прочие, lit/unlit conflicts отклонять. Semi transparent/alphaTest0/depthWrite false, иначе false/.05/true. FrontSide/depthTest, planar DoubleSide по контракту. Materials владеют material, GPU layer textures, canvas borrowed. Cleanup/AggregateError/cache/retry/limits сохранить.
-
-41bf23b: stage.group.rotation использует ANGLE_Y+Math.PI для skull/copper_golem_statue/dried_ghast/chest/banner/big_dripleaf/tripwire_hook/sign при reset или выходе из flat. Не изменение geometry до bounds/UV swap. Flat без вращения, ручной ракурс при обычной повторной сборке сохраняется. Полки/подсолнух не компенсировать повторно, scale пока не менять. Whole-sheet alpha/inflate/UV — гипотезы исчезающих поверхностей, не global opaque/DoubleSide/alpha255.
-
-## Сохраняемые модельные контракты
-
-- Head sheets bindings.sheet/full sheets без copies/crops; player head+hat inflate0.5px/full Steve/routes, body/skin/armor позже. Skeleton/wither/creeper/zombie/piglin/dragon и statue oxidation/4 poses; dragon256x256/static jaw/mirror UV, statue eyes/flower автоматически не добавлять.
-- Bed source→16 records/owned sheets, bed→red_bed, light_gray→silver,9 частей. Chest11 IDs/sheet-double_sheet/open/double, ender без double; shulker17/base-lid/open. Whole-block facing не возвращать.
-- Signs13 пород, реальные standing_sign/darkoak IDs, hanging отдельный sheet. acacia750f657: standing/attached rotation, ceiling/wall facing; старое подозрение ceiling rotation снято.
-- Eyeblossom closed/open одна card с glow; pumpkin/melon отдельные с composite stem; budding amethyst один нарост stage/face; kelp A–D не стадии роста.
-- Liquids4 ID/integer level0..7/default0/height(8-level)/9, lava emissive; flow/slopes/tint не заявлены. Pot23 patterns+brick/4 faces. Conduit6 ресурсов/static active/eye-wind; inactive vertical UVbf90910, пользователь подтвердил. Bell5 частей/стойки/sheet без звона/прочих креплений.
-- Fire4 внутренних+4 perimeter planes/full UV/primary-alternate независимо от PNG/unlit roles; campfire28 log faces, lit+2 flame planes/emissive up. Static не playback/smoke.
-- Leaf14/cutout-opaque/carried/variants, biome tint не принят. Indexed buttons/plates/stairs/grass_path down/dirt-coarse_dirt/mycelium up-down-side/snow-side/repeats сохранять. normal_stone_stairs не stone_stairs; принятую геометрию без дефекта не переписывать.
-
-## Приёмка и отложенное
-
-Текущий docs-проход — целевое чтение OLDCHAT32, семи документов, истории, editor-selection/resource-usage/banner-controls/cauldron-controls/fk-core и полных diff a804a64/41bf23b. Не все diff/код и не запуск Node/CI/приложения/WebGL. Пользовательское «все ок вроде» — ограниченная проверка тогдашнего UI; conduit/MERS не полный RGBA/export. Каталог до D, чтение builders не приёмка. Real PNG/TGA/WebGL/Android/draw-history/Add/reopen/export остаются.
-
-Runtime/cache versions и архивирование отложены; docs-only не устанавливает1.0.0. Бэкап/паки/localStorage не очищать. После блоков перед дальнейшим items планируется аудит безопасности; code-map пока не создана. Full mobs/skin/body/armor/tablet-desktop layout отдельно.
+Report10db8cd — программный WebGL, не Android. Отдельные6 depth и3 geometry tests не полный CI HEAD. Безопасность/производительность/сквозная приёмка/legacy cleanup остаются. Backup/паки/storage не очищать.
