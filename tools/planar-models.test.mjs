@@ -24,9 +24,9 @@ test('horizontal surface does not change when the editor selects a different PNG
  assert.deepEqual(a.env.group.children[0].angles,[-Math.PI/2,0,0]);
  const c=setup('rail',{previewPath:'variant'});c.build();assert.equal(c.env.group.children[0].material.id,'variant');
 });
-test('decal retains its wall offset and ignores unrelated texture slots',()=>{
+test('decal lies on the block boundary and ignores unrelated texture slots',()=>{
  const s=setup('decal');s.build();const mesh=s.env.group.children[0];
- assert.deepEqual(mesh.xyz,[0,0,-.49]);assert.equal(mesh.material.id,'side');assert.equal(mesh.material.needsUpdate,true);
+ assert.deepEqual(mesh.xyz,[0,0,-.5]);assert.equal(mesh.material.id,'side');assert.equal(mesh.material.needsUpdate,true);
 });
 test('missing or hidden resource fails instead of creating an invisible placeholder',()=>{
  const s=setup('sprite');delete s.env.mats.icon;assert.throws(()=>s.build(),/Missing planar material/);assert.equal(s.env.group.children.length,0);

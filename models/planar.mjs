@@ -54,7 +54,7 @@ export function createPlanarModels(Three) {
  }
  function sprite(env) {planes(env,env.slot,1.1,1.1,[[0,0,0,0,0]]);}
  function rail(env) {planes(env,env.previewPath??env.faceMap.up,1,1,[[0,0,0,-Math.PI/2,0]]);}
- function decal(env) {planes(env,env.faceMap.south,1,1,[[0,0,-.49,0,0]]);}
+ function decal(env) {planes(env,env.faceMap.south,1,1,[[0,0,-.5,0,0]]);}
  return [
   {id:'cross',scale:1,mode:'volume',build:cross},
   {id:'sprite',scale:1,mode:'sprite',build:sprite},
