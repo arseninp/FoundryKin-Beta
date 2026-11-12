@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {createAzaleaModels} from '../models/azalea.mjs';
 function three(){
  class PlaneGeometry{constructor(w,h){this.size=[w,h];const rows=[[0,1],[1,1],[0,0],[1,0]];this.attributes={uv:{count:4,getX:i=>rows[i][0],getY:i=>rows[i][1],setXY(i,u,v){rows[i]=[u,v];},rows}};}dispose(){this.disposed=true;}}
- class Mesh{constructor(geometry,material){this.geometry=geometry;this.material=material;this.position={set:(...v)=>{this.xyz=v;}};this.rotation={set:(...v)=>{this.angles=v;}};}}
- return {PlaneGeometry,Mesh,DoubleSide:2};
+ class Mesh{constructor(geometry,material){this.geometry=geometry;this.material=material;this.position={set:(...v)=>{this.xyz=v;}};this.rotation={order:'XYZ',set:(...v)=>{this.angles=v;}};}}
+ return {PlaneGeometry,BoxGeometry:class{},Mesh,DoubleSide:2};
 }
 function setup(id='azalea',slot='top'){
  const bindings=Object.fromEntries(['top','side','plant'].map(role=>[role,id+'/'+role]));
@@ -26,7 +26,7 @@ test('all seven planes retain exact geometry with full-size centered plant plane
   [[Math.SQRT2,1],[0,0,0],[0,Math.PI/4,0]],
   [[Math.SQRT2,1],[0,0,0],[0,-Math.PI/4,0]]
  ];
- s.E.group.children.forEach((m,i)=>{assert.deepEqual([m.geometry.size,m.xyz,m.angles],expected[i]);assert.equal(m.rotation.order,'YXZ');});
+ s.E.group.children.forEach((m,i)=>{assert.deepEqual([m.geometry.size,m.xyz,m.angles],expected[i]);assert.equal(m.rotation.order,'XYZ');});
  assert.deepEqual(s.E.group.children.map(m=>m.material.path),['azalea/top','azalea/side','azalea/side','azalea/side','azalea/side','azalea/plant','azalea/plant']);
 });
 test('side UVs keep the eleven-pixel crop; top and plant retain the full PNG',()=>{

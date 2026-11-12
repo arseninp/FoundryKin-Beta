@@ -1,35 +1,24 @@
-/* Unpotted azalea geometry with full-size plant planes. Texture roles are supplied by the catalog adapter. */
+/* Simplified Java template_azalea.json layout, reference blob 2c22ef84132bbe54a10ef3d18395f1fc0257b78f.
+   Canopy uses single double-sided planes; plant planes keep full dimensions without micro-insets.
+   This is not an exact Java geometry copy or verified Bedrock geometry. Bedrock texture roles are injected. */
+import {composeShape} from './shapes.mjs';
 export function createAzaleaModels(Three) {
- if(!Three||typeof Three.Mesh!=='function'||typeof Three.PlaneGeometry!=='function'||Three.DoubleSide===undefined)throw new Error('Azalea models require Three');
+ if(!Three||typeof Three.Mesh!=='function'||typeof Three.PlaneGeometry!=='function'||typeof Three.BoxGeometry!=='function'||Three.DoubleSide===undefined)throw new Error('Azalea models require Three');
  function build(E){
   if(!E||!['azalea','flowering_azalea'].includes(E.cur))throw new Error('Unknown azalea object');
-  const roles=['top','side','plant'],bindings=E.bindings;
+  const bindings=E.bindings;
   if(!bindings||!E.mats)throw new Error('Missing azalea bindings');
-  const materials=Object.fromEntries(roles.map(role=>{
+  for(const role of ['top','side','plant']){
    const path=bindings[role],material=E.mats[path];
    if(typeof path!=='string'||!path||!material||material===E.hiddenMat)throw new Error('Missing azalea material: '+role);
-   return [role,material];
-  }));
-  const parts=[
-   ['top',1,1,0,.5,0,-Math.PI/2,0,16],
-   ['side',1,11/16,0,5/32,-.5,0,Math.PI,11],
-   ['side',1,11/16,0,5/32,.5,0,0,11],
-   ['side',1,11/16,.5,5/32,0,0,Math.PI/2,11],
-   ['side',1,11/16,-.5,5/32,0,0,-Math.PI/2,11],
-   ['plant',Math.SQRT2,1,0,0,0,0,Math.PI/4,16],
-   ['plant',Math.SQRT2,1,0,0,0,0,-Math.PI/4,16]
-  ];
-  const meshes=[],geometries=[];
-  try{
-   for(const [role,width,height,x,cy,z,rx,ry,crop] of parts){
-    const geometry=new Three.PlaneGeometry(width,height);geometries.push(geometry);
-    const uv=geometry.attributes.uv;
-    for(let i=0;i<uv.count;i++){const u=uv.getX(i),v=uv.getY(i);uv.setXY(i,u,1-(1-v)*crop/16);}
-    const mesh=new Three.Mesh(geometry,materials[role]);mesh.position.set(x,cy,z);mesh.rotation.set(rx,ry,0);mesh.rotation.order='YXZ';meshes.push(mesh);
+  }
+  composeShape(Three,E,p=>{
+   p.face(bindings.top,1,1,0,.5,0,-Math.PI/2,0,[0,0,16,16],true);
+   for(const [x,z,angle] of [[0,-.5,Math.PI],[0,.5,0],[.5,0,Math.PI/2],[-.5,0,-Math.PI/2]]){
+    p.face(bindings.side,1,11/16,x,5/32,z,0,angle,[0,0,16,11],true);
    }
-  }catch(error){for(const geometry of geometries)if(typeof geometry.dispose==='function')geometry.dispose();throw error;}
-  for(const material of Object.values(materials)){material.side=Three.DoubleSide;material.needsUpdate=true;}
-  for(const mesh of meshes)E.group.add(mesh);
+   for(const angle of [Math.PI/4,-Math.PI/4])p.face(bindings.plant,Math.SQRT2,1,0,0,0,0,angle,[0,0,16,16],true);
+  });
  }
  return [{id:'azalea',scale:1,mode:'volume',build}];
 }
