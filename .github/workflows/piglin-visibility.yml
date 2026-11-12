@@ -1,0 +1,39 @@
+name: Piglin visibility controls
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/piglin-visibility.yml'
+      - 'tools/piglin-visibility.mjs'
+permissions:
+  contents: read
+concurrency:
+  group: piglin-visibility-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  visibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned diagnostic dependencies in temporary storage
+        run: |
+          mkdir -p "$RUNNER_TEMP/fk-piglin-browser"
+          npm install --prefix "$RUNNER_TEMP/fk-piglin-browser" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund three@0.128.0 playwright@1.49.1
+          "$RUNNER_TEMP/fk-piglin-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Compare original, solid and double-sided piglin at 48 matching angles
+        run: node tools/piglin-visibility.mjs
+      - name: Preserve five labelled contact sheets and report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: piglin-visibility-${{ github.sha }}
+          path: ${{ runner.temp }}/fk-piglin-visibility
+          if-no-files-found: warn
+          retention-days: 7
