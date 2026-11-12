@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="application-version" content="0.9.6">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>FoundryKin — model preview</title>
-<link rel="stylesheet" href="fk-base.css?v=0.9.1">
+<link rel="stylesheet" href="fk-base.css?v=0.9.6">
 <style>
 main{max-width:580px;margin:auto;padding:24px 14px calc(24px + env(safe-area-inset-bottom))}
 h1{font-size:20px;margin:16px 0 8px}p{font-size:13px;color:var(--mute)}
@@ -21,13 +22,23 @@ a.back{text-decoration:none;display:inline-flex;align-items:center}button{cursor
 .resource code{display:block;font-size:11px;overflow-wrap:anywhere}.resource label{min-width:0}.resource input{min-height:32px}
 small{color:var(--mute)}details{margin-top:14px;font-size:12px;overflow-wrap:anywhere}
 </style>
-<link rel="stylesheet" href="fk-menu.css?v=0.9.1">
-<link rel="stylesheet" href="fk-model-state.css?v=0.9.1">
+<link rel="stylesheet" href="fk-menu.css?v=0.9.6">
+<link rel="stylesheet" href="fk-model-state.css?v=0.9.6">
+<script type="importmap">
+{
+  "imports": {
+    "./catalog/prepared-preview.mjs": "./catalog/prepared-preview.mjs?v=0.9.6",
+    "./models/materials.mjs": "./models/materials.mjs?v=0.9.6",
+    "./models/piglin-head.mjs": "./models/piglin-head.mjs?v=0.9.6"
+  }
+}
+</script>
 </head>
 <body>
 <main>
 <div class="row"><a class="back" href="app.html" data-text="back">Editor</a><label><span data-text="language">Language</span><select id="language"><option value="en">English</option><option value="ru">Русский</option></select></label></div>
 <h1 data-text="title">New model preview</h1>
+<small id="previewBuild">0.9.6</small>
 <p data-text="scope">Explicit review slice, not the full catalog or an editor release. No pack changes are saved.</p>
 <details><summary data-text="scopeDetails">Included source IDs</summary><p id="scopeList"></p></details>
 <div class="row"><label><span data-text="object">Object</span><select id="object" disabled></select></label></div>
@@ -40,10 +51,10 @@ small{color:var(--mute)}details{margin-top:14px;font-size:12px;overflow-wrap:any
 <h2 data-text="resources">Model resources</h2><div id="resources"></div>
 </main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="fk-catalog-data.js?v=0.9.1"></script>
-<script src="fk-catalog.js?v=0.9.1"></script>
-<script src="fk-menu.js?v=0.9.1"></script>
-<script src="fk-model-state.js?v=0.9.1"></script>
-<script type="module" src="preview.mjs"></script>
+<script src="fk-catalog-data.js?v=0.9.6"></script>
+<script src="fk-catalog.js?v=0.9.6"></script>
+<script src="fk-menu.js?v=0.9.6"></script>
+<script src="fk-model-state.js?v=0.9.6"></script>
+<script type="module" src="preview.mjs?v=0.9.6"></script>
 </body>
 </html>
