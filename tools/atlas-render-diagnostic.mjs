@@ -13,52 +13,71 @@ const require=createRequire(join(temporary,'fk-atlas-browser','package.json'));
 const {chromium}=require('playwright');
 const threeFile=join(temporary,'fk-atlas-browser','node_modules','three','build','three.min.js');
 const pin='46ba6ea985fb5a92d79a9419198f10dda14c199d';
+const bases=['https://raw.githubusercontent.com/Mojang/bedrock-samples/'+pin+'/resource_pack/','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@'+pin+'/resource_pack/'];
 const cases=[
- {id:'black_bed',path:'textures/entity/bed/black'},
- {id:'piglin_head',path:'textures/entity/piglin/piglin'},
- {id:'dragon_head',path:'textures/entity/dragon/dragon'}
+ {id:'black_bed',path:'textures/entity/bed/black',format:'png'},
+ {id:'piglin_head',path:'textures/entity/piglin/piglin',format:'png'},
+ {id:'dragon_head',path:'textures/entity/dragon/dragon',format:'tga'}
 ];
-const report={commit:process.env.GITHUB_SHA??null,pin,limits:'Diagnostic screenshots only, not Android acceptance or proof of a fix; opaque UV control is synthetic and never saved to packs.',references:[],runs:[],errors:[]};
-const references=new Map();
-try{
-for(const item of cases){
- let bytes,lastError;
- for(const base of ['https://raw.githubusercontent.com/Mojang/bedrock-samples/'+pin+'/resource_pack/','https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@'+pin+'/resource_pack/']){
-  try{
-   const response=await fetch(base+item.path+'.png',{signal:AbortSignal.timeout(30000)});
-   if(!response.ok)throw new Error('Reference HTTP '+response.status);
-   const candidate=Buffer.from(await response.arrayBuffer());
-   assert.ok(candidate.length>24&&candidate.length<=16777216,'Invalid reference byte size');
-   assert.equal(candidate.subarray(0,8).toString('hex'),'89504e470d0a1a0a','Expected reference PNG');
-   bytes=candidate;break;
-  }catch(error){lastError=error;}
+const report={commit:process.env.GITHUB_SHA??null,pin,limits:'Diagnostic screenshots only, not Android acceptance or proof of a fix; opaque UV control is synthetic and never saved to packs.',references:[],expectedReferenceMisses:[],runs:[],errors:[]};
+const references=new Map(),expectedMissing=new Set();
+for(const item of cases)if(item.format==='tga')for(const base of bases)expectedMissing.add(base+item.path+'.png');
+function validateReference(bytes,format){
+ assert.ok(bytes.length>24&&bytes.length<=16777216,'Invalid reference byte size');
+ if(format==='png')assert.equal(bytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a','Expected reference PNG');
+ else{
+  assert.equal(bytes[1],0,'Unsupported reference TGA color map');
+  assert.ok([2,3,10,11].includes(bytes[2])&&[8,24,32].includes(bytes[16]),'Unsupported reference TGA header');
+  const w=bytes.readUInt16LE(12),h=bytes.readUInt16LE(14);
+  assert.ok(w>0&&h>0&&w<=16384&&h<=16384&&w*h<=16777216,'Invalid reference TGA dimensions');
  }
- if(!bytes)throw lastError;
- references.set('/__reference/'+item.path+'.png',bytes);
- report.references.push({id:item.id,path:item.path,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')});
 }
+try{
+ for(const item of cases){
+  let bytes,lastError;
+  for(const base of bases){
+   const url=base+item.path+'.'+item.format;
+   try{
+    const response=await fetch(url,{signal:AbortSignal.timeout(30000)});
+    if(!response.ok)throw new Error('Reference HTTP '+response.status+': '+url);
+    const candidate=Buffer.from(await response.arrayBuffer());validateReference(candidate,item.format);bytes=candidate;break;
+   }catch(error){lastError=error;}
+  }
+  if(!bytes)throw lastError;
+  references.set(item.path+'.'+item.format,{bytes,format:item.format});
+  report.references.push({id:item.id,path:item.path,format:item.format,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')});
+ }
 }catch(error){
  report.status='reference download failed';report.errors.push({kind:'reference',message:String(error).slice(0,2000)});
  await writeFile(join(out,'report.json'),JSON.stringify(report,null,2));throw error;
 }
-const html=`<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#d5d0ca}#stage{width:512px;height:512px}canvas{display:block;width:512px;height:512px}</style><div id="stage"></div>
+const html=`<!doctype html><meta charset="utf-8"><link rel="icon" href="data:,"><style>body{margin:0;background:#d5d0ca}#stage{width:512px;height:512px}canvas{display:block;width:512px;height:512px}</style><div id="stage"></div>
 <script src="/__three.js"></script>
 <script>const NativeRenderer=THREE.WebGLRenderer;THREE.WebGLRenderer=function(options){return new NativeRenderer({...options,antialias:window.__mode!=='no-aa'})};</script>
-<script src="/fk-catalog-data.js"></script><script src="/fk-view.js"></script>`;
+<script src="/fk-catalog-data.js"></script><script src="/fk-catalog.js"></script><script src="/fk-view.js"></script>`;
 const types={'.js':'application/javascript','.mjs':'application/javascript','.json':'application/json','.css':'text/css','.html':'text/html'};
 const server=createServer(async(req,res)=>{
  try{
   const path=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
   if(path==='/__diagnostic'){res.writeHead(200,{'Content-Type':'text/html','Cache-Control':'no-store'});res.end(html);return;}
   if(path==='/__three.js'){res.writeHead(200,{'Content-Type':'application/javascript','Cache-Control':'no-store'});res.end(await readFile(threeFile));return;}
-  if(references.has(path)){res.writeHead(200,{'Content-Type':'image/png','Cache-Control':'no-store'});res.end(references.get(path));return;}
   const file=resolve(root,'.'+path),type=types[extname(file)];
   if(!file.startsWith(root+sep)||!type){res.writeHead(403);res.end();return;}
-  res.writeHead(200,{'Content-Type':type,'Cache-Control':'no-store'});res.end(await readFile(file));
+  const content=await readFile(file);res.writeHead(200,{'Content-Type':type,'Cache-Control':'no-store'});res.end(content);
  }catch(error){if(!res.headersSent)res.writeHead(404);res.end();}
 });
 await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
 const origin='http://127.0.0.1:'+server.address().port;
+async function routeRequest(route){
+ const url=route.request().url();
+ if(new URL(url).origin===origin)return route.continue();
+ for(const base of bases)if(url.startsWith(base)){
+  const resource=references.get(url.slice(base.length));
+  if(resource)return route.fulfill({status:200,headers:{'access-control-allow-origin':'*'},contentType:resource.format==='png'?'image/png':'application/octet-stream',body:resource.bytes});
+ }
+ if(expectedMissing.has(url))return route.fulfill({status:404,headers:{'access-control-allow-origin':'*'},contentType:'text/plain',body:'PNG absent in pinned inventory; exercise production TGA fallback'});
+ return route.abort();
+}
 let browser;
 try{
  browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
@@ -66,15 +85,20 @@ try{
   const context=await browser.newContext({viewport:{width:512,height:512},deviceScaleFactor:1});
   const page=await context.newPage();
   page.on('pageerror',error=>report.errors.push({mode,kind:'page',message:error.message.slice(0,1000)}));
-  page.on('console',message=>{if(message.type()==='error')report.errors.push({mode,kind:'console',message:message.text().slice(0,1000)});});
-  await page.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.abort());
+  page.on('console',message=>{
+   if(message.type()!=='error')return;
+   const url=message.location().url;
+   if(expectedMissing.has(url)&&/404/.test(message.text())){report.expectedReferenceMisses.push({mode,url});return;}
+   report.errors.push({mode,kind:'console',message:message.text().slice(0,1000),url});
+  });
+  await page.route('**/*',routeRequest);
   await page.addInitScript(value=>{window.__mode=value;},mode);
   await page.goto(origin+'/__diagnostic',{waitUntil:'load'});
   const setup=await page.evaluate(async()=>{
    if(THREE.REVISION!=='128')throw new Error('Expected Three.js r128');
    const runtime=await FKCatalogData.loadCompiled(THREE),view=FKView.createStage();
    FKView.mount(document.getElementById('stage'));
-   window.__runtime=runtime;window.__view=view;window.__catalogBefore=JSON.stringify(runtime.catalog);
+   window.__runtime=runtime;window.__view=view;window.__catalogBefore=JSON.stringify(runtime.catalog);window.__referenceImages=Object.create(null);
    const gl=document.querySelector('canvas').getContext('webgl2')||document.querySelector('canvas').getContext('webgl');
    if(!gl)throw new Error('No real WebGL context');
    window.__gl=gl;
@@ -87,8 +111,9 @@ try{
   const run=report.runs[report.runs.length-1];
   for(const item of cases)for(const textureMode of ['original','uv-grid-alpha','uv-grid-opaque'])for(const yawOffset of [0,.55,-.55]){
    const details=await page.evaluate(async({item,textureMode,yawOffset})=>{
-    const runtime=window.__runtime,view=window.__view,gl=window.__gl;
-    const image=new Image();image.src='/__reference/'+item.path+'.png';await image.decode();
+    const runtime=window.__runtime,view=window.__view,gl=window.__gl,cache=window.__referenceImages;
+    if(!cache[item.path])cache[item.path]=FKCatalog.loadAny(item.path);
+    const image=await cache[item.path];if(!image)throw new Error('Production reference decode failed: '+item.path);
     const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
     const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.drawImage(image,0,0);
     const data=ctx.getImageData(0,0,canvas.width,canvas.height),histogram=Array(256).fill(0);
