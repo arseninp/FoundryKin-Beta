@@ -5,6 +5,8 @@ const ROLE=/^[a-z][a-z0-9_]*$/;
 export function createModelMaterials(Three,descriptor,bindings,textures) {
  if(!Three||typeof Three.MeshLambertMaterial!=='function'||typeof Three.MeshBasicMaterial!=='function'||Three.FrontSide===undefined)throw new Error('Model materials require Three');
  if(!dictionary(descriptor)||!['volume','sprite'].includes(descriptor.mode)||!dictionary(bindings)||!Object.keys(bindings).length)throw new Error('Invalid model material input');
+ const depthWrite=own(descriptor,'depthWrite')?descriptor.depthWrite:undefined;
+ if(own(descriptor,'depthWrite')&&typeof depthWrite!=='boolean')throw new Error('Invalid model depth-write policy');
  const roles=own(descriptor,'emissiveRoles')?descriptor.emissiveRoles:[];
  if(!Array.isArray(roles)||(own(descriptor,'emissiveRoles')&&!roles.length)||new Set(roles).size!==roles.length||Array.from(roles).some(role=>typeof role!=='string'||!ROLE.test(role)||!own(bindings,role)))throw new Error('Invalid model emissive roles');
  const emissive=new Set(roles),uses=new Map();
@@ -25,7 +27,7 @@ export function createModelMaterials(Three,descriptor,bindings,textures) {
  }
  function policy(texture) {
   const semi=texture.userData.semi;
-  return {map:texture,transparent:semi,alphaTest:semi?0:.05,depthWrite:!semi};
+  return {map:texture,transparent:semi,alphaTest:semi?0:.05,depthWrite:depthWrite??!semi};
  }
  const maps=selected(textures),mats=Object.create(null),owned=[];
  let disposed=false;

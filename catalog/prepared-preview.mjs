@@ -21,7 +21,9 @@ function materialRequest(catalog,registry,plan) {
   }
  });
  if(!sources.length)throw new Error('Missing preview material parts');
- return {bindings,descriptor:{mode:'volume',...(emissiveRoles.length?{emissiveRoles}:{})}};
+ // Targeted visibility trial: retain piglin alpha/blending, change only depth writes.
+ const piglinDepth=plan.mode==='volume'&&plan.model==='skull'&&plan.object?.id==='piglin_head'&&plan.parts===undefined;
+ return {bindings,descriptor:{mode:'volume',...(emissiveRoles.length?{emissiveRoles}:{}),...(piglinDepth?{depthWrite:true}:{})}};
 }
 function release(root,materials) {
  const geometries=new Set(),errors=[];
