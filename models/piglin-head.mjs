@@ -1,30 +1,29 @@
 /* Detached adult head from Mojang/bedrock-samples@46ba6ea985fb5a92d79a9419198f10dda14c199d
    resource_pack/models/entity/piglin.geo.json. Coordinates below subtract the head's Y=24.
-   Source head inflate is -0.02; this preview trial uses full-size head cubes instead.
-   Ear bones retain zero inflate. No body, baby variant, ear animation or wall mounting. */
+   Cubes use their declared sizes without shrink adjustments.
+   No body, baby variant, ear animation or wall mounting. */
 import {composeShape} from './shapes.mjs';
-const HEAD_INFLATE=0;
 export function buildPiglinHead(Three,E,sheet,rotation) {
  if(typeof Three.Group!=='function'||!E.group||typeof E.group.add!=='function')throw new Error('Missing piglin head environment');
  const root=new Three.Group();
  root.position.y=-.5;root.rotation.y=-rotation*Math.PI/8;
- function cube(target,origin,size,uv,inflate=0,pivot=[0,0,0]) {
+ function cube(target,origin,size,uv,pivot=[0,0,0]) {
   const [w,h,d]=size,[u,v]=uv;
   const rects={east:[u+2*d+w,v+d,u+d+w,v+d+h],west:[u+d,v+d,u,v+d+h],north:[u+d+w,v+d,u+d,v+d+h],south:[u+2*d+2*w,v+d,u+2*d+w,v+d+h],up:[u+d,v+d,u+d+w,v],down:[u+d+w,v,u+d+2*w,v+d]};
-  composeShape(Three,{...E,group:target},p=>p.prism((w+2*inflate)/16,(h+2*inflate)/16,(d+2*inflate)/16,(origin[0]+w/2-pivot[0])/16,(origin[1]+h/2-pivot[1])/16,(origin[2]+d/2-pivot[2])/16,sheet,rects,64));
+  composeShape(Three,{...E,group:target},p=>p.prism(w/16,h/16,d/16,(origin[0]+w/2-pivot[0])/16,(origin[1]+h/2-pivot[1])/16,(origin[2]+d/2-pivot[2])/16,sheet,rects,64));
  }
  try {
-  cube(root,[-5,0,-4],[10,8,8],[0,0],HEAD_INFLATE);
-  cube(root,[-2,0,-5],[4,4,1],[31,1],HEAD_INFLATE);
-  cube(root,[2,0,-5],[1,2,1],[2,4],HEAD_INFLATE);
-  cube(root,[-3,0,-5],[1,2,1],[2,0],HEAD_INFLATE);
+  cube(root,[-5,0,-4],[10,8,8],[0,0]);
+  cube(root,[-2,0,-5],[4,4,1],[31,1]);
+  cube(root,[2,0,-5],[1,2,1],[2,4]);
+  cube(root,[-3,0,-5],[1,2,1],[2,0]);
   for(const [pivot,angle,origin,uv] of [
    [[5,6,0],30,[4,1,-2],[51,6]],
    [[-5,6,0],-30,[-5,1,-2],[39,6]]
   ]) {
    const ear=new Three.Group();
    ear.position.set(pivot[0]/16,pivot[1]/16,pivot[2]/16);ear.rotation.z=angle*Math.PI/180;
-   root.add(ear);cube(ear,origin,[1,5,4],uv,0,pivot);
+   root.add(ear);cube(ear,origin,[1,5,4],uv,pivot);
   }
   E.group.add(root);
  }catch(error) {
