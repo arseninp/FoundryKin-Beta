@@ -16,15 +16,15 @@ test('one descriptor handles both normal and flowering unpotted azalea',()=>{
  const models=createAzaleaModels(three());assert.equal(models.length,1);assert.equal(models[0].id,'azalea');assert.equal(models[0].scale,1);assert.equal(models[0].mode,'volume');
  for(const id of ['azalea','flowering_azalea']){const s=setup(id);s.build();assert.equal(s.E.group.children.length,7);assert.ok(s.E.group.children.every(m=>m.material.path.startsWith(id+'/')));}
 });
-test('all seven planes retain the accepted dimensions, positions and angles',()=>{
+test('all seven planes retain exact geometry with full-size centered plant planes',()=>{
  const s=setup();s.build();const expected=[
   [[1,1],[0,.5,0],[-Math.PI/2,0,0]],
   [[1,11/16],[0,5/32,-.5],[0,Math.PI,0]],
   [[1,11/16],[0,5/32,.5],[0,0,0]],
   [[1,11/16],[.5,5/32,0],[0,Math.PI/2,0]],
   [[1,11/16],[-.5,5/32,0],[0,-Math.PI/2,0]],
-  [[15.8*Math.SQRT2/16,15.9/16],[0,(15.9/2-8)/16,0],[0,Math.PI/4,0]],
-  [[15.8*Math.SQRT2/16,15.9/16],[0,(15.9/2-8)/16,0],[0,-Math.PI/4,0]]
+  [[Math.SQRT2,1],[0,0,0],[0,Math.PI/4,0]],
+  [[Math.SQRT2,1],[0,0,0],[0,-Math.PI/4,0]]
  ];
  s.E.group.children.forEach((m,i)=>{assert.deepEqual([m.geometry.size,m.xyz,m.angles],expected[i]);assert.equal(m.rotation.order,'YXZ');});
  assert.deepEqual(s.E.group.children.map(m=>m.material.path),['azalea/top','azalea/side','azalea/side','azalea/side','azalea/side','azalea/plant','azalea/plant']);

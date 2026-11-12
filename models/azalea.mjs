@@ -1,4 +1,4 @@
-/* Accepted unpotted azalea geometry. Texture roles are supplied by the catalog adapter. */
+/* Unpotted azalea geometry with full-size plant planes. Texture roles are supplied by the catalog adapter. */
 export function createAzaleaModels(Three) {
  if(!Three||typeof Three.Mesh!=='function'||typeof Three.PlaneGeometry!=='function'||Three.DoubleSide===undefined)throw new Error('Azalea models require Three');
  function build(E){
@@ -10,15 +10,14 @@ export function createAzaleaModels(Three) {
    if(typeof path!=='string'||!path||!material||material===E.hiddenMat)throw new Error('Missing azalea material: '+role);
    return [role,material];
   }));
-  const w=15.8*Math.SQRT2/16,h=15.9/16,y=(15.9/2-8)/16;
   const parts=[
    ['top',1,1,0,.5,0,-Math.PI/2,0,16],
    ['side',1,11/16,0,5/32,-.5,0,Math.PI,11],
    ['side',1,11/16,0,5/32,.5,0,0,11],
    ['side',1,11/16,.5,5/32,0,0,Math.PI/2,11],
    ['side',1,11/16,-.5,5/32,0,0,-Math.PI/2,11],
-   ['plant',w,h,0,y,0,0,Math.PI/4,16],
-   ['plant',w,h,0,y,0,0,-Math.PI/4,16]
+   ['plant',Math.SQRT2,1,0,0,0,0,Math.PI/4,16],
+   ['plant',Math.SQRT2,1,0,0,0,0,-Math.PI/4,16]
   ];
   const meshes=[],geometries=[];
   try{
