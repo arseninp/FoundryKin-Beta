@@ -9,7 +9,7 @@ function materialRequest(catalog,registry,plan) {
   if(!record)throw new Error('Missing preview part record');
   return {model:record.model,bindings:part.bindings};
  });
- const bindings=Object.create(null),emissiveRoles=[];
+ const bindings=Object.create(null),emissiveRoles=[],depthWriteRoles=Object.create(null);
  sources.forEach((source,index)=>{
   const descriptor=registry.get(source.model),roles=descriptor.emissiveRoles??[];
   if(!dictionary(source.bindings)||!Object.keys(source.bindings).length||!Array.isArray(roles))throw new Error('Invalid preview material parts');
@@ -18,12 +18,11 @@ function materialRequest(catalog,registry,plan) {
    if(!/^[a-z][a-z0-9_]*$/.test(role))throw new Error('Invalid preview material role');
    const key='part_'+index+'_'+role;bindings[key]=path;
    if(descriptor.mode==='sprite'||roles.includes(role))emissiveRoles.push(key);
+   if(plan.mode!=='sprite'&&descriptor.mode==='volume'&&Object.hasOwn(descriptor,'depthWrite'))depthWriteRoles[key]=descriptor.depthWrite;
   }
  });
  if(!sources.length)throw new Error('Missing preview material parts');
- // Targeted visibility trial: retain piglin alpha/blending, change only depth writes.
- const piglinDepth=plan.mode==='volume'&&plan.model==='skull'&&plan.object?.id==='piglin_head'&&plan.parts===undefined;
- return {bindings,descriptor:{mode:'volume',...(emissiveRoles.length?{emissiveRoles}:{}),...(piglinDepth?{depthWrite:true}:{})}};
+ return {bindings,descriptor:{mode:'volume',...(emissiveRoles.length?{emissiveRoles}:{}),...(Object.keys(depthWriteRoles).length?{depthWriteRoles}:{})}};
 }
 function release(root,materials) {
  const geometries=new Set(),errors=[];

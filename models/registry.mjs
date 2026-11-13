@@ -1,5 +1,6 @@
 /* Explicit model registry. Invalid registrations never partially change the registry. */
 const KEY = /^[a-z][a-z0-9_-]*$/;
+const DEPTH_WRITING_VOLUMES = new Set(['skull','copper_golem_statue','bed','chest','shulker_box','door','sign','banner']);
 function isObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -13,6 +14,10 @@ function describe(entry) {
   if (typeof scale !== 'number' || !Number.isFinite(scale) || scale <= 0) throw new Error('Invalid model scale: ' + entry.id);
   if (mode !== 'volume' && mode !== 'sprite') throw new Error('Invalid model mode: ' + entry.id);
   const result={id:entry.id,build:entry.build,scale,mode};
+  if(Object.hasOwn(entry,'depthWrite')) {
+    if(typeof entry.depthWrite!=='boolean')throw new Error('Invalid model depth-write policy: '+entry.id);
+    result.depthWrite=entry.depthWrite;
+  }else if(mode==='volume'&&DEPTH_WRITING_VOLUMES.has(entry.id))result.depthWrite=true;
   if(Object.hasOwn(entry,'emissiveRoles')) {
     const roles=entry.emissiveRoles;
     if(!Array.isArray(roles)||!roles.length||new Set(roles).size!==roles.length||Array.from(roles).some(role=>typeof role!=='string'||!/^[a-z][a-z0-9_]*$/.test(role)))throw new Error('Invalid emissive roles: '+entry.id);
