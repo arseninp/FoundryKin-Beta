@@ -1,0 +1,12 @@
+/* PNG viewport uses existing theme tones and the custom-card outline colour. */
+.fkPngPanel{padding:8px;background:var(--fk-tone-2);border:2px solid var(--line);border-radius:var(--fk-header-radius)}
+.fkPngPanel.fkPngFree{border-color:var(--red)}
+.fkPngControls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.fkPngControls button{flex:1 1 140px;min-height:var(--fk-header-height);padding:8px;background:var(--fk-tone-3);color:var(--ink);border:1px solid var(--line);border-radius:var(--fk-header-radius);font:inherit;font-weight:800}
+.fkPngControls button[aria-pressed=true]{border-color:var(--red)}
+.fkPngClip{position:relative;width:100%;aspect-ratio:1/1;overflow:hidden;touch-action:none;border-radius:var(--fk-header-radius);background:var(--fk-tone-2)}
+.fkPngClip:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.fkPngFree .fkPngClip{cursor:grab}
+.fkPngSurface{position:absolute;left:0;top:0;transform-origin:0 0}
+.fkPngSurface #ed{width:100%;height:auto;border:0;border-radius:0;max-width:none}
+.fkPngSurface svg[aria-hidden=true]{left:0!important;top:0!important;width:100%!important;height:100%!important}
