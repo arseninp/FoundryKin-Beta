@@ -1,6 +1,6 @@
-# ARCHITECTURE — 2026-11-13
+# ARCHITECTURE — 2026-11-14
 
-Кодовая база перед docs-only пакетом:84f33e5a73426a5567bcc359dac1e4b73e701a0d/main. app/index0.9.13, preview0.9.9. Текущие статусы — CONTEXT/TODO. Подробные прежние модельные контракты в ARCHITECTURE.md на30b51e2be09edb90082687af99d98b7bca470cc8 остаются обязательными, кроме явно обновлённых ниже пунктов; получать точечно, не читать все старые чаты.
+Кодовая база перед docs-only передачей:90957614641e0f832991656f182da061bbe04e01/main. app/index0.9.17, preview0.9.9. Текущие статусы — CONTEXT/TODO. Подробные прежние модельные контракты в ARCHITECTURE.md на30b51e2be09edb90082687af99d98b7bca470cc8 остаются обязательными, кроме явно обновлённых ниже пунктов; получать точечно, не читать все старые чаты.
 
 ## Путь и инварианты
 
@@ -14,7 +14,7 @@ Records/source-ID/card/form/state/slot/reopen различать. Signature уч
 
 catalog/editor-selection: family paths/groups/selection/reopen/search/imageMeta/mkFile/frame prep; editor-resource-usage: read-only active/borrowed owners/dependencies. fk-core: async tokens/pack/history/cv/fr/fi/resourceInfo. prepared-preview: resolved material request/instances/update/dispose; banner-preview: composition. models/materials/textures: owned materials/GPU textures, borrowed canvases; fk-view: один renderer/scenes/capture и общий начальный ракурс. Один picker/menu/runtime.
 
-Frame/history/PNG encoding и GPU reuse по размеру сохранять, resize освобождает прежнее; не очищать модель до await. Async invalidation/discard/Add rollback/retry/limits/cleanup сохранять. Play/Pause уже записан: физические кадры PNG сверху вниз раз в секунду, не JSON timing/order; остановки drawing/manual/undo/loading/slot/hidden/exit/reset, export полный вертикальный PNG. Не постоянный render loop.
+Frame/history/PNG encoding и GPU reuse по размеру сохранять, resize освобождает прежнее; не очищать модель до await. Async invalidation/discard/Add rollback/retry/limits/cleanup сохранять. Play/Pause: физические кадры PNG сверху вниз раз в секунду, не JSON timing/order; остановки manual/loading/slot/hidden/exit/reset, export полный вертикальный PNG. При playback рисование/Undo/Redo/setRes заблокированы, касание холста не останавливает проигрыватель. Не постоянный render loop.
 
 ## Общая политика материалов
 
@@ -38,15 +38,33 @@ prepared-preview собирает bindings с ключами part_N_role, emissi
 
 ## PNG viewport
 
-fk-png-viewport.js загружается после fk-core и до fk-tools, перехватывает input до рисования. Существующий canvas#ed помещается в fkPngPanel → fkPngClip → fkPngSurface; его пиксели/разрешение/история не копируются и не масштабируются как данные. Сетка в той же движущейся области. CSS: контейнер tone2, кнопки tone3, весь panel получает красную рамку в free-mode.
+fk-png-viewport.js загружается после fk-core и до fk-tools, перехватывает input до рисования. Существующий canvas#ed помещается в fkPngPanel → fkPngClip → fkPngSurface; его пиксели/разрешение/история не копируются и не масштабируются как данные. Сетка в той же движущейся области. CSS: контейнер tone2, кнопки tone3; красная рамка panel в free-mode, До или playback. Последние два состояния берутся из aria-pressed через :has, не отдельного JS-флага рамки.
 
 Свободная позиция блокирует pointerdown/move кисти, включает drag/pinch/wheel и клавиатуру; повторное нажатие фиксирует вид. Zoom ограничен .25..256 относительно fit; bound оставляет доступный участок. Начальная позиция возвращает fit, не меняет free-mode/пиксели/Undo. При смене cur() или размеров canvas сбрасываются вид и free-mode; resize окна сохраняет относительный центр. Busy/не-edit/hidden отменяют жесты, blur/потеря capture освобождают pointer state. Отдельного render loop/редактора нет. Точность рисования на всех масштабах не объявлена исчерпывающе принятой.
+
+## До/после
+
+catalog/editor-comparison.mjs хранит снимки на один заход. remember копирует впервые переданные кадры ресурса; повторно baseline не переписывает. fk-core вызывает его после подготовки и проверки async token; новые ресурсы снимаются по мере загрузки, все подготовленные кадры редактируемых ресурсов, не глобальным предварительным обходом. canvases(cv,fi) выбирает исходные или рабочие кадры. resetImages/cancel/error сбрасывают сравнение. До — текстуры на входе с текущим паком, не vanilla/Undo; preview state/form/slot и ownership остаются независимы.
+
+catalog/editor-comparison-controls.mjs размещает player слева/compare справа. Нажатие переключает PNG и модель через shownCanvases/V.update, без второго renderer и сброса ракурса. Playback разрешён в До и После, использует ту же fi; toggle не сбрасывает кадр/таймер. ctx.ready разрешает редактирование только в После на паузе; ctx.viewReady сохраняет просмотр и PNG pan/zoom в До/playback. Ручное вращение доступно. Сохранение внутри карточки baseline не переопределяет. Согласованный авто-выход после сохранения текстуры ещё не реализован; после выхода и нового входа будет новая исходная точка.
 
 ## Палитра
 
 fk-tools владеет инструментами/цветом/палитрой через FKAPI.ctx и общий FKM. Сохранённые цвета — до20 RGBA hex8 в fk_hist; одинаковый RGB с другой alpha — другой образец. Удержание цвета удаляет его, удержание значка открывает Очистить палитру, короткое нажатие — picker. После hold не должен срабатывать обычный click. Очистка сначала сохраняет next в storage, затем меняет queue/UI; ошибка сохраняет прежний список. Кисть/alpha/PNG/Undo/паки не очищаются.
 
 С0.9.11 выбранный образец выделен --acc border+outer shadow без галочки; active-filter отключён. only light не устранил Samsung-затемнение. f847a5d: palettePixels → ImageData/putImageData рисует swatches32×32, current preview44×44 и hue/alpha tracks240×16. Шахматка и alpha композиция выполняются внутри отображаемого canvas, выход display-image opaque; исходный RGBA остаётся неизменным. Hue/alpha input остаются controls над canvas с прозрачной track. SV-поле уже было canvas. Это display-only решение: HEX/RGBA/пипетка/кисть не компенсируются и PNG/3D не переписываются. Владелец подтвердил успех в Samsung Internet 2026-11-13.
+
+c3470d3/0.9.17: начальный color=null вместо #c0392b. hex8 возвращает null при отсутствии выбора, образец не выделяется. Начало pointerdown до capture/Undo проверяет цвет для pen/fill/swap; erase/pick независимы. Picker при отсутствии цвета работает с собственным HSV draft, открытие/отмена не меняют кисть; подтверждение, образец или пипетка выбирают цвет. Нового флага/модуля нет. Очистка fk_hist не сбрасывает уже выбранную кисть. Приёмка владельца 2026-11-14, без отдельного уточнения браузера.
+
+## Внутренние бэкапы
+
+fk-backup-store.mjs — injected storage/read/save/remove/restore, один слот на packId. Запись {schema:1,packId,name,createdAt,pack}; имя необязательно, дата сохраняется всегда. Проверяются структура/типы/уникальность путей и PNG data-URL prefix, не полный decode/CRC. replace поддержан store, но UI его НЕ использует: сначала удалить и создать заново.
+
+fk-backup-host.mjs адаптирует логические fk070_backup:<id> к data.backupEntries внутри единой записи fk070_packs. Значения таблицы — сериализованные записи снимков, не отдельные фактические localStorage-ключи и не IndexedDB. При установке модуля нет миграции/автозаписи. commitData сначала пишет JSON, затем меняет live data. Восстановление заменяет только выбранный пак; другие паки и снимки сохраняются. Удаление пака и его бэкапа staging собирает в одну запись; общая очистка паков удаляет таблицу после предупреждения. Бэкапы используют ту же ограниченную ёмкость хранилища, не бесплатную отдельную память.
+
+fk-backups.mjs строит s-backup и действия в карточках packList на s-create. Старого packBackup над texList нет. renderCards не дублирует строки одного DOM-card. Действия привязаны к ID карточки, не только active pack; маршруты и отмена async согласованы с fk-app/host. Перед применением снимка картинки последовательно декодируются через Image: только data:image/, пределы16384/16777216; проверяются generation/current screen/identity и изменения пака/снимка. Это реализованный путь, не доказательство реального quota/Android round trip.
+
+Экран: жирное имя пака, Название бэкапа (необязательно), постоянное предупреждение с красной рамкой. Пустое имя отображается датой-временем. Создание успешно → назад в список → плашка; ошибка → форма/имя остаются. Карточка: информация сверху, Текстуры → тон3 Create backup либо Restore backup/Delete backup пополам → остальные действия. Восстановление оставляет снимок. Общие цвета/настройки/Undo/несохранённый мазок в снимок пака не входят. Облака/аккаунтов/синхронизации и отдельной новой скачиваемой копии нет. Существующий .mcpack экспорт не переделан; JSON-выгрузка данных не объявлена новым проверенным restore-from-file round trip.
 
 ## Ресурсные и модельные контракты
 
@@ -68,6 +86,6 @@ mkFile77bd1fb: data URL/signature/IHDR без fallback16×16, предел16384/
 
 84b04ac/7520b15/6391cde/b72d421: FKLog bounded memory/очистка полей → существующий s-diag, до400 events; отчёт40 rejected/60 events каждого документа/100000 символов+отметка. Без PNG/pack content/auto-send/storage writes; не универсальный DLP. Детали прежних checks сохранены в Git CONTEXT на30b51e2.
 
-app/index0.9.13, preview0.9.9; карты импортов имеют разный охват, не весь граф. В index добавлены load/access/preview/library и изменённые model modules; это не доказательство сетевой первопричины/деплоя. p#fkBuild уже удалён, существующая верхняя версия остаётся. #30312b только будущий фон, не применён.84f33e5 меняет также размеры поисковой SVG22×22.
+app/index0.9.17, preview0.9.9; import maps и query-версии обновляют не весь граф и не доказывают деплой/причину старого fetch library.mjs. p#fkBuild уже удалён, верхняя версия остаётся. #30312b не применён. Исторический84f33e5 менял также размеры поисковой SVG22×22, не только версии.
 
-До/после/улучшение сохранения/единое оформление/3D-рисование не реализованы. Report10db8cd — программный WebGL, не Android. Чат35 сообщает14 depth+registry на ddeef9e и отдельные9/6/10 локальных проверок других пакетов; не полный HEAD CI и не новый запуск этого сеанса. Безопасность/производительность/сквозная приёмка/legacy cleanup остаются. Backup/паки/storage/PIN/scale не очищать и не менять.
+До/после, бэкапы и явный выбор кисти записаны; старое улучшение сохранения снято. Авто-возврат текстуры/параметров пака, общий построитель макета, личные палитры, обучение и 3D-рисование ещё не реализованы. Сначала функции в текущем макете, затем построитель. Report10db8cd — программный WebGL, не Android; 14 depth+registry на ddeef9e и9/6/10 прежних checks — история, не HEAD CI. Новые mocks/приёмка и SHA-256 подготовленной кисти — CONTEXT. Полный свежий CI, точный Pages deploy SHA, реальная сквозная приёмка/безопасность/производительность/legacy cleanup остаются открыты. Данные владельца, кэш и резервную ветку не очищать; функциональные операции бэкапа выполнять только по явному действию пользователя. Полная прежняя хронология — документы на90957614641e0f832991656f182da061bbe04e01. Этот пакет — только документы.
