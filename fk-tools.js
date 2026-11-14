@@ -25,14 +25,14 @@ function btn(cls,name,title){var b=mk('button',cls);b.type='button';b.innerHTML=
 function h2(v){return ('0'+v.toString(16)).slice(-2)}
 
 /* state */
-var tool='pen',color='#c0392b',alpha=255,brush=1,queue=[],P={h:0,s:0,v:0,a:255};
+var tool='pen',color=null,alpha=255,brush=1,queue=[],P={h:0,s:0,v:0,a:255};
 try{var sb=+localStorage.getItem('fk_brush');if(sb>=1&&sb<=8)brush=sb}catch(e){}
 try{var q0=JSON.parse(localStorage.getItem('fk_hist'));if(Array.isArray(q0))queue=q0.filter(function(x){return /^#[0-9a-f]{8}$/.test(x)}).slice(0,20)}catch(e){}
 
 /* colour maths */
 function rgbOf(hex){var n=parseInt(hex.slice(1),16);return [n>>16&255,n>>8&255,n&255]}
 function hex6(r,g,b){return '#'+h2(r)+h2(g)+h2(b)}
-function hex8(){var c=rgbOf(color);return hex6(c[0],c[1],c[2])+h2(alpha)}
+function hex8(){if(color===null)return null;var c=rgbOf(color);return hex6(c[0],c[1],c[2])+h2(alpha)}
 function css(){if(alpha>=255)return color;var c=rgbOf(color);return 'rgba('+c[0]+','+c[1]+','+c[2]+','+(alpha/255)+')'}
 function target(){var c=rgbOf(color);return [c[0],c[1],c[2],alpha]}
 function hsv2rgb(h,s,v){var c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c,r=0,g=0,b=0;
@@ -254,8 +254,11 @@ function build(root){
   pb.addEventListener('click',function(){
     if(lpFired&&lpTarget===pb){lpFired=false;return}
     if(FKM.cur===palM){FKM.close();return}
-    var c=rgbOf(color),h=rgb2hsv(c[0],c[1],c[2]);
-    P.h=(h[1]===0&&P.h)?P.h:h[0];P.s=h[1];P.v=h[2];P.a=alpha;paint();FKM.open(palM);
+    if(color!==null){
+      var c=rgbOf(color),h=rgb2hsv(c[0],c[1],c[2]);
+      P.h=(h[1]===0&&P.h)?P.h:h[0];P.s=h[1];P.v=h[2];P.a=alpha;
+    }
+    paint();FKM.open(palM);
   });
   ps.ok.addEventListener('click',function(){var c=rgb();alpha=P.a;setColor(hex6(c[0],c[1],c[2]));queueFront();FKM.close()});
 
@@ -298,6 +301,7 @@ function build(root){
   function cell(e){var r=ed.getBoundingClientRect(),c=C.g().canvas;return {x:Math.floor((e.clientX-r.left)/r.width*c.width),y:Math.floor((e.clientY-r.top)/r.height*c.height)}}
   ed.addEventListener('pointerdown',function(e){
     if(down||!C.ready()||window.FKAPI.state.mode!=='edit')return;
+    if(color===null&&tool!=='erase'&&tool!=='pick')return;
     var n=C.res(),g=C.g(),w=g.canvas.width,h=g.canvas.height,p=cell(e);if(p.x<0||p.y<0||p.x>=w||p.y>=h)return;
     e.preventDefault();ed.setPointerCapture(e.pointerId);
     if(tool==='pick'){pickAt(g,p);return}
