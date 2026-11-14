@@ -1,6 +1,7 @@
 /* PNG viewport uses existing theme tones and the custom-card outline colour. */
 .fkPngPanel{padding:8px;background:var(--fk-tone-2);border:2px solid var(--line);border-radius:var(--fk-header-radius)}
 .fkPngPanel.fkPngFree{border-color:var(--red)}
+#stage:has(#fCompare[aria-pressed=true],#fPlay[aria-pressed=true])~.fkPngPanel{border-color:var(--red)}
 .fkPngControls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
 .fkPngControls button{flex:1 1 140px;min-height:var(--fk-header-height);padding:8px;background:var(--fk-tone-3);color:var(--ink);border:1px solid var(--line);border-radius:var(--fk-header-radius);font:inherit;font-weight:800}
 .fkPngControls button[aria-pressed=true]{border-color:var(--red)}
