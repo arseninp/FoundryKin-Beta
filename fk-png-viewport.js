@@ -19,7 +19,7 @@ function create(canvas,api){
  freeButton.setAttribute('aria-pressed','false');view.tabIndex=0;view.setAttribute('aria-label',ru?'Поле рисования. В свободной позиции: перетаскивание и масштаб двумя пальцами.':'Drawing field. In free position: drag and pinch to zoom.');
  controls.appendChild(freeButton);controls.appendChild(resetButton);panel.insertBefore(controls,canvas);panel.insertBefore(view,canvas);view.appendChild(surface);surface.appendChild(canvas);
  var free=false,points=new Map(),last=null,paintingPointer=null,b={width:1,height:1},s={z:1,x:0,y:0},vw=0,vh=0,iw=0,ih=0,source=null;
- function usable(){return api.state.mode==='edit'&&!api.busy&&C.ready()&&!doc.hidden}
+ function usable(){return api.state.mode==='edit'&&!api.busy&&C.viewReady()&&!doc.hidden}
  function draw(){surface.style.width=b.width+'px';surface.style.height=b.height+'px';surface.style.transform='translate('+s.x+'px,'+s.y+'px) scale('+s.z+')'}
  function releasePaint(){var id=paintingPointer;paintingPointer=null;if(id!==null)try{if(canvas.hasPointerCapture(id))canvas.releasePointerCapture(id)}catch(error){}}
  function cancel(){var ids=Array.from(points.keys());points.clear();last=null;ids.forEach(function(id){try{if(view.hasPointerCapture(id))view.releasePointerCapture(id)}catch(error){}});releasePaint()}
