@@ -10,8 +10,10 @@ var data=load(KEY,{active:null,packs:[]});
 var settings=load(SKEY,{theme:'auto',url:DEF_URL});
 if(!settings.url)settings.url=DEF_URL;
 data.packs.forEach(function(p){delete p.fresh;p.author=p.author||'';p.game=p.game||'1.21.0';p.icon=p.icon||'';p.desc=p.desc||'';p.version=p.version||'1.0.0';p.textures=p.textures||[]});
+var backupHost=null,backups=null;
 var stack=['home'],mt=null,editDirty=false,editNew=false,draftIcon='',lastTitle='';
-function say(key,p){var m=$('#msg'),t=key?T(key,p):'';m.textContent=t;m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},t.length>90?7000:3500)}
+function say(key,p){showMessage(key?T(key,p):'')}
+function showMessage(t){var m=$('#msg');m.textContent=t;m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},t.length>90?7000:3500)}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function nice(id){var s=String(id||'').replace(/_/g,' ').trim();return s.charAt(0).toUpperCase()+s.slice(1)}
 function byId(id){return data.packs.filter(function(p){return p.id===id})[0]||null}
@@ -30,6 +32,7 @@ function hasFke(){return typeof FKE!=='undefined'}
 /* header */
 function head(name,pill){return '<span class="fkHead"><span class="fkTn">'+esc(name)+'</span>'+(pill?'<span class="fkTf">'+esc(pill)+'</span>':'')+'</span>'}
 function screenTitle(name,p){
+  if(name==='backup'&&backups)return esc(backups.title());
   if(name==='home')return head('FoundryKin','v'+V);
   if(name==='pack')return p?head(p.name,T('pack.pill',{version:p.version,n:p.textures.length})):esc(T('nav.pack'));
   if(name==='add')return '<span class="fkFind">'+esc(T('ui.find'))+LENS+'</span>';
@@ -51,6 +54,7 @@ function refreshTitle(){
 /* navigation */
 function render(){
   var name=top(),p=active();
+  if(backups&&name!=='pack'&&name!=='backup')backups.leave();
   document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('on',s.id==='s-'+name)});
   lastTitle='';setTitle(screenTitle(name,p));
   $('#back').hidden=stack.length<=1;
@@ -59,6 +63,7 @@ function render(){
   if(name==='create')renderPacks();
   if(name==='pack')renderTex();
   if(name==='edit')fillEdit();
+  if(name==='backup'&&backups)backups.renderScreen();
   if(name==='add')loadEditor();
   if(name==='settings')fillSettings();
   if(name==='diag')$('#dReport').textContent=report();
@@ -67,6 +72,7 @@ function render(){
 }
 function go(n){stack.push(n);render()}
 $('#back').onclick=function(){
+  if(top()==='backup'&&backups){if(backups.dirty()&&!confirm(T('confirm.leave_unsaved_pack')))return;backups.leave()}
   if(top()==='add'&&hasFke()){
     if(FKE.closeMenu())return;
     if(FKE.getMode()==='edit'){
@@ -82,7 +88,7 @@ $('#back').onclick=function(){
   if(stack.length>1){stack.pop();render()}
 };
 window.addEventListener('beforeunload',function(e){
-  if((hasFke()&&FKE.dirtyNow())||editDirty){e.preventDefault();e.returnValue=''}
+  if((hasFke()&&FKE.dirtyNow())||editDirty||(backups&&backups.dirty())){e.preventDefault();e.returnValue=''}
 });
 document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});
 $('#addBtn').onclick=function(){if(!active()){say('msg.pick_pack_first');return}go('add')};
@@ -103,7 +109,10 @@ $('#packList').addEventListener('click',function(e){
   if(a==='open')go('pack');
   if(a==='edit'){editNew=false;go('edit')}
   if(a==='exp')exportPack(p);
-  if(a==='del'){if(confirm(T('confirm.delete_pack',{name:p.name}))){data.packs=data.packs.filter(function(x){return x.id!==id});data.active=null;save(KEY,data);renderPacks()}}
+  if(a==='del'&&confirm(T('confirm.delete_pack',{name:p.name})+'\n'+(FK.lang()==='ru'?'Бэкап этого пака тоже будет удалён.':'This pack’s backup will also be deleted.'))){
+    try{if(backupHost)backupHost.deletePack(id);else{if(data.backupEntries)throw new Error('Backups are not ready');commitData({...data,active:null,packs:data.packs.filter(function(x){return x.id!==id})})}renderPacks()}
+    catch(error){say('msg.save_failed',{detail:error.message})}
+  }
 });
 $('#cGo').onclick=function(){editNew=true;go('edit')};
 function groupsOf(p){
@@ -124,6 +133,7 @@ function pickShown(g){
 }
 function renderTex(){
   var p=active(),box=$('#texList');
+  if(backups)backups.renderPack(p);
   if(!p){box.innerHTML='';return}
   var gs=groupsOf(p);
   if(top()==='pack')setTitle(screenTitle('pack',p));
@@ -411,7 +421,15 @@ function applyLang(){
 }
 $('#sLang').onchange=function(){settings.lang=this.value;save(SKEY,settings);FK.refresh();applyLang()};
 $('#sExport').onclick=function(){download(new Blob([JSON.stringify(data)],{type:'application/json'}),'foundrykin-packs.json')};
-$('#sClear').onclick=function(){if(confirm(T('confirm.delete_all'))){data={active:null,packs:[]};save(KEY,data);say('msg.packs_deleted')}};
+$('#sClear').onclick=function(){if(confirm(T('confirm.delete_all')+'\n'+(FK.lang()==='ru'?'Бэкапы паков тоже будут удалены.':'Pack backups will also be deleted.'))){try{commitData({active:null,packs:[]});say('msg.packs_deleted')}catch(error){say('msg.save_failed',{detail:error.message})}}};
+
+function commitData(next){localStorage.setItem(KEY,JSON.stringify(next));data=next}
+import('./fk-backup-host.mjs?v=0.9.15').then(function(module){
+  backupHost=module.createPackBackupHost({document:document,lang:function(){return FK.lang()},getData:function(){return data},commitData:commitData,getPack:byId,
+    isCurrent:function(id,mode){return data.active===id&&top()===mode&&!document.hidden},openScreen:go,back:function(){stack.pop();render()},notice:showMessage,
+    afterRestore:function(){if(hasFke())FKE.reset();renderTex()}});
+  backups=backupHost.ui;if(top()==='pack')backups.renderPack(active());
+}).catch(function(error){say('msg.save_failed',{detail:error.message})});
 
 applyTheme();
 document.documentElement.lang=FK.lang();
