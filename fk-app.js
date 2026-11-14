@@ -54,7 +54,7 @@ function refreshTitle(){
 /* navigation */
 function render(){
   var name=top(),p=active();
-  if(backups&&name!=='pack'&&name!=='backup')backups.leave();
+  if(backups&&name!=='create'&&name!=='backup')backups.leave();
   document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('on',s.id==='s-'+name)});
   lastTitle='';setTitle(screenTitle(name,p));
   $('#back').hidden=stack.length<=1;
@@ -96,11 +96,12 @@ $('#addBtn').onclick=function(){if(!active()){say('msg.pick_pack_first');return}
 /* packs */
 function renderPacks(){
   var box=$('#packList');
-  if(!data.packs.length){box.innerHTML='<p class="lbl">'+esc(T('packs.empty'))+'</p>';return}
+  if(!data.packs.length){box.innerHTML='<p class="lbl">'+esc(T('packs.empty'))+'</p>';if(backups)backups.renderCards();return}
   box.innerHTML=data.packs.map(function(p){
     return '<div class="card"><div class="pk"><img src="'+(p.icon||ICON)+'" alt=""><div class="n"><b>'+esc(p.name)+'</b><span class="lbl">'+esc(T('pack.card_sub',{version:p.version,n:p.textures.length}))+'</span></div></div>'+
       '<div class="acts"><button data-variant="accent" data-a="open" data-id="'+p.id+'">'+esc(T('act.textures'))+'</button><button data-a="exp" data-id="'+p.id+'">'+esc(T('act.export'))+'</button><button data-a="edit" data-id="'+p.id+'">'+esc(T('act.edit'))+'</button><button data-a="del" data-id="'+p.id+'">'+esc(T('act.delete'))+'</button></div></div>';
   }).join('');
+  if(backups)backups.renderCards();
 }
 $('#packList').addEventListener('click',function(e){
   var el=e.target.closest('[data-a]');if(!el)return;
@@ -133,7 +134,6 @@ function pickShown(g){
 }
 function renderTex(){
   var p=active(),box=$('#texList');
-  if(backups)backups.renderPack(p);
   if(!p){box.innerHTML='';return}
   var gs=groupsOf(p);
   if(top()==='pack')setTitle(screenTitle('pack',p));
@@ -424,11 +424,11 @@ $('#sExport').onclick=function(){download(new Blob([JSON.stringify(data)],{type:
 $('#sClear').onclick=function(){if(confirm(T('confirm.delete_all')+'\n'+(FK.lang()==='ru'?'Бэкапы паков тоже будут удалены.':'Pack backups will also be deleted.'))){try{commitData({active:null,packs:[]});say('msg.packs_deleted')}catch(error){say('msg.save_failed',{detail:error.message})}}};
 
 function commitData(next){localStorage.setItem(KEY,JSON.stringify(next));data=next}
-import('./fk-backup-host.mjs?v=0.9.15').then(function(module){
+import('./fk-backup-host.mjs?v=0.9.16').then(function(module){
   backupHost=module.createPackBackupHost({document:document,lang:function(){return FK.lang()},getData:function(){return data},commitData:commitData,getPack:byId,
-    isCurrent:function(id,mode){return data.active===id&&top()===mode&&!document.hidden},openScreen:go,back:function(){stack.pop();render()},notice:showMessage,
-    afterRestore:function(){if(hasFke())FKE.reset();renderTex()}});
-  backups=backupHost.ui;if(top()==='pack')backups.renderPack(active());
+    isCurrent:function(id,mode){return (mode==='create'||data.active===id)&&top()===mode&&!document.hidden},openScreen:function(mode,id){if(byId(id))data.active=id;go(mode)},back:function(){stack.pop();render()},notice:showMessage,
+    afterRestore:function(){if(hasFke())FKE.reset();renderPacks()}});
+  backups=backupHost.ui;if(top()==='create')backups.renderCards();
 }).catch(function(error){say('msg.save_failed',{detail:error.message})});
 
 applyTheme();

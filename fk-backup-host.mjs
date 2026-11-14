@@ -1,6 +1,6 @@
 /* Adapt backup storage to the shell's single saved record; never write during setup. */
-import {createPackBackupStore} from './fk-backup-store.mjs?v=0.9.15';
-import {createPackBackupUI} from './fk-backups.mjs?v=0.9.15';
+import {createPackBackupStore} from './fk-backup-store.mjs?v=0.9.16';
+import {createPackBackupUI} from './fk-backups.mjs?v=0.9.16';
 export function createPackBackupHost(options){
  let staged=null;
  function root(){return staged||options.getData();}
@@ -19,7 +19,7 @@ export function createPackBackupHost(options){
  const store=createPackBackupStore(storage);
  const ui=createPackBackupUI({...options,store,commitRestore(snapshot,previous){
   const current=options.getData(),index=current.packs.indexOf(previous);
-  if(index<0||snapshot.id!==previous.id||!options.isCurrent(previous.id,'pack'))throw new Error('Pack changed before restore');
+  if(index<0||snapshot.id!==previous.id||!options.isCurrent(previous.id,'create'))throw new Error('Pack changed before restore');
   const packs=current.packs.slice();packs[index]=snapshot;
   options.commitData({...current,packs});
   options.afterRestore();return true;
