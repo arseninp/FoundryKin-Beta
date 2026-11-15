@@ -9,7 +9,7 @@ var selection=null,unified=null,choice=null,controlTools=null,reader=null,resour
 var comparison=null,compareControls=null;
 var $=function(s){return document.querySelector(s)};
 try{var PD=parent.document.documentElement;var syncTheme=function(){document.documentElement.setAttribute('data-theme',PD.getAttribute('data-theme')||'light')};syncTheme();new MutationObserver(syncTheme).observe(PD,{attributes:true,attributeFilter:['data-theme']})}catch(e){}
-var ed=$('#ed'),ectx=ed.getContext('2d'),listeners=[],stateUi=window.FKModelState.create($('#shapesRow'),function(){if(choice&&!API.busy)selectCompiled({id:cur,...controlTools.previewControlSelection(choice.plan,{...stateUi.value(),texture:slot})})},{preview:previewStateOption});
+var ed=$('#ed'),ectx=ed.getContext('2d'),listeners=[],stateUi=window.FKModelState.create($('#shapesRow'),function(key){if(!choice||API.busy)return false;var value=stateUi.value(),count=value.preview_count;delete value.preview_count;if(key==='preview_count'){if(!gl)return false;try{V.setCopies(view,count);requestRender()}catch(error){showErr('render',error.message);return false}}else selectCompiled({id:cur,...controlTools.previewControlSelection(choice.plan,{...value,texture:slot})})},{preview:previewStateOption,copies:true});
 var S={mode:'search',status:'loading',source:'',count:0,filtered:true,refreshing:false,refreshFailed:'',error:null,errors:[],info:null,message:null},ctx={onHistory:null,onRes:null};
 function emit(){listeners.forEach(function(f){try{f(S)}catch(e){}})}
 function showErr(code,detail){var last=S.errors[S.errors.length-1];detail=detail||'';if(last&&last.code===code&&last.detail===detail)return;diagnostic('error','editor',detail,{stage:code,id:cur,slot:slot});S.errors.push({code:code,detail:detail});if(S.errors.length>3)S.errors.shift();emit()}
@@ -31,7 +31,7 @@ function refreshTex(){if(gl&&view.instance)V.update(view,shownCanvases());reques
 function rebuildTextures(){refreshTex()}
 function clearModel(){if(view)V.clear(view)}
 function isFlat(){return !!choice&&choice.plan.mode==='sprite'}
-function build(){if(!gl)return;if(choice)V.build(view,{plan:choice.plan,canvases:shownCanvases()},resetView);else clearModel();resetView=false;requestRender()}
+function build(){if(!gl)return;if(choice)V.build(view,{plan:choice.plan,canvases:shownCanvases(),count:stateUi.value().preview_count},resetView);else clearModel();resetView=false;requestRender()}
 var frameTimer=null,playbackGeneration=0,framePointer=null;
 function stopPlayback(){playbackGeneration++;if(frameTimer!==null){clearTimeout(frameTimer);frameTimer=null}frameUi()}
 function canPlay(){return !API.busy&&S.mode==='edit'&&!document.hidden&&framePointer===null&&!!choice&&!!fr[slot]&&fr[slot].length>1}
