@@ -211,7 +211,7 @@ function setPack(map){
 async function loadCatalog(){
  const begin=Date.now();diagnostic('info','catalog','Catalog loading',{stage:'imports'});
  try{
-  const [selected,runtime,controls,labels,images,resources,icons,compare,buttons]=await Promise.all([import('./catalog/editor-selection.mjs'),FKCatalogData.loadCompiled(THREE),import('./preview-controls.mjs'),import('./preview-config.mjs'),import('./preview-images.mjs'),import('./catalog/editor-resource-usage.mjs'),import('./catalog/rules/icons.mjs'),import('./catalog/editor-comparison.mjs?v=0.9.14'),import('./catalog/editor-comparison-controls.mjs?v=0.9.14')]);
+  const [selected,runtime,controls,labels,images,resources,icons,compare,buttons,vanilla]=await Promise.all([import('./catalog/editor-selection.mjs'),FKCatalogData.loadCompiled(THREE),import('./preview-controls.mjs'),import('./preview-config.mjs'),import('./preview-images.mjs'),import('./catalog/editor-resource-usage.mjs'),import('./catalog/rules/icons.mjs'),import('./catalog/editor-comparison.mjs?v=0.9.14'),import('./catalog/editor-comparison-controls.mjs?v=0.9.14'),import('./catalog/vanilla-images.mjs?v=0.9.26')]);
   comparison=compare.createComparison(makeCanvas);
   compareControls=buttons.createComparisonControls(stage,framePlay,comparison,function(){
    if(API.busy||!choice)return;
@@ -220,7 +220,7 @@ async function loadCatalog(){
   },FK.lang()==='ru');
   selection=selected;unified=runtime;resourceTools=resources;iconTools=icons;
   controlTools=controls.createPreviewControls({en:{...labels.TEXT.en,powered:'Power',powered_off:'Off',powered_on:'On'},ru:{...labels.TEXT.ru,powered:'Сигнал',powered_off:'Нет',powered_on:'Есть'}});
-  reader=images.createImageSource(FKCatalog.loadAny,data=>new Promise((ok,fail)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=()=>fail(new Error('Saved PNG decode failed'));im.src=data}),{onDiagnostic:function(level,message,details,error){diagnostic(level,'image',message,details,error)}});
+  reader=images.createImageSource(vanilla.loadVanillaImage,data=>new Promise((ok,fail)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=()=>fail(new Error('Saved PNG decode failed'));im.src=data}),{onDiagnostic:function(level,message,details,error){diagnostic(level,'image',message,details,error)}});
   if(queuedPack){setPack(queuedPack);queuedPack=null}
   catalog=runtime.catalog;S.status='ready';S.source='compiled';S.count=catalog.cards.length;S.error=null;diagnostic('info','catalog','Catalog ready',{stage:'ready',count:S.count,duration:Date.now()-begin});emit();
  }catch(error){diagnostic('error','catalog','Catalog failed',{stage:'load',duration:Date.now()-begin},error);S.status='failed';S.error={code:'catalog_fetch',detail:error.message};emit()}
@@ -241,7 +241,7 @@ var API={
  },
  diagnostics:function(){return {rejected:Object.keys(rejected).map(function(path){return {path:path,error:rejected[path].message}})}},
  stats:function(){return {frames:frames,webgl:gl,res:res,slots:slots.length}},
- grid:function(){return {catalog:catalog,files:files,dirty:dirty,load:FKCatalog.loadAny,select:function(id){return selectCompiled({id})},edited:isEdited,preview:previewCompiled,search:unified?q=>selection.compiledSearchIds(unified,q):null,
+ grid:function(){return {catalog:catalog,files:files,dirty:dirty,select:function(id){return selectCompiled({id})},edited:isEdited,preview:previewCompiled,search:unified?q=>selection.compiledSearchIds(unified,q):null,
   discard:function(){cancelCompiled();slots.forEach(function(s){ph[s.id]=true})},
   obj:function(){return API.busy?{id:API.pending||null,paths:[]}:{id:cur||null,paths:cur?familyPaths(cur):[]}},
   setPack:setPack,
