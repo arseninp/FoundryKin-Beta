@@ -3,9 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="color-scheme" content="only light">
-<meta name="application-version" content="0.9.18">
+<meta name="application-version" content="0.9.19">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FoundryKin</title>
+<link rel="stylesheet" href="fk-menu.css?v=0.9.17">
+<link rel="stylesheet" href="fk-model-state.css?v=0.9.17">
 <link rel="stylesheet" href="fk-style.css?v=0.9.17">
 <link rel="stylesheet" href="fk-base.css?v=0.9.17">
 <link rel="stylesheet" href="fk-pack-actions.css?v=0.9.17">
@@ -15,10 +17,15 @@
 .fkSettingsDesc{font-size:13px;font-weight:400;line-height:1.5;margin:0 0 10px;overflow-wrap:anywhere}
 .fkSettingsBubble summary.btn{display:flex;justify-content:space-between;gap:8px;width:100%;background:var(--fk-tone-3);list-style:none;text-align:left}
 .fkSettingsBubble summary::-webkit-details-marker{display:none}
-.fkSettingsBubble summary::after{content:'+';flex:none}
-.fkSettingsBubble details[open]>summary::after{content:'−'}
+.fkSettingsBubble summary::after{content:'▾';flex:none}
+.fkSettingsBubble details[open]>summary::after{content:'▴'}
 .fkSettingsBody{padding-top:4px;overflow-wrap:anywhere}
 .fkSettingsBody label.lbl{display:block}
+.fkSettingsChoice{display:flex;width:100%;justify-content:space-between;text-align:left}
+#top .fkHead{margin-bottom:0}
+#fkSettingsChoiceDialog .fkHead{margin-bottom:10px}
+#fkSettingsChoiceDialog .fkTitle{font-size:17px;font-weight:800}
+#fkSettingsChoiceDialog button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .fkSettingsBody .btn,.fkSettingsBody input,.fkSettingsBody select{background:var(--fk-tone-3)}
 .fkSettingsBody>.lbl:last-child{margin-bottom:0}
 .fkSettingsBody h2{margin-top:12px}
@@ -63,9 +70,9 @@
 <details><summary class="btn"><span class="fkSettingsRu">Персонализация</span><span class="fkSettingsEn">Personalization</span></summary>
 <div class="fkSettingsBody">
 <label class="lbl" for="sTheme" data-i18n="settings.theme"></label>
-<select id="sTheme"><option value="auto" data-i18n="theme.auto"></option><option value="light" data-i18n="theme.light"></option><option value="dark" data-i18n="theme.dark"></option></select>
+<button type="button" class="btn fkSettingsChoice" id="sTheme" value="auto" aria-haspopup="dialog" aria-controls="fkSettingsChoiceDialog" aria-expanded="false"></button>
 <label class="lbl" for="sLang" data-i18n="settings.language"></label>
-<select id="sLang"><option value="auto" data-i18n="lang.auto"></option><option value="en" data-i18n="lang.en"></option><option value="ru" data-i18n="lang.ru"></option></select>
+<button type="button" class="btn fkSettingsChoice" id="sLang" value="auto" aria-haspopup="dialog" aria-controls="fkSettingsChoiceDialog" aria-expanded="false"></button>
 </div></details>
 </article>
 <article class="fkSettingsBubble">
@@ -100,7 +107,7 @@
 <p class="fkSettingsDesc"><span class="fkSettingsRu">Версия, описание и репозиторий проекта.</span><span class="fkSettingsEn">Version, description and project repository.</span></p>
 <details><summary class="btn"><span class="fkSettingsRu">О приложении</span><span class="fkSettingsEn">About</span></summary>
 <div class="fkSettingsBody">
-<p class="lbl"><span class="fkSettingsRu">FoundryKin — редактор текстур Minecraft Bedrock с каталогом, предпросмотром и экспортом паков.</span><span class="fkSettingsEn">FoundryKin is a Minecraft Bedrock texture editor with a catalog, preview and pack export.</span></p><p class="lbl"><span class="fkSettingsRu">Оболочка приложения: 0.9.18. Документ редактора: 0.9.17; его код этим обновлением не изменяется.</span><span class="fkSettingsEn">App shell: 0.9.18. Editor document: 0.9.17; its code is unchanged by this update.</span></p><a class="btn" href="https://github.com/arseninp/FoundryKin-Beta" target="_blank" rel="noopener noreferrer">GitHub</a>
+<p class="lbl"><span class="fkSettingsRu">FoundryKin — редактор текстур Minecraft Bedrock с каталогом, предпросмотром и экспортом паков.</span><span class="fkSettingsEn">FoundryKin is a Minecraft Bedrock texture editor with a catalog, preview and pack export.</span></p><p class="lbl"><span class="fkSettingsRu">Оболочка приложения: 0.9.19. Документ редактора: 0.9.17; его код этим обновлением не изменяется.</span><span class="fkSettingsEn">App shell: 0.9.19. Editor document: 0.9.17; its code is unchanged by this update.</span></p><a class="btn" href="https://github.com/arseninp/FoundryKin-Beta" target="_blank" rel="noopener noreferrer">GitHub</a>
 </div></details>
 </article>
 </section>
@@ -112,11 +119,13 @@
 </div>
 <div class="bar" id="bar"><button class="btn find" id="addBtn"><span data-i18n="ui.find"></span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button></div>
 <div id="msg" role="status"></div>
-<script>window.FK_V='0.9.18';</script>
+<script>window.FK_V='0.9.19';</script>
 <script src="fk-log.js?v=0.9.17"></script>
 <script src="fk-i18n.js?v=0.9.17"></script>
 <script src="fk-editor.js?v=0.9.17"></script>
 <script src="fk-app.js?v=0.9.17"></script>
+<script src="fk-menu.js?v=0.9.17"></script>
+<script src="fk-settings-picker.js?v=0.9.19"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
 </html>
