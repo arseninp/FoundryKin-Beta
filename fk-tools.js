@@ -25,7 +25,7 @@ function btn(cls,name,title){var b=mk('button',cls);b.type='button';b.innerHTML=
 function h2(v){return ('0'+v.toString(16)).slice(-2)}
 
 /* state */
-var tool='pen',color=null,alpha=255,brush=1,queue=[],P={h:0,s:0,v:0,a:255};
+var tool='pen',color=null,alpha=255,brush=1,queue=[],P={h:0,s:0,v:0,a:255},paletteMenus=null;
 try{var sb=+localStorage.getItem('fk_brush');if(sb>=1&&sb<=8)brush=sb}catch(e){}
 try{var q0=JSON.parse(localStorage.getItem('fk_hist'));if(Array.isArray(q0))queue=q0.filter(function(x){return /^#[0-9a-f]{8}$/.test(x)}).slice(0,20)}catch(e){}
 
@@ -144,7 +144,7 @@ function setColor(c){
 }
 function renderQueue(){
   var cur8=hex8();UI.sw.innerHTML='';
-  queue.forEach(function(h){
+  (paletteMenus?paletteMenus.colors(queue):queue).forEach(function(h){
     var b=mk('button','fkSw'+(h===cur8?' on':''));b.type='button';b.dataset.c=h;b.style.overflow='hidden';b.setAttribute('aria-label',h);
     var sample=colorCanvas(32,32);b.appendChild(sample);paintColor(sample,parseHex(h));UI.sw.appendChild(b);
   });
@@ -252,7 +252,7 @@ function build(root){
   hx.addEventListener('change',function(){var p=parseHex(hx.value);if(p)setRgba(p[0],p[1],p[2],p[3]);paint()});
   var palM={triggers:[pb],show:ps.show,hide:ps.hide};
   pb.addEventListener('click',function(){
-    if(lpFired&&lpTarget===pb){lpFired=false;return}
+    if(paletteMenus&&paletteMenus.consume(pb))return;
     if(FKM.cur===palM){FKM.close();return}
     if(color!==null){
       var c=rgbOf(color),h=rgb2hsv(c[0],c[1],c[2]);
@@ -262,39 +262,20 @@ function build(root){
   });
   ps.ok.addEventListener('click',function(){var c=rgb();alpha=P.a;setColor(hex6(c[0],c[1],c[2]));queueFront();FKM.close()});
 
-  /* One hold menu for an individual swatch or the complete saved palette. */
-  var menu=mk('div','fkMenu'),del=mk('button','',T('pal.delete'));del.type='button';menu.appendChild(del);document.body.appendChild(menu);
-  var lpT=null,lpFired=false,lpX=0,lpY=0,lpC=null,lpAll=false,lpTarget=null;
-  function stopHold(){clearTimeout(lpT);lpT=null}
-  function hideMenu(){menu.style.display='none';lpC=null;lpAll=false}
-  function showMenu(b){
-    var r=b.getBoundingClientRect(),w=170;lpAll=b===pb;lpC=lpAll?null:b.dataset.c;
-    del.textContent=lpAll?(FK.lang()==='ru'?'Очистить палитру':'Clear palette'):T('pal.delete');del.disabled=lpAll&&!queue.length;menu.style.display='block';
-    var left=Math.max(8,Math.min(innerWidth-w-8,r.left-8)),tp=r.bottom+6;
-    if(tp+52>innerHeight)tp=Math.max(8,r.top-52);
-    menu.style.left=left+'px';menu.style.top=tp+'px';
-  }
-  colors.addEventListener('pointerdown',function(e){
-    var b=e.target.closest('.fkSw,#fkPalBtn');if(!b||!colors.contains(b)||e.isPrimary===false||(e.button!==undefined&&e.button!==0))return;
-    stopHold();lpFired=false;lpTarget=b;lpX=e.clientX;lpY=e.clientY;
-    lpT=setTimeout(function(){lpT=null;if(!colors.contains(b)||window.FKAPI.state.mode!=='edit'||window.FKAPI.busy)return;lpFired=true;FKM.close();showMenu(b)},500);
-  });
-  colors.addEventListener('pointermove',function(e){if(lpT&&(Math.abs(e.clientX-lpX)>8||Math.abs(e.clientY-lpY)>8))stopHold()});
-  ['pointerup','pointercancel','pointerleave'].forEach(function(t){colors.addEventListener(t,stopHold)});
-  UI.sw.addEventListener('scroll',stopHold);colors.addEventListener('contextmenu',function(e){e.preventDefault()});
+  /* Named sets and hold actions share one adapter and the existing menu manager. */
   UI.sw.addEventListener('click',function(e){
     var b=e.target.closest('.fkSw');if(!b)return;
-    if(lpFired&&lpTarget===b){lpFired=false;return}
+    if(paletteMenus&&paletteMenus.consume(b))return;
     var v=parseHex(b.dataset.c);alpha=v[3];setColor(b.dataset.c.slice(0,7));
   });
-  del.addEventListener('click',function(){
-    var c=lpC,all=lpAll;hideMenu();if(!all&&!c)return;
-    var next=all?[]:queue.filter(function(x){return x!==c});
-    try{localStorage.setItem('fk_hist',JSON.stringify(next))}catch(error){C.say('msg.save_failed',{detail:error.message});return}
-    queue=next;renderQueue();if(all)UI.sw.scrollLeft=0;
-  });
-  document.addEventListener('pointerdown',function(e){if(menu.style.display!=='none'&&!menu.contains(e.target))hideMenu()},true);
-  window.addEventListener('blur',function(){stopHold();hideMenu()});
+  import('./fk-editor-palettes.mjs?v=0.9.21').then(function(module){
+    paletteMenus=module.createEditorPalettes({button:pb,colors:colors,swatches:UI.sw,
+      recent:function(){return queue.slice()},setRecent:function(next){queue=next},
+      ready:function(){return window.FKAPI.state.mode==='edit'&&!window.FKAPI.busy},
+      changed:function(){renderQueue();UI.sw.scrollLeft=0},saved:function(){C.say('msg.saved')},
+      error:function(detail){C.say('msg.save_failed',{detail:detail})}});
+    renderQueue();
+  }).catch(function(error){C.say('msg.save_failed',{detail:error.message})});
 
   /* canvas pointer input */
   var ed=C.el.ed,down=false,last=null,strokeId=null,strokeG=null,strokeN=0,strokeW=0,strokeH=0,strokeEdits=0;
@@ -318,11 +299,11 @@ function build(root){
   function up(e){if(e&&e.pointerId!==strokeId)return;down=false;last=null;strokeId=null;strokeG=null}
   ed.addEventListener('pointerup',up);ed.addEventListener('pointercancel',up);ed.addEventListener('lostpointercapture',up);
   window.addEventListener('blur',function(){up()});
-  document.addEventListener('visibilitychange',function(){if(document.hidden){up();stopHold();hideMenu()}});
+  document.addEventListener('visibilitychange',function(){if(document.hidden){up();if(paletteMenus)paletteMenus.leave()}});
 
   /* replace from PNG, clear, download */
   var importGen=0;
-  window.FKAPI.subscribe(function(s){if(s.mode!=='edit'||window.FKAPI.busy){importGen++;up();stopHold();hideMenu();lpFired=false;lpTarget=null}});
+  window.FKAPI.subscribe(function(s){if(s.mode!=='edit'||window.FKAPI.busy){importGen++;up();if(paletteMenus)paletteMenus.leave()}});
   file.addEventListener('change',function(e){
     var inp=e.target,f=inp.files[0],gen=++importGen;inp.value='';
     if(!f||!C.ready()||window.FKAPI.state.mode!=='edit')return;
