@@ -33,7 +33,7 @@ function hasFke(){return typeof FKE!=='undefined'}
 function head(name,pill){return '<span class="fkHead"><span class="fkTn">'+esc(name)+'</span>'+(pill?'<span class="fkTf">'+esc(pill)+'</span>':'')+'</span>'}
 function screenTitle(name,p){
   if(name==='backup'&&backups)return esc(backups.title());
-  if(name==='home')return head('FoundryKin','v'+V);
+  if(name==='home')return head('FoundryKin',V);
   if(name==='pack')return p?head(p.name,T('pack.pill',{version:p.version,n:p.textures.length})):esc(T('nav.pack'));
   if(name==='add')return '<span class="fkFind">'+esc(T('ui.find'))+LENS+'</span>';
   return esc(T({create:'nav.create',settings:'nav.settings',edit:'nav.edit',diag:'nav.diag'}[name]));
@@ -357,16 +357,16 @@ function report(){
   var L=['FoundryKin diagnostics'],editorLog='not loaded';
   function clean(value,limit){try{var log=window.FKLog;return log&&log.text?log.text(value,limit):'[redaction unavailable]'}catch(e){return '[redaction unavailable]'}}
   function logText(value){return String(value||'not loaded').split('\n').slice(0,61).map(function(line){return clean(line,900)}).join('\n')}
-  L.push('app.html: v'+V);
-  L.push('fk-app.js: v'+APP_V);
+  L.push('app.html: '+V);
+  L.push('fk-app.js: '+APP_V);
   var cv='?';
   try{var lk=document.querySelector('link[rel=stylesheet]'),cm=/[?&]v=([\d.]+)/.exec(String(lk&&lk.href||''));if(cm)cv=cm[1]}catch(e){}
-  L.push('fk-style.css: v'+cv);
+  L.push('fk-style.css: '+cv);
   L.push('language: '+FK.lang()+' (setting: '+FK.setting()+')');
   L.push('logs: memory only; no automatic upload; header rejection is not full PNG validation');
   if(hasFke())try{
     var i=FKE.info();
-    L.push('fk-editor.js: v'+clean(i.version,24)+', editor document: '+(i.ready?'v'+clean(i.editor,24):'not loaded'));
+    L.push('fk-editor.js: '+clean(i.version,24)+', editor document: '+(i.ready?clean(i.editor,24):'not loaded'));
     L.push('editor mode: '+clean(i.mode,24)+', busy: '+(i.busy?'yes':'no')+', webgl: '+i.webgl+', frames: '+i.frames);
     L.push('catalog: '+clean(i.status||'-',40)+(i.source?' ('+clean(i.source,40)+')':'')+', blocks: '+i.count);
     L.push('fonts shell: '+clean(fontsOf(document),300));
@@ -414,7 +414,7 @@ $('#sUrlSave').onclick=function(){settings.url=$('#sUrl').value.trim()||DEF_URL;
 $('#sTheme').onchange=function(){settings.theme=this.value;save(SKEY,settings);applyTheme()};
 function applyLang(){
   document.documentElement.lang=FK.lang();
-  document.title='FoundryKin v'+V;
+  document.title='FoundryKin '+V;
   FK.apply(document);
   if(hasFke())FKE.reset();
   render();
@@ -433,7 +433,7 @@ import('./fk-backup-host.mjs?v=0.9.16').then(function(module){
 
 applyTheme();
 document.documentElement.lang=FK.lang();
-document.title='FoundryKin v'+V;
+document.title='FoundryKin '+V;
 FK.apply(document);
 render();
 })();
