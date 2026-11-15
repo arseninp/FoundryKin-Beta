@@ -54,7 +54,7 @@ try{
 const html=`<!doctype html><meta charset="utf-8"><link rel="icon" href="data:,"><style>body{margin:0;background:#d5d0ca}#stage{width:512px;height:512px}canvas{display:block;width:512px;height:512px}</style><div id="stage"></div>
 <script src="/__three.js"></script>
 <script>const NativeRenderer=THREE.WebGLRenderer;THREE.WebGLRenderer=function(options){return new NativeRenderer({...options,antialias:window.__mode!=='no-aa'})};</script>
-<script src="/fk-catalog-data.js"></script><script src="/fk-catalog.js"></script><script src="/fk-view.js"></script>`;
+<script src="/fk-catalog-data.js"></script><script src="/fk-view.js"></script>`;
 const types={'.js':'application/javascript','.mjs':'application/javascript','.json':'application/json','.css':'text/css','.html':'text/html'};
 const server=createServer(async(req,res)=>{
  try{
@@ -112,7 +112,7 @@ try{
   for(const item of cases)for(const textureMode of ['original','uv-grid-alpha','uv-grid-opaque'])for(const yawOffset of [0,.55,-.55]){
    const details=await page.evaluate(async({item,textureMode,yawOffset})=>{
     const runtime=window.__runtime,view=window.__view,gl=window.__gl,cache=window.__referenceImages;
-    if(!cache[item.path])cache[item.path]=FKCatalog.loadAny(item.path);
+    if(!cache[item.path]){const {loadVanillaImage}=await import('/catalog/vanilla-images.mjs?v=0.9.26');cache[item.path]=loadVanillaImage(item.path);}
     const image=await cache[item.path];if(!image)throw new Error('Production reference decode failed: '+item.path);
     const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
     const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.drawImage(image,0,0);

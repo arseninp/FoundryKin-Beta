@@ -30,7 +30,7 @@ try{
  }catch(error){lastError=error;}
  if(!png)throw lastError;
  report.reference={path,bytes:png.length,sha256:createHash('sha256').update(png).digest('hex')};
- const html='<!doctype html><meta charset="utf-8"><link rel="icon" href="data:,"><div id="stage"></div><script src="/__three.js"></script><script src="/fk-catalog-data.js"></script><script src="/fk-catalog.js"></script><script src="/fk-view.js"></script>';
+ const html='<!doctype html><meta charset="utf-8"><link rel="icon" href="data:,"><div id="stage"></div><script src="/__three.js"></script><script src="/fk-catalog-data.js"></script><script src="/fk-view.js"></script>';
  server=createServer(async(req,res)=>{
   try{
    const name=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
@@ -55,7 +55,8 @@ try{
  report.context=await page.evaluate(async path=>{
   if(THREE.REVISION!=='128')throw new Error('Expected Three r128');
   const runtime=await FKCatalogData.loadCompiled(THREE),view=FKView.createStage();FKView.mount(document.getElementById('stage'));
-  const image=await FKCatalog.loadAny(path);if(!image)throw new Error('Piglin image decode failed');
+  const {loadVanillaImage}=await import('/catalog/vanilla-images.mjs?v=0.9.26');
+  const image=await loadVanillaImage(path);if(!image)throw new Error('Piglin image decode failed');
   const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
   const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.drawImage(image,0,0);
   const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;let zero=0,opaque=0,semi=0;
