@@ -1,8 +1,9 @@
-/* Read-only entry point for an explicit block slice. Uses the production compiler and preview path. */
+/* Read-only compiled preview. */
 import {compileModelCatalog} from './models/library.mjs';
 import {createPreviewResolver} from './catalog/preview.mjs';
 import {createPreviewControls} from './preview-controls.mjs';
 import {activePack,imageFrames,frameCanvas,createImageSource} from './preview-images.mjs';
+import {loadVanillaImage} from './catalog/vanilla-images.mjs?v=0.9.26';
 import {REVIEW_IDS as BASE_REVIEW_IDS,TEXT as BASE_TEXT} from './preview-config.mjs';
 import {STONE_REVIEW_BLOCKS} from './preview-stone-data.mjs';
 import {WOOD_REVIEW_BLOCKS} from './preview-wood-data.mjs';
@@ -117,7 +118,7 @@ export async function startPreview() {
  const cardText=card=>TEXT[lang]['card_'+card]??(card==='closed_eyeblossom'?t('eyeblossom'):card);
  let renderer,current=null,resolve,catalog,id='',form,slot,state={},generation=0,busy=false,disposed=false,frame=null,drag=null,controlPlan=null,lost=false;
  let notice={key:'loading',detail:'',error:false};
- const frames=new Map(),readImage=createImageSource(path=>globalThis.FKCatalog.loadAny(path),data=>new Promise((ok,fail)=>{
+ const frames=new Map(),readImage=createImageSource(loadVanillaImage,data=>new Promise((ok,fail)=>{
   const image=new Image();image.onload=()=>ok(image);image.onerror=()=>fail(new Error('Saved PNG decode failed'));image.src=data;
  }));
  function message(key,detail='',error=false){notice={key,detail,error};status.className=error?'error':'';status.textContent=t(key)+(detail?' — '+detail:'');}
