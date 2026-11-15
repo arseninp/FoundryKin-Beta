@@ -34,17 +34,18 @@ function clear(stage){
     while(stage.group.children.length)stage.group.remove(stage.group.children[0]);
   }
 }
-function copyCount(value){if(value!==1&&value!==9)throw new Error('Preview count must be 1 or 9');return value}
+function copyCount(value){if(value!==1&&value!==3&&value!==9)throw new Error('Preview count must be 1, 3 or 9');return value}
 function fit(stage){
   var size=stage.modelSize.clone();
-  if(stage.count===9){size.x+=2;if(stage.flat)size.y+=2;else size.z+=2}
+  if(stage.count!==1)size.x+=2;
+  if(stage.count===9){if(stage.flat)size.y+=2;else size.z+=2}
   var extent=Math.max(.1,size.length()/2*1.15);
   stage.camera.position.set(0,0,10);stage.camera.near=.1;stage.camera.far=100;
   stage.camera.left=stage.camera.bottom=-extent;stage.camera.right=stage.camera.top=extent;stage.camera.zoom=1;stage.camera.updateProjectionMatrix();
 }
 function arrange(stage,count){
-  var next=[],base=stage.instance.group;
-  if(count===9)for(var x=-1;x<=1;x++)for(var y=-1;y<=1;y++){
+  var next=[],base=stage.instance.group,radius=count===9?1:0;
+  if(count!==1)for(var x=-1;x<=1;x++)for(var y=-radius;y<=radius;y++){
     if(x===0&&y===0)continue;
     var copy=base.clone(true);copy.position.x+=x;
     if(stage.flat)copy.position.y+=y;else copy.position.z+=y;
