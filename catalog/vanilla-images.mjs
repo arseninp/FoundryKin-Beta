@@ -5,7 +5,7 @@ const CDN='https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@'+PIN+'/resource_p
 function loadImage(url){
  return new Promise(resolve=>{const image=new Image();image.crossOrigin='anonymous';image.onload=()=>resolve(image);image.onerror=()=>resolve(null);image.src=url;});
 }
-function decodeTga(buffer){
+export function decodeTga(buffer){
  const b=new Uint8Array(buffer),idLength=b[0],colorMap=b[1],type=b[2],width=b[12]|(b[13]<<8),height=b[14]|(b[15]<<8),bpp=b[16],descriptor=b[17];
  if(colorMap!==0||![2,10,3,11].includes(type)||![24,32,8].includes(bpp)||!width||!height)return null;
  const bytes=bpp>>3,pixels=new Uint8Array(width*height*bytes);let offset=18+idLength,count=0;

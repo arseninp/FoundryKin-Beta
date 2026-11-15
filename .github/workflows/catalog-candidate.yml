@@ -9,7 +9,6 @@ on:
       - 'catalog/**'
       - 'models/**'
       - 'preview-controls.mjs'
-      - 'fk-catalog.js'
 permissions:
   contents: write
 concurrency:
@@ -47,7 +46,7 @@ jobs:
           import assert from 'node:assert/strict';
           import {readFileSync, mkdirSync, writeFileSync, appendFileSync} from 'node:fs';
           import {createHash} from 'node:crypto';
-          import vm from 'node:vm';
+          import {decodeTga} from './catalog/vanilla-images.mjs';
           const pin='46ba6ea985fb5a92d79a9419198f10dda14c199d';
           const path='resource_pack/textures/blocks/polished_cinnabar_mers.tga';
           const bytes=readFileSync('.catalog-source/'+path);
@@ -85,12 +84,9 @@ jobs:
             if(header&128){const value=pixel();for(let i=0;i<length;i++)emit(value);}
             else for(let i=0;i<length;i++)emit(pixel());
           }
-          const source=readFileSync('fk-catalog.js','utf8'),start=source.indexOf('function fkTga(buf)'),end=source.indexOf('\nfunction loadTga(',start);
-          assert.ok(start>=0&&end>start,'Production TGA decoder boundary changed');
-          const decode=vm.runInNewContext('('+source.slice(start,end)+')',{}, {timeout:1000});
-          const decoded=decode(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
+          const decoded=decodeTga(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
           const actual=decoded?Buffer.from(decoded.data):null;
-          const matches=!!decoded&&decoded.w===width&&decoded.h===height&&actual.equals(reference);
+          const matches=!!decoded&&decoded.width===width&&decoded.height===height&&actual.equals(reference);
           const channels=Object.fromEntries(['r','g','b','a'].map((name,channel)=>{
             let min=255,max=0;const values=new Set();
             for(let i=channel;i<reference.length;i+=4){const value=reference[i];min=Math.min(min,value);max=Math.max(max,value);values.add(value);}
