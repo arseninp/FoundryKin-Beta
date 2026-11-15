@@ -26,7 +26,7 @@ function setup(){
   querySelectorAll(tag){return this.children.flatMap(c=>[...(c.tagName===tag?[c]:[]),...c.querySelectorAll(tag)]);}
  }
  doc.body=new Element('body');const parent=doc.body.appendChild(new Element('main')),anchor=parent.appendChild(new Element('div'));
- const ctx={document:doc,FK:{lang:()=> 'en',t:()=> 'Done'},FKShapes:{previewStates:{}},addEventListener:(k,fn)=>(events[k]??=[]).push(fn),history:{pushState(){pushed++;},back(){for(const fn of events.popstate??[])fn();}}};ctx.window=ctx;
+ const ctx={document:doc,FK:{lang:()=> 'en',t:()=> 'Done'},addEventListener:(k,fn)=>(events[k]??=[]).push(fn),history:{pushState(){pushed++;},back(){for(const fn of events.popstate??[])fn();}}};ctx.window=ctx;
  vm.createContext(ctx);vm.runInContext(manager,ctx);vm.runInContext(source,ctx);
  const api=ctx.FKModelState.create(anchor,()=>changes++);
  return {api,ctx,doc,host:parent.children[1],panel:doc.body.children[1],changes:()=>changes,pushed:()=>pushed,pop:()=>{for(const fn of events.popstate??[])fn();}};
@@ -45,11 +45,13 @@ test('Back, Escape and the backdrop close without changing the preview',()=>{
  trigger.fire('click');s.panel.fire('keydown',{key:'Escape'});assert.equal(s.ctx.FKM.cur,null);
  trigger.fire('click');s.panel.fire('click');assert.equal(s.ctx.FKM.cur,null);assert.equal(s.changes(),0);
 });
-test('loading closes only this picker and stale option clicks are ignored',()=>{
- const s=setup();s.ctx.FKShapes.previewStates.device=schema;s.api.select('device',null);
+test('explicit schemas work without legacy globals, loading closes this picker and stale clicks are ignored',()=>{
+ const s=setup();Object.defineProperty(s.ctx,'FKShapes',{get(){throw new Error('Legacy model globals must not be read');}});s.api.select('device',schema);
  s.host.querySelectorAll('button')[0].fire('click');const stale=s.panel.querySelectorAll('button')[1];s.api.busy(true);stale.fire('click');
  assert.equal(s.api.value().enabled,false);assert.equal(s.changes(),0);assert.equal(s.host.hidden,true);
- s.api.busy(false);assert.equal(s.host.hidden,false);s.api.select('none',null);assert.equal(s.host.hidden,true);
+ s.api.busy(false);assert.equal(s.host.hidden,false);s.api.select('none',null);assert.equal(s.host.hidden,true);assert.equal(Object.keys(s.api.value()).length,0);
+ s.api.select('device',schema);assert.equal(s.api.value().enabled,false);assert.equal(s.host.hidden,false);
+ s.api.select('none');assert.equal(s.host.hidden,true);assert.equal(Object.keys(s.api.value()).length,0);
 });
 test('schema validation rejects duplicate keys and retains the previous valid selection',()=>{
  const s=setup();s.api.select('device',schema);

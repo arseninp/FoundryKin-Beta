@@ -1,4 +1,4 @@
-/* Shared themed state picker. Preview values never modify PNGs or pack storage. */
+/* Shared themed state picker. Schemas are caller-owned; preview values never modify PNGs or pack storage. */
 (function(root){
 'use strict';
 var serial=0,own=function(o,k){return Object.prototype.hasOwnProperty.call(o,k)};
@@ -102,7 +102,7 @@ function create(anchor,changed,options){
  function select(id,spec,initial){
   if(disposed)throw new Error('Preview picker is disposed');
   if(typeof id!=='string')throw new Error('Invalid preview object ID');
-  var raw=spec||(root.FKShapes&&root.FKShapes.previewStates&&root.FKShapes.previewStates[id])||null,next=validate(raw);
+  var next=validate(spec);
   if(options.copies&&id)next=validate((next||[]).concat([{key:'preview_count',label:['Count','Количество'],values:[{value:1,label:['1','1']},{value:3,label:['3 (3×1)','3 (3×1)']},{value:9,label:['9 (3×3)','9 (3×3)']}]}]));
   if(initial!==undefined&&(!initial||typeof initial!=='object'||Array.isArray(initial)))throw new Error('Invalid initial preview state');
   var state=Object.assign(Object.create(null),values[id]);
