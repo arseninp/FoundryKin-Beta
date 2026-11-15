@@ -1,36 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import vm from 'node:vm';
-import {readFile} from 'node:fs/promises';
-const curation=await readFile(new URL('../fk-curation.js',import.meta.url),'utf8');
-const fixtures=await readFile(new URL('../fk-fixtures.js',import.meta.url),'utf8');
-const P='textures/blocks/';
-function setup(b,extra={}){
- const ctx={FKCatalog:{index:()=>({b:{...b},ids:Object.keys(b),sp:{},cr:{},sig:{},members:{},mother:{},hidden:0}),bindFamilies(cat){cat.familyOf={};cat.variantForm={};cat.formEntries={};return cat}},FKShapes:{build(){},view(){return 1}}};
- ctx.window=ctx;vm.createContext(ctx);vm.runInContext(curation,ctx);
- return {ctx,cat:ctx.FKCatalog.index({extra},undefined)};
-}
-test('all pumpkin resources belong to one pumpkin card',()=>{
- const b=[P+'pumpkin_top',P+'pumpkin_top',P+'pumpkin_side',P+'pumpkin_face_off',P+'pumpkin_side',P+'pumpkin_side'];
- const {cat}=setup({pumpkin:b,carved_pumpkin:b,lit_pumpkin:b},{pumpkin:[P+'pumpkin_face_off',P+'pumpkin_face_on',P+'pumpkin_side',P+'pumpkin_top']});
- assert.deepEqual(cat.ids,['pumpkin']);
- assert.deepEqual(Array.from(cat.sp.pumpkin.list,s=>s.id),[P+'pumpkin_face_off',P+'pumpkin_face_on',P+'pumpkin_top',P+'pumpkin_side']);
- assert.equal(cat.hidden,2);assert.ok(!cat.b.carved_pumpkin&&!cat.b.lit_pumpkin);
+import {createCompiledModelFixture} from './compiled-model-fixture.mjs';
+let runtime;const full=()=>runtime??=createCompiledModelFixture();
+test('all pumpkin resources belong to one explicit state card without deleting source records',()=>{
+ const r=full(),ids=['pumpkin','carved_pumpkin','lit_pumpkin'],group=r.catalog.stateGroups.pumpkin;
+ assert.ok(group);assert.equal(group.parameter,'variant');assert.deepEqual({...group.variants},{plain:'pumpkin',carved:'carved_pumpkin',lit:'lit_pumpkin'});
+ for(const id of ids){assert.ok(r.catalog.records[id]);assert.equal(r.access.describe(id).card,'pumpkin');for(const path of r.catalog.records[id].paths)assert.ok(group.paths.includes(path));}
+ assert.ok(r.catalog.cards.includes('pumpkin'));assert.ok(!r.catalog.cards.includes('carved_pumpkin'));assert.ok(!r.catalog.cards.includes('lit_pumpkin'));
 });
-test('a carved-only imported catalog keeps its pumpkin resources',()=>{
- const b=[P+'pumpkin_top',P+'pumpkin_top',P+'pumpkin_side',P+'pumpkin_face_off',P+'pumpkin_side',P+'pumpkin_side'];
- const {cat}=setup({carved_pumpkin:b,lit_pumpkin:b},{lit_pumpkin:[P+'pumpkin_face_on']});
- assert.deepEqual(cat.ids,['carved_pumpkin']);assert.equal(cat.sp.carved_pumpkin.fm.on,P+'pumpkin_face_on');
+test('a carved-only catalog preserves both source records rather than inventing an incomplete state group',()=>{
+ const r=createCompiledModelFixture(['carved_pumpkin','lit_pumpkin']);assert.equal(r.catalog.stateGroups.pumpkin,undefined);
+ for(const id of ['carved_pumpkin','lit_pumpkin']){const p=r.resolve({id});assert.equal(p.object.id,id);assert.ok(r.catalog.cards.includes(p.object.card));assert.ok(p.paths.length);assert.ok(r.render({id}).meshes.length);}
 });
-test('plain trapdoor uses the existing trapdoor shape through family metadata',()=>{
- const {ctx,cat}=setup({trapdoor:Array(6).fill(P+'trapdoor'),stone:Array(6).fill(P+'stone')});
- ctx.FKCatalog.bindFamilies(cat,{});
- assert.equal(cat.familyOf.trapdoor,'trapdoor');assert.equal(cat.variantForm.trapdoor,'trapdoor');
- assert.deepEqual(Object.keys(cat.formEntries.trapdoor),['trapdoor']);assert.equal(cat.familyOf.stone,undefined);
- assert.ok(cat.ids.includes('trapdoor'));
+test('plain trapdoor uses the registered trapdoor model and declared family metadata',()=>{
+ const r=full(),object=r.access.describe('trapdoor');assert.ok(object);assert.equal(r.catalog.records[object.id].model,'trapdoor');
+ const plan=r.resolve({id:'trapdoor'});assert.equal(plan.model,'trapdoor');assert.ok(r.render({id:'trapdoor'}).meshes.length);
+ if(Object.hasOwn(r.catalog.families,object.card))assert.equal(r.catalog.families[object.card][object.form],object.id);else assert.equal(object.form,'native');
+ assert.notEqual(r.access.describe('stone').card,object.card);
 });
-test('sunflower has one geometry implementation',()=>{
- assert.equal((curation.match(/function sunflower\(/g)||[]).length,1);
- assert.ok(!fixtures.includes('Math.cos(Math.PI/8)'));
- assert.ok(fixtures.includes("E.cur!=='sunflower'&&Object.prototype.hasOwnProperty.call(FLOWERS,E.cur)"));
+test('sunflower has one registered geometry implementation',()=>{
+ const r=full();assert.equal(r.registry.ids().filter(id=>id==='sunflower').length,1);assert.equal(r.catalog.records.sunflower.model,'sunflower');
+ assert.throws(()=>r.registry.register([{id:'sunflower',build(){}}]),/sealed/);assert.ok(r.render({id:'sunflower'}).meshes.length>0);
 });
