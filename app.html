@@ -3,12 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="color-scheme" content="only light">
-<meta name="application-version" content="0.9.17">
+<meta name="application-version" content="0.9.18">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FoundryKin</title>
 <link rel="stylesheet" href="fk-style.css?v=0.9.17">
 <link rel="stylesheet" href="fk-base.css?v=0.9.17">
 <link rel="stylesheet" href="fk-pack-actions.css?v=0.9.17">
+<style>
+/* Settings groups reuse existing shell controls and handlers. */
+.fkSettingsBubble{background:var(--fk-tone-2);border:1px solid var(--line);border-radius:10px;padding:12px;margin:8px 0}
+.fkSettingsDesc{font-size:13px;font-weight:400;line-height:1.5;margin:0 0 10px;overflow-wrap:anywhere}
+.fkSettingsBubble summary.btn{display:flex;justify-content:space-between;gap:8px;width:100%;background:var(--fk-tone-3);list-style:none;text-align:left}
+.fkSettingsBubble summary::-webkit-details-marker{display:none}
+.fkSettingsBubble summary::after{content:'+';flex:none}
+.fkSettingsBubble details[open]>summary::after{content:'−'}
+.fkSettingsBody{padding-top:4px;overflow-wrap:anywhere}
+.fkSettingsBody label.lbl{display:block}
+.fkSettingsBody .btn,.fkSettingsBody input,.fkSettingsBody select{background:var(--fk-tone-3)}
+.fkSettingsBody>.lbl:last-child{margin-bottom:0}
+.fkSettingsBody h2{margin-top:12px}
+.fkSettingsDanger{border:1px solid var(--red);border-radius:8px;padding:10px;margin-top:12px}
+.fkSettingsDanger .lbl{margin:0 0 10px}
+.fkSettingsDanger>.btn{width:100%;border-color:var(--red)}
+:root[lang=ru] .fkSettingsEn,:root:not([lang=ru]) .fkSettingsRu{display:none}
+</style>
 </head>
 <body>
 <div id="top" class="fk-header fk-header--shell"><button class="fk-header-back" id="back" hidden data-i18n-attr="aria-label:ui.back"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg></button><div class="t fk-header-bubble" id="title"></div><button class="fk-header-action" id="ok" hidden data-i18n="ui.add"></button></div>
@@ -40,18 +58,51 @@
 </section>
 <section class="screen" id="s-add"><div id="addErr"></div><iframe id="editor" data-i18n-attr="title:editor.title"></iframe></section>
 <section class="screen" id="s-settings">
-<h2 data-i18n="settings.theme"></h2>
+<article class="fkSettingsBubble">
+<p class="fkSettingsDesc"><span class="fkSettingsRu">Тема приложения и язык интерфейса.</span><span class="fkSettingsEn">App theme and interface language.</span></p>
+<details><summary class="btn"><span class="fkSettingsRu">Персонализация</span><span class="fkSettingsEn">Personalization</span></summary>
+<div class="fkSettingsBody">
+<label class="lbl" for="sTheme" data-i18n="settings.theme"></label>
 <select id="sTheme"><option value="auto" data-i18n="theme.auto"></option><option value="light" data-i18n="theme.light"></option><option value="dark" data-i18n="theme.dark"></option></select>
-<h2 data-i18n="settings.language"></h2>
+<label class="lbl" for="sLang" data-i18n="settings.language"></label>
 <select id="sLang"><option value="auto" data-i18n="lang.auto"></option><option value="en" data-i18n="lang.en"></option><option value="ru" data-i18n="lang.ru"></option></select>
-<h2 data-i18n="settings.editor"></h2>
+</div></details>
+</article>
+<article class="fkSettingsBubble">
+<p class="fkSettingsDesc"><span class="fkSettingsRu">Хранение паков, выгрузка и удаление данных.</span><span class="fkSettingsEn">Pack storage, data export and deletion.</span></p>
+<details><summary class="btn"><span class="fkSettingsRu">Память</span><span class="fkSettingsEn">Storage</span></summary>
+<div class="fkSettingsBody">
+<p class="lbl"><span class="fkSettingsRu">Паки и их внутренние бэкапы хранятся в этом браузере. Бэкап использует то же ограниченное хранилище; это не облачная копия.</span><span class="fkSettingsEn">Packs and their internal backups are stored in this browser. A backup uses the same limited storage; it is not a cloud copy.</span></p>
+<div class="col"><button class="btn" id="sExport" data-i18n="settings.export_data"></button></div>
+<div class="fkSettingsDanger"><p class="lbl"><span class="fkSettingsRu">Удаление всех паков также удалит их внутренние бэкапы. Это действие не очищает настройки оформления.</span><span class="fkSettingsEn">Deleting all packs also deletes their internal backups. This does not clear appearance settings.</span></p><button class="btn" id="sClear" data-i18n="settings.clear"></button></div>
+</div></details>
+</article>
+<article class="fkSettingsBubble">
+<p class="fkSettingsDesc"><span class="fkSettingsRu">Как работать с паками, сохранением и бэкапами.</span><span class="fkSettingsEn">Working with packs, saving and backups.</span></p>
+<details><summary class="btn"><span class="fkSettingsRu">Справка</span><span class="fkSettingsEn">Help</span></summary>
+<div class="fkSettingsBody">
+<h2><span class="fkSettingsRu">Паки и текстуры</span><span class="fkSettingsEn">Packs and textures</span></h2><p class="lbl"><span class="fkSettingsRu">На главном экране откройте список паков, создайте пак или импортируйте .mcpack. Кнопка «Текстуры» открывает содержимое пака, а поиск — каталог для выбора объекта.</span><span class="fkSettingsEn">From the home screen, open the pack list and create a pack or import a .mcpack. The Textures button opens the pack contents; Find opens the catalog to select an object.</span></p>
+<h2><span class="fkSettingsRu">Сохранение и экспорт</span><span class="fkSettingsEn">Saving and export</span></h2><p class="lbl"><span class="fkSettingsRu">Сохранение в редакторе добавляет изменённые текстуры в активный пак. Экспорт пака создаёт файл .mcpack. Выгрузка данных в разделе «Память» — отдельный JSON-файл, а не .mcpack.</span><span class="fkSettingsEn">Saving in the editor adds edited textures to the active pack. Exporting a pack creates a .mcpack file. The data export under Storage is a separate JSON file, not a .mcpack.</span></p>
+<h2><span class="fkSettingsRu">Сравнение и бэкапы</span><span class="fkSettingsEn">Comparison and backups</span></h2><p class="lbl"><span class="fkSettingsRu">«До» показывает текстуры на момент входа в карточку, включая уже сохранённые изменения пака. Это не отмена правок. Внутренний бэкап создаётся в карточке пака; восстановление заменяет сохранённый пак, а сам бэкап остаётся.</span><span class="fkSettingsEn">Before shows textures as they were when you opened the card, including existing pack edits. It is not Undo. Create an internal backup on a pack card; restoring it replaces the saved pack and keeps the backup.</span></p>
+</div></details>
+</article>
+<article class="fkSettingsBubble">
+<p class="fkSettingsDesc"><span class="fkSettingsRu">Технические параметры и отчёт об ошибках.</span><span class="fkSettingsEn">Technical settings and diagnostic report.</span></p>
+<details><summary class="btn"><span class="fkSettingsRu">Диагностика</span><span class="fkSettingsEn">Diagnostics</span></summary>
+<div class="fkSettingsBody">
+<label class="lbl" for="sUrl" data-i18n="settings.editor"></label>
 <p class="lbl" data-i18n="settings.editor_hint"></p>
 <input type="text" id="sUrl" autocapitalize="off" autocomplete="off" spellcheck="false">
-<div class="row"><button class="btn" id="sUrlSave" data-i18n="settings.save_address"></button></div>
-<h2 data-i18n="settings.data"></h2>
-<div class="row"><button class="btn" id="sExport" data-i18n="settings.export_data"></button><button class="btn" id="sClear" data-i18n="settings.clear"></button></div>
-<h2 data-i18n="settings.trouble"></h2>
-<div class="row"><button class="btn" id="sDiag" data-i18n="settings.diag"></button></div>
+<div class="col"><button class="btn" id="sUrlSave" data-i18n="settings.save_address"></button><button class="btn" id="sDiag" data-i18n="settings.diag"></button></div>
+</div></details>
+</article>
+<article class="fkSettingsBubble">
+<p class="fkSettingsDesc"><span class="fkSettingsRu">Версия, описание и репозиторий проекта.</span><span class="fkSettingsEn">Version, description and project repository.</span></p>
+<details><summary class="btn"><span class="fkSettingsRu">О приложении</span><span class="fkSettingsEn">About</span></summary>
+<div class="fkSettingsBody">
+<p class="lbl"><span class="fkSettingsRu">FoundryKin — редактор текстур Minecraft Bedrock с каталогом, предпросмотром и экспортом паков.</span><span class="fkSettingsEn">FoundryKin is a Minecraft Bedrock texture editor with a catalog, preview and pack export.</span></p><p class="lbl"><span class="fkSettingsRu">Оболочка приложения: 0.9.18. Документ редактора: 0.9.17; его код этим обновлением не изменяется.</span><span class="fkSettingsEn">App shell: 0.9.18. Editor document: 0.9.17; its code is unchanged by this update.</span></p><a class="btn" href="https://github.com/arseninp/FoundryKin-Beta" target="_blank" rel="noopener noreferrer">GitHub</a>
+</div></details>
+</article>
 </section>
 <section class="screen" id="s-diag">
 <p class="lbl" data-i18n="diag.hint"></p>
@@ -61,7 +112,7 @@
 </div>
 <div class="bar" id="bar"><button class="btn find" id="addBtn"><span data-i18n="ui.find"></span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button></div>
 <div id="msg" role="status"></div>
-<script>window.FK_V='0.9.17';</script>
+<script>window.FK_V='0.9.18';</script>
 <script src="fk-log.js?v=0.9.17"></script>
 <script src="fk-i18n.js?v=0.9.17"></script>
 <script src="fk-editor.js?v=0.9.17"></script>
