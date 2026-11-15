@@ -23,14 +23,50 @@ function createStage(){
   scene.add(new THREE.AmbientLight(0xffffff,.75));
   var light=new THREE.DirectionalLight(0xffffff,.55);light.position.set(2,4,3);scene.add(light);
   var group=new THREE.Group();group.rotation.set(ANGLE_X,ANGLE_Y,0);scene.add(group);
-  return {scene:scene,camera:camera,group:group,flat:false,instance:null};
+  return {scene:scene,camera:camera,group:group,flat:false,instance:null,copies:[],count:1,modelSize:null};
 }
+/* Copies borrow the prepared instance's geometry and materials. Only the owner disposes them. */
 function clear(stage){
-  if(stage.instance){var instance=stage.instance;stage.instance=null;instance.dispose()}
-  var seen=[];
-  stage.group.traverse(function(o){if(o.geometry&&seen.indexOf(o.geometry)<0)seen.push(o.geometry)});
-  seen.forEach(function(g){g.dispose()});
-  while(stage.group.children.length)stage.group.remove(stage.group.children[0]);
+  var instance=stage.instance;stage.instance=null;
+  stage.copies.forEach(function(copy){stage.group.remove(copy)});
+  stage.copies=[];stage.count=1;stage.modelSize=null;
+  try{if(instance)instance.dispose()}finally{
+    while(stage.group.children.length)stage.group.remove(stage.group.children[0]);
+  }
+}
+function copyCount(value){if(value!==1&&value!==9)throw new Error('Preview count must be 1 or 9');return value}
+function fit(stage){
+  var size=stage.modelSize.clone();
+  if(stage.count===9){size.x+=2;if(stage.flat)size.y+=2;else size.z+=2}
+  var extent=Math.max(.1,size.length()/2*1.15);
+  stage.camera.position.set(0,0,10);stage.camera.near=.1;stage.camera.far=100;
+  stage.camera.left=stage.camera.bottom=-extent;stage.camera.right=stage.camera.top=extent;stage.camera.zoom=1;stage.camera.updateProjectionMatrix();
+}
+function arrange(stage,count){
+  var next=[],base=stage.instance.group;
+  if(count===9)for(var x=-1;x<=1;x++)for(var y=-1;y<=1;y++){
+    if(x===0&&y===0)continue;
+    var copy=base.clone(true);copy.position.x+=x;
+    if(stage.flat)copy.position.y+=y;else copy.position.z+=y;
+    next.push(copy);
+  }
+  var previous=stage.copies,oldCount=stage.count;
+  try{
+    previous.forEach(function(copy){stage.group.remove(copy)});
+    next.forEach(function(copy){stage.group.add(copy)});
+    stage.copies=next;stage.count=count;fit(stage);
+  }catch(error){
+    next.forEach(function(copy){stage.group.remove(copy)});
+    previous.forEach(function(copy){stage.group.add(copy)});
+    stage.copies=previous;stage.count=oldCount;
+    try{fit(stage)}catch(restoreError){throw new AggregateError([error,restoreError],'Preview count rollback failed')}
+    throw error;
+  }
+}
+function setCopies(stage,count){
+  copyCount(count);
+  if(!stage.instance||!stage.modelSize)throw new Error('No prepared editor model to repeat');
+  if(stage.count!==count)arrange(stage,count);
 }
 function texture(canvas){
   var w=canvas.width,h=canvas.height,data=canvas.getContext('2d').getImageData(0,0,w,h).data;
@@ -61,6 +97,7 @@ function doorTexture(lower,upper){
   return texture(canvas);
 }
 function build(stage,entry,reset){
+  var count=copyCount(entry.count===undefined?1:entry.count);
   clear(stage);
   var plan=entry.plan;
   if(!plan||typeof plan.instantiateCanvases!=='function')throw new Error('Invalid prepared editor model');
@@ -69,12 +106,12 @@ function build(stage,entry,reset){
     var bounds=new THREE.Box3().setFromObject(instance.group);
     if(bounds.isEmpty())throw new Error('Empty prepared editor geometry');
     instance.group.position.sub(bounds.getCenter(new THREE.Vector3()));
-    var extent=Math.max(.1,bounds.getSize(new THREE.Vector3()).length()/2*1.15),flat=plan.mode==='sprite';
+    stage.modelSize=bounds.getSize(new THREE.Vector3());
+    var flat=plan.mode==='sprite';
     stage.group.add(instance.group);
     if(flat)stage.group.rotation.set(0,0,0);
     else if(reset||stage.flat)stage.group.rotation.set(ANGLE_X,ANGLE_Y+(FRONT_VIEW_MODELS.indexOf(plan.model)>=0?Math.PI:0),0);
-    stage.flat=flat;stage.camera.position.set(0,0,10);stage.camera.near=.1;stage.camera.far=100;
-    stage.camera.left=stage.camera.bottom=-extent;stage.camera.right=stage.camera.top=extent;stage.camera.zoom=1;stage.camera.updateProjectionMatrix();
+    stage.flat=flat;arrange(stage,count);
   }catch(error){
     try{clear(stage)}catch(cleanupError){throw new AggregateError([error,cleanupError],'Prepared editor model cleanup failed')}
     throw error;
@@ -101,11 +138,11 @@ function capture(entry,size){
   var r=getRenderer(),target=r.getRenderTarget();
   if(!preview)preview=createStage();
   try{
-    build(preview,entry,true);r.setRenderTarget(null);render(preview,size||256,1);
+    build(preview,{...entry,count:1},true);r.setRenderTarget(null);render(preview,size||256,1);
     return r.domElement.toDataURL('image/png');
   }finally{
     clear(preview);r.setRenderTarget(target);
   }
 }
-return {createStage:createStage,clear:clear,texture:texture,material:material,mapMaterial:mapMaterial,doorTexture:doorTexture,build:build,update:update,render:render,mount:mount,capture:capture};
+return {createStage:createStage,clear:clear,texture:texture,material:material,mapMaterial:mapMaterial,doorTexture:doorTexture,build:build,setCopies:setCopies,update:update,render:render,mount:mount,capture:capture};
 })();

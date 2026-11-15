@@ -21,6 +21,7 @@ function create(anchor,changed,options){
  options=options||{};
  if(typeof changed!=='function'||typeof options!=='object'||Array.isArray(options))throw new Error('Invalid preview picker configuration');
  ['language','doneLabel','manager','preview'].forEach(function(key){if(own(options,key)&&typeof options[key]!=='function')throw new Error('Invalid preview picker dependency: '+key)});
+ if(own(options,'copies')&&typeof options.copies!=='boolean')throw new Error('Invalid preview copies option');
  var language=options.language||function(){return root.FK.lang()},getManager=options.manager||function(){return root.FKM};
  var doc=anchor.ownerDocument,values=Object.create(null),current='',schema=null,blocked=false,opened=null,disposed=false,previewRunning=0,previewPump=null;
  function mk(tag,cls,text){var el=doc.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el}
@@ -74,8 +75,12 @@ function create(anchor,changed,options){
    button.appendChild(mk('span','fkStateOptionLabel',text(option.label)));var mark=mk('span','',active?'✓':'');mark.setAttribute('aria-hidden','true');button.appendChild(mark);
    button.addEventListener('click',function(){
     if(disposed||blocked||opened!==snapshot||current!==snapshot.id||schema!==snapshot.schema)return;
-    var state=values[current],different=state[snapshot.item.key]!==option.value;
-    state[snapshot.item.key]=option.value;snapshot.valueNode.textContent=text(option.label)+' ▾';close();if(different)changed();
+    var state=values[current],previousValue=state[snapshot.item.key],different=previousValue!==option.value;
+    state[snapshot.item.key]=option.value;snapshot.valueNode.textContent=text(option.label)+' ▾';close();
+    if(different&&changed(snapshot.item.key)===false&&options.copies&&snapshot.item.key==='preview_count'&&!disposed&&current===snapshot.id&&schema===snapshot.schema){
+     state[snapshot.item.key]=previousValue;
+     snapshot.valueNode.textContent=text(snapshot.item.values.filter(function(value){return value.value===previousValue})[0].label)+' ▾';
+    }
    });
    choices.appendChild(button);if(active)selected=button;
   });
@@ -98,6 +103,7 @@ function create(anchor,changed,options){
   if(disposed)throw new Error('Preview picker is disposed');
   if(typeof id!=='string')throw new Error('Invalid preview object ID');
   var raw=spec||(root.FKShapes&&root.FKShapes.previewStates&&root.FKShapes.previewStates[id])||null,next=validate(raw);
+  if(options.copies&&id)next=validate((next||[]).concat([{key:'preview_count',label:['Count','Количество'],values:[{value:1,label:['1','1']},{value:9,label:['9 (3×3)','9 (3×3)']}]}]));
   if(initial!==undefined&&(!initial||typeof initial!=='object'||Array.isArray(initial)))throw new Error('Invalid initial preview state');
   var state=Object.assign(Object.create(null),values[id]);
   (next||[]).forEach(function(item){
