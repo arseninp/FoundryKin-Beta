@@ -1,0 +1,23 @@
+/* Palette layout has one source. Masks shape the controls themselves, not overlay elements. */
+#fkColors{display:grid;grid-template-columns:max-content minmax(0,1fr);align-items:center;gap:0;min-width:0;min-height:48px;margin:8px 0;padding:2px;overflow:hidden;isolation:isolate}
+#fkPaletteChoice{position:relative;z-index:1;display:flex;align-items:stretch;min-width:max-content;height:44px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+#fkPaletteChoice #fkPalBtn{flex:none;width:40px;height:42px;min-height:0;padding:0;border:0;border-radius:0;background:var(--panel)}
+#fkPalSets{display:flex;align-items:center;flex:none;gap:6px;min-width:max-content;padding:6px 24px 6px 8px;border:0;border-left:1px solid var(--line);border-radius:0;background:var(--panel);color:var(--ink)}
+#fkPalSets span{flex:none;white-space:nowrap}
+#fkPaletteChoice button:focus-visible{outline-offset:-3px}
+#fkSwatches{position:relative;z-index:0;display:flex;align-items:center;gap:6px;min-width:0;min-height:38px;padding:2px 26px 2px 2px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none}
+#fkSwatches::-webkit-scrollbar{display:none}
+.fkSw{flex:none;width:34px;height:34px;min-height:0;padding:0;border:2px solid var(--line);border-radius:8px;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.fkSw.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}
+#fkSwatches .fkSw:active{filter:none}
+@supports (mask-image:linear-gradient(#000,#000)) or (-webkit-mask-image:linear-gradient(#000,#000)){
+ #fkPaletteChoice{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 18px),transparent)}
+ #fkSwatches{margin-left:-24px;padding-left:24px;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent)}
+}
+#fkPaletteHold{position:fixed;z-index:120;display:none;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);overflow:auto;padding:4px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);box-shadow:0 6px 24px rgba(0,0,0,.4)}
+#fkPaletteHold button{display:block;width:100%;min-height:40px;padding:8px 16px;text-align:left;white-space:normal}
+#fkPaletteDialog .fkTitle{font-size:17px;font-weight:800}
+.fkPalettePreview{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.fkPalettePreview canvas{width:32px;height:32px;border:1px solid var(--line);border-radius:8px}
+#fkPaletteDialog .fkPaletteActions{display:flex;gap:8px;margin-top:12px}
+#fkPaletteDialog .fkPaletteActions button{flex:1}
