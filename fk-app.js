@@ -54,6 +54,7 @@ function refreshTitle(){
 /* navigation */
 function render(){
   var name=top(),p=active();
+  if(name!=='add'&&hasFke()&&FKE.cancelPendingEdit)FKE.cancelPendingEdit();
   if(backups&&name!=='create'&&name!=='backup')backups.leave();
   document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('on',s.id==='s-'+name)});
   lastTitle='';setTitle(screenTitle(name,p));
@@ -160,7 +161,7 @@ $('#texList').addEventListener('click',function(e){
   var t=p.textures[i];
   if(b.dataset.a==='del'){
     if(!confirm(T('confirm.delete_texture',{path:t.path})))return;
-    p.textures.splice(i,1);save(KEY,data);renderTex();
+    p.textures.splice(i,1);if(save(KEY,data))renderTex();else p.textures.splice(i,0,t);
   }
   if(b.dataset.a==='png')download(dataBlob(t.data),t.path.split('/').pop()+'.png');
   if(b.dataset.a==='edit'){
