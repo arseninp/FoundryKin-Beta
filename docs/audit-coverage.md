@@ -1,29 +1,41 @@
-# Реестр чтения аудита — 2026-11-16
+# Реестр чтения и доказательств — 2026-11-16
 
-Часть временной передачи: [задачи и ограничения](audit-handoff.md). Прочитать обе части. После закрытия задач перенести постоянные контракты и оставшиеся задачи в основные документы, затем удалить обе временные части и ссылки по согласованию.
+Аудируемая ревизия: 1a937127df3f0433107452e0f16b56f2681fd26e. Этот пакет меняет только документацию. Задачи: [audit-handoff](audit-handoff.md); актуальный порядок и предложенные границы: [TODO](../TODO.md). Этот реестр заменяет прежнее утверждение о большом непрочитанном остатке; незакрытые задачи и исторические ограничения handoff не отменяются.
 
-## Реестр чтения этой сессии
+## Чтение завершено в следующем объёме
 
-Полностью получены и прочитаны следующие исходники на базе кода 90852195250b601681489dc927d7501021acb531 / docs-only 40af065edea13708180b1aea56caca5a8ae1630a (это не утверждение о полном тестировании):
+Исполняемый код по накопленному принятому реестру прочитан, включая специализированные models, catalog/rules, оставшиеся runtime-зависимости и инструменты. Это последовательные проходы с принятой передачей, не новое независимое чтение каждого файла в последнем ответе.
 
-Корень: app.html, index.html, preview.html, fk-app.js, fk-editor.js, fk-core.js, fk-grid.js, fk-view.js, fk-tools.js, fk-palettes.mjs, fk-editor-palettes.mjs, fk-settings-picker.js, fk-menu.js, fk-model-state.js, fk-pixel-grid.js, fk-png-viewport.js, fk-png-viewport.css, fk-help.js, fk-log.js, fk-catalog-data.js, preview.mjs, preview-images.mjs, preview-controls.mjs.
+Для tools/ имена сопоставлены с реестром: 134 файла, 119 *.test.mjs; все 119 тестовых файлов учтены, пропущенных/лишних имён при сверке нет. Восемь workflow прочитаны, но это не результат их исполнения. Прочитаны manifests/report/summary обеих папок данных и tools/catalog-audit.json/legacy-successors.json.
 
-catalog/: access.mjs, load.mjs, identity.mjs, resources.mjs, compile.mjs, model-policy.mjs, states.mjs, items.mjs, preview.mjs, prepared-preview.mjs, editor-selection.mjs, editor-comparison.mjs, editor-comparison-controls.mjs, editor-resource-usage.mjs, vanilla-images.mjs, banner-preview.mjs, banner-controls.mjs, leaf-preview.mjs, sign-preview.mjs, cauldron-controls.mjs, fruit-stem-selection.mjs, fruit-stem-preview.mjs, budding-amethyst-selection.mjs.
+Нельзя писать «построчно прочитан каждый файл репозитория»: содержимое всех сгенерированных JSON-чанков не разбиралось. Список файлов/поиск/import не равны чтению содержимого. Полные безопасность, geometry/UV и исполнительная приёмка не закрыты; процент аудита по числу тестов не вычислять.
 
-catalog/rules/: material-families.mjs, dependencies.mjs, forms.mjs, duplicates.mjs.
+## Что исполнялось в продолжении
 
-models/: library.mjs, registry.mjs, textures.mjs, materials.mjs, primitives.mjs, pitcher.mjs.
+Среда: Node 20.20.1. Полные временные копии исходников перечисленных запусков сверялись по Git blob SHA; исключения с фрагментами указаны. Это не полный CI/browser/Android.
 
-tools/: validate.mjs, build-family-data.mjs, catalog-families.mjs, catalog-family-paths.test.mjs, check-legacy-successors.mjs, atlas-render-diagnostic.mjs, piglin-visibility.mjs, curation.test.mjs, view-alpha.test.mjs.
+- tools/model-registry.test.mjs — 6/6; tools/amethyst-models.test.mjs — 6/6. Остальные 117 файлов не считать целиком исполненными.
+- fk-editor.js: восемь сценариев, пять контрольных/три воспроизведения D03. Полный исходный мост; FKAPI/iframe/таймеры подменены. Поздний A после B, отсутствие отмены reset, устаревший отказ меняет режим.
+- fk-app.js: 13 групп, семь контрольных/шесть воспроизведений D01/D02/D04/D06/U03. Полный исходник; DOM/storage/FileReader/FKE подменены, backup-модуль не загружен. D02 — два VM-контекста с общим storage, не реальные вкладки. D06 — пять неверных структур; исходная запись не перезаписывалась.
+- M01/M02: 13 групп, десять контрольных/три воспроизведения. M01 — исходные фрагменты pitcherControlState/previewControlSelection и полная валидация pitcher-модуля; посторонние handlers/geometry helpers подменены, маршрут задан по crop/grown-декларации. Все 16 комбинаций стадий 0–3/pod_only/PNG сохраняют недопустимую стадию для взрослого растения. Это не полный resolver/UI и не проверка несохранённых пикселей.
+- M02 — полные fruit-stem-preview/budding-amethyst-selection и настоящие shared-декларации; группы/геометрии/составные builders — моки. Ошибка dispose перекрывает исходную и прерывает остальные dispose. Реальная GPU-утечка/причина телефонного сбоя этим не доказана.
+- Азалия: отдельно воспроизведён ранний отказ двух preview-моков без BoxGeometry; после добавления класса builder создаётся. Полные файлы не запускались.
+- JSONC: ранее воспроизведена порча строки при удалении trailing comma. parseLooseJson имеет регрессии; распространённость дефекта в закреплённых Mojang-исходниках не установлена.
 
-.github/workflows/: все восемь — validate.yml, family-data.yml, legacy-check.yml, catalog-audit.yml, catalog-candidate.yml, fix-bamboo-gate-bedrock.yml, piglin-visibility.yml, atlas-render-diagnostic.yml. Чтение YAML не означает чтение всех вызываемых инструментов.
+Совпадение assertions при воспроизведении означает наблюдение дефекта, не исправность приложения. Постоянные тесты и код этими проверками не менялись. Результаты №36/№37 остаются историческими.
 
-Документы непосредственно перечитаны: CONTEXT.md, TODO.md. Чат №37 на Drive прочитан целиком. Остальные входные документы в ЭТОМ продолжении целиком не перечитаны. README/ARCHITECTURE встречались в поисковой выдаче — не считать полным чтением. Деревья каталогов и результаты поиска также не считать чтением файлов.
+## Дополнительные сверки
 
-### Что НЕ подтверждено полным чтением
+Для точных копий models/library.mjs/preview.html проверены 46 прямых статических импортов library, 41 однократный вызов фабрик и локальные цели HTML/import map: всего 64 прямые локальные связи без отсутствующих файлов. Внешний Three URL, полный транзитивный граф/экспорты и браузерное разрешение не проверены.
 
-Любой отслеживаемый файл вне реестра выше: чтение в этой сессии не подтверждено. Для точного остатка получить git ls-files на текущем HEAD, вычесть этот реестр, отдельно классифицировать исходники, тесты, данные и документы. Не писать проценты покрытия по памяти.
+Candidate manifest SHA-256: d8925253fd51fb57d2f99facb58272c0a4d0ab6d0be381af54dd368f43f7fc78; записанный family-источник: 815cf49ada7e1b8065262a36c49feca5c6eb51c68077d3685f7c11eaf974558d. Копия candidate сверена по blob SHA 72b0a3b2f3b9fd8495a12b16f0273a123c42f786. Это уточнение L06 о происхождении, не доказательство неверных семейств или ошибки runtime. Все хэши чанков не пересчитаны.
 
-В частности: большинство специализированных models/*.mjs и catalog/rules/*.mjs; fk-i18n.js; CSS кроме fk-png-viewport.css; preview-config.mjs, preview-text.mjs и preview-*-data.mjs; catalog/audit.mjs; большинство tools и тестов, включая compiled-model-fixture.mjs и three-mock.mjs; все сгенерированные data-файлы. Их упоминание в imports не означает чтение.
+Разнобой проверки PNG и нестроковый author прослежены чтением; сквозной импорт реального архива не запускался. Учитывать внутри I02/D07/D08 без новых дублирующих задач.
 
-fk-backup-store.mjs, fk-backup-host.mjs, fk-backups.mjs: полное чтение и 21 локальная проверка заявлены в №37; в текущем продолжении заново целиком НЕ читались. Не выдавать исторические результаты за свежий прогон. Аналогично прежние проверки геометрии и ресурсов не заменяют чтение/выполнение всех тестов после переноса.
+## Незакрытая приёмка
+
+1. Полный граф импортов/экспортов/HTML и все сгенерированные артефакты.
+2. Полный tools/validate.mjs и весь комплект тестов без подгонки геометрии под старые ожидания.
+3. Реальные browser/Android/WebGL/Pages, import-save-reopen-export, quota, restore и конкуренция.
+
+Не писать, что все проверки прошли, все дефекты исправлены или исследован каждый аспект приложения. Перенос и переименование пока только предложены в TODO, а не выполнены.
