@@ -5,13 +5,8 @@ import {attachDependencies, declaredDependencies} from '../catalog/rules/depende
 import {createPreviewResolver} from '../catalog/preview.mjs';
 import {createAzaleaModels} from '../models/azalea.mjs';
 import {createPottedAzaleaModels} from '../models/potted-azalea.mjs';
+import {createThreeMock} from './three-mock.mjs';
 const ids=['azalea','flowering_azalea'],POT='textures/blocks/flower_pot',SOIL='textures/blocks/dirt',P='textures/blocks/';
-function three(){
- class Group{constructor(){this.children=[];this.rotation={set:(...v)=>{this.angles=v;}};this.position={set:(...v)=>{this.xyz=v;}};}add(m){this.children.push(m);}}
- class PlaneGeometry{constructor(w,h){this.size=[w,h];const rows=[[0,1],[1,1],[0,0],[1,0]];this.attributes={uv:{count:4,getX:i=>rows[i][0],getY:i=>rows[i][1],setXY(i,u,v){rows[i]=[u,v];}}};}dispose(){this.disposed=true;}}
- class Mesh extends Group{constructor(geometry,material){super();this.geometry=geometry;this.material=material;}}
- return {Group,PlaneGeometry,Mesh,DoubleSide:2,FrontSide:0};
-}
 function setup(){
  const records={};
  for(const id of ids){const pot='potted_'+id+'_bush',keys={up:id+'_top',down:pot+'_top',north:id+'_side',side:id+'_side',east:'azalea_plant',south:pot+'_side',west:pot+'_plant'},atlas=Object.fromEntries(Object.values(keys).map(key=>[key,{textures:P+key}]));records[id]=normalizeBlock(id,{textures:keys},atlas,{model:'azalea'});}
@@ -19,7 +14,7 @@ function setup(){
  const assignments=Object.fromEntries(ids.map(id=>[id,{model:'azalea'}]));
  const compiled=attachDependencies(records,declaredDependencies(assignments),inventory);
  const catalog={schema:1,records:compiled,items:{},aliases:{},families:{},resources:{}};
- const Three=three(),models=Object.fromEntries([...createAzaleaModels(Three),...createPottedAzaleaModels(Three)].map(m=>[m.id,m]));
+ const Three=createThreeMock(),models=Object.fromEntries([...createAzaleaModels(Three),...createPottedAzaleaModels(Three)].map(m=>[m.id,m]));
  const registry={get(id){if(!models[id])throw new Error('Unknown model key');return models[id];},build(id,E){return this.get(id).build(E);}};
  const env=()=>({mats:Object.fromEntries([...Object.values(compiled).flatMap(r=>r.paths),POT,SOIL].map(path=>[path,{path}])),hiddenMat:{},group:new Three.Group()});
  return {records,compiled,inventory,catalog,resolve:createPreviewResolver(catalog,registry),env};

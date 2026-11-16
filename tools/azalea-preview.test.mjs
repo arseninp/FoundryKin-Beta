@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import {normalizeBlock} from '../catalog/resources.mjs';
 import {createPreviewResolver} from '../catalog/preview.mjs';
 import {createAzaleaModels} from '../models/azalea.mjs';
+import {createThreeMock} from './three-mock.mjs';
 const ids=['azalea','flowering_azalea'];
 function setup(){
  const records={};
  for(const id of ids){const pot='potted_'+id+'_bush',keys={up:id+'_top',down:pot+'_top',north:id+'_side',side:id+'_side',east:'azalea_plant',south:pot+'_side',west:pot+'_plant'},atlas=Object.fromEntries(Object.values(keys).map(key=>[key,{textures:'textures/blocks/'+key}]));records[id]=normalizeBlock(id,{textures:keys},atlas,{model:'azalea'});}
  const catalog={schema:1,records,items:{},aliases:{old_flowering:'flowering_azalea'},families:{},resources:{}};
- const Three={DoubleSide:2,PlaneGeometry:class{constructor(){const rows=[[0,1],[1,1],[0,0],[1,0]];this.attributes={uv:{count:4,getX:i=>rows[i][0],getY:i=>rows[i][1],setXY(i,u,v){rows[i]=[u,v];}}};}},Mesh:class{constructor(geometry,material){this.material=material;this.position={set:(...v)=>{this.xyz=v;}};this.rotation={set(){}};}}};
+ const Three=createThreeMock();
  const model=createAzaleaModels(Three)[0],registry={get(id){assert.equal(id,'azalea');return model;},build(id,E){assert.equal(id,'azalea');return model.build(E);}};
  const env=()=>({mats:Object.fromEntries(Object.values(records).flatMap(r=>r.paths).map(path=>[path,{path}])),group:{children:[],add(m){this.children.push(m);}}});
  return {records,catalog,resolve:createPreviewResolver(catalog,registry),env};
