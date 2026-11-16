@@ -4,12 +4,17 @@ var am=/[?&]v=([\d.]+)/.exec(src),APP_V=am?am[1]:'?',V=window.FK_V||'?';
 var KEY='fk070_packs',SKEY='fk070_settings',DEF_URL='index.html',MAXB=4000000;
 var $=function(s){return document.querySelector(s)};
 function T(k,p){return FK.t(k,p)}
-function load(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v||d}catch(e){return d}}
-function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){say('msg.save_failed',{detail:e.message});return false}}
-var data=load(KEY,{active:null,packs:[]});
+var unreadable=Object.create(null),packsReady=false;
+function invalid(){throw new Error(T('msg.file_unreadable'))}
+function load(k,d){
+  try{var raw=localStorage.getItem(k);if(raw===null)return d;var v=JSON.parse(raw);if(!v||typeof v!=='object'||Array.isArray(v)||(k===SKEY&&['theme','url','lang'].some(function(n){return v[n]!=null&&typeof v[n]!=='string'})))invalid();return v}
+  catch(e){unreadable[k]=true;return d}
+}
+function writable(k){if(unreadable[k]||(k===KEY&&!packsReady))invalid()}
+function save(k,v){try{writable(k);localStorage.setItem(k,JSON.stringify(v));return true}catch(e){say('msg.save_failed',{detail:e.message});return false}}
+var data={active:null,packs:[]};
 var settings=load(SKEY,{theme:'auto',url:DEF_URL});
-if(!settings.url)settings.url=DEF_URL;
-data.packs.forEach(function(p){delete p.fresh;p.author=p.author||'';p.game=p.game||'1.21.0';p.icon=p.icon||'';p.desc=p.desc||'';p.version=p.version||'1.0.0';p.textures=p.textures||[]});
+if(!settings.url)settings.url=DEF_URL;if(!settings.theme)settings.theme='auto';
 var backupHost=null,backups=null;
 var stack=['home'],mt=null,editDirty=false,editNew=false,lastTitle='';
 function say(key,p){showMessage(key?T(key,p):'')}
@@ -70,7 +75,7 @@ function render(){
   if(name==='settings')fillSettings();
   if(name==='diag')$('#dReport').textContent=report();
   syncFind();
-  say('');
+  say(Object.keys(unreadable).length?'msg.file_unreadable':'');
 }
 function go(n){stack.push(n);render()}
 $('#back').onclick=function(){
@@ -389,8 +394,8 @@ $('#dCopy').onclick=function(){
     navigator.clipboard.writeText(t).then(function(){say('msg.report_copied')},fallback);
   }else fallback();
 };
-$('#sUrlSave').onclick=function(){settings.url=$('#sUrl').value.trim()||DEF_URL;save(SKEY,settings);if(hasFke())FKE.reset();say('msg.address_saved')};
-$('#sTheme').onchange=function(){settings.theme=this.value;save(SKEY,settings);applyTheme()};
+$('#sUrlSave').onclick=function(){var next={...settings,url:$('#sUrl').value.trim()||DEF_URL};if(!save(SKEY,next))return;settings=next;if(hasFke())FKE.reset();say('msg.address_saved')};
+$('#sTheme').onchange=function(){var next={...settings,theme:this.value};if(!save(SKEY,next)){this.value=settings.theme;return}settings=next;applyTheme()};
 function applyLang(){
   document.documentElement.lang=FK.lang();
   document.title='FoundryKin '+V;
@@ -398,11 +403,11 @@ function applyLang(){
   if(hasFke())FKE.reset();
   render();
 }
-$('#sLang').onchange=function(){settings.lang=this.value;save(SKEY,settings);FK.refresh();applyLang()};
-$('#sExport').onclick=function(){download(new Blob([JSON.stringify(data)],{type:'application/json'}),'foundrykin-packs.json')};
+$('#sLang').onchange=function(){var next={...settings,lang:this.value};if(!save(SKEY,next)){this.value=settings.lang||'auto';return}settings=next;FK.refresh();applyLang()};
+$('#sExport').onclick=function(){if(!packsReady||unreadable[KEY]){say('msg.file_unreadable');return}download(new Blob([JSON.stringify(data)],{type:'application/json'}),'foundrykin-packs.json')};
 $('#sClear').onclick=function(){if(confirm(T('confirm.delete_all')+'\n'+(FK.lang()==='ru'?'Бэкапы паков тоже будут удалены.':'Pack backups will also be deleted.'))){try{commitData({active:null,packs:[]});say('msg.packs_deleted')}catch(error){say('msg.save_failed',{detail:error.message})}}};
 
-function commitData(next){localStorage.setItem(KEY,JSON.stringify(next));data=next}
+function commitData(next){writable(KEY);localStorage.setItem(KEY,JSON.stringify(next));data=next}
 import('./fk-backup-host.mjs?v=0.9.16').then(function(module){
   backupHost=module.createPackBackupHost({document:document,lang:function(){return FK.lang()},getData:function(){return data},commitData:commitData,getPack:byId,
     isCurrent:function(id,mode){return (mode==='create'||data.active===id)&&top()===mode&&!document.hidden},openScreen:function(mode,id){if(byId(id))data.active=id;go(mode)},back:function(){stack.pop();render()},notice:showMessage,
@@ -414,5 +419,9 @@ applyTheme();
 document.documentElement.lang=FK.lang();
 document.title='FoundryKin '+V;
 FK.apply(document);
-render();
+document.body.inert=true;
+import('./fk-pack-data.mjs?v=0.9.28').then(function(module){
+  try{data=module.normalizePackData(load(KEY,{active:null,packs:[]}))}catch(error){unreadable[KEY]=true;data={active:null,packs:[]}}
+  packsReady=true;render();document.body.inert=false;
+}).catch(function(){say('msg.file_unreadable')});
 })();
