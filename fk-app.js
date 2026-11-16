@@ -11,7 +11,7 @@ var settings=load(SKEY,{theme:'auto',url:DEF_URL});
 if(!settings.url)settings.url=DEF_URL;
 data.packs.forEach(function(p){delete p.fresh;p.author=p.author||'';p.game=p.game||'1.21.0';p.icon=p.icon||'';p.desc=p.desc||'';p.version=p.version||'1.0.0';p.textures=p.textures||[]});
 var backupHost=null,backups=null;
-var stack=['home'],mt=null,editDirty=false,editNew=false,draftIcon='',lastTitle='';
+var stack=['home'],mt=null,editDirty=false,editNew=false,lastTitle='';
 function say(key,p){showMessage(key?T(key,p):'')}
 function showMessage(t){var m=$('#msg');m.textContent=t;m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},t.length>90?7000:3500)}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -54,6 +54,7 @@ function refreshTitle(){
 /* navigation */
 function render(){
   var name=top(),p=active();
+  if(packForm&&name!=='edit')packForm.leave();
   if(name!=='add'&&hasFke()&&FKE.cancelPendingEdit)FKE.cancelPendingEdit();
   if(backups&&name!=='create'&&name!=='backup')backups.leave();
   document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('on',s.id==='s-'+name)});
@@ -243,36 +244,13 @@ $('#impF').onchange=function(){
 };
 
 /* pack form */
-function fillEdit(){
-  var p=editNew?null:active();if(!editNew&&!p)return;
-  var s=p||{name:'',author:'',desc:'',version:'',game:'',icon:''};
-  $('#eName').value=s.name;$('#eAuthor').value=s.author;$('#eDesc').value=s.desc;$('#eVer').value=s.version;$('#eGame').value=s.game;
-  draftIcon=s.icon||'';$('#eIco').src=draftIcon||ICON;
-  $('#eJson').value=p?JSON.stringify(manifest(p),null,2):'';
-  editDirty=false;
-}
-document.querySelectorAll('#s-edit input[type=text]').forEach(function(i){i.addEventListener('input',function(){editDirty=true})});
-$('#eIcoF').onchange=function(){
-  var f=this.files[0];this.value='';if(!f)return;
-  var r=new FileReader();
-  r.onload=function(){draftIcon=r.result;$('#eIco').src=draftIcon;editDirty=true};
-  r.readAsDataURL(f);
-};
-$('#eIcoX').onclick=function(){if(!draftIcon)return;if(!confirm(T('confirm.remove_icon')))return;draftIcon='';$('#eIco').src=ICON;editDirty=true};
-$('#eSave').onclick=function(){
-  var raw=$('#eName').value.trim(),n=raw.replace(/[^A-Za-z0-9_\- ]/g,'');
-  if(raw&&!n){say('msg.name_latin');return}
-  if(!n)n='my_pack';
-  var isNew=editNew,p=isNew?{id:uuid(),name:n,desc:'',version:'1.0.0',game:'1.21.0',author:'',icon:'',textures:[]}:active();
-  if(!p)return;
-  var previousActive=data.active,before={name:p.name,author:p.author,desc:p.desc,version:p.version,game:p.game,icon:p.icon};
-  p.name=n;p.author=$('#eAuthor').value.trim();p.desc=$('#eDesc').value.trim();
-  p.version=$('#eVer').value.trim()||'1.0.0';p.game=$('#eGame').value.trim()||'1.21.0';p.icon=draftIcon;
-  if(isNew)data.packs.push(p);
-  data.active=p.id;
-  if(save(KEY,data)){editNew=false;fillEdit();say('msg.saved')}
-  else{data.active=previousActive;if(isNew)data.packs.pop();else Object.assign(p,before)}
-};
+var packForm=null;
+$('#s-edit').inert=true;
+function fillEdit(){if(packForm)packForm.fill()}
+import('./fk-pack-form.mjs?v=0.9.27').then(function(module){
+  packForm=module.mountPackForm(document,{getData:function(){return data},active:active,isNew:function(){return editNew},saved:function(){editNew=false},setDirty:function(value){editDirty=value},current:function(){return top()==='edit'},save:function(){return save(KEY,data)},uuid:uuid,manifest:manifest,icon:ICON,say:say,t:T});
+  if(top()==='edit')packForm.fill();
+}).catch(function(){say('msg.file_unreadable')});
 
 /* editor screen */
 function onMode(m){
