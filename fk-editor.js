@@ -3,7 +3,8 @@
 var FKE=(function(){
 var src='';try{src=String(document.currentScript.src||'')}catch(e){}
 var vm=/[?&]v=([\d.]+)/.exec(src),VERSION=vm?vm[1]:'?';
-var frame=null,cb={},loaded=null,wantEdit=false,mode='search',base=0,attached=null;
+var frame=null,cb={},loaded=null,wantEdit=false,mode='search',base=0,attached=null,editGeneration=0,editTimer=null;
+function cancelPendingEdit(){editGeneration++;if(editTimer!==null){clearTimeout(editTimer);editTimer=null}wantEdit=false}
 function diagnostic(level,message,data,error){try{var log=window.FKLog;if(log){if(error)log.error('shell',error,data);else log.add(level,'shell',message,data)}}catch(ignored){}}
 function safeText(value,limit){try{var log=window.FKLog;return log&&log.text?log.text(value,limit):'[redaction unavailable]'}catch(e){return '[redaction unavailable]'}}
 window.addEventListener('error',function(e){diagnostic('error','Shell script error',{stage:'script'},e.error||new Error(e.message||'Script error'))});
@@ -29,6 +30,7 @@ function editorUrl(url){
   return u.href;
 }
 function open(f,url,c){
+  cancelPendingEdit();
   cb=c||{};frame=f;url=editorUrl(url);
   var a=api();
   if(loaded===url&&a){attach(a);a.setMode('search');if(cb.onReady)cb.onReady();return}
@@ -44,9 +46,13 @@ function open(f,url,c){
   f.src=url;
 }
 function editTexture(path,data,c){
-  c=c||{};wantEdit=true;var tries=0;
+  cancelPendingEdit();
+  c=c||{};wantEdit=true;var tries=0,generation=editGeneration;
   (function poll(){
+    if(generation!==editGeneration)return;
+    editTimer=null;
     var a=api(),r=(a&&a.openTexture)?a.openTexture(path,data,c.obj):null;
+    if(generation!==editGeneration)return;
     if(r){diagnostic('info','Saved texture opening',{path:path,source:'saved',stage:'reopen'});wantEdit=false;a.setMode('edit');return}
     if(r===false||++tries>40){
       diagnostic('warn','Saved texture could not open',{path:path,source:'saved',stage:'reopen',reason:r===false?'no_block':'no_catalog'});
@@ -54,7 +60,7 @@ function editTexture(path,data,c){
       if(c.onFail)c.onFail(r===false?'no_block':'no_catalog');
       return;
     }
-    setTimeout(poll,500);
+    editTimer=setTimeout(poll,500);
   })();
 }
 function info(){
@@ -78,10 +84,10 @@ function info(){
 }
 return {
   version:VERSION,
-  open:open,editTexture:editTexture,info:info,
+  open:open,editTexture:editTexture,info:info,cancelPendingEdit:cancelPendingEdit,
   getMode:function(){return mode},
-  setMode:function(m){var a=api();if(a)a.setMode(m)},
-  reset:function(){loaded=null},
+  setMode:function(m){if(m!=='edit')cancelPendingEdit();var a=api();if(a)a.setMode(m)},
+  reset:function(){cancelPendingEdit();loaded=null},
   ready:function(){return !!api()},
   busy:function(){var a=api();return !!(a&&a.busy)},
   files:function(){var a=api();return (a&&!a.busy)?a.files():null},
