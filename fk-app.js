@@ -15,7 +15,7 @@ function save(k,v){try{writable(k);localStorage.setItem(k,JSON.stringify(v));ret
 var data={active:null,packs:[]};
 var settings=load(SKEY,{theme:'auto',url:DEF_URL});
 if(!settings.url)settings.url=DEF_URL;if(!settings.theme)settings.theme='auto';
-var backupHost=null,backups=null,packList=null;
+var backupHost=null,backups=null,packList=null,packTextures=null;
 var stack=['home'],mt=null,editDirty=false,editNew=false,lastTitle='';
 function say(key,p){showMessage(key?T(key,p):'')}
 function showMessage(t){var m=$('#msg');m.textContent=t;m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},t.length>90?7000:3500)}
@@ -61,6 +61,7 @@ function render(){
   var name=top(),p=active();
   if(packForm&&name!=='edit')packForm.leave();
   if(packList&&name!=='create')packList.leave();
+  if(packTextures&&name!=='pack')packTextures.leave();
   if(name!=='add'&&hasFke()&&FKE.cancelPendingEdit)FKE.cancelPendingEdit();
   if(backups&&name!=='create'&&name!=='backup')backups.leave();
   document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('on',s.id==='s-'+name)});
@@ -96,7 +97,7 @@ $('#back').onclick=function(){
   if(stack.length>1){stack.pop();render()}
 };
 window.addEventListener('beforeunload',function(e){
-  if((hasFke()&&FKE.dirtyNow())||editDirty||(backups&&backups.dirty())||(packList&&packList.busy())){e.preventDefault();e.returnValue=''}
+  if((hasFke()&&FKE.dirtyNow())||editDirty||(backups&&backups.dirty())||(packList&&packList.busy())||(packTextures&&packTextures.busy())){e.preventDefault();e.returnValue=''}
 });
 document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});
 $('#addBtn').onclick=function(){if(!active()){say('msg.pick_pack_first');return}go('add')};
@@ -115,73 +116,32 @@ import('./fk-pack-list.mjs?v=0.9.16-d02-list').then(function(module){
   renderPacks();
 }).catch(function(error){packList=null;$('#packList').inert=true;say('msg.save_failed',{detail:error&&error.message||String(error)})});
 $('#cGo').onclick=function(){editNew=true;go('edit')};
-function groupsOf(p){
-  var gs=[],idx={};
-  p.textures.forEach(function(t,i){
-    var k=t.obj?'o:'+t.obj:'f:'+t.path;
-    if(!(k in idx)){idx[k]=gs.length;gs.push({obj:t.obj||null,all:t.all||null,items:[]})}
-    var g=gs[idx[k]];if(!g.all&&t.all)g.all=t.all;
-    g.items.push({t:t,i:i});
-  });
-  return gs;
-}
-function pickShown(g){
-  if(g.all)for(var a=0;a<g.all.length;a++){
-    for(var j=0;j<g.items.length;j++){if('textures/'+g.items[j].t.path===g.all[a])return g.items[j]}
-  }
-  return g.items[0];
-}
 function renderTex(){
-  var p=active(),box=$('#texList');
-  if(!p){box.innerHTML='';return}
-  var gs=groupsOf(p);
-  if(top()==='pack')setTitle(screenTitle('pack',p));
-  if(!p.textures.length){box.innerHTML='<p class="lbl">'+esc(T('tex.empty'))+'</p>';return}
-  box.innerHTML=gs.map(function(g){
-    var shown=pickShown(g),title=g.obj?nice(g.obj):g.items[0].t.path;
-    var sub='';
-    if(g.obj&&g.all){
-      var have={};g.items.forEach(function(x){have['textures/'+x.t.path]=1});
-      var n=g.all.filter(function(a){return have[a]}).length;
-      sub='<span class="lbl">'+esc(T('tex.edited_of',{n:n,total:g.all.length}))+'</span>';
-    }
-    var rows=g.items.map(function(x){
-      var i=x.i;
-      return '<div class="row"><span class="lbl" style="flex:1 1 100%;margin:0;word-break:break-all">'+esc(x.t.path)+'</span>'+
-        '<button class="btn" data-a="edit" data-i="'+i+'">'+esc(T('act.edit'))+'</button><label class="btn" for="rep'+i+'">'+esc(T('ui.replace'))+'</label><input type="file" id="rep'+i+'" accept="image/png" data-a="rep" data-i="'+i+'"><button class="btn" data-a="png" data-i="'+i+'">'+esc(T('act.export_png'))+'</button><button class="btn" data-a="del" data-i="'+i+'">'+esc(T('act.delete'))+'</button></div>';
-    }).join('');
-    return '<div class="tcard"><div class="tx"><img src="'+shown.t.data+'" alt=""><div><b>'+esc(title)+'</b><br>'+sub+'</div></div>'+rows+'</div>';
-  }).join('');
+  if(top()==='pack')setTitle(screenTitle('pack',active()));
+  if(packTextures)packTextures.render();
 }
-$('#texList').addEventListener('click',function(e){
-  var b=e.target.closest('button');if(!b)return;
-  var p=active(),i=+b.dataset.i;if(!p||!p.textures[i])return;
-  var t=p.textures[i];
-  if(b.dataset.a==='del'){
-    if(!confirm(T('confirm.delete_texture',{path:t.path})))return;
-    p.textures.splice(i,1);if(save(KEY,data))renderTex();else p.textures.splice(i,0,t);
-  }
-  if(b.dataset.a==='png')download(dataBlob(t.data),t.path.split('/').pop()+'.png');
-  if(b.dataset.a==='edit'){
-    if(!hasFke()){say('msg.editor_missing');return}
-    go('add');
-    FKE.editTexture(t.path,t.data,{obj:t.obj,onFail:function(code){say(code==='no_block'?'msg.no_block_for_file':'msg.catalog_not_loaded',{path:t.path})}});
-  }
-});
-var textureReplacements=new WeakMap();
-$('#texList').addEventListener('change',function(e){
-  var inp=e.target;if(inp.dataset.a!=='rep'||!inp.files[0])return;
-  var f=inp.files[0],p=active(),i=+inp.dataset.i;inp.value='';if(!p||!p.textures[i])return;
-  var t=p.textures[i];
-  if(!confirm(T('confirm.replace_texture',{path:t.path})))return;
-  var before=t.data,path=t.path,request={},r=new FileReader();textureReplacements.set(t,request);
-  r.onload=function(){
-    if(byId(p.id)!==p||active()!==p||p.textures.indexOf(t)<0||t.path!==path||t.data!==before||textureReplacements.get(t)!==request)return;
-    t.data=r.result;
-    if(save(KEY,data)){if(top()==='pack')renderTex();say('msg.texture_replaced')}else t.data=before;
-  };
-  r.readAsDataURL(f);
-});
+$('#texList').inert=true;
+import('./fk-pack-textures.mjs?v=0.9.16-d02-textures').then(function(module){
+  packTextures=module.mountPackTextures($('#texList'),{getData:function(){return data},t:T,escape:esc,nice:nice,say:say,
+    current:function(){return top()==='pack'},
+    commitData:function(next,writeOptions){
+      var result=commitData(next,writeOptions);
+      function saved(value){
+        if(value!==false&&!writeOptions.signal.aborted&&top()==='pack'&&data.active===next.active)setTitle(screenTitle('pack',active()));
+        return value;
+      }
+      return result&&typeof result.then==='function'?Promise.resolve(result).then(saved):saved(result);
+    },
+    confirmDelete:function(texture){return confirm(T('confirm.delete_texture',{path:texture.path}))},
+    confirmReplace:function(texture){return confirm(T('confirm.replace_texture',{path:texture.path}))},
+    exportPNG:function(texture){download(dataBlob(texture.data),texture.path.split('/').pop()+'.png')},
+    edit:function(texture){
+      if(!hasFke()){say('msg.editor_missing');return}
+      go('add');
+      FKE.editTexture(texture.path,texture.data,{obj:texture.obj,onFail:function(code){say(code==='no_block'?'msg.no_block_for_file':'msg.catalog_not_loaded',{path:texture.path})}});
+    }});
+  renderTex();
+}).catch(function(error){packTextures=null;$('#texList').inert=true;say('msg.save_failed',{detail:error&&error.message||String(error)})});
 
 /* import / export */
 function dataBlob(u){var a=u.split(','),bin=atob(a[1]),n=bin.length,u8=new Uint8Array(n);while(n--)u8[n]=bin.charCodeAt(n);return new Blob([u8],{type:'image/png'})}
