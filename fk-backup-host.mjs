@@ -10,11 +10,11 @@ export function createPackBackupHost(options){
   if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Invalid saved backup entries');
   return value;
  }
- function commit(next){if(staged)staged=next;else options.commitData(next);}
+ function commit(next,writeOptions){if(staged){staged=next;return;}return options.commitData(next,writeOptions);}
  const storage={
   getItem(key){const map=entries();return Object.hasOwn(map,key)?map[key]:null;},
-  setItem(key,value){commit({...root(),backupEntries:{...entries(),[key]:value}});},
-  removeItem(key){const map={...entries()};delete map[key];commit({...root(),backupEntries:map});}
+  setItem(key,value,writeOptions){return commit({...root(),backupEntries:{...entries(),[key]:value}},writeOptions);},
+  removeItem(key,writeOptions){const map={...entries()};delete map[key];return commit({...root(),backupEntries:map},writeOptions);}
  };
  const store=createPackBackupStore(storage);
  const ui=createPackBackupUI({...options,store,commitRestore(snapshot,previous){
