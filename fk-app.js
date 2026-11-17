@@ -15,7 +15,7 @@ function save(k,v){try{writable(k);localStorage.setItem(k,JSON.stringify(v));ret
 var data={active:null,packs:[]};
 var settings=load(SKEY,{theme:'auto',url:DEF_URL});
 if(!settings.url)settings.url=DEF_URL;if(!settings.theme)settings.theme='auto';
-var backupHost=null,backups=null;
+var backupHost=null,backups=null,packList=null;
 var stack=['home'],mt=null,editDirty=false,editNew=false,lastTitle='';
 function say(key,p){showMessage(key?T(key,p):'')}
 function showMessage(t){var m=$('#msg');m.textContent=t;m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},t.length>90?7000:3500)}
@@ -60,6 +60,7 @@ function refreshTitle(){
 function render(){
   var name=top(),p=active();
   if(packForm&&name!=='edit')packForm.leave();
+  if(packList&&name!=='create')packList.leave();
   if(name!=='add'&&hasFke()&&FKE.cancelPendingEdit)FKE.cancelPendingEdit();
   if(backups&&name!=='create'&&name!=='backup')backups.leave();
   document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('on',s.id==='s-'+name)});
@@ -95,33 +96,24 @@ $('#back').onclick=function(){
   if(stack.length>1){stack.pop();render()}
 };
 window.addEventListener('beforeunload',function(e){
-  if((hasFke()&&FKE.dirtyNow())||editDirty||(backups&&backups.dirty())){e.preventDefault();e.returnValue=''}
+  if((hasFke()&&FKE.dirtyNow())||editDirty||(backups&&backups.dirty())||(packList&&packList.busy())){e.preventDefault();e.returnValue=''}
 });
 document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});
 $('#addBtn').onclick=function(){if(!active()){say('msg.pick_pack_first');return}go('add')};
 
 /* packs */
-function renderPacks(){
-  var box=$('#packList');
-  if(!data.packs.length){box.innerHTML='<p class="lbl">'+esc(T('packs.empty'))+'</p>';if(backups)backups.renderCards();return}
-  box.innerHTML=data.packs.map(function(p){
-    return '<div class="card"><div class="pk"><img src="'+(p.icon||ICON)+'" alt=""><div class="n"><b>'+esc(p.name)+'</b><span class="lbl">'+esc(T('pack.card_sub',{version:p.version,n:p.textures.length}))+'</span></div></div>'+
-      '<div class="acts"><button data-variant="accent" data-a="open" data-id="'+p.id+'">'+esc(T('act.textures'))+'</button><button data-a="exp" data-id="'+p.id+'">'+esc(T('act.export'))+'</button><button data-a="edit" data-id="'+p.id+'">'+esc(T('act.edit'))+'</button><button data-a="del" data-id="'+p.id+'">'+esc(T('act.delete'))+'</button></div></div>';
-  }).join('');
-  if(backups)backups.renderCards();
-}
-$('#packList').addEventListener('click',function(e){
-  var el=e.target.closest('[data-a]');if(!el)return;
-  var id=el.dataset.id,a=el.dataset.a,p=byId(id);if(!p)return;
-  data.active=id;save(KEY,data);
-  if(a==='open')go('pack');
-  if(a==='edit'){editNew=false;go('edit')}
-  if(a==='exp')exportPack(p);
-  if(a==='del'&&confirm(T('confirm.delete_pack',{name:p.name})+'\n'+(FK.lang()==='ru'?'Бэкап этого пака тоже будет удалён.':'This pack’s backup will also be deleted.'))){
-    try{if(backupHost)backupHost.deletePack(id);else{if(data.backupEntries)throw new Error('Backups are not ready');commitData({...data,active:null,packs:data.packs.filter(function(x){return x.id!==id})})}renderPacks()}
-    catch(error){say('msg.save_failed',{detail:error.message})}
-  }
-});
+function renderPacks(){if(packList)packList.render()}
+$('#packList').inert=true;
+import('./fk-pack-list.mjs?v=0.9.16-d02-list').then(function(module){
+  packList=module.mountPackList($('#packList'),{getData:function(){return data},t:T,escape:esc,icon:ICON,
+    current:function(){return top()==='create'},renderBackups:function(){if(backups)backups.renderCards()},
+    select:function(id,writeOptions){return commitData({...data,active:id},writeOptions)},
+    open:function(){go('pack')},edit:function(){editNew=false;go('edit')},exportPack:exportPack,
+    confirmDelete:function(p){return confirm(T('confirm.delete_pack',{name:p.name})+'\n'+(FK.lang()==='ru'?'Бэкап этого пака тоже будет удалён.':'This pack’s backup will also be deleted.'))},
+    deletePack:function(id,writeOptions){if(!backupHost)throw new Error('Backups are not ready');return backupHost.deletePack(id,writeOptions)},
+    fail:function(error){say('msg.save_failed',{detail:error&&error.message||String(error)})}});
+  renderPacks();
+}).catch(function(error){packList=null;$('#packList').inert=true;say('msg.save_failed',{detail:error&&error.message||String(error)})});
 $('#cGo').onclick=function(){editNew=true;go('edit')};
 function groupsOf(p){
   var gs=[],idx={};
@@ -408,7 +400,7 @@ $('#sExport').onclick=function(){if(!packsReady||unreadable[KEY]){say('msg.file_
 $('#sClear').onclick=function(){if(confirm(T('confirm.delete_all')+'\n'+(FK.lang()==='ru'?'Бэкапы паков тоже будут удалены.':'Pack backups will also be deleted.'))){try{commitData({active:null,packs:[]});say('msg.packs_deleted')}catch(error){say('msg.save_failed',{detail:error.message})}}};
 
 function commitData(next){writable(KEY);localStorage.setItem(KEY,JSON.stringify(next));data=next}
-import('./fk-backup-host.mjs?v=0.9.16').then(function(module){
+import('./fk-backup-host.mjs?v=0.9.16-d02-delete').then(function(module){
   backupHost=module.createPackBackupHost({document:document,lang:function(){return FK.lang()},getData:function(){return data},commitData:commitData,getPack:byId,
     isCurrent:function(id,mode){return (mode==='create'||data.active===id)&&top()===mode&&!document.hidden},openScreen:function(mode,id){if(byId(id))data.active=id;go(mode)},back:function(){stack.pop();render()},notice:showMessage,
     afterRestore:function(){if(hasFke())FKE.reset();renderPacks()}});
