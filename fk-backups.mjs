@@ -24,7 +24,7 @@ export function createPackBackupUI(options){
  const {document:doc,store,getPack,isCurrent,openScreen,back,notice,commitRestore}=options;
  if(doc.getElementById('s-backup'))throw new Error('Backup UI already mounted');
  const ask=options.confirmAction||((message)=>confirm(message));
- let draft=null,generation=0,pending=false,rows=new Map();
+ let draft=null,generation=0,pending=false,pendingController=null,rows=new Map();
  function t(key){return TEXT[options.lang()==='ru'?'ru':'en'][key];}
  function el(tag,cls,text){const node=doc.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;}
  function button(key,action){const node=el('button','btn');node.type='button';node.dataset.backupLabel=key;node.textContent=t(key);node.addEventListener('click',action);return node;}
@@ -35,8 +35,14 @@ export function createPackBackupUI(options){
  for(const node of [packName,label,input,warning,formError,submitRow])form.appendChild(node);
  screen.appendChild(form);doc.getElementById('screens').appendChild(screen);
  function errorText(error){return error&&error.name==='QuotaExceededError'?t('quota'):t('failed')+(error&&error.message?' '+error.message:'');}
- function busy(on){pending=on;for(const row of rows.values())for(const node of row.actions.children)node.disabled=on;}
- function cancel(){generation++;busy(false);}
+ function busy(on){pending=on;input.disabled=submit.disabled=on;for(const row of rows.values())for(const node of row.actions.children)node.disabled=on;}
+ function cancel(){generation++;const controller=pendingController;pendingController=null;busy(false);controller?.abort();}
+ function begin(){
+  const controller=new AbortController(),operation={ticket:++generation,controller,signal:controller.signal};
+  pendingController=controller;busy(true);return operation;
+ }
+ function current(operation,id,mode){return operation.ticket===generation&&!operation.signal.aborted&&isCurrent(id,mode);}
+ function finish(operation){if(operation.ticket===generation){pendingController=null;busy(false);}}
  function fail(id,error){const row=rows.get(id);if(row){row.error.hidden=false;row.error.textContent=errorText(error);}}
  function renderCards(){
   cancel();const previous=rows;rows=new Map();
@@ -69,15 +75,33 @@ export function createPackBackupUI(options){
   try{if(store.read(id)){renderCards();return;}}catch(error){fail(id,error);return;}
   cancel();draft={id,initial:''};input.value='';formError.textContent='';renderScreen();openScreen('backup',id);
  }
- form.addEventListener('submit',event=>{
+ form.addEventListener('submit',async event=>{
   event.preventDefault();if(!draft||pending||!isCurrent(draft.id,'backup'))return;
-  const pack=getPack(draft.id);if(!pack){formError.textContent=t('changed');return;}
-  try{store.save(pack,input.value);}catch(error){formError.textContent=errorText(error);return;}
+  const owner=draft,pack=getPack(owner.id);if(!pack){formError.textContent=t('changed');return;}
+  let operation;
+  try{
+   operation=begin();formError.textContent='';
+   const result=store.save(pack,input.value,{signal:operation.signal});
+   if(result&&typeof result.then==='function')await result;
+   if(!current(operation,owner.id,'backup')||draft!==owner)return;
+  }catch(error){
+   if(draft===owner&&(!operation||current(operation,owner.id,'backup')))formError.textContent=errorText(error);
+   operation?.controller.abort();return;
+  }finally{if(operation)finish(operation);}
   draft=null;back();notice(t('created'));
  });
- function remove(id){
+ async function remove(id){
   if(pending||!isCurrent(id,'create')||!getPack(id)||!ask(t('deleteConfirm')))return;
-  try{store.remove(id);}catch(error){fail(id,error);return;}
+  let operation;
+  try{
+   operation=begin();
+   const result=store.remove(id,{signal:operation.signal});
+   if(result&&typeof result.then==='function')await result;
+   if(!current(operation,id,'create'))return;
+  }catch(error){
+   if(!operation||current(operation,id,'create'))fail(id,error);
+   operation?.controller.abort();return;
+  }finally{if(operation)finish(operation);}
   renderCards();notice(t('deleted'));
  }
  async function restore(id){
@@ -96,5 +120,5 @@ export function createPackBackupUI(options){
   }catch(error){if(ticket===generation)fail(id,error);}
   finally{if(ticket===generation)busy(false);}
  }
- return {open,renderCards,renderScreen,title:()=>t('create'),dirty:()=>!!draft&&input.value!==draft.initial,leave(){cancel();draft=null;},busy:()=>pending};
+ return {open,renderCards,renderScreen,title:()=>t('create'),dirty:()=>pending||!!draft&&input.value!==draft.initial,leave(){cancel();draft=null;},busy:()=>pending};
 }
