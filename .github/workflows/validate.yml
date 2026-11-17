@@ -60,11 +60,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install pinned Three.js only in runner temporary storage
+      - name: Install pinned Three.js in runner temp
         run: |
           mkdir -p "$RUNNER_TEMP/fk-preview-three"
           npm install --prefix "$RUNNER_TEMP/fk-preview-three" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund three@0.128.0
-      - name: Compile pinned review slice and build real Three.js geometry without WebGL
+      - name: Build pinned slice with Three.js without WebGL
         run: |
           node --input-type=module <<'NODE'
           import assert from 'node:assert/strict';
@@ -73,6 +73,7 @@ jobs:
           import {readCandidate} from './tools/model-coverage.mjs';
           import {compileReview, REVIEW_IDS, resourcePaths, previewControlSpec, previewControlSelection, previewTextureField} from './preview.mjs';
           import {createPreviewResolver} from './catalog/preview.mjs';
+          import {bannerCI} from './tools/ci-banner.mjs';
           const require = createRequire(join(process.env.RUNNER_TEMP, 'fk-preview-three', 'package.json'));
           const Three = require('three');
           assert.equal(Three.REVISION, '128');
@@ -143,7 +144,7 @@ jobs:
            if (plan.model === 'conduit' || liquid) for (const texture of Object.values(textures)) texture.addEventListener('dispose', () => borrowedDisposals++);
            let instance;
            try {
-            instance = plan.instantiate({group}, textures);
+            instance = plan.banner ? bannerCI(plan, group) : plan.instantiate({group}, textures);
             let meshes = 0;
             const modelMaterials = [];
             group.traverse(node => {
