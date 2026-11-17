@@ -1,5 +1,13 @@
 /* One local checkpoint per pack. The shell owns live packs, navigation and notifications. */
 const PREFIX='fk070_backup:';
+/* Reads stay synchronous; async write adapters must be awaited by their callers. */
+function checkSignal(signal){
+  if(signal?.aborted)throw signal.reason===undefined?Object.assign(new Error('Backup operation cancelled'),{name:'AbortError'}):signal.reason;
+}
+function complete(result,value){
+  function accepted(result){if(result===false)throw new Error('Backup storage refused the write');return value;}
+  return result&&typeof result.then==='function'?Promise.resolve(result).then(accepted):accepted(result);
+}
 function object(value){return value!==null&&typeof value==='object'&&!Array.isArray(value);}
 function packId(id){if(typeof id!=='string'||!id.trim()||id.length>128)throw new Error('Invalid backup pack ID');return id;}
 function validatePack(pack){
@@ -30,6 +38,7 @@ export function createPackBackupStore(storage,now=()=>new Date()){
   function key(id){return PREFIX+packId(id);}
   function read(id){const raw=storage.getItem(key(id));return raw===null?null:decode(raw,id);}
   function save(pack,name='',options={}){
+    checkSignal(options.signal);
     validatePack(pack);
     if(typeof name!=='string')throw new Error('Invalid backup name');
     const id=pack.id,previous=read(id);
@@ -38,10 +47,13 @@ export function createPackBackupStore(storage,now=()=>new Date()){
     if(options.expectedCreatedAt!==undefined&&(!previous||previous.createdAt!==options.expectedCreatedAt))throw new Error('The backup changed; reopen the backup screen');
     const entry={schema:1,packId:id,name:name.trim(),createdAt:now().toISOString(),pack};
     const raw=JSON.stringify(entry),snapshot=decode(raw,id);
-    storage.setItem(key(id),raw);
-    return snapshot;
+    return complete(storage.setItem(key(id),raw,{signal:options.signal}),snapshot);
   }
-  function remove(id){const k=key(id),exists=storage.getItem(k)!==null;if(exists)storage.removeItem(k);return exists;}
+  function remove(id,options={}){
+    checkSignal(options.signal);
+    const k=key(id);if(storage.getItem(k)===null)return false;
+    return complete(storage.removeItem(k,{signal:options.signal}),true);
+  }
   function restore(id){const entry=read(id);if(!entry)throw new Error('No backup exists for this pack');return entry.pack;}
   return {read,save,remove,restore};
 }
