@@ -2,7 +2,7 @@
 import {createPackBackupStore} from './fk-backup-store.mjs?v=0.9.16';
 import {createPackBackupUI} from './fk-backups.mjs?v=0.9.16-d02-restore';
 export function createPackBackupHost(options){
- let staged=null;
+ let staged=null,deleting=false;
  function root(){return staged||options.getData();}
  function entries(){
   const value=root().backupEntries;
@@ -29,15 +29,21 @@ export function createPackBackupHost(options){
   const result=options.commitData({...current,packs},{signal:writeOptions.signal});
   return result&&typeof result.then==='function'?Promise.resolve(result).then(accepted):accepted(result);
  }});
- function deletePack(id){
+ function deletePack(id,writeOptions={}){
   const current=options.getData();
   if(!current.packs.some(pack=>pack.id===id))return false;
-  if(staged)throw new Error('Backup operation already in progress');
+  if(staged||deleting)throw new Error('Backup operation already in progress');
   staged={...current,active:current.active===id?null:current.active,packs:current.packs.filter(pack=>pack.id!==id)};
+  let next;
+  try{store.remove(id,writeOptions);next=staged;}
+  finally{staged=null;}
+  deleting=true;
+  function accepted(result){deleting=false;if(result===false)throw new Error('Pack deletion was not saved');return true;}
+  function rejected(error){deleting=false;throw error;}
   try{
-   store.remove(id);
-   const next=staged;staged=null;options.commitData(next);return true;
-  }finally{staged=null;}
+   const result=options.commitData(next,writeOptions);
+   return result&&typeof result.then==='function'?Promise.resolve(result).then(accepted,rejected):accepted(result);
+  }catch(error){return rejected(error);}
  }
  return {ui,deletePack};
 }
