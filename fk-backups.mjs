@@ -109,16 +109,25 @@ export function createPackBackupUI(options){
   let entry;try{entry=store.read(id);}catch(error){fail(id,error);return;}
   if(!entry||!ask(t('restoreConfirm')))return;
   const pack=getPack(id),row=rows.get(id);if(!pack||!row)return;
-  const before=JSON.stringify(pack),checkpoint=JSON.stringify(entry),ticket=++generation;
-  busy(true);row.error.hidden=false;row.error.textContent=t('restoring');
+  const before=JSON.stringify(pack),checkpoint=JSON.stringify(entry),managed=options.restoreCompletion==='ui';
+  let operation;
   try{
-   await validateBackupImages(entry.pack,options.makeImage,()=>ticket===generation);
-   if(ticket!==generation)return;
-   if(!isCurrent(id,'create')||rows.get(id)!==row||getPack(id)!==pack||JSON.stringify(pack)!==before||JSON.stringify(store.read(id))!==checkpoint)throw new Error(t('changed'));
-   if(commitRestore(entry.pack,pack)!==true)throw new Error(t('failed'));
-   renderCards();notice(t('restored'));
-  }catch(error){if(ticket===generation)fail(id,error);}
-  finally{if(ticket===generation)busy(false);}
+   operation=begin();row.error.hidden=false;row.error.textContent=t('restoring');
+   await validateBackupImages(entry.pack,options.makeImage,()=>current(operation,id,'create'));
+   if(!current(operation,id,'create'))return;
+   if(rows.get(id)!==row||getPack(id)!==pack||JSON.stringify(pack)!==before||JSON.stringify(store.read(id))!==checkpoint)throw new Error(t('changed'));
+   const result=commitRestore(entry.pack,pack,{signal:operation.signal,deferAfterRestore:managed});
+   const asynchronous=result&&typeof result.then==='function';
+   if((asynchronous?await result:result)!==true)throw new Error(t('failed'));
+   // Cached synchronous hosts may already have rendered their own completion.
+   if((managed||asynchronous)&&(!current(operation,id,'create')||rows.get(id)!==row))return;
+  }catch(error){
+   if(!operation||current(operation,id,'create'))fail(id,error);
+   operation?.controller.abort();return;
+  }finally{if(operation)finish(operation);}
+  if(managed)options.afterRestore();
+  if(operation.ticket===generation)renderCards();
+  notice(t('restored'));
  }
  return {open,renderCards,renderScreen,title:()=>t('create'),dirty:()=>pending||!!draft&&input.value!==draft.initial,leave(){cancel();draft=null;},busy:()=>pending};
 }

@@ -1,6 +1,6 @@
 /* Adapt backup storage to the shell's single saved record; never write during setup. */
 import {createPackBackupStore} from './fk-backup-store.mjs?v=0.9.16';
-import {createPackBackupUI} from './fk-backups.mjs?v=0.9.16';
+import {createPackBackupUI} from './fk-backups.mjs?v=0.9.16-d02-restore';
 export function createPackBackupHost(options){
  let staged=null;
  function root(){return staged||options.getData();}
@@ -17,12 +17,17 @@ export function createPackBackupHost(options){
   removeItem(key,writeOptions){const map={...entries()};delete map[key];return commit({...root(),backupEntries:map},writeOptions);}
  };
  const store=createPackBackupStore(storage);
- const ui=createPackBackupUI({...options,store,commitRestore(snapshot,previous){
+ const ui=createPackBackupUI({...options,store,restoreCompletion:'ui',commitRestore(snapshot,previous,writeOptions={}){
   const current=options.getData(),index=current.packs.indexOf(previous);
   if(index<0||snapshot.id!==previous.id||!options.isCurrent(previous.id,'create'))throw new Error('Pack changed before restore');
   const packs=current.packs.slice();packs[index]=snapshot;
-  options.commitData({...current,packs});
-  options.afterRestore();return true;
+  function accepted(result){
+   if(result===false)throw new Error('Pack restore was not saved');
+   if(!writeOptions.deferAfterRestore)options.afterRestore();
+   return true;
+  }
+  const result=options.commitData({...current,packs},{signal:writeOptions.signal});
+  return result&&typeof result.then==='function'?Promise.resolve(result).then(accepted):accepted(result);
  }});
  function deletePack(id){
   const current=options.getData();
