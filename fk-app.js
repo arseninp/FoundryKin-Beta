@@ -15,7 +15,7 @@ function save(k,v){try{writable(k);localStorage.setItem(k,JSON.stringify(v));ret
 var data={active:null,packs:[]};
 var settings=load(SKEY,{theme:'auto',url:DEF_URL});
 if(!settings.url)settings.url=DEF_URL;if(!settings.theme)settings.theme='auto';
-var backupHost=null,backups=null,packList=null,packTextures=null;
+var backupHost=null,backups=null,packList=null,packTextures=null,editorSave=null;
 var stack=['home'],mt=null,editDirty=false,editNew=false,lastTitle='';
 function say(key,p){showMessage(key?T(key,p):'')}
 function showMessage(t){var m=$('#msg');m.textContent=t;m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},t.length>90?7000:3500)}
@@ -33,6 +33,7 @@ var ICON='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w
 var LENS='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
 function top(){return stack[stack.length-1]}
 function hasFke(){return typeof FKE!=='undefined'}
+function okState(){$('#ok').disabled=(hasFke()&&FKE.busy())||!!(editorSave&&editorSave.busy())}
 
 /* header */
 function head(name,pill){return '<span class="fkHead"><span class="fkTn">'+esc(name)+'</span>'+(pill?'<span class="fkTf">'+esc(pill)+'</span>':'')+'</span>'}
@@ -52,7 +53,7 @@ function setTitle(h){if(h!==lastTitle){lastTitle=h;$('#title').innerHTML=h}}
 function syncFind(){document.body.classList.toggle('findSearch',top()==='add'&&hasFke()&&FKE.getMode()==='search'&&!FKE.pendingEdit())}
 function refreshTitle(){
   if(top()!=='add'||!hasFke()||FKE.getMode()!=='edit')return;
-  $('#ok').disabled=FKE.busy();
+  okState();
   setTitle(editTitle());
 }
 
@@ -62,6 +63,7 @@ function render(){
   if(packForm&&name!=='edit')packForm.leave();
   if(packList&&name!=='create')packList.leave();
   if(packTextures&&name!=='pack')packTextures.leave();
+  if(editorSave&&name!=='add')editorSave.leave();
   if(name!=='add'&&hasFke()&&FKE.cancelPendingEdit)FKE.cancelPendingEdit();
   if(backups&&name!=='create'&&name!=='backup')backups.leave();
   document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('on',s.id==='s-'+name)});
@@ -97,7 +99,7 @@ $('#back').onclick=function(){
   if(stack.length>1){stack.pop();render()}
 };
 window.addEventListener('beforeunload',function(e){
-  if((hasFke()&&FKE.dirtyNow())||editDirty||(backups&&backups.dirty())||(packList&&packList.busy())||(packTextures&&packTextures.busy())){e.preventDefault();e.returnValue=''}
+  if((hasFke()&&FKE.dirtyNow())||editDirty||(backups&&backups.dirty())||(packList&&packList.busy())||(packTextures&&packTextures.busy())||(editorSave&&editorSave.busy())){e.preventDefault();e.returnValue=''}
 });
 document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});
 $('#addBtn').onclick=function(){if(!active()){say('msg.pick_pack_first');return}go('add')};
@@ -215,7 +217,7 @@ function onMode(m){
   if(top()!=='add')return;
   var edit=m==='edit';
   $('#ok').hidden=!edit;
-  $('#ok').disabled=false;
+  $('#ok').disabled=!!(editorSave&&editorSave.busy());
   if(edit){lastTitle='';setTitle(editTitle())}
   else setTitle(screenTitle('add'));
 }
@@ -233,21 +235,7 @@ function loadEditor(){
     }
   });
 }
-$('#ok').onclick=function(){
-  var p=active();if(!p){say('msg.no_active_pack');return}
-  var fs=hasFke()?FKE.files():null;
-  if(!fs){say('msg.editor_not_ready');return}
-  if(!fs.length){say('msg.edit_texture_first');return}
-  var oi=FKE.objInfo(),before=p.textures;
-  fs.forEach(function(x){
-    var path=x.path.replace(/^textures\//,'').replace(/\.png$/,'');
-    p.textures=p.textures.filter(function(t){return t.path!==path});
-    var rec={path:path,data:x.data};
-    if(oi&&oi.id){rec.obj=oi.id;rec.all=oi.paths}
-    p.textures.push(rec);
-  });
-  if(save(KEY,data)){FKE.markSaved();say('msg.added',{name:p.name,n:fs.length})}else p.textures=before;
-};
+$('#ok').onclick=function(){if(!editorSave){say('msg.editor_not_ready');return}editorSave.save()};
 function migrate(c){
   if(!c||!c.catalog)return;
   var cat=c.catalog,map=null,changed=false;
@@ -359,7 +347,16 @@ $('#sLang').onchange=function(){var next={...settings,lang:this.value};if(!save(
 $('#sExport').onclick=function(){if(!packsReady||unreadable[KEY]){say('msg.file_unreadable');return}download(new Blob([JSON.stringify(data)],{type:'application/json'}),'foundrykin-packs.json')};
 $('#sClear').onclick=function(){if(confirm(T('confirm.delete_all')+'\n'+(FK.lang()==='ru'?'Бэкапы паков тоже будут удалены.':'Pack backups will also be deleted.'))){try{commitData({active:null,packs:[]});say('msg.packs_deleted')}catch(error){say('msg.save_failed',{detail:error.message})}}};
 
-function commitData(next){writable(KEY);localStorage.setItem(KEY,JSON.stringify(next));data=next}
+function commitData(next,writeOptions){
+  var signal=writeOptions&&writeOptions.signal;
+  if(signal&&signal.aborted)throw signal.reason===undefined?new Error('Pack write cancelled'):signal.reason;
+  writable(KEY);localStorage.setItem(KEY,JSON.stringify(next));data=next;
+}
+import('./fk-editor-save.mjs?v=0.9.17-d02-editor-save').then(function(module){
+  editorSave=module.createEditorSave({getData:function(){return data},commitData:commitData,say:say,changed:okState,
+    current:function(){return top()==='add'&&hasFke()&&FKE.getMode()==='edit'},
+    editor:{captureSave:function(){return hasFke()?FKE.captureSave():null},isSaveCurrent:function(token){return hasFke()&&FKE.isSaveCurrent(token)},markSaved:function(token){return hasFke()&&FKE.markSaved(token)}}});
+}).catch(function(error){editorSave=null;say('msg.save_failed',{detail:error&&error.message||String(error)})});
 import('./fk-backup-host.mjs?v=0.9.16-d02-delete').then(function(module){
   backupHost=module.createPackBackupHost({document:document,lang:function(){return FK.lang()},getData:function(){return data},commitData:commitData,getPack:byId,
     isCurrent:function(id,mode){return (mode==='create'||data.active===id)&&top()===mode&&!document.hidden},openScreen:function(mode,id){if(byId(id))data.active=id;go(mode)},back:function(){stack.pop();render()},notice:showMessage,
