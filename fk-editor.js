@@ -4,6 +4,7 @@ var FKE=(function(){
 var src='';try{src=String(document.currentScript.src||'')}catch(e){}
 var vm=/[?&]v=([\d.]+)/.exec(src),VERSION=vm?vm[1]:'?';
 var frame=null,cb={},loaded=null,wantEdit=false,mode='search',base=0,attached=null,editGeneration=0,editTimer=null;
+var saveTokens=new WeakMap(),stateRevision=0;
 function cancelPendingEdit(){editGeneration++;if(editTimer!==null){clearTimeout(editTimer);editTimer=null}wantEdit=false}
 function diagnostic(level,message,data,error){try{var log=window.FKLog;if(log){if(error)log.error('shell',error,data);else log.add(level,'shell',message,data)}}catch(ignored){}}
 function safeText(value,limit){try{var log=window.FKLog;return log&&log.text?log.text(value,limit):'[redaction unavailable]'}catch(e){return '[redaction unavailable]'}}
@@ -13,8 +14,10 @@ function win(){try{return frame&&frame.contentWindow}catch(e){return null}}
 function api(){try{var w=win();return (w&&w.FKAPI)||null}catch(e){return null}}
 function attach(a){
   if(attached===a)return;
-  attached=a;
+  attached=a;stateRevision++;
   a.subscribe(function(s){
+    if(attached!==a||api()!==a)return;
+    stateRevision++;
     if(s.mode!==mode){
       if(s.mode==='edit')base=a.edits||0;
       mode=s.mode;diagnostic('info','Editor mode changed',{status:mode});
@@ -63,6 +66,32 @@ function editTexture(path,data,c){
     editTimer=setTimeout(poll,500);
   })();
 }
+function captureSave(){
+  var a=api();
+  if(!a||a!==attached||a.busy||wantEdit||mode!=='edit')return null;
+  var files=a.files().map(function(file){return Object.freeze({path:file.path,data:file.data})});
+  var object=a.grid().obj(),token=Object.freeze({});
+  if(!object||!object.id)return null;
+  object=Object.freeze({id:object.id,paths:Object.freeze(object.paths.slice())});
+  Object.freeze(files);
+  saveTokens.set(token,{api:a,generation:editGeneration,revision:stateRevision,edits:a.edits||0,id:a.cur(),files:files,object:object});
+  return Object.freeze({token:token,files:files,object:object});
+}
+function isSaveCurrent(token){
+  var saved=token&&typeof token==='object'?saveTokens.get(token):null,a=api();
+  if(!saved||!a||a!==saved.api||a!==attached||a.busy||wantEdit||mode!=='edit'||saved.generation!==editGeneration||saved.revision!==stateRevision||saved.edits!==(a.edits||0)||saved.id!==a.cur())return false;
+  try{
+    var object=a.grid().obj(),files=a.files();
+    return object.id===saved.object.id&&object.paths.length===saved.object.paths.length&&object.paths.every(function(path,index){return path===saved.object.paths[index]})&&files.length===saved.files.length&&files.every(function(file,index){return file.path===saved.files[index].path&&file.data===saved.files[index].data});
+  }catch(error){return false}
+}
+function markSaved(token){
+  if(arguments.length){
+    if(!isSaveCurrent(token))return false;
+    base=saveTokens.get(token).edits;saveTokens.delete(token);return true;
+  }
+  var a=api();base=a?(a.edits||0):0;return !!a;
+}
 function info(){
   var a=api(),s=a&&a.state,st=null,rejected=[],total=0,availability=a?'unsupported':'not loaded',editorLog='not loaded';
   try{st=a&&a.stats?a.stats():null}catch(e){}
@@ -85,6 +114,7 @@ function info(){
 return {
   version:VERSION,
   open:open,editTexture:editTexture,info:info,cancelPendingEdit:cancelPendingEdit,
+  captureSave:captureSave,isSaveCurrent:isSaveCurrent,markSaved:markSaved,
   getMode:function(){return mode},
   setMode:function(m){if(m!=='edit')cancelPendingEdit();var a=api();if(a)a.setMode(m)},
   reset:function(){cancelPendingEdit();loaded=null},
@@ -94,7 +124,6 @@ return {
   current:function(){var a=api();return a?(a.busy&&a.pending?a.pending:a.cur()):''},
   objInfo:function(){var a=api();try{return a?a.grid().obj():null}catch(e){return null}},
   dirtyNow:function(){var a=api();return !!a&&mode==='edit'&&(a.edits||0)>base},
-  markSaved:function(){var a=api();base=a?(a.edits||0):0},
   closeMenu:function(){var a=api();return !!(a&&a.closeMenu&&a.closeMenu())},
   pendingEdit:function(){return wantEdit},
   doc:function(){try{return win().document}catch(e){return null}}
