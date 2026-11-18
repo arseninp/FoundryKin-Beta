@@ -15,7 +15,7 @@ function save(k,v){try{writable(k);localStorage.setItem(k,JSON.stringify(v));ret
 var data={active:null,packs:[]};
 var settings=load(SKEY,{theme:'auto',url:DEF_URL});
 if(!settings.url)settings.url=DEF_URL;if(!settings.theme)settings.theme='auto';
-var backupHost=null,backups=null,packList=null,packTextures=null,editorSave=null,packImport=null;
+var backupHost=null,backups=null,packList=null,packTextures=null,editorSave=null,packImport=null,packClear=null;
 var stack=['home'],mt=null,editDirty=false,editNew=false,lastTitle='';
 function say(key,p){showMessage(key?T(key,p):'')}
 function showMessage(t){var m=$('#msg');m.textContent=t;m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},t.length>90?7000:3500)}
@@ -37,6 +37,10 @@ function okState(){$('#ok').disabled=(hasFke()&&FKE.busy())||!!(editorSave&&edit
 function syncImport(){
   var busy=!!(packImport&&packImport.busy());
   $('#impF').disabled=!packImport||busy;$('#s-create').inert=busy;
+}
+function syncClear(){
+  var busy=!!(packClear&&packClear.busy());
+  $('#sClear').disabled=!packClear||busy;$('#s-settings').inert=busy;
 }
 
 /* header */
@@ -67,6 +71,7 @@ function render(){
   if(packForm&&name!=='edit')packForm.leave();
   if(packList&&name!=='create')packList.leave();
   if(packImport&&name!=='create')packImport.leave();
+  if(packClear&&name!=='settings')packClear.leave();
   if(packTextures&&name!=='pack')packTextures.leave();
   if(editorSave&&name!=='add')editorSave.leave();
   if(name!=='add'&&hasFke()&&FKE.cancelPendingEdit)FKE.cancelPendingEdit();
@@ -104,7 +109,7 @@ $('#back').onclick=function(){
   if(stack.length>1){stack.pop();render()}
 };
 window.addEventListener('beforeunload',function(e){
-  if((hasFke()&&FKE.dirtyNow())||editDirty||(backups&&backups.dirty())||(packList&&packList.busy())||(packTextures&&packTextures.busy())||(editorSave&&editorSave.busy())||(packImport&&packImport.busy())){e.preventDefault();e.returnValue=''}
+  if((hasFke()&&FKE.dirtyNow())||editDirty||(backups&&backups.dirty())||(packList&&packList.busy())||(packTextures&&packTextures.busy())||(editorSave&&editorSave.busy())||(packImport&&packImport.busy())||(packClear&&packClear.busy())){e.preventDefault();e.returnValue=''}
 });
 document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});
 $('#addBtn').onclick=function(){if(!active()){say('msg.pick_pack_first');return}go('add')};
@@ -324,7 +329,16 @@ function applyLang(){
 }
 $('#sLang').onchange=function(){var next={...settings,lang:this.value};if(!save(SKEY,next)){this.value=settings.lang||'auto';return}settings=next;FK.refresh();applyLang()};
 $('#sExport').onclick=function(){if(!packsReady||unreadable[KEY]){say('msg.file_unreadable');return}download(new Blob([JSON.stringify(data)],{type:'application/json'}),'foundrykin-packs.json')};
-$('#sClear').onclick=function(){if(confirm(T('confirm.delete_all')+'\n'+(FK.lang()==='ru'?'Бэкапы паков тоже будут удалены.':'Pack backups will also be deleted.'))){try{commitData({active:null,packs:[]});say('msg.packs_deleted')}catch(error){say('msg.save_failed',{detail:error.message})}}};
+$('#sClear').onclick=function(){
+  if(!packClear){say('msg.save_failed',{detail:'Pack clearing is not ready'});return}
+  return packClear.clear();
+};
+syncClear();
+import('./fk-pack-clear.mjs?v=0.9.31-d02-clear').then(function(module){
+  packClear=module.createPackClear({commitData:commitData,say:say,changed:syncClear,current:function(){return top()==='settings'},
+    confirm:function(){return confirm(T('confirm.delete_all')+'\n'+(FK.lang()==='ru'?'Бэкапы паков тоже будут удалены.':'Pack backups will also be deleted.'))}});
+  syncClear();
+}).catch(function(error){packClear=null;syncClear();say('msg.save_failed',{detail:error&&error.message||String(error)})});
 
 function commitData(next,writeOptions){
   var signal=writeOptions&&writeOptions.signal;
