@@ -1,4 +1,6 @@
-/* Shell owns navigation/root. save({signal}) returns boolean or Promise<boolean>. */
+/* Shell owns navigation/root. save({signal,candidate,rollback}) returns boolean
+   or Promise<boolean>. A candidate-aware host rolls back staging before writing
+   the detached candidate, publishing live state only after acknowledgement. */
 export function mountPackForm(document,options){
  const $=selector=>document.querySelector(selector);
  let draftIcon='',generation=0,pendingIcon=null,pendingSave=null;
@@ -55,7 +57,7 @@ export function mountPackForm(document,options){
  };
  function finish(request,ok,error){
   if(pendingSave!==request)return;
-  const current=request.token===generation&&options.current()&&options.isNew()===request.isNew&&options.active()?.id===request.pack.id;
+  const current=request.token===generation&&options.current()&&options.isNew()===request.isNew&&(options.active()?.id===request.pack.id||(ok!==true&&options.getData()===request.data&&request.data.active===request.previousActive));
   pendingSave=null;if(ok!==true)rollback(request);sync();
   if(!current)return;
   if(ok===true){options.saved();fill();options.say('msg.saved');}
@@ -78,7 +80,8 @@ export function mountPackForm(document,options){
   pendingSave=request;
   let result;
   try{
-   result=options.save({signal:request.controller.signal});
+   const candidate=JSON.parse(JSON.stringify(data));
+   result=options.save({signal:request.controller.signal,candidate,rollback:()=>rollback(request)});
    if(result&&typeof result.then==='function'){sync();return Promise.resolve(result).then(ok=>finish(request,ok),error=>finish(request,false,failed(error)));}
   }catch(error){finish(request,false,failed(error));return;}
   finish(request,result);
