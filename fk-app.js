@@ -213,6 +213,7 @@ import('./fk-pack-form.mjs?v=0.9.27').then(function(module){
 
 /* editor screen */
 function onMode(m){
+  if(m!=='edit'&&editorSave)editorSave.leave();
   syncFind();
   if(top()!=='add')return;
   var edit=m==='edit';
