@@ -11,11 +11,11 @@ function load(k,d){
   catch(e){unreadable[k]=true;return d}
 }
 function writable(k){if(unreadable[k]||(k===KEY&&!packsReady))invalid()}
-function save(k,v){try{writable(k);localStorage.setItem(k,JSON.stringify(v));return true}catch(e){say('msg.save_failed',{detail:e.message});return false}}
+function save(k,v){try{if(k!==SKEY)throw new Error('Pack writes must use commitData');writable(k);localStorage.setItem(k,JSON.stringify(v));return true}catch(e){say('msg.save_failed',{detail:e.message});return false}}
 var data={active:null,packs:[]};
 var settings=load(SKEY,{theme:'auto',url:DEF_URL});
 if(!settings.url)settings.url=DEF_URL;if(!settings.theme)settings.theme='auto';
-var backupHost=null,backups=null,packList=null,packTextures=null,editorSave=null,packImport=null,packClear=null,packMigration=null;
+var backupHost=null,backups=null,packList=null,packTextures=null,editorSave=null,packImport=null,packClear=null,packMigration=null,packCommitter=null;
 var stack=['home'],mt=null,editDirty=false,editNew=false,lastTitle='';
 function say(key,p){showMessage(key?T(key,p):'')}
 function showMessage(t){var m=$('#msg');m.textContent=t;m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},t.length>90?7000:3500)}
@@ -110,7 +110,7 @@ $('#back').onclick=function(){
   if(stack.length>1){stack.pop();render()}
 };
 window.addEventListener('beforeunload',function(e){
-  if((hasFke()&&FKE.dirtyNow())||editDirty||(packForm&&packForm.busy())||(backups&&backups.dirty())||(packList&&packList.busy())||(packTextures&&packTextures.busy())||(editorSave&&editorSave.busy())||(packImport&&packImport.busy())||(packClear&&packClear.busy())||packMigration){e.preventDefault();e.returnValue=''}
+  if((hasFke()&&FKE.dirtyNow())||editDirty||(packForm&&packForm.busy())||(backups&&backups.dirty())||(packList&&packList.busy())||(packTextures&&packTextures.busy())||(editorSave&&editorSave.busy())||(packImport&&packImport.busy())||(packClear&&packClear.busy())||packMigration||(packCommitter&&packCommitter.busy())){e.preventDefault();e.returnValue=''}
 });
 document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){go(b.dataset.go)}});
 $('#addBtn').onclick=function(){if(!active()){say('msg.pick_pack_first');return}go('add')};
@@ -349,9 +349,9 @@ import('./fk-pack-clear.mjs?v=0.9.31-d02-clear').then(function(module){
 }).catch(function(error){packClear=null;syncClear();say('msg.save_failed',{detail:error&&error.message||String(error)})});
 
 function commitData(next,writeOptions){
-  var signal=writeOptions&&writeOptions.signal;
-  if(signal&&signal.aborted)throw signal.reason===undefined?new Error('Pack write cancelled'):signal.reason;
-  writable(KEY);localStorage.setItem(KEY,JSON.stringify(next));data=next;
+  writable(KEY);
+  if(!packCommitter)throw new Error('Pack writer is not ready');
+  return packCommitter.commit(next,writeOptions);
 }
 import('./fk-editor-save.mjs?v=0.9.17-d02-editor-save').then(function(module){
   editorSave=module.createEditorSave({getData:function(){return data},commitData:commitData,say:say,changed:okState,
@@ -370,8 +370,13 @@ document.documentElement.lang=FK.lang();
 document.title='FoundryKin '+V;
 FK.apply(document);
 document.body.inert=true;
-import('./fk-pack-data.mjs?v=0.9.28').then(function(module){
-  try{data=module.normalizePackData(load(KEY,{active:null,packs:[]}))}catch(error){unreadable[KEY]=true;data={active:null,packs:[]}}
+Promise.all([import('./fk-pack-writer.mjs?v=0.9.34-d02-writer'),import('./fk-pack-commits.mjs?v=0.9.34-d02-commits')]).then(function(modules){
+  try{
+    var locks;try{locks=navigator.locks}catch(ignored){}
+    var writer=modules[0].createPackWriter({storage:localStorage,locks:locks,key:KEY});
+    packCommitter=modules[1].createPackCommitter(writer,function(value){data=value});
+    data=packCommitter.initial;
+  }catch(error){unreadable[KEY]=true;data={active:null,packs:[]}}
   packsReady=true;render();document.body.inert=false;
-}).catch(function(){say('msg.file_unreadable')});
+}).catch(function(){unreadable[KEY]=true;render();document.body.inert=false;});
 })();
