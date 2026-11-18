@@ -15,7 +15,7 @@ function save(k,v){try{if(k!==SKEY)throw new Error('Pack writes must use commitD
 var data={active:null,packs:[]};
 var settings=load(SKEY,{theme:'auto',url:DEF_URL});
 if(!settings.url)settings.url=DEF_URL;if(!settings.theme)settings.theme='auto';
-var backupHost=null,backups=null,packList=null,packTextures=null,editorSave=null,packImport=null,packClear=null,packMigration=null,packCommitter=null;
+var backupHost=null,backups=null,packList=null,packTextures=null,editorSave=null,packImport=null,packClear=null,packMigration=null,packCommitter=null,packRecovery=null;
 var stack=['home'],mt=null,editDirty=false,editNew=false,lastTitle='';
 function say(key,p){showMessage(key?T(key,p):'')}
 function showMessage(t){var m=$('#msg');m.textContent=t;m.style.display=t?'block':'none';clearTimeout(mt);if(t)mt=setTimeout(function(){m.style.display='none'},t.length>90?7000:3500)}
@@ -68,6 +68,7 @@ function refreshTitle(){
 /* navigation */
 function render(){
   var name=top(),p=active();
+  if(packRecovery)packRecovery.close();
   if(packForm&&name!=='edit')packForm.leave();
   if(packList&&name!=='create')packList.leave();
   if(packImport&&name!=='create')packImport.leave();
@@ -204,6 +205,7 @@ import('./fk-pack-form.mjs?v=0.9.32-d02-form').then(function(module){
 
 /* editor screen */
 function onMode(m){
+  if(packRecovery)packRecovery.close();
   if(m!=='search')cancelPackMigration();
   if(m!=='edit'&&editorSave)editorSave.leave();
   syncFind();
@@ -351,8 +353,16 @@ import('./fk-pack-clear.mjs?v=0.9.31-d02-clear').then(function(module){
 function commitData(next,writeOptions){
   writable(KEY);
   if(!packCommitter)throw new Error('Pack writer is not ready');
-  return packCommitter.commit(next,writeOptions);
+  return packCommitter.commit(next,writeOptions).catch(function(error){
+    if(error&&error.code==='PACK_WRITE_CONFLICT'&&packRecovery)try{packRecovery.show(error)}catch(ignored){}
+    throw error;
+  });
 }
+import('./fk-pack-recovery-host.mjs?v=0.9.35-d02-host').then(function(module){
+  packRecovery=module.createPackRecoveryHost({document:document,lang:function(){return FK.lang()},getData:function(){return data},getCommitter:function(){return packCommitter},notice:showMessage,
+    getState:function(){return {screen:top(),isNew:editNew,editor:hasFke()?FKE:null,migration:!!packMigration,controllers:[packForm,packList,packTextures,packImport,packClear,backups]}},
+    refresh:function(){if(top()==='create')renderPacks();else if(top()==='pack')renderTex();else if(top()==='backup'&&backups)backups.renderScreen()}});
+}).catch(function(error){packRecovery=null;say('msg.save_failed',{detail:error&&error.message||String(error)})});
 import('./fk-editor-save.mjs?v=0.9.17-d02-editor-save').then(function(module){
   editorSave=module.createEditorSave({getData:function(){return data},commitData:commitData,say:say,changed:okState,
     current:function(){return top()==='add'&&hasFke()&&FKE.getMode()==='edit'},
@@ -370,7 +380,7 @@ document.documentElement.lang=FK.lang();
 document.title='FoundryKin '+V;
 FK.apply(document);
 document.body.inert=true;
-Promise.all([import('./fk-pack-writer.mjs?v=0.9.34-d02-writer'),import('./fk-pack-commits.mjs?v=0.9.34-d02-commits')]).then(function(modules){
+Promise.all([import('./fk-pack-writer.mjs?v=0.9.34-d02-writer'),import('./fk-pack-commits.mjs?v=0.9.35-d02-commits')]).then(function(modules){
   try{
     var locks;try{locks=navigator.locks}catch(ignored){}
     var writer=modules[0].createPackWriter({storage:localStorage,locks:locks,key:KEY});
