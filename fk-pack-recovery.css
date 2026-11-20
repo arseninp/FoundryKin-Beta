@@ -1,3 +1,5 @@
 .fkRecovery{width:calc(100% - 28px);max-width:480px;max-height:calc(100dvh - 28px);overflow:auto;margin:auto;color:var(--ink)}
 .fkRecovery h2{margin-top:0}
 .fkRecovery .row{margin-bottom:0}
+.fkRecovery .lbl{color:var(--ink);font-size:15px;line-height:1.45}
+.fkRecovery #fkPackRecoveryError:empty{display:none}
