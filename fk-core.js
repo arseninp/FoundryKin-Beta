@@ -174,7 +174,7 @@ async function selectCompiled(request,reopened){
   phase='images';
   const images=await selection.prepareEditorImages({...next,required},readCompiled,makeCanvas);
   if(token!==selTok){diagnostic('info','selection','Selection superseded',{...context,stage:phase,duration:Date.now()-begin});return}
-  if(!same)resetImages();
+  phase='commit';if(!same)resetImages();
   for(const [path,value] of Object.entries(images)){
    if(next.editable.includes(path)){
     if(!fr[path]){fr[path]=value.frames;fi[path]=0;hs[path]=[];undoS[path]=[];redoS[path]=[];encoded[path]=!!files[path];slots.push({id:path})}
@@ -190,8 +190,10 @@ async function selectCompiled(request,reopened){
  }catch(error){
   if(token!==selTok){diagnostic('info','selection','Selection superseded',{...context,stage:phase,duration:Date.now()-begin});return}
   diagnostic('error','selection','Selection failed',{...context,stage:phase,duration:Date.now()-begin},error);
-  try{clearModel()}catch(cleanup){error=new AggregateError([error,cleanup],'Editor cleanup failed')}
-  comparison.reset();choice=null;cur='';slot=null;slots=[];cv={};S.info=null;buildSlotUi();stateUi.select('',null);API.loaded('');
+  const keep=phase!=='commit'&&choice;
+  try{if(keep){const s=controlTools.previewControlSpec(catalog,choice.plan);stateUi.select('compiled:'+choice.plan.object.card,s.schema,s.state)}else try{packCur(true)}finally{clearModel()}}catch(cleanup){error=new AggregateError([error,cleanup],'Editor cleanup failed')}
+  if(!keep){comparison.reset();choice=null;cur='';slot=null;slots=[];cv={};S.info=null;buildSlotUi();stateUi.select('',null)}
+  API.loaded(keep?cur:'');
   showErr('block_load',request.id+': '+error.message);
  }
 }
