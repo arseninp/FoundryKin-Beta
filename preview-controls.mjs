@@ -85,7 +85,7 @@ function cocoaControlStage(state) {
 function pitcherControlState(plan,state) {
  const id=plan.object.id;
  if(!['pitcher_crop','pitcher_plant'].includes(id)||!dictionary(state))throw new Error('Invalid pitcher control state');
- const stage=state.stage===undefined?(id==='pitcher_plant'?4:0):state.stage,pod_only=state.pod_only===undefined?false:state.pod_only;
+ const stage=state.variant==='grown'&&plan.state.variant==='crop'?4:state.stage===undefined?(id==='pitcher_plant'?4:0):state.stage,pod_only=state.pod_only===undefined?false:state.pod_only;
  if(!Number.isInteger(stage)||stage<0||stage>4||(id==='pitcher_plant'&&stage!==4))throw new Error('Invalid pitcher control stage');
  if(typeof pod_only!=='boolean')throw new Error('Invalid pitcher pod control');
  return {stage,pod_only};
