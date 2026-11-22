@@ -8,10 +8,12 @@ function bound(s,b,vw,vh){var m=Math.min(48,vw/4,vh/4);return {z:s.z,x:clamp(s.x
 function initial(b,vw,vh){return {z:1,x:(vw-b.width)/2,y:(vh-b.height)/2}}
 function zoom(s,factor,from,to,b,vw,vh){var z=clamp(s.z*factor,.25,256),k=z/s.z;return bound({z:z,x:to.x-(from.x-s.x)*k,y:to.y-(from.y-s.y)*k},b,vw,vh)}
 function gesture(points){var p=Array.from(points.values());if(!p.length)return null;if(p.length===1)return {x:p[0].x,y:p[0].y,d:0};return {x:(p[0].x+p[1].x)/2,y:(p[0].y+p[1].y)/2,d:Math.hypot(p[1].x-p[0].x,p[1].y-p[0].y)}}
+var mounted=new WeakSet();
 function create(canvas,api){
  if(!canvas||!api||!api.ctx||!canvas.parentNode)throw new Error('PNG viewport requires the editor canvas and API');
  var doc=canvas.ownerDocument,panel=canvas.parentNode,C=api.ctx,ru=root.FK.lang()==='ru';
- if(panel.id==='fkPngPanel')throw new Error('PNG viewport already mounted');
+ if(mounted.has(canvas)||panel.id==='fkPngPanel')throw new Error('PNG viewport already mounted');
+ mounted.add(canvas);
  panel.id='fkPngPanel';panel.classList.add('fkPngPanel');
  function element(tag,cls){var e=doc.createElement(tag);if(cls)e.className=cls;return e}
  var controls=element('div','fkPngControls'),freeButton=element('button'),resetButton=element('button'),view=element('div','fkPngClip'),surface=element('div','fkPngSurface');
