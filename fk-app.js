@@ -172,7 +172,7 @@ function exportPack(p){
   z.file('manifest.json',JSON.stringify(m,null,2));
   if(p.icon)z.file('pack_icon.png',p.icon.split(',')[1],{base64:true});
   p.textures.forEach(function(t){z.file('textures/'+t.path+'.png',t.data.split(',')[1],{base64:true})});
-  z.generateAsync({type:'blob'}).then(function(b){download(b,name+'.mcpack');say('msg.exported',{name:name})},function(e){say('msg.zip_error',{detail:e.message})});
+  z.generateAsync({type:'blob'}).then(function(b){download(b,name+'.mcpack')},function(e){say('msg.zip_error',{detail:e.message})});
 }
 $('#impF').onchange=function(){
   var file=this.files[0];this.value='';if(!file)return;
