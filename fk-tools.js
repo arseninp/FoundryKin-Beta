@@ -91,7 +91,7 @@ function floodFill(g,w,h,p){
     d[i]=t[0];d[i+1]=t[1];d[i+2]=t[2];d[i+3]=t[3];
     st.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
   }
-  g.putImageData(img,0,0);
+  C.pushUndo();g.putImageData(img,0,0);C.touched();
 }
 function swapColor(g,w,h,p){
   var img=g.getImageData(0,0,w,h),d=img.data,i0=(p.y*w+p.x)*4,r0=d[i0],g0=d[i0+1],b0=d[i0+2],a0=d[i0+3],t=target(),changed=false,i,hit;
@@ -287,8 +287,8 @@ function build(root){
     e.preventDefault();ed.setPointerCapture(e.pointerId);
     if(tool==='pick'){pickAt(g,p);return}
     if(tool==='swap'){swapColor(g,w,h,p);return}
+    if(tool==='fill'){floodFill(g,w,h,p);return}
     C.pushUndo();
-    if(tool==='fill'){floodFill(g,w,h,p);C.touched();return}
     down=true;last=p;strokeId=e.pointerId;strokeG=g;strokeN=n;strokeW=w;strokeH=h;dot(g,p.x,p.y);C.touched();strokeEdits=window.FKAPI.edits;
   });
   ed.addEventListener('pointermove',function(e){
