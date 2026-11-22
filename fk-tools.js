@@ -309,11 +309,14 @@ function build(root){
     if(!f||!C.ready()||window.FKAPI.state.mode!=='edit')return;
     var n=C.res(),g=C.g(),w=g.canvas.width,h=g.canvas.height,edits=window.FKAPI.edits,fr=new FileReader();
     function current(){return gen===importGen&&C.ready()&&window.FKAPI.state.mode==='edit'&&C.res()===n&&C.g()===g&&g.canvas.width===w&&g.canvas.height===h&&window.FKAPI.edits===edits}
+    function failed(){if(current())C.say('msg.file_unreadable')}
+    fr.onerror=failed;
     fr.onload=function(){if(!current())return;var img=new Image();
       img.onload=function(){
         if(!current())return;
         C.pushUndo();g.clearRect(0,0,w,h);g.imageSmoothingEnabled=false;g.drawImage(img,0,0,w,h);C.touched();
       };
+      img.onerror=failed;
       img.src=fr.result};
     fr.readAsDataURL(f);
   });
