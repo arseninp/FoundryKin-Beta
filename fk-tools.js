@@ -356,7 +356,6 @@ function build(root){
       var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([u],{type:'image/png'}));a.download=x.path.split('/').pop();document.body.appendChild(a);a.click();
       setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
     },i*300)});
-    C.say('msg.png_saved',{n:fs.length});
   });
 
   renderQueue();markBrush();markRes(C.res());C.syncHist();
