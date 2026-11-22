@@ -81,6 +81,24 @@ function line(g,a,b){
   var dx=Math.abs(xEnd-x),dy=Math.abs(yEnd-y),sx=x<xEnd?1:-1,sy=y<yEnd?1:-1;
   var steps=Math.max(dx,dy),error=dx-dy;
   if(!Number.isSafeInteger(steps))return;
+  var w=g.canvas.width,h=g.canvas.height;
+  if(!w||!h)return;
+  if(steps>Math.max(w,h)+brush){
+    // Preserve the original raster phase while skipping invisible major-axis steps.
+    var horizontal=dx>=dy,offset=Math.floor((brush-1)/2);
+    var low=BigInt(Math.floor(offset-brush)+1),high=BigInt((horizontal?w:h)-1+offset);
+    var start=BigInt(horizontal?x:y),direction=BigInt(horizontal?sx:sy);
+    var major=BigInt(steps),minor=BigInt(horizontal?dy:dx);
+    var first=direction>0n?low-start:start-high,last=direction>0n?high-start:start-low;
+    if(first<0n)first=0n;
+    if(last>major)last=major;
+    var bx=BigInt(x),by=BigInt(y),xs=BigInt(sx),ys=BigInt(sy);
+    for(var k=first;k<=last;k++){
+      var across=(2n*k*minor+major)/(2n*major);
+      dot(g,Number(bx+xs*(horizontal?k:across)),Number(by+ys*(horizontal?across:k)));
+    }
+    return;
+  }
   for(var i=0;i<=steps;i++){
     dot(g,x,y);
     if(i===steps)return;
