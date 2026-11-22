@@ -44,7 +44,7 @@ export function resourceUsage(runtime,path){return resourceUsages(runtime,[path]
 export function resourceUsageInfo(runtime,selection){
  const path=selection.plan.slot,borrowedPaths=[...new Set(selection.borrowed)].sort(),results=resourceUsages(runtime,[path,...borrowedPaths]),users=results.get(path),borrowed=borrowedPaths.map(path=>({path,users:results.get(path)}));
  const identities=new Set(users.flatMap(card=>card.uses.map(use=>use.id)));
- return {path,users,shared:identities.size>1,borrowed};
+ return {path,users,objectCount:identities.size,shared:identities.size>1,borrowed};
 }
 export function appendResourceUsage(host,runtime,selection,language){
  const ru=language==='ru',doc=host.ownerDocument;
@@ -62,7 +62,7 @@ export function appendResourceUsage(host,runtime,selection,language){
  if(!info.shared&&!info.borrowed.length)return null;
  const details=node('details'),summary=node('summary'),title=node('span',info.shared?(ru?'Общая текстура':'Shared texture'):(ru?'Заимствованные текстуры':'Borrowed textures')),value=node('span');
  details.dataset.resourceUsage='';details.style.overflowWrap='anywhere';summary.className='fkResourceRow';value.className='fkStateValue';
- function caption(){value.textContent=(info.shared?(ru?'Объектов: ':'Objects: ')+info.users.length:String(info.borrowed.length))+' '+(details.open?'▾':'▸');}
+ function caption(){value.textContent=(info.shared?(ru?'Объектов: ':'Objects: ')+info.objectCount:String(info.borrowed.length))+' '+(details.open?'▾':'▸');}
  caption();details.addEventListener('toggle',caption);summary.appendChild(title);summary.appendChild(value);details.appendChild(summary);
  function users(parent,rows){
   const list=node('ul');
