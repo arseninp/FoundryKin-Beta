@@ -76,8 +76,18 @@ function dot(g,x,y){
   else{if(alpha<255)g.clearRect(r.x,r.y,r.w,r.h);g.fillStyle=css();g.fillRect(r.x,r.y,r.w,r.h)}
 }
 function line(g,a,b){
-  var x0=a.x,y0=a.y,x1=b.x,y1=b.y,dx=Math.abs(x1-x0),dy=-Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1,err=dx+dy;
-  for(var n=0;n<512;n++){dot(g,x0,y0);if(x0===x1&&y0===y1)break;var e2=2*err;if(e2>=dy){err+=dy;x0+=sx}if(e2<=dx){err+=dx;y0+=sy}}
+  var x=a.x,y=a.y,xEnd=b.x,yEnd=b.y;
+  if(!Number.isSafeInteger(x)||!Number.isSafeInteger(y)||!Number.isSafeInteger(xEnd)||!Number.isSafeInteger(yEnd))return;
+  var dx=Math.abs(xEnd-x),dy=Math.abs(yEnd-y),sx=x<xEnd?1:-1,sy=y<yEnd?1:-1;
+  var steps=Math.max(dx,dy),error=dx-dy;
+  if(!Number.isSafeInteger(steps))return;
+  for(var i=0;i<=steps;i++){
+    dot(g,x,y);
+    if(i===steps)return;
+    var twice=2*error;
+    if(twice>=-dy){error-=dy;x+=sx}
+    if(twice<=dx){error+=dx;y+=sy}
+  }
 }
 function floodFill(g,w,h,p){
   var img=g.getImageData(0,0,w,h),d=img.data,t=target();
