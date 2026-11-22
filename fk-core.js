@@ -1,4 +1,4 @@
-/* Compiled catalog editor state shared with Find. No legacy catalog fallback. */
+/* Compiled editor state; no legacy fallback. */
 (function(){
 var FK=window.FK,V=window.FKView;
 function diagnostic(level,area,message,data,error){try{var log=window.FKLog;if(log){if(error)log.error(area,error,data);else log.add(level,area,message,data)}}catch(ignored){}}
@@ -250,6 +250,7 @@ var API={
   shapeFor:function(id){var o=unified.access.describe(id);return o?catalog.records[o.id].model:null}}}
 };
 $('#catfile').disabled=true;
+ctx.resource = () => slot;
 ctx.el={ed:ed};ctx.res=function(){return res};ctx.setRes=setRes;ctx.viewReady=function(){return !API.busy&&!!cv[slot]};ctx.ready=editable;ctx.g=function(){return ctxOf(slot)};
 ctx.pushUndo=pushUndo;ctx.undo=doUndo;ctx.redo=doRedo;ctx.touched=touched;ctx.syncHist=updHist;ctx.files=curFiles;ctx.say=say;
 window.FKAPI=API;FK.apply(document);loadCatalog();

@@ -18,7 +18,7 @@ function create(canvas,api){
  freeButton.type=resetButton.type='button';freeButton.textContent=ru?'Свободная позиция':'Free position';resetButton.textContent=ru?'Начальная позиция':'Initial position';
  freeButton.setAttribute('aria-pressed','false');view.tabIndex=0;view.setAttribute('aria-label',ru?'Поле рисования. В свободной позиции: перетаскивание и масштаб двумя пальцами.':'Drawing field. In free position: drag and pinch to zoom.');
  controls.appendChild(freeButton);controls.appendChild(resetButton);panel.insertBefore(controls,canvas);panel.insertBefore(view,canvas);view.appendChild(surface);surface.appendChild(canvas);
- var free=false,points=new Map(),last=null,paintingPointer=null,b={width:1,height:1},s={z:1,x:0,y:0},vw=0,vh=0,iw=0,ih=0,source=null;
+ var free=false,points=new Map(),last=null,paintingPointer=null,b={width:1,height:1},s={z:1,x:0,y:0},vw=0,vh=0,iw=0,ih=0,source=null,resource=null;
  function usable(){return api.state.mode==='edit'&&!api.busy&&C.viewReady()&&!doc.hidden}
  function draw(){surface.style.width=b.width+'px';surface.style.height=b.height+'px';surface.style.transform='translate('+s.x+'px,'+s.y+'px) scale('+s.z+')'}
  function releasePaint(){var id=paintingPointer;paintingPointer=null;if(id!==null)try{if(canvas.hasPointerCapture(id))canvas.releasePointerCapture(id)}catch(error){}}
@@ -29,11 +29,11 @@ function create(canvas,api){
   var ready=usable();freeButton.disabled=resetButton.disabled=!ready;panel.inert=!!api.busy;panel.style.visibility=api.busy?'hidden':'';
   if(!ready){cancel();if(api.state.mode!=='edit')setFree(false);return}
   var w=view.clientWidth,h=view.clientHeight;if(!w||!h)return;
-  var changed=source!==api.cur()||iw!==canvas.width||ih!==canvas.height,old=b;
+  var selected=C.resource(),changed=source!==api.cur()||resource!==selected||iw!==canvas.width||ih!==canvas.height,old=b;
   var center={x:vw?(vw/2-s.x)/(old.width*s.z):.5,y:vh?(vh/2-s.y)/(old.height*s.z):.5};
   b=fit(canvas.width,canvas.height,w,h);
   if(changed){setFree(false);s=initial(b,w,h)}else if(w!==vw||h!==vh)s=bound({z:s.z,x:w/2-center.x*b.width*s.z,y:h/2-center.y*b.height*s.z},b,w,h);
-  vw=w;vh=h;iw=canvas.width;ih=canvas.height;source=api.cur();draw();
+  vw=w;vh=h;iw=canvas.width;ih=canvas.height;source=api.cur();resource=selected;draw();
  }
  function point(e){var r=view.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
  function begin(e){
