@@ -3,7 +3,6 @@
 var DICT={
 en:{
   'search.placeholder':"Find",
-  'cat.load':"Load blocks.json",
   'tool.pen':"Brush",
   'tool.erase':"Eraser",
   'tool.fill':"Fill",
@@ -195,7 +194,6 @@ en:{
 },
 ru:{
   'search.placeholder':"Find",
-  'cat.load':"Загрузить blocks.json",
   'tool.pen':"Кисть",
   'tool.erase':"Ластик",
   'tool.fill':"Заливка",

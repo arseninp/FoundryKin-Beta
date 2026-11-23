@@ -41,9 +41,6 @@ function fill(){
   p(catText(s));
   if(s.info)p(infoText(s.info));
   s.errors.forEach(function(e){p(errText(e))});
-  if(s.status==='failed'||s.status==='empty'){
-    var l=mk('label','ghost btn',T('cat.load'));l.setAttribute('for','catfile');state.appendChild(l);
-  }
 }
 function mkBtn(){
   var b=mk('button','ghost fkHelpBtn');b.type='button';b.innerHTML=DOTS;

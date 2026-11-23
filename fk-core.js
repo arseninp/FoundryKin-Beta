@@ -249,7 +249,6 @@ var API={
   setPack:setPack,
   shapeFor:function(id){var o=unified.access.describe(id);return o?catalog.records[o.id].model:null}}}
 };
-$('#catfile').disabled=true;
 ctx.resource = () => slot;
 ctx.el={ed:ed};ctx.res=function(){return res};ctx.setRes=setRes;ctx.viewReady=function(){return !API.busy&&!!cv[slot]};ctx.ready=editable;ctx.g=function(){return ctxOf(slot)};
 ctx.pushUndo=pushUndo;ctx.undo=doUndo;ctx.redo=doRedo;ctx.touched=touched;ctx.syncHist=updHist;ctx.files=curFiles;ctx.say=say;
