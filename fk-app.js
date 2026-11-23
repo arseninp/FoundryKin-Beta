@@ -321,7 +321,7 @@ $('#dCopy').onclick=function(){
   var t=$('#dReport').textContent;
   function fallback(){
     var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();
-    try{document.execCommand('copy');say('msg.report_copied')}catch(e){say('msg.copy_manual')}
+    try{say(document.execCommand('copy')?'msg.report_copied':'msg.copy_manual')}catch(e){say('msg.copy_manual')}
     ta.remove();
   }
   if(navigator.clipboard&&navigator.clipboard.writeText){
