@@ -198,7 +198,7 @@ function savePackForm(writeOptions){
   function acknowledged(value){return value!==false&&!writeOptions.signal.aborted}
   return result&&typeof result.then==='function'?Promise.resolve(result).then(acknowledged):acknowledged(result);
 }
-import('./fk-pack-form.mjs?v=0.9.32-d02-form').then(function(module){
+import('./fk-pack-form.mjs?v=0.9.32-i01-form').then(function(module){
   packForm=module.mountPackForm(document,{getData:function(){return data},active:active,isNew:function(){return editNew},saved:function(){editNew=false},setDirty:function(value){editDirty=value},current:function(){return top()==='edit'},save:savePackForm,uuid:uuid,manifest:manifest,icon:ICON,say:say,t:T});
   if(top()==='edit')packForm.fill();
 }).catch(function(){say('msg.file_unreadable')});
