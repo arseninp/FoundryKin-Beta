@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
 import vm from 'node:vm';
-import {compileFamilies} from './catalog-families.mjs';
+import {compileFamilies} from '../catalog/rules/material-families.mjs';
 import {compiledResourceGroups,compiledFamilyPaths} from '../catalog/editor-selection.mjs';
 import {iconLabelsForSet} from '../catalog/rules/icons.mjs';
 test('distinct atlas keys pointing to one PNG identify the same material',()=>{
