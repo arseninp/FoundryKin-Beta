@@ -73,7 +73,7 @@ test('rollback does not overwrite a replacement root or unrelated later changes'
 });
 test('icon requests retain stale guards and block save until reading finishes',async()=>{
  Reader.all=[];const d=deferred(),f=fixture(()=>d.promise);
- function choose(file={}){f.nodes.eIcoF.files=[file];f.nodes.eIcoF.onchange.call(f.nodes.eIcoF);return Reader.all.at(-1);}
+ function choose(file={type:'image/png'}){f.nodes.eIcoF.files=[file];f.nodes.eIcoF.onchange.call(f.nodes.eIcoF);return Reader.all.at(-1);}
  const a=choose();assert.equal(f.nodes.eSave.disabled,true);f.click();assert.equal(f.state.calls,0);
  const b=choose();a.load('stale');assert.equal(f.nodes.eIco.src,'old');assert.equal(f.nodes.eSave.disabled,true);f.click();assert.equal(f.state.calls,0);
  b.load('new-icon');assert.equal(f.nodes.eSave.disabled,false);
@@ -82,16 +82,20 @@ test('icon requests retain stale guards and block save until reading finishes',a
 });
 test('image errors and leaving cancel pending reads without a stuck save button',()=>{
  for(const thrown of [false,true]){
-  const f=fixture();f.nodes.eIcoF.files=[{fail:thrown}];f.nodes.eIcoF.onchange.call(f.nodes.eIcoF);
+  const f=fixture();f.nodes.eIcoF.files=[{type:'image/png',fail:thrown}];f.nodes.eIcoF.onchange.call(f.nodes.eIcoF);
   if(!thrown)Reader.all.at(-1).onerror();assert.equal(f.nodes.eSave.disabled,false);assert.equal(f.state.messages.at(-1).key,'msg.file_unreadable');
-  f.nodes.eIcoF.files=[{}];f.nodes.eIcoF.onchange.call(f.nodes.eIcoF);const request=Reader.all.at(-1);f.controller.leave();request.load('late');assert.equal(f.nodes.eIco.src,'old');assert.equal(f.nodes.eSave.disabled,false);
+  f.nodes.eIcoF.files=[{type:'image/png'}];f.nodes.eIcoF.onchange.call(f.nodes.eIcoF);const request=Reader.all.at(-1);f.controller.leave();request.load('late');assert.equal(f.nodes.eIco.src,'old');assert.equal(f.nodes.eSave.disabled,false);
  }
 });
 test('invalid name does not mutate data or start saving',()=>{
  const f=fixture(),before=clone(f.state.data);f.put('!!!');f.click();assert.equal(f.state.calls,0);assert.deepEqual(f.state.data,before);assert.equal(f.state.messages.at(-1).key,'msg.name_latin');
 });
 test('stale image completion releases only its own busy state',()=>{
- const f=fixture();f.nodes.eIcoF.files=[{}];f.nodes.eIcoF.onchange.call(f.nodes.eIcoF);
+ const f=fixture();f.nodes.eIcoF.files=[{type:'image/png'}];f.nodes.eIcoF.onchange.call(f.nodes.eIcoF);
  const request=Reader.all.at(-1);f.state.data=clone(f.state.data);request.load('stale');
  assert.equal(f.nodes.eIco.src,'old');assert.equal(f.nodes.eSave.disabled,false);
+});
+test('non-PNG icon is rejected before reading and keeps the form usable',()=>{
+ Reader.all=[];const f=fixture();f.nodes.eIcoF.files=[{type:'image/jpeg'}];f.nodes.eIcoF.onchange.call(f.nodes.eIcoF);
+ assert.equal(Reader.all.length,0);assert.equal(f.nodes.eSave.disabled,false);assert.equal(f.state.messages.at(-1).key,'msg.file_unreadable');assert.equal(f.nodes.eIco.src,'old');
 });

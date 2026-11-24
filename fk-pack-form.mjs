@@ -41,6 +41,7 @@ export function mountPackForm(document,options){
  $('#eIcoF').onchange=function(){
   if(pendingSave)return;
   const file=this.files[0];this.value='';if(!file)return;
+  if(file.type!=='image/png'){options.say('msg.file_unreadable');return;}
   cancelIcon();const token=generation,isNew=options.isNew(),pack=options.active();
   function current(){return token===generation&&options.current()&&options.isNew()===isNew&&options.active()===pack;}
   const request=new FileReader();pendingIcon=request;sync();
