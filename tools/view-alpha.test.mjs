@@ -3,43 +3,13 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {createModelTextures} from '../models/textures.mjs';
+import {createModelMaterials} from '../models/materials.mjs';
 import {withPreparedPreview} from '../catalog/prepared-preview.mjs';
 const source=readFileSync(new URL('../fk-view.js',import.meta.url),'utf8');
-function setup(){
- class DataTexture{constructor(data,w,h,format){this.image={data,width:w,height:h};this.format=format;}}
- class Material{constructor(options){Object.assign(this,{opacity:1,depthWrite:true,depthTest:true},options);}}
- const THREE={DataTexture,MeshLambertMaterial:Material,RGBAFormat:1,NearestFilter:2,FrontSide:0,DoubleSide:2};
- const ctx={THREE,Uint8Array};vm.createContext(ctx);vm.runInContext(source,ctx);return ctx.FKView;
-}
 function canvas(alphas,width=alphas.length){
  const data=Uint8Array.from(alphas.flatMap((a,i)=>[i+10,i+20,i+30,a]));
  return {width,height:alphas.length/width,data,getContext(){return {getImageData:()=>({data})};}};
 }
-test('every fractional alpha value is detected, including the previously excluded extremes',()=>{
- const V=setup();for(let alpha=1;alpha<255;alpha++)assert.equal(V.texture(canvas([alpha])).userData.semi,true,String(alpha));
- for(const alpha of [0,255])assert.equal(V.texture(canvas([alpha])).userData.semi,false);
-});
-test('fractional textures blend without alpha cutoff or depth writes and retain opacity',()=>{
- const V=setup(),mat=V.material(true),tx=V.texture(canvas([1,127,254]));V.mapMaterial(mat,tx);
- assert.equal(mat.transparent,true);assert.equal(mat.alphaTest,0);assert.equal(mat.depthWrite,false);assert.equal(mat.depthTest,true);assert.equal(mat.opacity,1);assert.equal(mat.side,2);assert.equal(mat.map,tx);
-});
-test('opaque and binary-cutout textures keep depth writes and use cutoff without blending',()=>{
- const V=setup();for(const alphas of [[255],[0],[0,255]]){
-  const mat=V.material(false);V.mapMaterial(mat,V.texture(canvas(alphas)));
-  assert.equal(mat.transparent,false);assert.equal(mat.alphaTest,.05);assert.equal(mat.depthWrite,true);assert.equal(mat.opacity,1);assert.equal(mat.side,0);
- }
-});
-test('mapping refreshed textures updates material policy in both directions',()=>{
- const V=setup(),mat=V.material(false);for(const alphas of [[255],[248],[0,255],[8]]){
-  const tx=V.texture(canvas(alphas));V.mapMaterial(mat,tx);const semi=alphas.some(a=>a>0&&a<255);
-  assert.equal(mat.map,tx);assert.equal(mat.transparent,semi);assert.equal(mat.depthWrite,!semi);assert.equal(mat.alphaTest,semi?0:.05);assert.equal(mat.needsUpdate,true);
- }
-});
-test('RGBA bytes are preserved with only the existing vertical flip; source pixels are untouched',()=>{
- const V=setup(),c=canvas([0,1,254,255],2),before=Array.from(c.data),tx=V.texture(c);
- assert.deepEqual(Array.from(tx.image.data),[...before.slice(8),...before.slice(0,8)]);assert.deepEqual(Array.from(c.data),before);
- assert.equal(tx.image.width,2);assert.equal(tx.image.height,2);assert.equal(tx.generateMipmaps,false);
-});
 function productionThree() {
  const textures=[],materials=[];
  class DataTexture {
@@ -61,6 +31,45 @@ function productionThree() {
  }
  return {DataTexture,MeshLambertMaterial:Lambert,MeshBasicMaterial:Basic,Group,RGBAFormat:1,NearestFilter:2,FrontSide:0,textures,materials};
 }
+const path='textures/blocks/a';
+function textureFor(Three,alphas,width) {
+ const lookup={[path]:canvas(alphas,width)},batch=createModelTextures(Three,[path],lookup);
+ return {lookup,batch,texture:batch.textures[path]};
+}
+function materialsFor(Three,texture){return createModelMaterials(Three,{mode:'volume'},{face:path},{[path]:texture});}
+test('every fractional alpha value is detected, including the extremes next to 0 and 255',()=>{
+ const Three=productionThree();
+ for(let alpha=1;alpha<255;alpha++)assert.equal(textureFor(Three,[alpha]).texture.userData.semi,true,String(alpha));
+ for(const alpha of [0,255])assert.equal(textureFor(Three,[alpha]).texture.userData.semi,false,String(alpha));
+});
+test('fractional textures blend without alpha cutoff or depth writes',()=>{
+ const Three=productionThree(),{texture}=textureFor(Three,[1,127,254]),material=materialsFor(Three,texture).mats[path];
+ assert.equal(material.transparent,true);assert.equal(material.alphaTest,0);assert.equal(material.depthWrite,false);assert.equal(material.depthTest,true);assert.equal(material.side,0);assert.equal(material.map,texture);
+});
+test('opaque and binary-cutout textures keep depth writes and use cutoff without blending',()=>{
+ const Three=productionThree();
+ for(const alphas of [[255],[0],[0,255]]) {
+  const {texture}=textureFor(Three,alphas),material=materialsFor(Three,texture).mats[path];
+  assert.equal(material.transparent,false);assert.equal(material.alphaTest,.05);assert.equal(material.depthWrite,true);assert.equal(material.depthTest,true);assert.equal(material.side,0);assert.equal(material.map,texture);
+ }
+});
+test('refreshing a texture updates the material policy in both directions and recompiles only when it changes',()=>{
+ const Three=productionThree(),{lookup,batch,texture}=textureFor(Three,[255]),set=materialsFor(Three,texture),material=set.mats[path];
+ for(const alpha of [248,0,8,255,1,254,0]) {
+  lookup[path].data[3]=alpha;assert.equal(batch.update(lookup),true);set.update(batch.textures);
+  const semi=alpha>0&&alpha<255;
+  assert.equal(batch.textures[path],texture);assert.equal(material.map,texture);
+  assert.equal(material.transparent,semi);assert.equal(material.depthWrite,!semi);assert.equal(material.alphaTest,semi?0:.05);
+ }
+ assert.equal(material.updates,6);assert.equal(Three.textures.length,1);
+});
+test('RGBA bytes keep only the vertical flip and source pixels are never changed',()=>{
+ const Three=productionThree(),source=canvas([0,1,254,255],2),before=Array.from(source.data),lookup={[path]:source};
+ const batch=createModelTextures(Three,[path],lookup),texture=batch.textures[path];
+ assert.deepEqual(Array.from(texture.image.data),[...before.slice(8),...before.slice(0,8)]);assert.deepEqual(Array.from(source.data),before);
+ assert.equal(texture.image.width,2);assert.equal(texture.image.height,2);assert.equal(texture.generateMipmaps,false);assert.equal(texture.flipY,false);assert.equal(texture.magFilter,2);assert.equal(texture.minFilter,2);
+ assert.equal(batch.update(lookup),true);assert.deepEqual(Array.from(source.data),before);
+});
 test('production texture batch reuses identities and uploads only changed pixels',()=>{
  const Three=productionThree(),a='textures/blocks/a',b='textures/blocks/b',lookup={[a]:canvas([0,255,1,254],2),[b]:canvas([255])},before=Array.from(lookup[a].data);
  const batch=createModelTextures(Three,[a,b],lookup),first=batch.textures[a],second=batch.textures[b];
@@ -90,4 +99,8 @@ test('prepared canvas updates preserve geometry, alpha transitions and resize cl
  instance.update({[path]:canvas([255,255])});assert.equal(Three.textures.length,2);assert.equal(original.disposals,1);assert.equal(material.map,Three.textures[1]);assert.equal(builds,1);
  instance.dispose();instance.dispose();assert.equal(geometryDisposals,1);assert.equal(material.disposals,1);assert.ok(Three.textures.every(texture=>texture.disposals===1));
  assert.throws(()=>instance.update(lookup),/disposed/);
+});
+test('FKView exposes only the compiled-model API',()=>{
+ const context={THREE:{}};vm.createContext(context);vm.runInContext(source,context);
+ assert.deepEqual(Object.keys(context.FKView).sort(),['build','capture','clear','createStage','mount','render','setCopies','update']);
 });

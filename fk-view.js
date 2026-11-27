@@ -1,7 +1,7 @@
 /* One compiled-model renderer and view policy for the editor and Find. */
 var FKView=(function(){
 'use strict';
-var renderer=null,hidden=null,preview=null,lost=false;
+var renderer=null,preview=null,lost=false;
 var ANGLE_X=.6155,ANGLE_Y=-Math.PI/4,EXTENT=.95;
 /* Initial view only: model placement, UVs and user orbit remain independent. */
 var FRONT_VIEW_MODELS=['skull','copper_golem_statue','dried_ghast','chest','banner','big_dripleaf','tripwire_hook','sign'];
@@ -9,7 +9,6 @@ function getRenderer(){
   if(!renderer){
     renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
     renderer.setClearColor(0x000000,0);
-    hidden=new THREE.MeshBasicMaterial({visible:false});
     renderer.domElement.addEventListener('webglcontextlost',function(e){e.preventDefault();lost=true});
     renderer.domElement.addEventListener('webglcontextrestored',function(){lost=false});
   }
@@ -69,34 +68,6 @@ function setCopies(stage,count){
   if(!stage.instance||!stage.modelSize)throw new Error('No prepared editor model to repeat');
   if(stage.count!==count)arrange(stage,count);
 }
-function texture(canvas){
-  var w=canvas.width,h=canvas.height,data=canvas.getContext('2d').getImageData(0,0,w,h).data;
-  var out=new Uint8Array(w*h*4),semi=false;
-  for(var y=0;y<h;y++){
-    var start=y*w*4,end=(h-1-y)*w*4;
-    for(var x=0;x<w*4;x++){
-      var value=data[start+x];out[end+x]=value;
-      if((x&3)===3&&value>0&&value<255)semi=true;
-    }
-  }
-  var tx=new THREE.DataTexture(out,w,h,THREE.RGBAFormat);
-  tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;tx.needsUpdate=true;
-  tx.userData={semi:semi};return tx;
-}
-function material(doubleSided){
-  return new THREE.MeshLambertMaterial({transparent:true,alphaTest:.05,side:doubleSided?THREE.DoubleSide:THREE.FrontSide});
-}
-function mapMaterial(mat,tx){
-  var semi=!!tx.userData.semi;
-  mat.map=tx;mat.transparent=semi;mat.alphaTest=semi?0:.05;mat.depthWrite=!semi;mat.needsUpdate=true;
-}
-function doorTexture(lower,upper){
-  if(lower.width!==upper.width||lower.height!==lower.width||upper.height!==upper.width)throw new Error('Door frames must be equally sized squares');
-  var n=lower.width,canvas=document.createElement('canvas');canvas.width=n;canvas.height=2*n;
-  var g=canvas.getContext('2d');g.imageSmoothingEnabled=false;
-  g.drawImage(upper,0,0);g.drawImage(lower,0,n);
-  return texture(canvas);
-}
 function build(stage,entry,reset){
   var count=copyCount(entry.count===undefined?1:entry.count);
   clear(stage);
@@ -145,5 +116,5 @@ function capture(entry,size){
     clear(preview);r.setRenderTarget(target);
   }
 }
-return {createStage:createStage,clear:clear,texture:texture,material:material,mapMaterial:mapMaterial,doorTexture:doorTexture,build:build,setCopies:setCopies,update:update,render:render,mount:mount,capture:capture};
+return {createStage:createStage,clear:clear,build:build,setCopies:setCopies,update:update,render:render,mount:mount,capture:capture};
 })();
