@@ -5,19 +5,31 @@ const CDN='https://cdn.jsdelivr.net/gh/Mojang/bedrock-samples@'+PIN+'/resource_p
 function loadImage(url){
  return new Promise(resolve=>{const image=new Image();image.crossOrigin='anonymous';image.onload=()=>resolve(image);image.onerror=()=>resolve(null);image.src=url;});
 }
+const MAX_TGA_PIXELS=16777216;
+/* Strict TGA reader: any truncated, overflowing or unsupported file is rejected instead of being padded with zeros. */
 export function decodeTga(buffer){
- const b=new Uint8Array(buffer),idLength=b[0],colorMap=b[1],type=b[2],width=b[12]|(b[13]<<8),height=b[14]|(b[15]<<8),bpp=b[16],descriptor=b[17];
- if(colorMap!==0||![2,10,3,11].includes(type)||![24,32,8].includes(bpp)||!width||!height)return null;
- const bytes=bpp>>3,pixels=new Uint8Array(width*height*bytes);let offset=18+idLength,count=0;
- if(type===2||type===3)pixels.set(b.subarray(offset,offset+width*height*bytes));
- else while(count<width*height&&offset<b.length){
-  const header=b[offset++],length=(header&127)+1;
-  if(header&128){for(let i=0;i<length&&count<width*height;i++){for(let k=0;k<bytes;k++)pixels[count*bytes+k]=b[offset+k];count++;}offset+=bytes;}
-  else for(let i=0;i<length&&count<width*height;i++){for(let k=0;k<bytes;k++)pixels[count*bytes+k]=b[offset++];count++;}
+ const b=new Uint8Array(buffer);if(b.length<18)return null;
+ const idLength=b[0],colorMap=b[1],type=b[2],width=b[12]|(b[13]<<8),height=b[14]|(b[15]<<8),bpp=b[16],descriptor=b[17];
+ const gray=type===3||type===11,rle=type===10||type===11;
+ if(colorMap!==0||!(gray||type===2||type===10)||!(gray?bpp===8:bpp===24||bpp===32)||!width||!height||width*height>MAX_TGA_PIXELS||(descriptor&192)!==0)return null;
+ const bytes=bpp>>3,total=width*height,pixels=new Uint8Array(total*bytes);let offset=18+idLength;
+ if(!rle){
+  if(offset+total*bytes>b.length)return null;
+  pixels.set(b.subarray(offset,offset+total*bytes));
+ }else{
+  let count=0;
+  while(count<total){
+   if(offset>=b.length)return null;
+   const header=b[offset++],length=(header&127)+1,run=(header&128)!==0,need=run?bytes:length*bytes;
+   if(count+length>total||offset+need>b.length)return null;
+   if(run){for(let i=0;i<length;i++)pixels.set(b.subarray(offset,offset+bytes),(count+i)*bytes);}
+   else pixels.set(b.subarray(offset,offset+need),count*bytes);
+   offset+=need;count+=length;
+  }
  }
- const data=new Uint8ClampedArray(width*height*4),top=(descriptor&32)!==0;
+ const data=new Uint8ClampedArray(total*4),top=(descriptor&32)!==0,right=(descriptor&16)!==0;
  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
-  const source=((top?y:height-1-y)*width+x)*bytes,target=(y*width+x)*4;
+  const source=((top?y:height-1-y)*width+(right?width-1-x:x))*bytes,target=(y*width+x)*4;
   if(bpp===8){data[target]=data[target+1]=data[target+2]=pixels[source];data[target+3]=255;}
   else{data[target]=pixels[source+2];data[target+1]=pixels[source+1];data[target+2]=pixels[source];data[target+3]=bpp===32?pixels[source+3]:255;}
  }
